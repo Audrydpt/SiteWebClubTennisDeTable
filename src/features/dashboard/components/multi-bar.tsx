@@ -84,12 +84,12 @@ export default function MultiBarComponent({layout = "vertical"}: MultiBarCompone
                     <Bar
                         dataKey="desktop"
                         fill="var(--color-desktop)"
-                        radius={[0, 0, 4, 4]}
+                        radius={4}
                     />
                     <Bar
                         dataKey="mobile"
                         fill="var(--color-mobile)"
-                        radius={[4, 4, 0, 0]}
+                        radius={4}
                     />
                 </>
                 :
@@ -97,12 +97,12 @@ export default function MultiBarComponent({layout = "vertical"}: MultiBarCompone
                     <Bar
                         dataKey="desktop"
                         fill="var(--color-desktop)"
-                        radius={[4, 0, 0, 4]}
+                        radius={4}
                     />
                     <Bar
                         dataKey="mobile"
                         fill="var(--color-mobile)"
-                        radius={[0, 4, 4, 0]}
+                        radius={4}
                     />
                 </>
             }
