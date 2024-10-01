@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom"
 import {
-  Camera,
+  Cctv,
   FileOutput,
   Fingerprint,
   Gauge,
@@ -14,8 +14,8 @@ import { Button } from "@/components/ui/button"
 export default function DesktopNav() {
   
     return (
-      <aside className="hidden border-r bg-muted/40 md:block">
-        <div className="flex h-full max-h-screen flex-col gap-2">
+      <aside className="hidden border-r bg-muted md:block">
+        <div className="flex h-full sticky top-0 max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link to="/" className="flex items-center gap-2 font-semibold">
               <img className="h-10" src="logo.svg" alt="ACIC" />
@@ -48,13 +48,13 @@ export default function DesktopNav() {
                 Forensic
               </Link>
 
-              <div className="my-4 h-px bg-gray-200" />
+              <div className="my-4 h-px bg-gray-400" />
 
               <Link
                 to="/cameras"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
-                <Camera className="h-4 w-4" />
+                <Cctv className="h-4 w-4" />
                 Cameras
               </Link>
 

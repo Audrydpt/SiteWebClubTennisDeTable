@@ -34,9 +34,17 @@ import {
 } from "@/components/ui/chart"
 import { Separator } from "@/components/ui/separator"
 
+import AreaComponent from "./components/area"
+import StackedAreaComponent from "./components/stacked-area"
+import BarComponent from "./components/bar"
+import StackedBarComponent from "./components/stacked-bar"
+import MultiBarComponent from "./components/multi-bar"
+
 export default function Charts() {
   return (
     <div className="chart-wrapper mx-auto flex max-w-6xl flex-col flex-wrap items-start justify-center gap-6 p-6 sm:flex-row sm:p-8">
+      
+      <h2 className="grid w-full">Preview:</h2>
       
       <div className="grid w-full gap-6 sm:grid-cols-2 lg:max-w-[22rem] lg:grid-cols-1 xl:max-w-[25rem]">
         <Card
@@ -878,6 +886,58 @@ export default function Charts() {
           </CardContent>
         </Card>
       </div>
+
+      <h2 className="grid w-full">Area:</h2>
+      <div className="flex flex-col lg:flex-row w-full gap-6">
+        <div className="flex-1">
+          <AreaComponent type="natural" indicator="line" />
+        </div>
+        <div className="flex-1">
+          <AreaComponent type="linear" indicator="line" />
+        </div>
+        <div className="flex-1">
+          <AreaComponent type="step" indicator="line" />
+        </div>
+      </div>
+
+      <h2 className="grid w-full">StackedArea:</h2>
+      <div className="flex flex-col lg:flex-row w-full gap-6">
+        <div className="flex-1">
+          <StackedAreaComponent type="natural" indicator="line" stackOffset="none" />
+        </div>
+        <div className="flex-1">
+          <StackedAreaComponent type="natural" indicator="line" stackOffset="expand" />
+        </div>
+        <div className="flex-1">
+          <StackedAreaComponent type="natural" indicator="line" stackOffset="wiggle" />
+        </div>
+      </div>
+
+      <h2 className="grid w-full">Bar:</h2>
+      <div className="flex flex-col lg:flex-row w-full gap-6">
+        <div className="flex-1">
+          <BarComponent layout="horizontal" />
+        </div>
+        <div className="flex-1">
+          <StackedBarComponent layout="horizontal" />
+        </div>
+        <div className="flex-1">
+          <MultiBarComponent layout="horizontal" />
+        </div>
+      </div>
+      <div className="flex flex-col lg:flex-row w-full gap-6">
+        
+      <div className="flex-1">
+          <BarComponent layout="vertical" />
+        </div>
+        <div className="flex-1">
+          <StackedBarComponent layout="vertical" />
+        </div>
+        <div className="flex-1">
+          <MultiBarComponent layout="vertical" />
+        </div>
+      </div>
+
     </div>
   )
 }

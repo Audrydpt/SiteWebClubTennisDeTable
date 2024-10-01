@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom"
 import {
-  Camera,
+  Cctv,
   FileOutput,
   Fingerprint,
   Gauge,
@@ -16,7 +16,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 export default function MobileNav() {
     return (
-      <header className="md:hidden flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+      <header className="md:hidden flex sticky top-0 z-50 h-14 items-center gap-4 border-b bg-muted px-4 lg:h-[60px] lg:px-6">
         <Sheet>
           <SheetTrigger asChild>
             <Button
@@ -67,7 +67,7 @@ export default function MobileNav() {
                 to="/cameras"
                 className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
               >
-                <Camera className="h-5 w-5" />
+                <Cctv className="h-5 w-5" />
                 Cameras
               </Link>
 
