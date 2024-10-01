@@ -1,4 +1,5 @@
 # Dépendances
+/src/components/ui/
 /node_modules
 /.pnp
 .pnp.js
