@@ -2,3 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
+
+@layer base {
+  :root {
+    --black: 0, 0%, 0%;
+    --dark-gray: 210, 10.8%, 14.5%; /* Main ChapsVision Theme #212529 texte, titre (ANTHRACITE) */
+    --light-gray: 210, 13%, 91%;    /* Main ChapsVision Theme #E5E8EB forme et background (ARGENT) */
+    --white: 0, 0%, 100%;
+    --green: 186.5, 47%, 42.2%;     /* Main ChapsVision Theme #39939E titre, élément à faire ressortir, kpi (CALANQUES)*/
+    --yellow: 40.2, 81.5%, 57.6%;   /* Main ChapsVision Theme #EBB13B couleur secondaire, petite touches (POUSSIN) */
+    --red: 358, 64.7%, 54.5%;
+    --blue: 204.8, 53.8%, 48.4%;    /* Main ChapsVision Theme #3987BE HAPPYCAP FOUNDATION (BLEU)*/
+    --purple: 347.4, 78.4%, 65.5%;  /* Main ChapsVision Theme #EC627F HAPPYCAP FOUNDATION (ROSÉ)*/
+
+
+
+    --background: var(--white);
+    --foreground: var(--dark-gray);
+    --primary: var(--green);
+    --primary-foreground: var(--white);
+    --secondary: var(--yellow);
+    --secondary-foreground: var(--white);
+
+
+    --accent: var(--light-gray);
+    --accent-foreground: var(--dark-gray);
+    --muted: var(--light-gray);
+    --muted-foreground: var(--dark-gray);
+
+    --card: var(--white);
+    --card-foreground: var(--dark-gray);
+
+    --destructive: var(--red);
+    --destructive-foreground: var(--white);
+
+    --popover: var(--white);
+    --popover-foreground: var(--dark-gray);
+
+    --border: var(--light-gray);
+    --input: var(--dark-gray);
+    --ring: var(--dark-gray);
+
+    --chart-1: var(--green);
+    --chart-2: var(--yellow);
+    --chart-3: var(--red);
+    --chart-4: var(--blue);
+    --chart-5: var(--purple);
+
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: var(--dark-gray);
+    --foreground: var(--white);
+
+    --accent: var(--black);
+    --accent-foreground: var(--white);
+    --muted: var(--black);
+    --muted-foreground: var(--white);
+
+    --card: var(--dark-gray);
+    --card-foreground: var(--white);
+
+    --popover: var(--dark-gray);
+    --popover-foreground: var(--white);
+
+    --border: var(--light-gray);
+    --input: var(--white);
+    --ring: var(--white);
+  }
+  
+}
