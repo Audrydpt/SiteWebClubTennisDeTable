@@ -1,35 +1,29 @@
-import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from "recharts"
+import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from 'recharts';
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  ChartConfig,
-  ChartContainer,
-} from "@/components/ui/chart"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartConfig, ChartContainer } from '@/components/ui/chart';
 
 const chartData = [
-  { browser: "safari", visitors: 150, fill: "var(--color-safari)" },
-]
+  { browser: 'safari', visitors: 150, fill: 'var(--color-safari)' },
+];
 
 const chartConfig = {
   visitors: {
-    label: "Visitors",
+    label: 'Visitors',
   },
   safari: {
-    label: "Safari",
-    color: "hsl(var(--chart-2))",
+    label: 'Safari',
+    color: 'hsl(var(--chart-2))',
   },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 interface GaugeComponentProps {
-  style: "full" | "half"
+  style: 'full' | 'half';
 }
 
-export default function GaugeComponent({style = "full"}: GaugeComponentProps) {
+export default function GaugeComponent({
+  style = 'full',
+}: GaugeComponentProps) {
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
@@ -42,14 +36,13 @@ export default function GaugeComponent({style = "full"}: GaugeComponentProps) {
         >
           <RadialBarChart
             data={chartData}
-            endAngle={style === "full" ? 360 : 180}
+            endAngle={style === 'full' ? 360 : 180}
             innerRadius={80}
             outerRadius={160}
           >
-
             <RadialBar
               dataKey="payload"
-              data={[{ payload: (style === "full" ? 360 : 180) }]}                
+              data={[{ payload: style === 'full' ? 360 : 180 }]}
               fill="none"
             />
             <RadialBar dataKey="visitors" background cornerRadius={10} />
@@ -57,7 +50,7 @@ export default function GaugeComponent({style = "full"}: GaugeComponentProps) {
             <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
               <Label
                 content={({ viewBox }) => {
-                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                  if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
                     return (
                       <text
                         x={viewBox.cx}
@@ -80,15 +73,14 @@ export default function GaugeComponent({style = "full"}: GaugeComponentProps) {
                           Visitors
                         </tspan>
                       </text>
-                    )
+                    );
                   }
                 }}
               />
             </PolarRadiusAxis>
-
           </RadialBarChart>
         </ChartContainer>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -1,15 +1,12 @@
-import { ScatterChart, XAxis, YAxis, Tooltip, Rectangle, Scatter } from 'recharts';
+import { Rectangle, Scatter, ScatterChart, XAxis, YAxis } from 'recharts';
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartConfig,
   ChartContainer,
-} from "@/components/ui/chart"
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
 import { useEffect, useRef, useState } from 'react';
 
 interface DataPoint {
@@ -17,15 +14,19 @@ interface DataPoint {
   hour: number;
   value: number;
 }
+
 const generateData = () => {
   return days.flatMap((day, dayIndex) =>
-    hours.map(hour => ({
-      day,
-      hour,
-      value: Math.floor(Math.random() * 100),
-      x: dayIndex,
-      y: hour,
-    } as DataPoint))
+    hours.map(
+      (hour) =>
+        ({
+          day,
+          hour,
+          value: Math.floor(Math.random() * 100),
+          x: dayIndex,
+          y: hour,
+        }) as DataPoint
+    )
   );
 };
 
@@ -35,20 +36,25 @@ const chartData = generateData();
 
 const chartConfig = {
   desktop: {
-    label: "Desktop",
-    color: "hsl(var(--chart-1))",
+    label: 'Desktop',
+    color: 'hsl(var(--chart-1))',
   },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 interface CustomizedCellProps {
-  x: number;
-  y: number;
-  value: number;
+  x?: number;
+  y?: number;
+  value?: number;
   width: number;
   height: number;
 }
-
-const CustomizedCell = ({x, y, value, width, height}: CustomizedCellProps) => {
+const CustomizedCell = ({
+  x = 0,
+  y = 0,
+  value = 0,
+  width,
+  height,
+}: CustomizedCellProps) => {
   const opacity = value / 100;
   return (
     <Rectangle
@@ -62,9 +68,23 @@ const CustomizedCell = ({x, y, value, width, height}: CustomizedCellProps) => {
   );
 };
 
+const labelFormatter = (_value: unknown, name: Array<{ value: number }>) => {
+  const x = name[0].value;
+  const y = name[1].value;
+  return `${days[x]} ${y}:00`;
+};
+const formatter = (
+  _value: string | number | Array<string | number>,
+  _name: string,
+  props: { payload: DataPoint },
+  _index: number
+) => {
+  if (_index === 0) return props.payload.value;
+};
+
 export default function HeatmapComponent() {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const containerRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const updateDimensions = () => {
     if (containerRef.current) {
@@ -82,9 +102,10 @@ export default function HeatmapComponent() {
   }, []);
 
   const cellWidthPadding = 0.5;
-  const cellWidth = dimensions.width / (7+cellWidthPadding+cellWidthPadding);
+  const cellWidth = Math.floor(dimensions.width / (7 + 2 * cellWidthPadding));
   const cellHeightPadding = 1;
-  const cellHeight = dimensions.height / (24+cellHeightPadding+cellHeightPadding);
+  const cellHeight =
+    Math.floor(dimensions.height / (24 + cellHeightPadding)) - 1;
 
   return (
     <Card>
@@ -92,12 +113,12 @@ export default function HeatmapComponent() {
         <CardTitle>Heatmap Chart</CardTitle>
       </CardHeader>
       <CardContent>
-        <ChartContainer ref={containerRef} className="h-[400px] w-full p-4" config={chartConfig}>
-          
-          <ScatterChart
-            width={dimensions.width}
-            height={dimensions.height}
-          >
+        <ChartContainer
+          ref={containerRef}
+          className="h-[400px] w-full p-4"
+          config={chartConfig}
+        >
+          <ScatterChart width={dimensions.width} height={dimensions.height}>
             <XAxis
               dataKey="x"
               type="number"
@@ -105,7 +126,7 @@ export default function HeatmapComponent() {
               axisLine={false}
               ticks={[0, 1, 2, 3, 4, 5, 6]}
               tickFormatter={(value) => days[value]}
-              domain={[0-cellWidthPadding, 6+cellWidthPadding]}
+              domain={[0 - cellWidthPadding, 6 + cellWidthPadding]}
             />
             <YAxis
               dataKey="y"
@@ -115,29 +136,23 @@ export default function HeatmapComponent() {
               domain={[0, 23]}
               ticks={[-cellHeightPadding, 0, 6, 12, 18, 23]}
             />
-            <Tooltip
-                cursor={false}
-                content={({ payload }) => {
-                  if (payload && payload.length) {
-                    const { day, hour, value } = payload[0].payload;
-                    return (
-                      <div style={{ backgroundColor: 'white', padding: '5px', border: '1px solid #ccc' }}>
-                        <p>{`${day}, ${hour}:00`}</p>
-                        <p>{`Value: ${value}`}</p>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
+            <ChartTooltip
+              cursor={false}
+              content={
+                <ChartTooltipContent
+                  cursor={false}
+                  labelFormatter={labelFormatter as never}
+                  formatter={formatter as never}
+                />
+              }
             />
-            <Scatter 
-              data={chartData} 
-              shape={<CustomizedCell width={cellWidth} height={cellHeight} />} 
+            <Scatter
+              data={chartData}
+              shape={<CustomizedCell width={cellWidth} height={cellHeight} />}
             />
           </ScatterChart>
-
         </ChartContainer>
       </CardContent>
     </Card>
-  )
+  );
 }

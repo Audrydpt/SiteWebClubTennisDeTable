@@ -2,20 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-
 @layer base {
   :root {
     --black: 0, 0%, 0%;
     --dark-gray: 210, 10.8%, 14.5%; /* Main ChapsVision Theme #212529 texte, titre (ANTHRACITE) */
-    --light-gray: 210, 13%, 91%;    /* Main ChapsVision Theme #E5E8EB forme et background (ARGENT) */
+    --light-gray: 210, 13%, 91%; /* Main ChapsVision Theme #E5E8EB forme et background (ARGENT) */
     --white: 0, 0%, 100%;
-    --green: 186.5, 47%, 42.2%;     /* Main ChapsVision Theme #39939E titre, élément à faire ressortir, kpi (CALANQUES)*/
-    --yellow: 40.2, 81.5%, 57.6%;   /* Main ChapsVision Theme #EBB13B couleur secondaire, petite touches (POUSSIN) */
+    --green: 186.5, 47%, 42.2%; /* Main ChapsVision Theme #39939E titre, élément à faire ressortir, kpi (CALANQUES)*/
+    --yellow: 40.2, 81.5%, 57.6%; /* Main ChapsVision Theme #EBB13B couleur secondaire, petite touches (POUSSIN) */
     --red: 358, 64.7%, 54.5%;
-    --blue: 204.8, 53.8%, 48.4%;    /* Main ChapsVision Theme #3987BE HAPPYCAP FOUNDATION (BLEU)*/
-    --purple: 347.4, 78.4%, 65.5%;  /* Main ChapsVision Theme #EC627F HAPPYCAP FOUNDATION (ROSÉ)*/
-
-
+    --blue: 204.8, 53.8%, 48.4%; /* Main ChapsVision Theme #3987BE HAPPYCAP FOUNDATION (BLEU)*/
+    --purple: 347.4, 78.4%, 65.5%; /* Main ChapsVision Theme #EC627F HAPPYCAP FOUNDATION (ROSÉ)*/
 
     --background: var(--white);
     --foreground: var(--dark-gray);
@@ -23,7 +20,6 @@
     --primary-foreground: var(--white);
     --secondary: var(--yellow);
     --secondary-foreground: var(--white);
-
 
     --accent: var(--light-gray);
     --accent-foreground: var(--dark-gray);
@@ -70,5 +66,4 @@
     --input: var(--white);
     --ring: var(--white);
   }
-  
 }

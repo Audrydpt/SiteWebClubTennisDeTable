@@ -1,47 +1,43 @@
-import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
+import { CartesianGrid, Line, LineChart, XAxis } from 'recharts';
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart"
-import { CurveType } from "recharts/types/shape/Curve"
-
-
+} from '@/components/ui/chart';
+import { CurveType } from 'recharts/types/shape/Curve';
 
 const chartData = [
-    { month: "January", desktop: 186, mobile: 80 },
-    { month: "February", desktop: 305, mobile: 200 },
-    { month: "March", desktop: 237, mobile: 120 },
-    { month: "April", desktop: 73, mobile: 190 },
-    { month: "May", desktop: 209, mobile: 130 },
-    { month: "June", desktop: 214, mobile: 140 },
-]
+  { month: 'January', desktop: 186, mobile: 80 },
+  { month: 'February', desktop: 305, mobile: 200 },
+  { month: 'March', desktop: 237, mobile: 120 },
+  { month: 'April', desktop: 73, mobile: 190 },
+  { month: 'May', desktop: 209, mobile: 130 },
+  { month: 'June', desktop: 214, mobile: 140 },
+];
 
 const chartConfig = {
   desktop: {
-    label: "Desktop",
-    color: "hsl(var(--chart-1))",
+    label: 'Desktop',
+    color: 'hsl(var(--chart-1))',
   },
   mobile: {
-    label: "Mobile",
-    color: "hsl(var(--chart-2))",
+    label: 'Mobile',
+    color: 'hsl(var(--chart-2))',
   },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 interface MultiLineComponentProps {
-  type: CurveType
-  indicator: "line" | "dot" | "dashed"
+  type: CurveType;
+  indicator: 'line' | 'dot' | 'dashed';
 }
 
-export default function MultiLineComponent({type = "natural", indicator = "line"}: MultiLineComponentProps) {
+export default function MultiLineComponent({
+  type = 'natural',
+  indicator = 'line',
+}: MultiLineComponentProps) {
   return (
     <Card>
       <CardHeader>
@@ -88,5 +84,5 @@ export default function MultiLineComponent({type = "natural", indicator = "line"
         </ChartContainer>
       </CardContent>
     </Card>
-  )
+  );
 }

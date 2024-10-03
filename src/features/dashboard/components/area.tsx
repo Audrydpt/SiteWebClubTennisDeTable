@@ -1,42 +1,39 @@
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart"
-import { CurveType } from "recharts/types/shape/Curve"
+} from '@/components/ui/chart';
+import { CurveType } from 'recharts/types/shape/Curve';
 
 const chartData = [
-  { month: "January", desktop: 186 },
-  { month: "February", desktop: 305 },
-  { month: "March", desktop: 237 },
-  { month: "April", desktop: 73 },
-  { month: "May", desktop: 209 },
-  { month: "June", desktop: 214 },
-]
+  { month: 'January', desktop: 186 },
+  { month: 'February', desktop: 305 },
+  { month: 'March', desktop: 237 },
+  { month: 'April', desktop: 73 },
+  { month: 'May', desktop: 209 },
+  { month: 'June', desktop: 214 },
+];
 
 const chartConfig = {
   desktop: {
-    label: "Desktop",
-    color: "hsl(var(--chart-1))",
+    label: 'Desktop',
+    color: 'hsl(var(--chart-1))',
   },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 interface AreaComponentProps {
-  type: CurveType
-  indicator: "line" | "dot" | "dashed"
+  type: CurveType;
+  indicator: 'line' | 'dot' | 'dashed';
 }
 
-export default function AreaComponent({type = "natural", indicator = "line"}: AreaComponentProps) {
-  
+export default function AreaComponent({
+  type = 'natural',
+  indicator = 'line',
+}: AreaComponentProps) {
   return (
     <Card>
       <CardHeader>
@@ -74,5 +71,5 @@ export default function AreaComponent({type = "natural", indicator = "line"}: Ar
         </ChartContainer>
       </CardContent>
     </Card>
-  )
+  );
 }

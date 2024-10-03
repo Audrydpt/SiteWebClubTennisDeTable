@@ -1,57 +1,54 @@
-import { RadialBar, RadialBarChart } from "recharts"
+import { RadialBar, RadialBarChart } from 'recharts';
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart"
+} from '@/components/ui/chart';
 
 const chartData = [
-  { browser: "chrome", visitors: 275, fill: "var(--color-chrome)" },
-  { browser: "safari", visitors: 200, fill: "var(--color-safari)" },
-  { browser: "firefox", visitors: 187, fill: "var(--color-firefox)" },
-  { browser: "edge", visitors: 173, fill: "var(--color-edge)" },
-  { browser: "other", visitors: 90, fill: "var(--color-other)" },
-]
+  { browser: 'chrome', visitors: 275, fill: 'var(--color-chrome)' },
+  { browser: 'safari', visitors: 200, fill: 'var(--color-safari)' },
+  { browser: 'firefox', visitors: 187, fill: 'var(--color-firefox)' },
+  { browser: 'edge', visitors: 173, fill: 'var(--color-edge)' },
+  { browser: 'other', visitors: 90, fill: 'var(--color-other)' },
+];
 
 const chartConfig = {
   visitors: {
-    label: "Visitors",
+    label: 'Visitors',
   },
   chrome: {
-    label: "Chrome",
-    color: "hsl(var(--chart-1))",
+    label: 'Chrome',
+    color: 'hsl(var(--chart-1))',
   },
   safari: {
-    label: "Safari",
-    color: "hsl(var(--chart-2))",
+    label: 'Safari',
+    color: 'hsl(var(--chart-2))',
   },
   firefox: {
-    label: "Firefox",
-    color: "hsl(var(--chart-3))",
+    label: 'Firefox',
+    color: 'hsl(var(--chart-3))',
   },
   edge: {
-    label: "Edge",
-    color: "hsl(var(--chart-4))",
+    label: 'Edge',
+    color: 'hsl(var(--chart-4))',
   },
   other: {
-    label: "Other",
-    color: "hsl(var(--chart-5))",
+    label: 'Other',
+    color: 'hsl(var(--chart-5))',
   },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 interface MultiGaugeComponentProps {
-  style: "full" | "half"
+  style: 'full' | 'half';
 }
 
-export default function MultiGaugeComponent({style = "full"}: MultiGaugeComponentProps) {
+export default function MultiGaugeComponent({
+  style = 'full',
+}: MultiGaugeComponentProps) {
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
@@ -62,7 +59,12 @@ export default function MultiGaugeComponent({style = "full"}: MultiGaugeComponen
           config={chartConfig}
           className="mx-auto aspect-square max-h-[250px]"
         >
-          <RadialBarChart data={chartData} innerRadius={30} outerRadius={110} endAngle={style === "full" ? 360 : 180}>
+          <RadialBarChart
+            data={chartData}
+            innerRadius={30}
+            outerRadius={110}
+            endAngle={style === 'full' ? 360 : 180}
+          >
             <ChartTooltip
               cursor={false}
               content={<ChartTooltipContent hideLabel nameKey="browser" />}
@@ -72,5 +74,5 @@ export default function MultiGaugeComponent({style = "full"}: MultiGaugeComponen
         </ChartContainer>
       </CardContent>
     </Card>
-  )
+  );
 }

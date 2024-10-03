@@ -22,8 +22,6 @@ export default [
         version: 'detect',
       },
     },
-  },
-  {
     plugins: {
       'react-hooks': fixupPluginRules(reactHooks),
       'react-refresh': reactRefresh,
