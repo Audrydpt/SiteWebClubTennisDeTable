@@ -15,7 +15,7 @@ export default function DesktopNav() {
   
     return (
       <aside className="hidden border-r bg-muted md:block">
-        <div className="flex h-full sticky top-0 max-h-screen flex-col gap-2">
+        <div className="sticky top-0 flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link to="/" className="flex items-center gap-2 font-semibold">
               <img className="h-10" src="logo.svg" alt="ACIC" />
@@ -28,7 +28,7 @@ export default function DesktopNav() {
                 to="/dashboard"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
-                <Gauge className="h-4 w-4" />
+                <Gauge className="size-4" />
                 Dashboard
               </Link>
 
@@ -36,7 +36,7 @@ export default function DesktopNav() {
                 to="/maps"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
-                <Map className="h-4 w-4" />
+                <Map className="size-4" />
                 Maps
               </Link>
 
@@ -44,7 +44,7 @@ export default function DesktopNav() {
                 to="/forensic"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
-                <Fingerprint className="h-4 w-4" />
+                <Fingerprint className="size-4" />
                 Forensic
               </Link>
 
@@ -54,7 +54,7 @@ export default function DesktopNav() {
                 to="/cameras"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
-                <Cctv className="h-4 w-4" />
+                <Cctv className="size-4" />
                 Cameras
               </Link>
 
@@ -62,7 +62,7 @@ export default function DesktopNav() {
                 to="/outputs"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
-                <FileOutput className="h-4 w-4" />
+                <FileOutput className="size-4" />
                 Outputs
               </Link>
 
@@ -70,7 +70,7 @@ export default function DesktopNav() {
                 to="/settings"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
-                <Settings className="h-4 w-4" />
+                <Settings className="size-4" />
                 Settings
               </Link>
 
@@ -78,7 +78,7 @@ export default function DesktopNav() {
                 to="/maintenance"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
-                <Wrench className="h-4 w-4" />
+                <Wrench className="size-4" />
                 Maintenance
               </Link>
             </nav>

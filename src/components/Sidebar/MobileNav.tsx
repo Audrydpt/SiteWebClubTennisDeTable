@@ -16,7 +16,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 export default function MobileNav() {
     return (
-      <header className="md:hidden flex sticky top-0 z-50 h-14 items-center gap-4 border-b bg-muted px-4 lg:h-[60px] lg:px-6">
+      <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b bg-muted px-4 md:hidden lg:h-[60px] lg:px-6">
         <Sheet>
           <SheetTrigger asChild>
             <Button
@@ -24,7 +24,7 @@ export default function MobileNav() {
               size="icon"
               className="shrink-0 md:hidden"
             >
-              <Menu className="h-5 w-5" />
+              <Menu className="size-5" />
               <span className="sr-only">Toggle navigation menu</span>
             </Button>
           </SheetTrigger>
@@ -41,7 +41,7 @@ export default function MobileNav() {
                 to="/dashboard"
                 className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
               >
-                <Gauge className="h-5 w-5" />
+                <Gauge className="size-5" />
                 Dashboard
               </Link>
 
@@ -49,7 +49,7 @@ export default function MobileNav() {
                 to="/maps"
                 className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground"
               >
-                <MapPinHouse className="h-5 w-5" />
+                <MapPinHouse className="size-5" />
                 Maps
               </Link>
 
@@ -57,7 +57,7 @@ export default function MobileNav() {
                 to="/forensic"
                 className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
               >
-                <Fingerprint className="h-5 w-5" />
+                <Fingerprint className="size-5" />
                 Forensic
               </Link>
 
@@ -67,7 +67,7 @@ export default function MobileNav() {
                 to="/cameras"
                 className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
               >
-                <Cctv className="h-5 w-5" />
+                <Cctv className="size-5" />
                 Cameras
               </Link>
 
@@ -75,7 +75,7 @@ export default function MobileNav() {
                 to="/outputs"
                 className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
               >
-                <FileOutput className="h-5 w-5" />
+                <FileOutput className="size-5" />
                 Outputs
               </Link>
 
@@ -83,7 +83,7 @@ export default function MobileNav() {
                 to="/settings"
                 className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
               >
-                <Settings className="h-5 w-5" />
+                <Settings className="size-5" />
                 Settings
               </Link>
 
@@ -91,7 +91,7 @@ export default function MobileNav() {
                 to="/maintenance"
                 className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
               >
-                <Wrench className="h-5 w-5" />
+                <Wrench className="size-5" />
                 Maintenance
               </Link>
             </nav>

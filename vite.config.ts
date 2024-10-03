@@ -1,9 +1,8 @@
-import path from "path"
-import { defineConfig, loadEnv } from 'vite'
-import react from '@vitejs/plugin-react'
-import { checker } from 'vite-plugin-checker'
+import react from '@vitejs/plugin-react';
+import path from 'path';
+import { defineConfig, loadEnv, splitVendorChunkPlugin } from 'vite';
+import { checker } from 'vite-plugin-checker';
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
@@ -11,17 +10,18 @@ export default defineConfig(({ mode }) => {
     base: env.BASE_URL || '/',
     plugins: [
       react(),
+      splitVendorChunkPlugin(),
       checker({
         typescript: true,
         eslint: {
           lintCommand: 'eslint "./src/**/*.{js,jsx,ts,tsx}"',
           useFlatConfig: true,
-        }
+        },
       }),
     ],
     resolve: {
       alias: {
-        "@": path.resolve(__dirname, "./src"),
+        '@': path.resolve(__dirname, './src'),
       },
     },
   };
