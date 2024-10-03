@@ -29,12 +29,10 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 interface MultiBarComponentProps {
-  layout: 'vertical' | 'horizontal';
+  layout?: 'vertical' | 'horizontal';
 }
 
-export default function MultiBarComponent({
-  layout = 'vertical',
-}: MultiBarComponentProps) {
+export default function MultiBarComponent({ layout }: MultiBarComponentProps) {
   return (
     <Card>
       <CardHeader>
@@ -43,7 +41,7 @@ export default function MultiBarComponent({
       <CardContent>
         <ChartContainer config={chartConfig}>
           <BarChart data={chartData} layout={layout}>
-            {layout == 'horizontal' ? (
+            {layout === 'horizontal' ? (
               <XAxis
                 dataKey="month"
                 tickLine={false}
@@ -69,7 +67,7 @@ export default function MultiBarComponent({
               cursor={false}
               content={<ChartTooltipContent hideLabel />}
             />
-            {layout == 'horizontal' ? (
+            {layout === 'horizontal' ? (
               <>
                 <Bar dataKey="desktop" fill="var(--color-desktop)" radius={4} />
                 <Bar dataKey="mobile" fill="var(--color-mobile)" radius={4} />
@@ -86,3 +84,7 @@ export default function MultiBarComponent({
     </Card>
   );
 }
+
+MultiBarComponent.defaultProps = {
+  layout: 'vertical',
+};

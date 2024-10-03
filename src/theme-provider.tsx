@@ -1,4 +1,5 @@
-import React, { createContext, useEffect, useState } from 'react';
+/* eslint-disable react/jsx-props-no-spreading */
+import React, { createContext, useEffect, useMemo, useState } from 'react';
 
 type Theme = 'dark' | 'light' | 'system';
 
@@ -49,13 +50,16 @@ export function ThemeProvider({
     root.classList.add(theme);
   }, [theme]);
 
-  const value = {
-    theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
-      setTheme(theme);
-    },
-  };
+  const value = useMemo(
+    () => ({
+      theme,
+      setTheme: (t: Theme) => {
+        localStorage.setItem(storageKey, t);
+        setTheme(t);
+      },
+    }),
+    [theme, storageKey]
+  );
 
   return (
     <ThemeProviderContext.Provider {...props} value={value}>
@@ -63,3 +67,8 @@ export function ThemeProvider({
     </ThemeProviderContext.Provider>
   );
 }
+
+ThemeProvider.defaultProps = {
+  defaultTheme: 'system',
+  storageKey: 'vite-ui-theme',
+};

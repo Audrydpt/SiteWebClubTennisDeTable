@@ -1,4 +1,5 @@
 import { CartesianGrid, Line, LineChart, XAxis } from 'recharts';
+import { CurveType } from 'recharts/types/shape/Curve';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -7,7 +8,6 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { CurveType } from 'recharts/types/shape/Curve';
 
 const chartData = [
   { month: 'January', desktop: 186, mobile: 80 },
@@ -30,13 +30,13 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 interface MultiLineComponentProps {
-  type: CurveType;
-  indicator: 'line' | 'dot' | 'dashed';
+  type?: CurveType;
+  indicator?: 'line' | 'dot' | 'dashed';
 }
 
 export default function MultiLineComponent({
-  type = 'natural',
-  indicator = 'line',
+  type,
+  indicator,
 }: MultiLineComponentProps) {
   return (
     <Card>
@@ -86,3 +86,8 @@ export default function MultiLineComponent({
     </Card>
   );
 }
+
+MultiLineComponent.defaultProps = {
+  type: 'natural',
+  indicator: 'line',
+};

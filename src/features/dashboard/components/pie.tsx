@@ -43,14 +43,11 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 interface PieComponentProps {
-  style: 'pie' | 'donut' | 'halfpie' | 'halfdonut';
+  layout?: 'pie' | 'donut' | 'halfpie' | 'halfdonut';
   gap?: number;
 }
 
-export default function PieComponent({
-  style = 'pie',
-  gap = 0,
-}: PieComponentProps) {
+export default function PieComponent({ layout, gap }: PieComponentProps) {
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
@@ -67,18 +64,22 @@ export default function PieComponent({
             />
             <Pie
               endAngle={
-                style === 'halfpie' || style === 'halfdonut' ? 180 : 360
+                layout === 'halfpie' || layout === 'halfdonut' ? 180 : 360
               }
               data={chartData}
               dataKey="visitors"
               labelLine={false}
               nameKey="browser"
-              innerRadius={style === 'donut' || style === 'halfdonut' ? 60 : 0}
+              innerRadius={
+                layout === 'donut' || layout === 'halfdonut' ? 60 : 0
+              }
               outerRadius={80}
               paddingAngle={
-                style === 'donut' || style === 'halfdonut' ? gap : 0
+                layout === 'donut' || layout === 'halfdonut' ? gap : 0
               }
-              strokeWidth={style === 'donut' || style === 'halfdonut' ? 0 : gap}
+              strokeWidth={
+                layout === 'donut' || layout === 'halfdonut' ? 0 : gap
+              }
               stroke="hsl(var(--muted))"
             />
           </PieChart>
@@ -87,3 +88,7 @@ export default function PieComponent({
     </Card>
   );
 }
+PieComponent.defaultProps = {
+  layout: 'pie',
+  gap: 0,
+};

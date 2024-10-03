@@ -1,4 +1,6 @@
 import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
+import { CurveType } from 'recharts/types/shape/Curve';
+import { StackOffsetType } from 'recharts/types/util/types';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -7,8 +9,6 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { CurveType } from 'recharts/types/shape/Curve';
-import { StackOffsetType } from 'recharts/types/util/types';
 
 const chartData = [
   { month: 'January', desktop: 186, mobile: 80 },
@@ -31,15 +31,15 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 interface StackedAreaComponentProps {
-  type: CurveType;
-  indicator: 'line' | 'dot' | 'dashed';
+  layout?: CurveType;
+  indicator?: 'line' | 'dot' | 'dashed';
   stackOffset?: StackOffsetType;
 }
 
 export default function StackedAreaComponent({
-  type = 'natural',
-  indicator = 'line',
-  stackOffset = 'none',
+  layout,
+  indicator,
+  stackOffset,
 }: StackedAreaComponentProps) {
   return (
     <Card>
@@ -70,7 +70,7 @@ export default function StackedAreaComponent({
             />
             <Area
               dataKey="mobile"
-              type={type}
+              type={layout}
               fill="var(--color-mobile)"
               fillOpacity={0.4}
               stroke="var(--color-mobile)"
@@ -78,7 +78,7 @@ export default function StackedAreaComponent({
             />
             <Area
               dataKey="desktop"
-              type={type}
+              type={layout}
               fill="var(--color-desktop)"
               fillOpacity={0.4}
               stroke="var(--color-desktop)"
@@ -90,3 +90,9 @@ export default function StackedAreaComponent({
     </Card>
   );
 }
+
+StackedAreaComponent.defaultProps = {
+  layout: 'natural',
+  indicator: 'line',
+  stackOffset: 'none',
+};

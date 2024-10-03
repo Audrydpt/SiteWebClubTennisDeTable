@@ -1,4 +1,5 @@
 import { CartesianGrid, Line, LineChart, XAxis } from 'recharts';
+import { CurveType } from 'recharts/types/shape/Curve';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -7,7 +8,6 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { CurveType } from 'recharts/types/shape/Curve';
 
 const chartData = [
   { month: 'January', desktop: 186 },
@@ -26,14 +26,11 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 interface LineComponentProps {
-  type: CurveType;
-  indicator: 'line' | 'dot' | 'dashed';
+  type?: CurveType;
+  indicator?: 'line' | 'dot' | 'dashed';
 }
 
-export default function LineComponent({
-  type = 'natural',
-  indicator = 'line',
-}: LineComponentProps) {
+export default function LineComponent({ type, indicator }: LineComponentProps) {
   return (
     <Card>
       <CardHeader>
@@ -73,3 +70,8 @@ export default function LineComponent({
     </Card>
   );
 }
+
+LineComponent.defaultProps = {
+  type: 'natural',
+  indicator: 'line',
+};

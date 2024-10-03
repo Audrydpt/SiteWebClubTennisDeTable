@@ -25,12 +25,10 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 interface BarComponentProps {
-  layout: 'vertical' | 'horizontal';
+  layout?: 'vertical' | 'horizontal';
 }
 
-export default function BarComponent({
-  layout = 'vertical',
-}: BarComponentProps) {
+export default function BarComponent({ layout }: BarComponentProps) {
   return (
     <Card>
       <CardHeader>
@@ -39,7 +37,7 @@ export default function BarComponent({
       <CardContent>
         <ChartContainer config={chartConfig}>
           <BarChart data={chartData} layout={layout}>
-            {layout == 'horizontal' ? (
+            {layout === 'horizontal' ? (
               <XAxis
                 dataKey="month"
                 tickLine={false}
@@ -72,3 +70,7 @@ export default function BarComponent({
     </Card>
   );
 }
+
+BarComponent.defaultProps = {
+  layout: 'vertical',
+};

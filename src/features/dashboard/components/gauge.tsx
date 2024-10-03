@@ -17,13 +17,49 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-interface GaugeComponentProps {
-  style: 'full' | 'half';
+interface CustomLabelProps {
+  viewBox?: {
+    cx: number;
+    cy: number;
+  };
+}
+function CustomLabel({ viewBox }: CustomLabelProps) {
+  if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
+    return (
+      <text
+        x={viewBox.cx}
+        y={viewBox.cy}
+        textAnchor="middle"
+        dominantBaseline="middle"
+      >
+        <tspan
+          x={viewBox.cx}
+          y={viewBox.cy}
+          className="fill-foreground text-4xl font-bold"
+        >
+          {chartData[0].visitors.toLocaleString()}
+        </tspan>
+        <tspan
+          x={viewBox.cx}
+          y={(viewBox.cy || 0) + 24}
+          className="fill-muted-foreground"
+        >
+          Visitors
+        </tspan>
+      </text>
+    );
+  }
+  return null;
 }
 
-export default function GaugeComponent({
-  style = 'full',
-}: GaugeComponentProps) {
+CustomLabel.defaultProps = {
+  viewBox: undefined,
+};
+
+interface GaugeComponentProps {
+  layout?: 'full' | 'half';
+}
+export default function GaugeComponent({ layout }: GaugeComponentProps) {
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
@@ -36,47 +72,19 @@ export default function GaugeComponent({
         >
           <RadialBarChart
             data={chartData}
-            endAngle={style === 'full' ? 360 : 180}
+            endAngle={layout === 'full' ? 360 : 180}
             innerRadius={80}
             outerRadius={160}
           >
             <RadialBar
               dataKey="payload"
-              data={[{ payload: style === 'full' ? 360 : 180 }]}
+              data={[{ payload: layout === 'full' ? 360 : 180 }]}
               fill="none"
             />
             <RadialBar dataKey="visitors" background cornerRadius={10} />
 
             <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
-              <Label
-                content={({ viewBox }) => {
-                  if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
-                    return (
-                      <text
-                        x={viewBox.cx}
-                        y={viewBox.cy}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                      >
-                        <tspan
-                          x={viewBox.cx}
-                          y={viewBox.cy}
-                          className="fill-foreground text-4xl font-bold"
-                        >
-                          {chartData[0].visitors.toLocaleString()}
-                        </tspan>
-                        <tspan
-                          x={viewBox.cx}
-                          y={(viewBox.cy || 0) + 24}
-                          className="fill-muted-foreground"
-                        >
-                          Visitors
-                        </tspan>
-                      </text>
-                    );
-                  }
-                }}
-              />
+              <Label content={<CustomLabel />} />
             </PolarRadiusAxis>
           </RadialBarChart>
         </ChartContainer>
@@ -84,3 +92,7 @@ export default function GaugeComponent({
     </Card>
   );
 }
+
+GaugeComponent.defaultProps = {
+  layout: 'full',
+};

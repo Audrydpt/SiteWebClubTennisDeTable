@@ -29,11 +29,11 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 interface StackedBarComponentProps {
-  layout: 'vertical' | 'horizontal';
+  layout?: 'vertical' | 'horizontal';
 }
 
 export default function StackedBarComponent({
-  layout = 'vertical',
+  layout,
 }: StackedBarComponentProps) {
   return (
     <Card>
@@ -43,7 +43,7 @@ export default function StackedBarComponent({
       <CardContent>
         <ChartContainer config={chartConfig}>
           <BarChart data={chartData} layout={layout}>
-            {layout == 'horizontal' ? (
+            {layout === 'horizontal' ? (
               <XAxis
                 dataKey="month"
                 tickLine={false}
@@ -69,7 +69,7 @@ export default function StackedBarComponent({
               cursor={false}
               content={<ChartTooltipContent hideLabel />}
             />
-            {layout == 'horizontal' ? (
+            {layout === 'horizontal' ? (
               <>
                 <Bar
                   dataKey="desktop"
@@ -106,3 +106,7 @@ export default function StackedBarComponent({
     </Card>
   );
 }
+
+StackedBarComponent.defaultProps = {
+  layout: 'vertical',
+};

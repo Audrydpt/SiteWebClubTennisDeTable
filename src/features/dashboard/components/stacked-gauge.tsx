@@ -22,11 +22,11 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 interface StackedGaugeComponentProps {
-  style: 'full' | 'half';
+  layout?: 'full' | 'half';
 }
 
 export default function StackedGaugeComponent({
-  style = 'full',
+  layout,
 }: StackedGaugeComponentProps) {
   return (
     <Card className="flex flex-col">
@@ -42,7 +42,7 @@ export default function StackedGaugeComponent({
             data={chartData}
             innerRadius={80}
             outerRadius={120}
-            endAngle={style === 'full' ? 360 : 180}
+            endAngle={layout === 'full' ? 360 : 180}
           >
             <ChartTooltip
               cursor={false}
@@ -68,3 +68,7 @@ export default function StackedGaugeComponent({
     </Card>
   );
 }
+
+StackedGaugeComponent.defaultProps = {
+  layout: 'full',
+};

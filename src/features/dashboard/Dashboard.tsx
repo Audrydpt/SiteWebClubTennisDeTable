@@ -1,5 +1,4 @@
-'use client';
-
+/* eslint-disable react/no-unstable-nested-components */
 import {
   Area,
   AreaChart,
@@ -120,23 +119,23 @@ export default function Charts() {
                   tickLine={false}
                   axisLine={false}
                   tickMargin={4}
-                  tickFormatter={(value) => {
-                    return new Date(value).toLocaleDateString('en-US', {
+                  tickFormatter={(value) =>
+                    new Date(value).toLocaleDateString('en-US', {
                       weekday: 'short',
-                    });
-                  }}
+                    })
+                  }
                 />
                 <ChartTooltip
                   content={
                     <ChartTooltipContent
                       hideIndicator
-                      labelFormatter={(value) => {
-                        return new Date(value).toLocaleDateString('en-US', {
+                      labelFormatter={(value) =>
+                        new Date(value).toLocaleDateString('en-US', {
                           day: 'numeric',
                           month: 'long',
                           year: 'numeric',
-                        });
-                      }}
+                        })
+                      }
                     />
                   }
                   cursor={false}
@@ -257,11 +256,11 @@ export default function Charts() {
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tickFormatter={(value) => {
-                    return new Date(value).toLocaleDateString('en-US', {
+                  tickFormatter={(value) =>
+                    new Date(value).toLocaleDateString('en-US', {
                       weekday: 'short',
-                    });
-                  }}
+                    })
+                  }
                 />
                 <Line
                   dataKey="resting"
@@ -280,13 +279,13 @@ export default function Charts() {
                   content={
                     <ChartTooltipContent
                       indicator="line"
-                      labelFormatter={(value) => {
-                        return new Date(value).toLocaleDateString('en-US', {
+                      labelFormatter={(value) =>
+                        new Date(value).toLocaleDateString('en-US', {
                           day: 'numeric',
                           month: 'long',
                           year: 'numeric',
-                        });
-                      }}
+                        })
+                      }
                     />
                   }
                   cursor={false}
@@ -887,21 +886,21 @@ export default function Charts() {
       <div className="flex w-full flex-col gap-6 lg:flex-row">
         <div className="flex-1">
           <StackedAreaComponent
-            type="natural"
+            layout="natural"
             indicator="line"
             stackOffset="none"
           />
         </div>
         <div className="flex-1">
           <StackedAreaComponent
-            type="natural"
+            layout="natural"
             indicator="line"
             stackOffset="expand"
           />
         </div>
         <div className="flex-1">
           <StackedAreaComponent
-            type="natural"
+            layout="natural"
             indicator="line"
             stackOffset="wiggle"
           />
@@ -959,45 +958,45 @@ export default function Charts() {
       <h2 className="grid w-full">Pie:</h2>
       <div className="flex w-full flex-col gap-6 lg:flex-row">
         <div className="flex-1">
-          <PieComponent style="donut" />
+          <PieComponent layout="donut" gap={0} />
         </div>
         <div className="flex-1">
-          <PieComponent style="pie" gap={1} />
+          <PieComponent layout="pie" gap={1} />
         </div>
         <div className="flex-1">
-          <PieComponent style="donut" gap={4} />
+          <PieComponent layout="donut" gap={4} />
         </div>
       </div>
       <div className="flex w-full flex-col gap-6 lg:flex-row">
         <div className="flex-1">
-          <PieComponent style="halfdonut" />
+          <PieComponent layout="halfdonut" gap={0} />
         </div>
         <div className="flex-1">
-          <PieComponent style="halfpie" gap={1} />
+          <PieComponent layout="halfpie" gap={1} />
         </div>
         <div className="flex-1">
-          <PieComponent style="halfdonut" gap={4} />
+          <PieComponent layout="halfdonut" gap={4} />
         </div>
       </div>
 
       <h2 className="grid w-full">Gauge:</h2>
       <div className="flex w-full flex-col gap-6 lg:flex-row">
         <div className="flex-1">
-          <GaugeComponent style="half" />
+          <GaugeComponent layout="half" />
         </div>
         <div className="flex-1">
-          <GaugeComponent style="full" />
+          <GaugeComponent layout="full" />
         </div>
       </div>
       <div className="flex w-full flex-col gap-6 lg:flex-row">
         <div className="flex-1">
-          <MultiGaugeComponent style="full" />
+          <MultiGaugeComponent layout="full" />
         </div>
         <div className="flex-1">
-          <MultiGaugeComponent style="half" />
+          <MultiGaugeComponent layout="half" />
         </div>
         <div className="flex-1">
-          <StackedGaugeComponent style="half" />
+          <StackedGaugeComponent layout="half" />
         </div>
       </div>
 

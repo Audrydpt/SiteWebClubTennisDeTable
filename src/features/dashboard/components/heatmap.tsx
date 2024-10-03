@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Rectangle, Scatter, ScatterChart, XAxis, YAxis } from 'recharts';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +8,6 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { useEffect, useRef, useState } from 'react';
 
 interface DataPoint {
   day: string;
@@ -15,23 +15,19 @@ interface DataPoint {
   value: number;
 }
 
-const generateData = () => {
-  return days.flatMap((day, dayIndex) =>
-    hours.map(
-      (hour) =>
-        ({
-          day,
-          hour,
-          value: Math.floor(Math.random() * 100),
-          x: dayIndex,
-          y: hour,
-        }) as DataPoint
-    )
-  );
-};
-
 const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const hours = Array.from({ length: 24 }, (_, i) => i);
+const generateData = () =>
+  days.flatMap((day, dayIndex) =>
+    hours.map((hour) => ({
+      day,
+      hour,
+      value: Math.floor(Math.random() * 100),
+      x: dayIndex,
+      y: hour,
+    }))
+  );
+
 const chartData = generateData();
 
 const chartConfig = {
@@ -42,19 +38,19 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 interface CustomizedCellProps {
+  // eslint-disable-next-line react/require-default-props
   x?: number;
+  // eslint-disable-next-line react/require-default-props
   y?: number;
+  // eslint-disable-next-line react/require-default-props
   value?: number;
   width: number;
   height: number;
 }
-const CustomizedCell = ({
-  x = 0,
-  y = 0,
-  value = 0,
-  width,
-  height,
-}: CustomizedCellProps) => {
+
+function CustomizedCell({ x, y, value, width, height }: CustomizedCellProps) {
+  if (x === undefined || y === undefined || value === undefined) return null;
+
   const opacity = value / 100;
   return (
     <Rectangle
@@ -66,7 +62,7 @@ const CustomizedCell = ({
       stroke="#fff"
     />
   );
-};
+}
 
 const labelFormatter = (_value: unknown, name: Array<{ value: number }>) => {
   const x = name[0].value;
@@ -77,9 +73,10 @@ const formatter = (
   _value: string | number | Array<string | number>,
   _name: string,
   props: { payload: DataPoint },
-  _index: number
+  index: number
 ) => {
-  if (_index === 0) return props.payload.value;
+  if (index === 0) return props.payload.value;
+  return null;
 };
 
 export default function HeatmapComponent() {
@@ -156,3 +153,4 @@ export default function HeatmapComponent() {
     </Card>
   );
 }
+HeatmapComponent.defaultProps = {};

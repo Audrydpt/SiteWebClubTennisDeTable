@@ -43,11 +43,11 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 interface MultiGaugeComponentProps {
-  style: 'full' | 'half';
+  layout?: 'full' | 'half';
 }
 
 export default function MultiGaugeComponent({
-  style = 'full',
+  layout,
 }: MultiGaugeComponentProps) {
   return (
     <Card className="flex flex-col">
@@ -63,7 +63,7 @@ export default function MultiGaugeComponent({
             data={chartData}
             innerRadius={30}
             outerRadius={110}
-            endAngle={style === 'full' ? 360 : 180}
+            endAngle={layout === 'full' ? 360 : 180}
           >
             <ChartTooltip
               cursor={false}
@@ -76,3 +76,7 @@ export default function MultiGaugeComponent({
     </Card>
   );
 }
+
+MultiGaugeComponent.defaultProps = {
+  layout: 'full',
+};
