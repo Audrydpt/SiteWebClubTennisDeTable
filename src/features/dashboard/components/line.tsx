@@ -1,10 +1,10 @@
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
 
 import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
+  CardTitle
 } from "@/components/ui/card"
 import {
   ChartConfig,
@@ -13,6 +13,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { CurveType } from "recharts/types/shape/Curve"
+
 
 const chartData = [
   { month: "January", desktop: 186 },
@@ -30,21 +31,21 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-interface AreaComponentProps {
+interface LineComponentProps {
   type: CurveType
   indicator: "line" | "dot" | "dashed"
 }
 
-export default function AreaComponent({type = "natural", indicator = "line"}: AreaComponentProps) {
-  
+export default function LineComponent({type = "natural", indicator = "line"}: LineComponentProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Area Chart</CardTitle>
+        <CardTitle>Bar Chart</CardTitle>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
-          <AreaChart
+          <LineChart
+            accessibilityLayer
             data={chartData}
             margin={{
               left: 12,
@@ -63,14 +64,14 @@ export default function AreaComponent({type = "natural", indicator = "line"}: Ar
               cursor={false}
               content={<ChartTooltipContent indicator={indicator} />}
             />
-            <Area
+            <Line
               dataKey="desktop"
               type={type}
-              fill="var(--color-desktop)"
-              fillOpacity={0.4}
               stroke="var(--color-desktop)"
+              strokeWidth={2}
+              dot={false}
             />
-          </AreaChart>
+          </LineChart>
         </ChartContainer>
       </CardContent>
     </Card>

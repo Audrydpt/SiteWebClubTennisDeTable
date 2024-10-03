@@ -36,7 +36,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 interface MultiBarComponentProps {
-    layout : "vertical" | "horizontal"
+  layout : "vertical" | "horizontal"
 }
 
 export default function MultiBarComponent({layout = "vertical"}: MultiBarComponentProps) {

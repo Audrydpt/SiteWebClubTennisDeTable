@@ -1,4 +1,4 @@
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
 
 import {
   Card,
@@ -14,13 +14,15 @@ import {
 } from "@/components/ui/chart"
 import { CurveType } from "recharts/types/shape/Curve"
 
+
+
 const chartData = [
-  { month: "January", desktop: 186 },
-  { month: "February", desktop: 305 },
-  { month: "March", desktop: 237 },
-  { month: "April", desktop: 73 },
-  { month: "May", desktop: 209 },
-  { month: "June", desktop: 214 },
+    { month: "January", desktop: 186, mobile: 80 },
+    { month: "February", desktop: 305, mobile: 200 },
+    { month: "March", desktop: 237, mobile: 120 },
+    { month: "April", desktop: 73, mobile: 190 },
+    { month: "May", desktop: 209, mobile: 130 },
+    { month: "June", desktop: 214, mobile: 140 },
 ]
 
 const chartConfig = {
@@ -28,23 +30,26 @@ const chartConfig = {
     label: "Desktop",
     color: "hsl(var(--chart-1))",
   },
+  mobile: {
+    label: "Mobile",
+    color: "hsl(var(--chart-2))",
+  },
 } satisfies ChartConfig
 
-interface AreaComponentProps {
+interface MultiLineComponentProps {
   type: CurveType
   indicator: "line" | "dot" | "dashed"
 }
 
-export default function AreaComponent({type = "natural", indicator = "line"}: AreaComponentProps) {
-  
+export default function MultiLineComponent({type = "natural", indicator = "line"}: MultiLineComponentProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Area Chart</CardTitle>
+        <CardTitle>Line Chart - Multiple</CardTitle>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
-          <AreaChart
+          <LineChart
             data={chartData}
             margin={{
               left: 12,
@@ -59,18 +64,27 @@ export default function AreaComponent({type = "natural", indicator = "line"}: Ar
               tickMargin={8}
               tickFormatter={(value) => value.slice(0, 3)}
             />
+
             <ChartTooltip
               cursor={false}
               content={<ChartTooltipContent indicator={indicator} />}
             />
-            <Area
+
+            <Line
               dataKey="desktop"
               type={type}
-              fill="var(--color-desktop)"
-              fillOpacity={0.4}
               stroke="var(--color-desktop)"
+              strokeWidth={2}
+              dot={false}
             />
-          </AreaChart>
+            <Line
+              dataKey="mobile"
+              type={type}
+              stroke="var(--color-mobile)"
+              strokeWidth={2}
+              dot={false}
+            />
+          </LineChart>
         </ChartContainer>
       </CardContent>
     </Card>

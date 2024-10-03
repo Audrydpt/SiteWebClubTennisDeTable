@@ -12,6 +12,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
+import { CurveType } from "recharts/types/shape/Curve"
+import { StackOffsetType } from "recharts/types/util/types"
 
 const chartData = [
   { month: "January", desktop: 186, mobile: 80 },
@@ -34,9 +36,9 @@ const chartConfig = {
 } satisfies ChartConfig
 
 interface StackedAreaComponentProps {
-  type: "natural" | "linear" | "step"
-  indicator: "line" | "dot"
-  stackOffset?: "expand" | "none" | "wiggle"
+  type: CurveType
+  indicator: "line" | "dot" | "dashed"
+  stackOffset?: StackOffsetType
 }
 
 export default function StackedAreaComponent({type = "natural", indicator = "line", stackOffset = "none"}: StackedAreaComponentProps) {
