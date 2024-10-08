@@ -31,7 +31,7 @@ class AcicUnattendedItem(BaseEvent):
     person_url = Column(Text, nullable=True)
 
 class AcicCounting(BaseEvent):
-    line_index = Column(Integer)
+    line_index = Column(Text)
     direction = Column(Text)
     class_name = Column(Text)
 

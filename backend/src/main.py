@@ -7,8 +7,9 @@ if __name__ == "__main__":
     del dal
 
     grabber = EventGrabber()
-    grabber.add_grabber("192.168.20.44", 8081)  # new showroom
-    grabber.add_grabber("192.168.20.45", 8081)  # old showroom
+    grabber.add_grabber("192.168.20.44", 8081)   # new showroom
+    grabber.add_grabber("192.168.20.45", 8081)   # old showroom
+    grabber.add_grabber("192.168.20.126", 8081)  # VM de infrabel (arnaud)
     grabber.add_grabber("192.168.20.134", 8081)  # ASN
     grabber.add_grabber("192.168.20.145", 8081)  # SoukSimulator
     grabber.add_grabber("192.168.20.150", 8081)  # VM de samy

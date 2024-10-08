@@ -55,6 +55,7 @@ RUN wget -O /usr/bin/dumb-init https://github.com/Yelp/dumb-init/releases/downlo
     && echo "fi" >> /start.sh \
     && echo "" >> /start.sh \
     && echo "sed -i \"s/#listen_addresses = 'localhost'/listen_addresses = '*'/\" /etc/postgresql/${PG_VERSION}/main/postgresql.conf" >> /start.sh \
+    && echo "echo 'host all all 10.0.0.0/8 md5' >> /etc/postgresql/${PG_VERSION}/main/pg_hba.conf" >> /start.sh \
     && echo "echo 'host all all 192.168.20.0/24 md5' >> /etc/postgresql/${PG_VERSION}/main/pg_hba.conf" >> /start.sh \
     && echo "" >> /start.sh \
     && echo "gosu postgres /usr/lib/postgresql/${PG_VERSION}/bin/postgres -D /etc/postgresql/${PG_VERSION}/main &" >> /start.sh \

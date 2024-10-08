@@ -311,7 +311,7 @@ class EventGrabber(threading.Thread):
                 return True
 
             # I couldn't guess what kind of event it is
-            """dal.add(AcicEvent(
+            dal.add(AcicEvent(
                 host=host,
                 stream_id=stream_id,
                 timestamp=timestamp,
@@ -319,8 +319,7 @@ class EventGrabber(threading.Thread):
                 state=state
             ))
             return True
-            """
-            return False
+            #return False
 
         except Exception as e:
             self.logger.error(f"Error parsing event: {event}:")
