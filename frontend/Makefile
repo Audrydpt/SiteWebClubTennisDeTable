@@ -6,6 +6,7 @@ build:
 	make nvm CMD="npm run build"
 
 deploy: build
+	ssh root@$(SERVER) 'mkdir -p /home/www/front-react'
 	scp -r dist/* root@$(SERVER):/home/www/front-react
 
 run:
