@@ -1,0 +1,5 @@
+svn+svn://zaretti:zaretti@192.168.20.7/MVision2/trunk/MvApplications/MvUtils/acic/
+sqlalchemy
+sqlalchemy-timescaledb
+pgvector
+psycopg2-binary
