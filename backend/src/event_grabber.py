@@ -81,8 +81,13 @@ class EventGrabber(threading.Thread):
         self.logger.info("EventGrabber stopped.")
 
     def __download_thumbnail(self, url, subdir="temp"):
-        output = "assets/images/{}/{}".format(subdir, url.split("/")[-1])
+
+        output_dir = os.path.join("assets", "images", subdir)
+        output = os.path.join(output_dir, url.split("/")[-1])
+
         try:
+            os.makedirs(output_dir, exist_ok=True)
+            
             link = url
             if os.getenv('ACIC_HTTP_PORT') is not None:
                 link = url.replace("/stream", ":" + os.getenv('ACIC_HTTP_PORT') + "/stream")

@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, REAL, String, Text, text, DateTime, DDL, event, PrimaryKeyConstraint
+from sqlalchemy import create_engine, Column, Integer, REAL, String, Text, text, DateTime, DDL, event, PrimaryKeyConstraint, inspect
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -96,9 +96,26 @@ class GenericDAL:
                 session.execute(DDL("CREATE EXTENSION IF NOT EXISTS timescaledb"))
                 session.commit()
 
-            #BaseEvent.metadata.drop_all(self.engine)
-            BaseEvent.metadata.create_all(self.engine)
+            GenericDAL.__update_schema(self)
             GenericDAL.initialized = True
+    
+    def __update_schema(self):
+        #BaseEvent.metadata.drop_all(self.engine)
+        BaseEvent.metadata.create_all(self.engine)
+        inspector = inspect(self.engine)
+        
+        with self.Session() as session:
+            for table in BaseEvent.metadata.sorted_tables:
+                existing_columns = {col['name'] for col in inspector.get_columns(table.name)}
+
+                for column in table.columns:
+                    if column.name not in existing_columns:
+                        session.execute(DDL(f"ALTER TABLE {table.name} ADD COLUMN {column.name} {column.type}"))
+                    else:
+                        db_column = inspector.get_columns(table.name)[next(i for i, c in enumerate(inspector.get_columns(table.name)) if c["name"] == column.name)]
+                        if str(column.type) != str(db_column['type']):
+                            session.execute(DDL(f'ALTER TABLE {table.name} ALTER COLUMN {column.name} TYPE {column.type}'))
+            session.commit()
 
     def add(self, obj):
         with self.Session() as session:
