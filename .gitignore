@@ -13,7 +13,7 @@
 # Fichiers générés par les différents builder
 /.vite
 *.tsbuildinfo
-.venv.
+.venv
 __pycache__
 
 # Logs
