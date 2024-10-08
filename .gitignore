@@ -10,11 +10,11 @@
 /dist
 /build
 
-# Fichiers générés par Vite
+# Fichiers générés par les différents builder
 /.vite
-
-# Fichiers TypeScript
 *.tsbuildinfo
+.venv.
+__pycache__
 
 # Logs
 logs
