@@ -32,6 +32,10 @@ class EventGrabber(threading.Thread):
         self.grabbers.append(grabber)
         return grabber
 
+    def get_grabbers(self):
+        for grabber in self.grabbers:
+            yield grabber
+
     def start(self):
         if not self.running:
             for grabber in self.grabbers:

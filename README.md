@@ -17,3 +17,7 @@ WIP
 - python
 - pgsql
 - fastapi
+
+## readme plz:
+
+- https://www.belgif.be/specification/rest/api-guide/

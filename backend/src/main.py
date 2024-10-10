@@ -1,19 +1,31 @@
-from database import GenericDAL
+import time
+from sqlalchemy import func
+from database import AcicCounting, AcicNumbering, AcicUnattendedItem, GenericDAL
 from event_grabber import EventGrabber
+from api import FastAPIServer
 
 if __name__ == "__main__":
     # init database
+    print("Init database")
     dal = GenericDAL()
     del dal
 
+
+    # init grabber
+    print("Init grabber")
     grabber = EventGrabber()
-    grabber.add_grabber("192.168.20.44", 8081)   # new showroom
-    grabber.add_grabber("192.168.20.45", 8081)   # old showroom
-    grabber.add_grabber("192.168.20.126", 8081)  # VM de infrabel (arnaud)
-    grabber.add_grabber("192.168.20.134", 8081)  # ASN
-    grabber.add_grabber("192.168.20.145", 8081)  # SoukSimulator
-    grabber.add_grabber("192.168.20.150", 8081)  # VM de samy
-    grabber.add_grabber("192.168.20.153", 8081)  # VM de jacques
-    grabber.add_grabber("192.168.20.213", 8081)  # VM de bertrand
-    grabber.add_grabber("192.168.20.234", 8081)  # VM de bench (steve)
+    grabber.add_grabber("127.0.0.1",     8081)   # localhost
     grabber.start()
+
+    # init web server
+    print("Init web server")
+    server = FastAPIServer(grabber)
+    server.start()
+    # wait for the server to stop
+
+    
+    # stop grabber
+    print("Stop grabber")
+    grabber.stop()
+    grabber.join()
+    print("Bye")

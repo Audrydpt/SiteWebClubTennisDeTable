@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, REAL, String, Text, DateTime, DDL, PrimaryKeyConstraint, cast
+from sqlalchemy import create_engine, Column, Integer, REAL, String, Text, DateTime, DDL, PrimaryKeyConstraint, cast, func, inspect, text
 from sqlalchemy.dialects.postgresql import TIMESTAMP, INTEGER
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import sessionmaker
@@ -97,10 +97,6 @@ class GenericDAL:
         self.Session = sessionmaker(bind=self.engine)
 
         if not GenericDAL.initialized:
-            with self.Session() as session:
-                session.execute(DDL("CREATE EXTENSION IF NOT EXISTS timescaledb"))
-                session.commit()
-
             GenericDAL.__update_schema(self)
             GenericDAL.initialized = True
     
@@ -122,7 +118,10 @@ class GenericDAL:
                     postgresql_using=using_clause
                 )
             return op
-    
+
+        with self.Session() as session:
+            session.execute(DDL("CREATE EXTENSION IF NOT EXISTS timescaledb"))
+            session.commit()
         BaseEvent.metadata.create_all(self.engine)
 
         # got issue using the same engine, because of dialect timescaledb != postgresql
@@ -159,9 +158,61 @@ class GenericDAL:
             session.add(obj)
             session.commit()
 
-    def get(self, cls, **kwargs):
+    def get(self, cls, _func=None, _group=None, _having=None, _order=None, **filters):
         with self.Session() as session:
-            return session.query(cls).filter_by(**kwargs).all()
+            query = session.query(cls)
+            
+            # FUNCTION() TODO: Make this resiliant to function without aggregation
+            if _func is not None:
+                query = query.with_entities(_func, _func.clause_expr)
+            
+            # WHERE
+            if filters:
+                query = query.filter_by(**filters)
+            
+            # GROUP BY
+            if _group is not None:
+                query = query.add_column(_group)
+                query = query.group_by(_group)
+            
+            # HAVING
+            if _having is not None:
+                query = query.having(_having)
+            
+            # ORDER BY
+            if _order is not None:
+                query = query.order_by(_order)
+            
+            return query.all()
+    
+    def get_bucket(self, cls, _func=None, _time="1 hour", _group=None, _having=None, **filters):
+        with self.Session() as session:
+
+            query = session.query(
+                func.time_bucket(_time, cls.timestamp).label('_timestamp'),
+            )
+
+            # FUNCTION()
+            if _func is not None:
+                query = query.add_column(_func)
+
+            # WHERE
+            if filters:
+                query = query.filter_by(**filters)
+            
+            # GROUP BY
+            if _group is not None:
+                query = query.add_column(_group)
+                query = query.group_by(_group)
+            
+            # HAVING
+            if _having is not None:
+                query = query.having(_having)
+            
+            query = query.group_by('_timestamp')
+            query = query.order_by('_timestamp')            
+            
+            return query.all()
 
     def update(self, obj):
         with self.Session() as session:
