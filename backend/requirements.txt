@@ -3,3 +3,4 @@ sqlalchemy
 sqlalchemy-timescaledb
 pgvector
 psycopg2-binary
+alembic

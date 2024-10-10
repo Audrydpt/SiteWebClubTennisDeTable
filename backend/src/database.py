@@ -1,7 +1,12 @@
-from sqlalchemy import create_engine, Column, Integer, REAL, String, Text, text, DateTime, DDL, event, PrimaryKeyConstraint, inspect
-from sqlalchemy.dialects.postgresql import TIMESTAMP
+from sqlalchemy import create_engine, Column, Integer, REAL, String, Text, DateTime, DDL, PrimaryKeyConstraint, cast
+from sqlalchemy.dialects.postgresql import TIMESTAMP, INTEGER
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker
+
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
+from alembic.autogenerate import produce_migrations
+from alembic.operations.ops import ModifyTableOps, AlterColumnOp
 
 class Base:
     @declared_attr
@@ -100,22 +105,54 @@ class GenericDAL:
             GenericDAL.initialized = True
     
     def __update_schema(self):
-        #BaseEvent.metadata.drop_all(self.engine)
+        def add_using_clause(op):
+            if isinstance(op.modify_type, Integer) and isinstance(op.existing_type, Text):
+                using_clause = (
+                    f"COALESCE(NULLIF(REGEXP_REPLACE({op.column_name}, '[^0-9]', '', 'g'), ''), '0')::integer"
+                )
+                return AlterColumnOp(
+                    table_name=op.table_name,
+                    column_name=op.column_name,
+                    modify_type=Integer(),
+                    existing_type=op.existing_type,
+                    schema=op.schema,
+                    existing_nullable=op.existing_nullable,
+                    existing_server_default=op.existing_server_default,
+                    existing_comment=op.existing_comment,
+                    postgresql_using=using_clause
+                )
+            return op
+    
         BaseEvent.metadata.create_all(self.engine)
-        inspector = inspect(self.engine)
-        
-        with self.Session() as session:
-            for table in BaseEvent.metadata.sorted_tables:
-                existing_columns = {col['name'] for col in inspector.get_columns(table.name)}
 
-                for column in table.columns:
-                    if column.name not in existing_columns:
-                        session.execute(DDL(f"ALTER TABLE {table.name} ADD COLUMN {column.name} {column.type}"))
-                    else:
-                        db_column = inspector.get_columns(table.name)[next(i for i, c in enumerate(inspector.get_columns(table.name)) if c["name"] == column.name)]
-                        if str(column.type) != str(db_column['type']):
-                            session.execute(DDL(f'ALTER TABLE {table.name} ALTER COLUMN {column.name} TYPE {column.type}'))
-            session.commit()
+        # got issue using the same engine, because of dialect timescaledb != postgresql
+        engine = create_engine('postgresql://postgres:postgres@192.168.20.145:5432/postgres', echo=False)
+
+        # https://alembic.sqlalchemy.org/en/latest/cookbook.html#run-alembic-operation-objects-directly-as-in-from-autogenerate        
+        context = MigrationContext.configure(engine.connect())
+        migrations = produce_migrations(context, BaseEvent.metadata)
+        if migrations.upgrade_ops.is_empty() is False:
+
+            operations = Operations(context)
+
+            use_batch = self.engine.name == "sqlite"
+            stack = [migrations.upgrade_ops]
+            while stack:
+                elem = stack.pop(0)
+
+                if use_batch and isinstance(elem, ModifyTableOps):
+                    with operations.batch_alter_table( elem.table_name, schema=elem.schema ) as batch_ops:
+                        for table_elem in elem.ops:
+                            batch_ops.invoke(table_elem)
+                elif hasattr(elem, "ops"):
+                    stack.extend(elem.ops)
+                else:
+                    if isinstance(elem, AlterColumnOp):
+                        elem = add_using_clause(elem)
+                    
+                    operations.invoke(elem)
+            
+            print("Schema updated")
 
     def add(self, obj):
         with self.Session() as session:
@@ -135,3 +172,4 @@ class GenericDAL:
         with self.Session() as session:
             session.delete(obj)
             session.commit()
+
