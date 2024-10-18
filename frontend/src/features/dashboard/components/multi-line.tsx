@@ -39,7 +39,6 @@ export default function MultiLineComponent({
   type,
   indicator,
 }: MultiLineComponentProps) {
-  const server = 'http://192.168.20.145:5000';
   const aggregated = '1 hour';
   const table = 'AcicCounting';
   const days = 1;
@@ -48,17 +47,20 @@ export default function MultiLineComponent({
   const now = new Date();
   const lastDay = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
-  const { isLoading, data } = useQuery({
-    queryKey: [server, table, aggregated, days, groupBy],
+  const { isLoading, isError, data } = useQuery({
+    queryKey: [table, aggregated, days, groupBy],
     queryFn: () =>
       fetch(
-        `${server}/dashboard/${table}?aggregate=${aggregated}&time_from=${lastDay.toISOString()}&time_to=${now.toISOString()}&group_by=${groupBy}`
+        `${process.env.MAIN_API_URL}/dashboard/${table}?aggregate=${aggregated}&time_from=${lastDay.toISOString()}&time_to=${now.toISOString()}&group_by=${groupBy}`
       ).then((res) => res.json()),
     refetchInterval: 10 * 1000,
   });
 
   if (isLoading) {
     return <Card>Loading...</Card>;
+  }
+  if (isError) {
+    return <Card>Error</Card>;
   }
 
   const dataMerged = Object.values(

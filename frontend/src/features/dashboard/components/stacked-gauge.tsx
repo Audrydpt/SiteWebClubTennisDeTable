@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { RadialBar, RadialBarChart } from 'recharts';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,15 +9,13 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 
-const chartData = [{ month: 'january', desktop: 1260, mobile: 570 }];
-
 const chartConfig = {
-  desktop: {
-    label: 'Desktop',
+  positive: {
+    label: 'Positive',
     color: 'hsl(var(--chart-1))',
   },
-  mobile: {
-    label: 'Mobile',
+  negative: {
+    label: 'Negative',
     color: 'hsl(var(--chart-2))',
   },
 } satisfies ChartConfig;
@@ -25,9 +24,51 @@ interface StackedGaugeComponentProps {
   layout?: 'full' | 'half';
 }
 
+interface DataType {
+  timestamp: string;
+  count: number;
+  direction: 'positive' | 'negative';
+}
+interface MergedDataType {
+  positive: number;
+  negative: number;
+}
+
 export default function StackedGaugeComponent({
   layout,
 }: StackedGaugeComponentProps) {
+  const aggregated = '1 day';
+  const table = 'AcicCounting';
+  const days = 1;
+  const groupBy = 'direction';
+
+  const now = new Date();
+  const lastDay = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+  const { isLoading, isError, data } = useQuery({
+    queryKey: [table, aggregated, days, groupBy],
+    queryFn: () =>
+      fetch(
+        `${process.env.MAIN_API_URL}/dashboard/${table}?aggregate=${aggregated}&time_from=${lastDay.toISOString()}&time_to=${now.toISOString()}&group_by=${groupBy}`
+      ).then((res) => res.json()),
+    refetchInterval: 10 * 1000,
+  });
+
+  if (isLoading) {
+    return <Card>Loading...</Card>;
+  }
+  if (isError) {
+    return <Card>Error</Card>;
+  }
+
+  const dataMerged: MergedDataType[] = [
+    data.reduce((acc: MergedDataType, item: DataType) => {
+      const { count, direction } = item;
+      acc[direction] = (acc[direction] || 0) + count;
+      return acc;
+    }, {} as MergedDataType),
+  ];
+
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
@@ -39,25 +80,25 @@ export default function StackedGaugeComponent({
           className="mx-auto aspect-square w-full max-w-[250px]"
         >
           <RadialBarChart
-            data={chartData}
+            data={dataMerged}
             innerRadius={80}
             outerRadius={120}
             endAngle={layout === 'full' ? 360 : 180}
           >
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent hideLabel nameKey="browser" />}
+              content={<ChartTooltipContent hideLabel nameKey="direction" />}
             />
             <RadialBar
-              dataKey="desktop"
+              dataKey="positive"
               stackId="a"
               cornerRadius={5}
-              fill="var(--color-desktop)"
+              fill="hsl(var(--chart-1))"
               className="stroke-transparent stroke-2"
             />
             <RadialBar
-              dataKey="mobile"
-              fill="var(--color-mobile)"
+              dataKey="negative"
+              fill="hsl(var(--chart-2))"
               stackId="a"
               cornerRadius={5}
               className="stroke-transparent stroke-2"

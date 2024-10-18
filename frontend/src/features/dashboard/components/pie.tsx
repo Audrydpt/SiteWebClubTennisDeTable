@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { Pie, PieChart } from 'recharts';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,37 +9,14 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 
-const chartData = [
-  { browser: 'chrome', visitors: 275, fill: 'var(--color-chrome)' },
-  { browser: 'safari', visitors: 200, fill: 'var(--color-safari)' },
-  { browser: 'firefox', visitors: 187, fill: 'var(--color-firefox)' },
-  { browser: 'edge', visitors: 173, fill: 'var(--color-edge)' },
-  { browser: 'other', visitors: 90, fill: 'var(--color-other)' },
-];
-
 const chartConfig = {
-  visitors: {
-    label: 'Visitors',
-  },
-  chrome: {
-    label: 'Chrome',
+  positive: {
+    label: 'Positive',
     color: 'hsl(var(--chart-1))',
   },
-  safari: {
-    label: 'Safari',
+  negative: {
+    label: 'Negative',
     color: 'hsl(var(--chart-2))',
-  },
-  firefox: {
-    label: 'Firefox',
-    color: 'hsl(var(--chart-3))',
-  },
-  edge: {
-    label: 'Edge',
-    color: 'hsl(var(--chart-4))',
-  },
-  other: {
-    label: 'Other',
-    color: 'hsl(var(--chart-5))',
   },
 } satisfies ChartConfig;
 
@@ -47,7 +25,60 @@ interface PieComponentProps {
   gap?: number;
 }
 
+interface DataType {
+  timestamp: string;
+  count: number;
+  direction: 'positive' | 'negative';
+}
+interface MergedDataType {
+  count: number;
+  direction: 'positive' | 'negative';
+  fill: string;
+}
+
 export default function PieComponent({ layout, gap }: PieComponentProps) {
+  const aggregated = '1 day';
+  const table = 'AcicCounting';
+  const days = 1;
+  const groupBy = 'direction';
+
+  const now = new Date();
+  const lastDay = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+  const { isLoading, isError, data } = useQuery({
+    queryKey: [table, aggregated, days, groupBy],
+    queryFn: () =>
+      fetch(
+        `${process.env.MAIN_API_URL}/dashboard/${table}?aggregate=${aggregated}&time_from=${lastDay.toISOString()}&time_to=${now.toISOString()}&group_by=${groupBy}`
+      ).then((res) => res.json()),
+    refetchInterval: 10 * 1000,
+  });
+
+  if (isLoading) {
+    return <Card>Loading...</Card>;
+  }
+  if (isError) {
+    return <Card>Error</Card>;
+  }
+
+  const dataMerged: MergedDataType[] = Object.values(
+    data.reduce(
+      (acc: { [key: string]: MergedDataType }, item: DataType) => {
+        if (!acc[item.direction]) {
+          acc[item.direction] = {
+            count: item.count,
+            direction: item.direction,
+            fill: chartConfig[item.direction].color,
+          };
+        } else {
+          acc[item.direction].count += item.count;
+        }
+        return acc;
+      },
+      {} as { [key: string]: MergedDataType }
+    )
+  );
+
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
@@ -60,16 +91,16 @@ export default function PieComponent({ layout, gap }: PieComponentProps) {
         >
           <PieChart>
             <ChartTooltip
-              content={<ChartTooltipContent nameKey="visitors" hideLabel />}
+              content={<ChartTooltipContent nameKey="direction" hideLabel />}
             />
             <Pie
               endAngle={
                 layout === 'halfpie' || layout === 'halfdonut' ? 180 : 360
               }
-              data={chartData}
-              dataKey="visitors"
+              data={dataMerged}
+              dataKey="count"
               labelLine={false}
-              nameKey="browser"
+              nameKey="direction"
               innerRadius={
                 layout === 'donut' || layout === 'halfdonut' ? 60 : 0
               }

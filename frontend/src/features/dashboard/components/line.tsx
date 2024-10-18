@@ -22,7 +22,6 @@ interface LineComponentProps {
 }
 
 export default function LineComponent({ type, indicator }: LineComponentProps) {
-  const server = 'http://192.168.20.145:5000';
   const aggregated = '1 hour';
   const table = 'AcicCounting';
   const days = 1;
@@ -30,17 +29,20 @@ export default function LineComponent({ type, indicator }: LineComponentProps) {
   const now = new Date();
   const lastDay = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
-  const { isLoading, data } = useQuery({
-    queryKey: [server, table, aggregated, days],
+  const { isLoading, isError, data } = useQuery({
+    queryKey: [table, aggregated, days],
     queryFn: () =>
       fetch(
-        `${server}/dashboard/${table}?aggregate=${aggregated}&time_from=${lastDay.toISOString()}&time_to=${now.toISOString()}`
+        `${process.env.MAIN_API_URL}/dashboard/${table}?aggregate=${aggregated}&time_from=${lastDay.toISOString()}&time_to=${now.toISOString()}`
       ).then((res) => res.json()),
     refetchInterval: 10 * 1000,
   });
 
   if (isLoading) {
     return <Card>Loading...</Card>;
+  }
+  if (isError) {
+    return <Card>Error</Card>;
   }
 
   return (

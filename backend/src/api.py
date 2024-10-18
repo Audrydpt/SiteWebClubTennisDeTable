@@ -61,7 +61,7 @@ class FastAPIServer:
 
         @self.app.get("/", include_in_schema=False)
         async def custom_swagger_ui_html():
-            return get_custom_swagger_ui_html(openapi_url=self.app.openapi_url, title=self.app.title + " - Swagger UI",)
+            return get_custom_swagger_ui_html(openapi_url="openapi.json", title=self.app.title + " - Swagger UI",)
 
         @self.app.get("/servers/grabbers", tags=["servers"])
         async def get_all_servers():
@@ -154,4 +154,4 @@ class FastAPIServer:
         
 
     def start(self, host="0.0.0.0", port=5000):
-        uvicorn.run(self.app, host=host, port=port)
+        uvicorn.run(self.app, host=host, port=port, root_path="/front-api")

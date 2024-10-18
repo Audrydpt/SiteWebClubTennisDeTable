@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { Bar, BarChart, XAxis, YAxis } from 'recharts';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,23 +9,12 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 
-const chartData = [
-  { month: 'January', desktop: 186, mobile: 80 },
-  { month: 'February', desktop: 305, mobile: 200 },
-  { month: 'March', desktop: 237, mobile: 120 },
-  { month: 'April', desktop: 73, mobile: 190 },
-  { month: 'May', desktop: 209, mobile: 130 },
-  { month: 'June', desktop: 214, mobile: 140 },
-];
-
 const chartConfig = {
-  desktop: {
-    label: 'Desktop',
-    color: 'hsl(var(--chart-1))',
+  positive: {
+    label: 'Positive',
   },
-  mobile: {
-    label: 'Mobile',
-    color: 'hsl(var(--chart-2))',
+  negative: {
+    label: 'Negative',
   },
 } satisfies ChartConfig;
 
@@ -32,7 +22,56 @@ interface MultiBarComponentProps {
   layout?: 'vertical' | 'horizontal';
 }
 
+interface DataType {
+  timestamp: string;
+  count: number;
+  direction: 'positive' | 'negative';
+}
+interface MergedDataType {
+  timestamp: string;
+  positive?: number;
+  negative?: number;
+}
+
 export default function MultiBarComponent({ layout }: MultiBarComponentProps) {
+  const aggregated = '1 day';
+  const table = 'AcicCounting';
+  const days = 1;
+  const groupBy = 'direction';
+
+  const now = new Date();
+  const lastDay = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+  const { isLoading, isError, data } = useQuery({
+    queryKey: [table, aggregated, days, groupBy],
+    queryFn: () =>
+      fetch(
+        `${process.env.MAIN_API_URL}/dashboard/${table}?aggregate=${aggregated}&time_from=${lastDay.toISOString()}&time_to=${now.toISOString()}&group_by=${groupBy}`
+      ).then((res) => res.json()),
+    refetchInterval: 10 * 1000,
+  });
+
+  if (isLoading) {
+    return <Card>Loading...</Card>;
+  }
+  if (isError) {
+    return <Card>Error</Card>;
+  }
+
+  const dataMerged = Object.values(
+    (data as DataType[]).reduce(
+      (acc: { [key: string]: MergedDataType }, item: DataType) => {
+        const { timestamp, count, direction } = item;
+        if (!acc[timestamp]) {
+          acc[timestamp] = { timestamp };
+        }
+        acc[timestamp][direction] = (acc[timestamp][direction] || 0) + count;
+        return acc;
+      },
+      {}
+    )
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -40,10 +79,10 @@ export default function MultiBarComponent({ layout }: MultiBarComponentProps) {
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
-          <BarChart data={chartData} layout={layout}>
+          <BarChart data={dataMerged} layout={layout}>
             {layout === 'horizontal' ? (
               <XAxis
-                dataKey="month"
+                dataKey="timestamp"
                 tickLine={false}
                 tickMargin={10}
                 axisLine={false}
@@ -51,9 +90,9 @@ export default function MultiBarComponent({ layout }: MultiBarComponentProps) {
               />
             ) : (
               <>
-                <XAxis type="number" dataKey="desktop" hide />
+                <XAxis type="number" hide />
                 <YAxis
-                  dataKey="month"
+                  dataKey="timestamp"
                   type="category"
                   tickLine={false}
                   tickMargin={10}
@@ -69,13 +108,13 @@ export default function MultiBarComponent({ layout }: MultiBarComponentProps) {
             />
             {layout === 'horizontal' ? (
               <>
-                <Bar dataKey="desktop" fill="var(--color-desktop)" radius={4} />
-                <Bar dataKey="mobile" fill="var(--color-mobile)" radius={4} />
+                <Bar dataKey="positive" fill="hsl(var(--chart-1))" radius={4} />
+                <Bar dataKey="negative" fill="hsl(var(--chart-2))" radius={4} />
               </>
             ) : (
               <>
-                <Bar dataKey="desktop" fill="var(--color-desktop)" radius={4} />
-                <Bar dataKey="mobile" fill="var(--color-mobile)" radius={4} />
+                <Bar dataKey="positive" fill="hsl(var(--chart-1))" radius={4} />
+                <Bar dataKey="negative" fill="hsl(var(--chart-2))" radius={4} />
               </>
             )}
           </BarChart>

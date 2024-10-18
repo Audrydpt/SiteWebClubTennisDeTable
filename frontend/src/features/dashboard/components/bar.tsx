@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { Bar, BarChart, XAxis, YAxis } from 'recharts';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,19 +9,9 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 
-const chartData = [
-  { month: 'January', desktop: 186 },
-  { month: 'February', desktop: 305 },
-  { month: 'March', desktop: 237 },
-  { month: 'April', desktop: 73 },
-  { month: 'May', desktop: 209 },
-  { month: 'June', desktop: 214 },
-];
-
 const chartConfig = {
-  desktop: {
-    label: 'Desktop',
-    color: 'hsl(var(--chart-1))',
+  count: {
+    label: 'Count',
   },
 } satisfies ChartConfig;
 
@@ -29,6 +20,29 @@ interface BarComponentProps {
 }
 
 export default function BarComponent({ layout }: BarComponentProps) {
+  const aggregated = '1 hour';
+  const table = 'AcicCounting';
+  const days = 1;
+
+  const now = new Date();
+  const lastDay = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+  const { isLoading, isError, data } = useQuery({
+    queryKey: [table, aggregated, days],
+    queryFn: () =>
+      fetch(
+        `${process.env.MAIN_API_URL}/dashboard/${table}?aggregate=${aggregated}&time_from=${lastDay.toISOString()}&time_to=${now.toISOString()}`
+      ).then((res) => res.json()),
+    refetchInterval: 10 * 1000,
+  });
+
+  if (isLoading) {
+    return <Card>Loading...</Card>;
+  }
+  if (isError) {
+    return <Card>Error</Card>;
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -36,10 +50,10 @@ export default function BarComponent({ layout }: BarComponentProps) {
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
-          <BarChart data={chartData} layout={layout}>
+          <BarChart data={data} layout={layout}>
             {layout === 'horizontal' ? (
               <XAxis
-                dataKey="month"
+                dataKey="timestamp"
                 tickLine={false}
                 tickMargin={10}
                 axisLine={false}
@@ -47,9 +61,9 @@ export default function BarComponent({ layout }: BarComponentProps) {
               />
             ) : (
               <>
-                <XAxis type="number" dataKey="desktop" hide />
+                <XAxis type="number" dataKey="count" hide />
                 <YAxis
-                  dataKey="month"
+                  dataKey="timestamp"
                   type="category"
                   tickLine={false}
                   tickMargin={10}
@@ -63,7 +77,7 @@ export default function BarComponent({ layout }: BarComponentProps) {
               cursor={false}
               content={<ChartTooltipContent hideLabel />}
             />
-            <Bar dataKey="desktop" fill="var(--color-desktop)" radius={8} />
+            <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={8} />
           </BarChart>
         </ChartContainer>
       </CardContent>
