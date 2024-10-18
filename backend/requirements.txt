@@ -1,8 +1,8 @@
 svn+svn://zaretti:zaretti@192.168.20.7/MVision2/trunk/MvApplications/MvUtils/acic/
-sqlalchemy
-sqlalchemy-timescaledb
-pgvector
-psycopg2-binary
-alembic
-uvicorn
-fastapi
+sqlalchemy~=2.0.35
+sqlalchemy-timescaledb~=0.4.1
+pgvector~=0.3.5
+psycopg2-binary~=2.9.9
+alembic~=1.13.3
+uvicorn~=0.31.1
+fastapi~=0.115.0

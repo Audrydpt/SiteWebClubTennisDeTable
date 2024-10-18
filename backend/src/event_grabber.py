@@ -28,6 +28,7 @@ class EventGrabber(threading.Thread):
         self.stop()
 
     def add_grabber(self, host, port):
+        self.logger.info(f"Adding grabber {host}:{port}")
         grabber = AcMetadataEventReceiverThread(acichost=host, acichostport=port)
         self.grabbers.append(grabber)
         return grabber

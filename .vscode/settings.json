@@ -9,5 +9,6 @@
     "javascript.updateImportsOnFileMove.enabled": "always",
     "typescript.updateImportsOnFileMove.enabled": "always"
   },
-  "prettier.configPath": "frontend/package.json"
+  "prettier.configPath": "frontend/package.json",
+  "python.terminal.activateEnvInCurrentTerminal": true
 }

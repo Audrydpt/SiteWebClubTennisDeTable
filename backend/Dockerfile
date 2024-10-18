@@ -40,7 +40,9 @@ RUN sh -c "echo 'deb https://packagecloud.io/timescale/timescaledb/ubuntu/ $(lsb
 # Installation du backend
 COPY ./src/ /backend
 COPY ./requirements.txt /backend
-RUN pip3 install -r /backend/requirements.txt --break-system-packages
+RUN pip3 install -r /backend/requirements.txt --break-system-packages \
+    && mkdir -p /backend/assets/ \
+    && rm -rf /root/.cache
 
 # Création du script de démarrage
 RUN wget -O /usr/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.5/dumb-init_1.2.5_x86_64 \

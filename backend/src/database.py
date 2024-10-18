@@ -1,5 +1,5 @@
-from sqlalchemy import create_engine, Column, Integer, REAL, String, Text, DateTime, DDL, PrimaryKeyConstraint, cast, func, inspect, text
-from sqlalchemy.dialects.postgresql import TIMESTAMP, INTEGER
+from sqlalchemy import column, create_engine, Column, Integer, REAL, String, Text, DateTime, DDL, PrimaryKeyConstraint, cast, func, inspect, text
+from sqlalchemy.dialects.postgresql import TIMESTAMP, INTEGER, UUID
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import sessionmaker
 
@@ -7,6 +7,8 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from alembic.autogenerate import produce_migrations
 from alembic.operations.ops import ModifyTableOps, AlterColumnOp
+
+import uuid
 
 class Base:
     @declared_attr
@@ -20,8 +22,8 @@ class Base:
                 'timescaledb_hypertable': {'time_column_name': 'timestamp'},
             },
         )
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     host = Column(Text, index=True)
     stream_id = Column(Integer, index=True)
     timestamp = Column(TIMESTAMP(timezone=True), primary_key=True)
@@ -185,7 +187,7 @@ class GenericDAL:
             
             return query.all()
     
-    def get_bucket(self, cls, _func=None, _time="1 hour", _group=None, _having=None, **filters):
+    def get_bucket(self, cls, _func=None, _time="1 hour", _group=None, _having=None, _between=None, **filters):
         with self.Session() as session:
 
             query = session.query(
@@ -199,18 +201,34 @@ class GenericDAL:
             # WHERE
             if filters:
                 query = query.filter_by(**filters)
+            if _between is not None and len(_between) == 2 and _between[0] is not None and _between[1] is not None:
+                query = query.filter(cls.timestamp >= _between[0], cls.timestamp <= _between[1])
             
             # GROUP BY
+            query = query.group_by('_timestamp')
             if _group is not None:
-                query = query.add_column(_group)
-                query = query.group_by(_group)
+                if isinstance(_group, list):
+                    for group in _group:
+                        query = query.add_column(column(group))
+                        query = query.group_by(column(group))
+                else:
+                    query = query.add_column(column(_group))
+                    query = query.group_by(column(_group))
             
             # HAVING
             if _having is not None:
                 query = query.having(_having)
             
-            query = query.group_by('_timestamp')
-            query = query.order_by('_timestamp')            
+            # ORDER BY
+            query = query.order_by('_timestamp')
+            if _group is not None:
+                if isinstance(_group, list):
+                    for group in _group:
+                        query = query.add_column(column(group))
+                        query = query.group_by(column(group))
+                else:
+                    query = query.add_column(column(_group))
+                    query = query.group_by(column(_group))
             
             return query.all()
 
