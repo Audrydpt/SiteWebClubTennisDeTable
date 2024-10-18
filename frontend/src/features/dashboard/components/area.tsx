@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 import { CurveType } from 'recharts/types/shape/Curve';
 
@@ -9,19 +10,9 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 
-const chartData = [
-  { month: 'January', desktop: 186 },
-  { month: 'February', desktop: 305 },
-  { month: 'March', desktop: 237 },
-  { month: 'April', desktop: 73 },
-  { month: 'May', desktop: 209 },
-  { month: 'June', desktop: 214 },
-];
-
 const chartConfig = {
-  desktop: {
-    label: 'Desktop',
-    color: 'hsl(var(--chart-1))',
+  count: {
+    label: 'Count',
   },
 } satisfies ChartConfig;
 
@@ -29,7 +20,29 @@ interface AreaComponentProps {
   type?: CurveType;
   indicator?: 'line' | 'dot' | 'dashed';
 }
+
 export default function AreaComponent({ type, indicator }: AreaComponentProps) {
+  const server = 'http://192.168.20.145:5000';
+  const aggregated = '1 hour';
+  const table = 'AcicCounting';
+  const days = 1;
+
+  const now = new Date();
+  const lastDay = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+  const { isLoading, data } = useQuery({
+    queryKey: [server, table, aggregated, days],
+    queryFn: () =>
+      fetch(
+        `${server}/dashboard/${table}?aggregate=${aggregated}&time_from=${lastDay.toISOString()}&time_to=${now.toISOString()}`
+      ).then((res) => res.json()),
+    refetchInterval: 10 * 1000,
+  });
+
+  if (isLoading) {
+    return <Card>Loading...</Card>;
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -38,7 +51,7 @@ export default function AreaComponent({ type, indicator }: AreaComponentProps) {
       <CardContent>
         <ChartContainer config={chartConfig}>
           <AreaChart
-            data={chartData}
+            data={data}
             margin={{
               left: 12,
               right: 12,
@@ -46,7 +59,7 @@ export default function AreaComponent({ type, indicator }: AreaComponentProps) {
           >
             <CartesianGrid vertical={false} />
             <XAxis
-              dataKey="month"
+              dataKey="timestamp"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
@@ -57,11 +70,11 @@ export default function AreaComponent({ type, indicator }: AreaComponentProps) {
               content={<ChartTooltipContent indicator={indicator} />}
             />
             <Area
-              dataKey="desktop"
+              dataKey="count"
               type={type}
-              fill="var(--color-desktop)"
+              fill="hsl(var(--chart-1))"
               fillOpacity={0.4}
-              stroke="var(--color-desktop)"
+              stroke="hsl(var(--chart-1))"
             />
           </AreaChart>
         </ChartContainer>

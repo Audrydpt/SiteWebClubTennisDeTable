@@ -1,6 +1,7 @@
 import { fixupPluginRules } from '@eslint/compat';
 import { FlatCompat } from '@eslint/eslintrc';
 import javascript from '@eslint/js';
+import pluginQuery from '@tanstack/eslint-plugin-query';
 import eslintConfigPrettier from 'eslint-config-prettier';
 import eslintPluginPrettier from 'eslint-plugin-prettier';
 import react from 'eslint-plugin-react';
@@ -21,6 +22,7 @@ export default [
   ...typescript.configs.recommended,
   react.configs.flat.recommended,
   react.configs.flat['jsx-runtime'],
+  ...pluginQuery.configs['flat/recommended'],
   ...compat.extends('airbnb'),
   ...compat.extends('@kesills/airbnb-typescript'),
   eslintConfigPrettier,

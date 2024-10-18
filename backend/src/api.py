@@ -7,6 +7,8 @@ from pydantic import Field, create_model
 from sqlalchemy import func
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+
 from typing import Annotated, Optional, Type
 from sqlalchemy.inspection import inspect
 from enum import Enum
@@ -38,6 +40,14 @@ class FastAPIServer:
             swagger_ui_parameters={
                 "persistAuthorization": True
             })
+
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
         
         if os.path.exists("/backend/assets"):
             self.app.mount("/static", StaticFiles(directory="/backend/assets/"), name="static")

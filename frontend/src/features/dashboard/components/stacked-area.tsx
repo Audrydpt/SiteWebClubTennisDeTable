@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 import { CurveType } from 'recharts/types/shape/Curve';
 import { StackOffsetType } from 'recharts/types/util/types';
@@ -10,23 +11,12 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 
-const chartData = [
-  { month: 'January', desktop: 186, mobile: 80 },
-  { month: 'February', desktop: 305, mobile: 200 },
-  { month: 'March', desktop: 237, mobile: 120 },
-  { month: 'April', desktop: 73, mobile: 190 },
-  { month: 'May', desktop: 209, mobile: 130 },
-  { month: 'June', desktop: 214, mobile: 140 },
-];
-
 const chartConfig = {
-  desktop: {
-    label: 'Desktop',
-    color: 'hsl(var(--chart-1))',
+  positive: {
+    label: 'Positive',
   },
-  mobile: {
-    label: 'Mobile',
-    color: 'hsl(var(--chart-2))',
+  negative: {
+    label: 'Negative',
   },
 } satisfies ChartConfig;
 
@@ -36,11 +26,58 @@ interface StackedAreaComponentProps {
   stackOffset?: StackOffsetType;
 }
 
+interface DataType {
+  timestamp: string;
+  count: number;
+  direction: 'positive' | 'negative';
+}
+interface MergedDataType {
+  timestamp: string;
+  positive?: number;
+  negative?: number;
+}
+
 export default function StackedAreaComponent({
   layout,
   indicator,
   stackOffset,
 }: StackedAreaComponentProps) {
+  const server = 'http://192.168.20.145:5000';
+  const aggregated = '1 hour';
+  const table = 'AcicCounting';
+  const days = 1;
+  const groupBy = 'direction';
+
+  const now = new Date();
+  const lastDay = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+  const { isLoading, data } = useQuery({
+    queryKey: [server, table, aggregated, days, groupBy],
+    queryFn: () =>
+      fetch(
+        `${server}/dashboard/${table}?aggregate=${aggregated}&time_from=${lastDay.toISOString()}&time_to=${now.toISOString()}&group_by=${groupBy}`
+      ).then((res) => res.json()),
+    refetchInterval: 10 * 1000,
+  });
+
+  if (isLoading) {
+    return <Card>Loading...</Card>;
+  }
+
+  const dataMerged = Object.values(
+    (data as DataType[]).reduce(
+      (acc: { [key: string]: MergedDataType }, item: DataType) => {
+        const { timestamp, count, direction } = item;
+        if (!acc[timestamp]) {
+          acc[timestamp] = { timestamp };
+        }
+        acc[timestamp][direction] = (acc[timestamp][direction] || 0) + count;
+        return acc;
+      },
+      {}
+    )
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -49,7 +86,7 @@ export default function StackedAreaComponent({
       <CardContent>
         <ChartContainer config={chartConfig}>
           <AreaChart
-            data={chartData}
+            data={dataMerged}
             margin={{
               left: 12,
               right: 12,
@@ -58,7 +95,7 @@ export default function StackedAreaComponent({
           >
             <CartesianGrid vertical={false} />
             <XAxis
-              dataKey="month"
+              dataKey="timestamp"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
@@ -69,19 +106,19 @@ export default function StackedAreaComponent({
               content={<ChartTooltipContent indicator={indicator} />}
             />
             <Area
-              dataKey="mobile"
+              dataKey="positive"
               type={layout}
-              fill="var(--color-mobile)"
+              fill="hsl(var(--chart-1))"
               fillOpacity={0.4}
-              stroke="var(--color-mobile)"
+              stroke="hsl(var(--chart-1))"
               stackId="a"
             />
             <Area
-              dataKey="desktop"
+              dataKey="negative"
               type={layout}
-              fill="var(--color-desktop)"
+              fill="hsl(var(--chart-2))"
               fillOpacity={0.4}
-              stroke="var(--color-desktop)"
+              stroke="hsl(var(--chart-2))"
               stackId="a"
             />
           </AreaChart>

@@ -86,8 +86,12 @@ class EventGrabber(threading.Thread):
         self.logger.info("EventGrabber stopped.")
 
     def __download_thumbnail(self, url, subdir="temp"):
+        
 
         output_dir = os.path.join("assets", "images", subdir)
+        if os.path.exists("/backend/assets"):
+            output_dir = os.path.join("backend", "assets", "images", subdir)
+
         output = os.path.join(output_dir, url.split("/")[-1])
 
         try:

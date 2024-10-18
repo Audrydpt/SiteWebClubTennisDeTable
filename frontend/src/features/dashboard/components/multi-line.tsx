@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { CartesianGrid, Line, LineChart, XAxis } from 'recharts';
 import { CurveType } from 'recharts/types/shape/Curve';
 
@@ -9,23 +10,12 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 
-const chartData = [
-  { month: 'January', desktop: 186, mobile: 80 },
-  { month: 'February', desktop: 305, mobile: 200 },
-  { month: 'March', desktop: 237, mobile: 120 },
-  { month: 'April', desktop: 73, mobile: 190 },
-  { month: 'May', desktop: 209, mobile: 130 },
-  { month: 'June', desktop: 214, mobile: 140 },
-];
-
 const chartConfig = {
-  desktop: {
-    label: 'Desktop',
-    color: 'hsl(var(--chart-1))',
+  positive: {
+    label: 'Positive',
   },
-  mobile: {
-    label: 'Mobile',
-    color: 'hsl(var(--chart-2))',
+  negative: {
+    label: 'Negative',
   },
 } satisfies ChartConfig;
 
@@ -34,10 +24,57 @@ interface MultiLineComponentProps {
   indicator?: 'line' | 'dot' | 'dashed';
 }
 
+interface DataType {
+  timestamp: string;
+  count: number;
+  direction: 'positive' | 'negative';
+}
+interface MergedDataType {
+  timestamp: string;
+  positive?: number;
+  negative?: number;
+}
+
 export default function MultiLineComponent({
   type,
   indicator,
 }: MultiLineComponentProps) {
+  const server = 'http://192.168.20.145:5000';
+  const aggregated = '1 hour';
+  const table = 'AcicCounting';
+  const days = 1;
+  const groupBy = 'direction';
+
+  const now = new Date();
+  const lastDay = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+  const { isLoading, data } = useQuery({
+    queryKey: [server, table, aggregated, days, groupBy],
+    queryFn: () =>
+      fetch(
+        `${server}/dashboard/${table}?aggregate=${aggregated}&time_from=${lastDay.toISOString()}&time_to=${now.toISOString()}&group_by=${groupBy}`
+      ).then((res) => res.json()),
+    refetchInterval: 10 * 1000,
+  });
+
+  if (isLoading) {
+    return <Card>Loading...</Card>;
+  }
+
+  const dataMerged = Object.values(
+    (data as DataType[]).reduce(
+      (acc: { [key: string]: MergedDataType }, item: DataType) => {
+        const { timestamp, count, direction } = item;
+        if (!acc[timestamp]) {
+          acc[timestamp] = { timestamp };
+        }
+        acc[timestamp][direction] = (acc[timestamp][direction] || 0) + count;
+        return acc;
+      },
+      {}
+    )
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -46,7 +83,7 @@ export default function MultiLineComponent({
       <CardContent>
         <ChartContainer config={chartConfig}>
           <LineChart
-            data={chartData}
+            data={dataMerged}
             margin={{
               left: 12,
               right: 12,
@@ -54,29 +91,28 @@ export default function MultiLineComponent({
           >
             <CartesianGrid vertical={false} />
             <XAxis
-              dataKey="month"
+              dataKey="timestamp"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
               tickFormatter={(value) => value.slice(0, 3)}
             />
-
             <ChartTooltip
               cursor={false}
               content={<ChartTooltipContent indicator={indicator} />}
             />
 
             <Line
-              dataKey="desktop"
+              dataKey="positive"
               type={type}
-              stroke="var(--color-desktop)"
+              stroke="hsl(var(--chart-1))"
               strokeWidth={2}
               dot={false}
             />
             <Line
-              dataKey="mobile"
+              dataKey="negative"
               type={type}
-              stroke="var(--color-mobile)"
+              stroke="hsl(var(--chart-2))"
               strokeWidth={2}
               dot={false}
             />

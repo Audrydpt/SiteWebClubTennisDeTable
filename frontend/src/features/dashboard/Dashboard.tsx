@@ -882,6 +882,19 @@ export default function Charts() {
         </div>
       </div>
 
+      <h2 className="grid w-full">Line:</h2>
+      <div className="flex w-full flex-col gap-6 lg:flex-row">
+        <div className="flex-1">
+          <LineComponent type="natural" indicator="line" />
+        </div>
+        <div className="flex-1">
+          <LineComponent type="linear" indicator="line" />
+        </div>
+        <div className="flex-1">
+          <LineComponent type="step" indicator="line" />
+        </div>
+      </div>
+
       <h2 className="grid w-full">StackedArea:</h2>
       <div className="flex w-full flex-col gap-6 lg:flex-row">
         <div className="flex-1">
@@ -907,6 +920,19 @@ export default function Charts() {
         </div>
       </div>
 
+      <h2 className="grid w-full">StackedLine:</h2>
+      <div className="flex w-full flex-col gap-6 lg:flex-row">
+        <div className="flex-1">
+          <MultiLineComponent type="natural" indicator="line" />
+        </div>
+        <div className="flex-1">
+          <MultiLineComponent type="linear" indicator="line" />
+        </div>
+        <div className="flex-1">
+          <MultiLineComponent type="step" indicator="line" />
+        </div>
+      </div>
+
       <h2 className="grid w-full">Bar:</h2>
       <div className="flex w-full flex-col gap-6 lg:flex-row">
         <div className="flex-1">
@@ -928,30 +954,6 @@ export default function Charts() {
         </div>
         <div className="flex-1">
           <MultiBarComponent layout="vertical" />
-        </div>
-      </div>
-
-      <h2 className="grid w-full">Line:</h2>
-      <div className="flex w-full flex-col gap-6 lg:flex-row">
-        <div className="flex-1">
-          <LineComponent type="natural" indicator="line" />
-        </div>
-        <div className="flex-1">
-          <LineComponent type="linear" indicator="line" />
-        </div>
-        <div className="flex-1">
-          <LineComponent type="step" indicator="line" />
-        </div>
-      </div>
-      <div className="flex w-full flex-col gap-6 lg:flex-row">
-        <div className="flex-1">
-          <MultiLineComponent type="natural" indicator="line" />
-        </div>
-        <div className="flex-1">
-          <MultiLineComponent type="linear" indicator="line" />
-        </div>
-        <div className="flex-1">
-          <MultiLineComponent type="step" indicator="line" />
         </div>
       </div>
 
