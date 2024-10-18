@@ -105,13 +105,11 @@ class GenericDAL:
     def __update_schema(self):
         def add_using_clause(op):
             if isinstance(op.modify_type, Integer) and isinstance(op.existing_type, Text):
-                using_clause = (
-                    f"COALESCE(NULLIF(REGEXP_REPLACE({op.column_name}, '[^0-9]', '', 'g'), ''), '0')::integer"
-                )
+                using_clause = (f"COALESCE(NULLIF(REGEXP_REPLACE({op.column_name}, '[^0-9]', '', 'g'), ''), '0')::integer")
                 return AlterColumnOp(
                     table_name=op.table_name,
                     column_name=op.column_name,
-                    modify_type=Integer(),
+                    modify_type=op.modify_type,
                     existing_type=op.existing_type,
                     schema=op.schema,
                     existing_nullable=op.existing_nullable,
@@ -119,41 +117,85 @@ class GenericDAL:
                     existing_comment=op.existing_comment,
                     postgresql_using=using_clause
                 )
-            return op
+            elif isinstance(op.modify_type, UUID) and isinstance(op.existing_type, Integer):
+                using_clause = f"('00000000-0000-0000-0000-' || lpad(to_hex({op.column_name}), 12, '0'))::uuid"
+                
+                # Drop the existing default value
+                drop_default_op = AlterColumnOp(
+                    table_name=op.table_name,
+                    column_name=op.column_name,
+                    existing_type=op.existing_type,
+                    existing_server_default=True,  # Set this to True to indicate an existing default
+                    modify_server_default=None     # Set to None to drop the default
+                )
+                
+                # Alter the column type with the using clause
+                alter_type_op = AlterColumnOp(
+                    table_name=op.table_name,
+                    column_name=op.column_name,
+                    existing_type=op.existing_type,
+                    modify_type=op.modify_type,
+                    postgresql_using=using_clause,
+                )
+                
+                # Set the new default value
+                set_default_op = AlterColumnOp(
+                    table_name=op.table_name,
+                    column_name=op.column_name,
+                    existing_type=op.modify_type,
+                    existing_server_default=None,
+                    modify_server_default=text('gen_random_uuid()')
+                )
+                return [drop_default_op, alter_type_op, set_default_op]
+
+            else:
+                return op
 
         with self.Session() as session:
+            session.execute(DDL("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
             session.execute(DDL("CREATE EXTENSION IF NOT EXISTS timescaledb"))
             session.commit()
         BaseEvent.metadata.create_all(self.engine)
 
         # got issue using the same engine, because of dialect timescaledb != postgresql
-        engine = create_engine('postgresql://postgres:postgres@192.168.20.145:5432/postgres', echo=False)
+        with create_engine('postgresql://postgres:postgres@192.168.20.145:5432/postgres', echo=True).connect() as conn:
+            trans = conn.begin()
+            try:
+                # Configure the migration context with the connection
+                context = MigrationContext.configure(conn)
+                migrations = produce_migrations(context, BaseEvent.metadata)
+                if not migrations.upgrade_ops.is_empty():
 
-        # https://alembic.sqlalchemy.org/en/latest/cookbook.html#run-alembic-operation-objects-directly-as-in-from-autogenerate        
-        context = MigrationContext.configure(engine.connect())
-        migrations = produce_migrations(context, BaseEvent.metadata)
-        if migrations.upgrade_ops.is_empty() is False:
+                    operations = Operations(context)
 
-            operations = Operations(context)
+                    use_batch = self.engine.name == "sqlite"
+                    stack = [migrations.upgrade_ops]
+                    while stack:
+                        elem = stack.pop(0)
 
-            use_batch = self.engine.name == "sqlite"
-            stack = [migrations.upgrade_ops]
-            while stack:
-                elem = stack.pop(0)
+                        if use_batch and isinstance(elem, ModifyTableOps):
+                            with operations.batch_alter_table(elem.table_name, schema=elem.schema) as batch_ops:
+                                for table_elem in elem.ops:
+                                    batch_ops.invoke(table_elem)
+                        elif hasattr(elem, "ops"):
+                            stack.extend(elem.ops)
+                        else:
+                            if isinstance(elem, AlterColumnOp):
+                                elem = add_using_clause(elem)
+                                if isinstance(elem, list):
+                                    for op in elem:
+                                        operations.invoke(op)
+                                else:
+                                    operations.invoke(elem)
+                            else:
+                                operations.invoke(elem)
 
-                if use_batch and isinstance(elem, ModifyTableOps):
-                    with operations.batch_alter_table( elem.table_name, schema=elem.schema ) as batch_ops:
-                        for table_elem in elem.ops:
-                            batch_ops.invoke(table_elem)
-                elif hasattr(elem, "ops"):
-                    stack.extend(elem.ops)
-                else:
-                    if isinstance(elem, AlterColumnOp):
-                        elem = add_using_clause(elem)
-                    
-                    operations.invoke(elem)
-            
+                trans.commit()
+            except Exception as e:
+                trans.rollback()
+                print(f"An error occurred during migration: {e}")
             print("Schema updated")
+
 
     def add(self, obj):
         with self.Session() as session:

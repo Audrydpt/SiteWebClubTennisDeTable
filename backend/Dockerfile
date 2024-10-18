@@ -66,6 +66,7 @@ RUN wget -O /usr/bin/dumb-init https://github.com/Yelp/dumb-init/releases/downlo
     && echo "gosu postgres psql -U postgres -c \"ALTER USER postgres PASSWORD 'postgres';\"" >> /start.sh \
     && echo "gosu postgres psql -U postgres -c \"CREATE EXTENSION IF NOT EXISTS timescaledb;\"" >> /start.sh \
     && echo "gosu postgres psql -U postgres -c \"CREATE EXTENSION IF NOT EXISTS vector;\"" >> /start.sh \
+    && echo "gosu postgres psql -U postgres -c \"CREATE EXTENSION IF NOT EXISTS pgcrypto;\"" >> /start.sh \
     && echo "echo Server is ready!" >> /start.sh \
     && echo "" >> /start.sh \
     && echo "gosu postgres psql" >> /start.sh \

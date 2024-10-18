@@ -236,9 +236,9 @@ class EventGrabber(threading.Thread):
                 text_color = event.event_kvdata["textColor"]
                 background_clor = event.event_kvdata["backgroundColor"]
                 foreground_color = event.event_kvdata["foregroundColor"]
-                vehicle_brand = event.event_kvdata["vehicleBrand"]
-                vehicle_type = event.event_kvdata["vehicleType"]
-                vehicle_color = event.event_kvdata["vehicleColor"]
+                vehicle_brand = event.event_kvdata["vehicleBrand"] if "vehicleBrand" in event.event_kvdata else None
+                vehicle_type = event.event_kvdata["vehicleType"] if "vehicleType" in event.event_kvdata else None
+                vehicle_color = event.event_kvdata["vehicleColor"] if "vehicleColor" in event.event_kvdata else None
 
                 url_guid, url_thumbnail_guid, url_plate_guid = None, None, None
                 if "url" in event.event_kvdata:
