@@ -11,11 +11,13 @@ WIP
 - shadcn
 - eslint (airbnb + airbnb-typescript + react-hooks + react-refresh)
 - prettier
+- @tanstack/query
 
 ## Backend
 
-- python
-- pgsql
+- python3
+- sqlalchemy/pgsql
+- alembic
 - fastapi
 
 ## readme plz:
