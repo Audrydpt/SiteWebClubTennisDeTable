@@ -39,17 +39,17 @@ export default function MultiBarComponent({
   layout = 'vertical',
   ...props
 }: MultiBarComponentProps) {
-  const { aggregated, table } = props;
+  const { table, aggregation, duration } = props;
   const groupBy = 'direction';
 
   const { isLoading, isError, data } = useQuery({
-    queryKey: [table, aggregated, groupBy],
+    queryKey: [table, aggregation, duration, groupBy],
     queryFn: () =>
       GetDashboardGroupBy(
         {
           table,
-          aggregated,
-          duration: '1 day',
+          aggregation,
+          duration,
         },
         groupBy
       ),

@@ -28,11 +28,11 @@ export default function LineComponent({
   indicator = 'line',
   ...props
 }: LineComponentProps) {
-  const { aggregated, table } = props;
+  const { table, aggregation, duration } = props;
 
   const { isLoading, isError, data } = useQuery({
-    queryKey: [table, aggregated],
-    queryFn: () => GetDashboard({ table, aggregated, duration: '1 day' }),
+    queryKey: [table, aggregation, duration],
+    queryFn: () => GetDashboard({ table, aggregation, duration }),
     refetchInterval: 10 * 1000,
   });
 

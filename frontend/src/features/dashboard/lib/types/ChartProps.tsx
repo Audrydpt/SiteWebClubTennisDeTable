@@ -35,6 +35,7 @@ export type AcicEventType =
   | 'AcicEvent';
 
 export type ChartProps = {
-  aggregated: AcicAggregationType;
   table: AcicEventType;
+  aggregation: AcicAggregationType;
+  duration: AcicAggregationType;
 };

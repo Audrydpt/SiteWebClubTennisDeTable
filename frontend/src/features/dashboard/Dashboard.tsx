@@ -51,6 +51,299 @@ export default function Charts() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col flex-wrap items-start justify-center gap-6 p-6 sm:flex-row sm:p-8">
+      <h2 className="grid w-full">Area:</h2>
+      <div className="flex w-full flex-col gap-6 lg:flex-row">
+        <div className="flex-1">
+          <AreaComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            type="natural"
+            indicator="line"
+          />
+        </div>
+        <div className="flex-1">
+          <AreaComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            type="linear"
+            indicator="line"
+          />
+        </div>
+        <div className="flex-1">
+          <AreaComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            type="step"
+            indicator="line"
+          />
+        </div>
+      </div>
+
+      <h2 className="grid w-full">Line:</h2>
+      <div className="flex w-full flex-col gap-6 lg:flex-row">
+        <div className="flex-1">
+          <LineComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            type="natural"
+            indicator="line"
+          />
+        </div>
+        <div className="flex-1">
+          <LineComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            type="linear"
+            indicator="line"
+          />
+        </div>
+        <div className="flex-1">
+          <LineComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            type="step"
+            indicator="line"
+          />
+        </div>
+      </div>
+
+      <h2 className="grid w-full">StackedArea:</h2>
+      <div className="flex w-full flex-col gap-6 lg:flex-row">
+        <div className="flex-1">
+          <StackedAreaComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            layout="natural"
+            indicator="line"
+            stackOffset="none"
+          />
+        </div>
+        <div className="flex-1">
+          <StackedAreaComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            layout="natural"
+            indicator="line"
+            stackOffset="expand"
+          />
+        </div>
+        <div className="flex-1">
+          <StackedAreaComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            layout="natural"
+            indicator="line"
+            stackOffset="wiggle"
+          />
+        </div>
+      </div>
+
+      <h2 className="grid w-full">StackedLine:</h2>
+      <div className="flex w-full flex-col gap-6 lg:flex-row">
+        <div className="flex-1">
+          <MultiLineComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            type="natural"
+            indicator="line"
+          />
+        </div>
+        <div className="flex-1">
+          <MultiLineComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            type="linear"
+            indicator="line"
+          />
+        </div>
+        <div className="flex-1">
+          <MultiLineComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            type="step"
+            indicator="line"
+          />
+        </div>
+      </div>
+
+      <h2 className="grid w-full">Bar:</h2>
+      <div className="flex w-full flex-col gap-6 lg:flex-row">
+        <div className="flex-1">
+          <BarComponent
+            table="AcicCounting"
+            duration="1 week"
+            aggregation="1 day"
+            layout="horizontal"
+          />
+        </div>
+        <div className="flex-1">
+          <StackedBarComponent
+            table="AcicCounting"
+            duration="1 week"
+            aggregation="1 day"
+            layout="horizontal"
+          />
+        </div>
+        <div className="flex-1">
+          <MultiBarComponent
+            table="AcicCounting"
+            duration="1 week"
+            aggregation="1 day"
+            layout="horizontal"
+          />
+        </div>
+      </div>
+      <div className="flex w-full flex-col gap-6 lg:flex-row">
+        <div className="flex-1">
+          <BarComponent
+            table="AcicCounting"
+            duration="1 week"
+            aggregation="1 day"
+            layout="vertical"
+          />
+        </div>
+        <div className="flex-1">
+          <StackedBarComponent
+            table="AcicCounting"
+            duration="1 week"
+            aggregation="1 day"
+            layout="vertical"
+          />
+        </div>
+        <div className="flex-1">
+          <MultiBarComponent
+            table="AcicCounting"
+            duration="1 week"
+            aggregation="1 day"
+            layout="vertical"
+          />
+        </div>
+      </div>
+
+      <h2 className="grid w-full">Pie:</h2>
+      <div className="flex w-full flex-col gap-6 lg:flex-row">
+        <div className="flex-1">
+          <PieComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            layout="donut"
+            gap={0}
+          />
+        </div>
+        <div className="flex-1">
+          <PieComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            layout="pie"
+            gap={1}
+          />
+        </div>
+        <div className="flex-1">
+          <PieComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            layout="donut"
+            gap={4}
+          />
+        </div>
+      </div>
+      <div className="flex w-full flex-col gap-6 lg:flex-row">
+        <div className="flex-1">
+          <PieComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            layout="halfdonut"
+            gap={0}
+          />
+        </div>
+        <div className="flex-1">
+          <PieComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            layout="halfpie"
+            gap={1}
+          />
+        </div>
+        <div className="flex-1">
+          <PieComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            layout="halfdonut"
+            gap={4}
+          />
+        </div>
+      </div>
+
+      <h2 className="grid w-full">Gauge:</h2>
+      <div className="flex w-full flex-col gap-6 lg:flex-row">
+        <div className="flex-1">
+          <GaugeComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            layout="half"
+          />
+        </div>
+        <div className="flex-1">
+          <GaugeComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            layout="full"
+          />
+        </div>
+      </div>
+      <div className="flex w-full flex-col gap-6 lg:flex-row">
+        <div className="flex-1">
+          <MultiGaugeComponent
+            table="AcicCounting"
+            aggregation="1 hour"
+            layout="full"
+          />
+        </div>
+        <div className="flex-1">
+          <MultiGaugeComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            layout="half"
+          />
+        </div>
+        <div className="flex-1">
+          <StackedGaugeComponent
+            table="AcicCounting"
+            duration="1 day"
+            aggregation="1 hour"
+            layout="half"
+          />
+        </div>
+      </div>
+
+      <h2 className="grid w-full">Heatmap:</h2>
+      <div className="flex w-full flex-col gap-6 lg:flex-row">
+        <div className="flex-1">
+          <HeatmapComponent />
+        </div>
+      </div>
+
       {preview && (
         <>
           <h2 className="grid w-full">Preview:</h2>
@@ -899,271 +1192,6 @@ export default function Charts() {
           </div>
         </>
       )}
-
-      <h2 className="grid w-full">Area:</h2>
-      <div className="flex w-full flex-col gap-6 lg:flex-row">
-        <div className="flex-1">
-          <AreaComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            type="natural"
-            indicator="line"
-          />
-        </div>
-        <div className="flex-1">
-          <AreaComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            type="linear"
-            indicator="line"
-          />
-        </div>
-        <div className="flex-1">
-          <AreaComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            type="step"
-            indicator="line"
-          />
-        </div>
-      </div>
-
-      <h2 className="grid w-full">Line:</h2>
-      <div className="flex w-full flex-col gap-6 lg:flex-row">
-        <div className="flex-1">
-          <LineComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            type="natural"
-            indicator="line"
-          />
-        </div>
-        <div className="flex-1">
-          <LineComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            type="linear"
-            indicator="line"
-          />
-        </div>
-        <div className="flex-1">
-          <LineComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            type="step"
-            indicator="line"
-          />
-        </div>
-      </div>
-
-      <h2 className="grid w-full">StackedArea:</h2>
-      <div className="flex w-full flex-col gap-6 lg:flex-row">
-        <div className="flex-1">
-          <StackedAreaComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="natural"
-            indicator="line"
-            stackOffset="none"
-          />
-        </div>
-        <div className="flex-1">
-          <StackedAreaComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="natural"
-            indicator="line"
-            stackOffset="expand"
-          />
-        </div>
-        <div className="flex-1">
-          <StackedAreaComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="natural"
-            indicator="line"
-            stackOffset="wiggle"
-          />
-        </div>
-      </div>
-
-      <h2 className="grid w-full">StackedLine:</h2>
-      <div className="flex w-full flex-col gap-6 lg:flex-row">
-        <div className="flex-1">
-          <MultiLineComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            type="natural"
-            indicator="line"
-          />
-        </div>
-        <div className="flex-1">
-          <MultiLineComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            type="linear"
-            indicator="line"
-          />
-        </div>
-        <div className="flex-1">
-          <MultiLineComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            type="step"
-            indicator="line"
-          />
-        </div>
-      </div>
-
-      <h2 className="grid w-full">Bar:</h2>
-      <div className="flex w-full flex-col gap-6 lg:flex-row">
-        <div className="flex-1">
-          <BarComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="horizontal"
-          />
-        </div>
-        <div className="flex-1">
-          <StackedBarComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="horizontal"
-          />
-        </div>
-        <div className="flex-1">
-          <MultiBarComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="horizontal"
-          />
-        </div>
-      </div>
-      <div className="flex w-full flex-col gap-6 lg:flex-row">
-        <div className="flex-1">
-          <BarComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="vertical"
-          />
-        </div>
-        <div className="flex-1">
-          <StackedBarComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="vertical"
-          />
-        </div>
-        <div className="flex-1">
-          <MultiBarComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="vertical"
-          />
-        </div>
-      </div>
-
-      <h2 className="grid w-full">Pie:</h2>
-      <div className="flex w-full flex-col gap-6 lg:flex-row">
-        <div className="flex-1">
-          <PieComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="donut"
-            gap={0}
-          />
-        </div>
-        <div className="flex-1">
-          <PieComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="pie"
-            gap={1}
-          />
-        </div>
-        <div className="flex-1">
-          <PieComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="donut"
-            gap={4}
-          />
-        </div>
-      </div>
-      <div className="flex w-full flex-col gap-6 lg:flex-row">
-        <div className="flex-1">
-          <PieComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="halfdonut"
-            gap={0}
-          />
-        </div>
-        <div className="flex-1">
-          <PieComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="halfpie"
-            gap={1}
-          />
-        </div>
-        <div className="flex-1">
-          <PieComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="halfdonut"
-            gap={4}
-          />
-        </div>
-      </div>
-
-      <h2 className="grid w-full">Gauge:</h2>
-      <div className="flex w-full flex-col gap-6 lg:flex-row">
-        <div className="flex-1">
-          <GaugeComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="half"
-          />
-        </div>
-        <div className="flex-1">
-          <GaugeComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="full"
-          />
-        </div>
-      </div>
-      <div className="flex w-full flex-col gap-6 lg:flex-row">
-        <div className="flex-1">
-          <MultiGaugeComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="full"
-          />
-        </div>
-        <div className="flex-1">
-          <MultiGaugeComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="half"
-          />
-        </div>
-        <div className="flex-1">
-          <StackedGaugeComponent
-            table="AcicCounting"
-            aggregated="1 hour"
-            layout="half"
-          />
-        </div>
-      </div>
-
-      <h2 className="grid w-full">Heatmap:</h2>
-      <div className="flex w-full flex-col gap-6 lg:flex-row">
-        <div className="flex-1">
-          <HeatmapComponent />
-        </div>
-      </div>
     </div>
   );
 }

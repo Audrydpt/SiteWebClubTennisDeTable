@@ -7,7 +7,7 @@ import {
 
 type DashboardQuery = {
   table: string;
-  aggregated: AcicAggregationType;
+  aggregation: AcicAggregationType;
   duration: AcicAggregationType;
 };
 
@@ -18,7 +18,7 @@ export async function GetDashboard(props: DashboardQuery) {
   const timeTo = now;
 
   return fetch(
-    `${process.env.MAIN_API_URL}/dashboard/${props.table}?aggregate=${props.aggregated}&time_from=${timeFrom.toISO({ includeOffset: false })}&time_to=${timeTo.toISO({ includeOffset: false })}`
+    `${process.env.MAIN_API_URL}/dashboard/${props.table}?aggregate=${props.aggregation}&time_from=${timeFrom.toISO({ includeOffset: false })}&time_to=${timeTo.toISO({ includeOffset: false })}`
   ).then((res) => res.json());
 }
 
@@ -32,6 +32,6 @@ export async function GetDashboardGroupBy(
   const timeTo = now;
 
   return fetch(
-    `${process.env.MAIN_API_URL}/dashboard/${props.table}?aggregate=${props.aggregated}&time_from=${timeFrom.toISO({ includeOffset: false })}&time_to=${timeTo.toISO({ includeOffset: false })}&group_by=${group_by}`
+    `${process.env.MAIN_API_URL}/dashboard/${props.table}?aggregate=${props.aggregation}&time_from=${timeFrom.toISO({ includeOffset: false })}&time_to=${timeTo.toISO({ includeOffset: false })}&group_by=${group_by}`
   ).then((res) => res.json());
 }
