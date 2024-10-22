@@ -20,12 +20,10 @@ const chartConfig = {
 
 type AreaComponentProps = ChartProps & {
   type?: CurveType;
-  indicator?: 'line' | 'dot' | 'dashed';
 };
 
 export default function AreaComponent({
   type = 'basis',
-  indicator = 'dot',
   ...props
 }: AreaComponentProps) {
   const { table, aggregation, duration } = props;
@@ -67,7 +65,7 @@ export default function AreaComponent({
             />
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent indicator={indicator} />}
+              content={<ChartTooltipContent hideLabel />}
             />
             <Area
               dataKey="count"

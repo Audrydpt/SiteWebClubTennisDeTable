@@ -20,12 +20,10 @@ const chartConfig = {
 
 type LineComponentProps = ChartProps & {
   type?: CurveType;
-  indicator?: 'line' | 'dot' | 'dashed';
 };
 
 export default function LineComponent({
   type = 'natural',
-  indicator = 'line',
   ...props
 }: LineComponentProps) {
   const { table, aggregation, duration } = props;
@@ -67,7 +65,7 @@ export default function LineComponent({
             />
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent indicator={indicator} />}
+              content={<ChartTooltipContent hideLabel />}
             />
             <Line
               dataKey="count"

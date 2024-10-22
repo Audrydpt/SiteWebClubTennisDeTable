@@ -44,6 +44,7 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
+import { UserType } from '@/lib/api/authenticate';
 
 interface SidebarItem {
   title: string;
@@ -69,8 +70,8 @@ const analyticsItems = [
         icon: Gauge,
       },
       {
-        title: 'Sub dahsboard',
-        url: '/dashboard/0',
+        title: 'Demo dahsboard',
+        url: '/dashboard/demo',
         icon: Gauge,
       },
     ],
@@ -126,7 +127,7 @@ const allItems = [
   },
 ];
 
-export default function AppSidebar() {
+export default function AppSidebar({ user }: { user?: UserType }) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -222,7 +223,7 @@ export default function AppSidebar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton>
-                  <User2 /> Username
+                  <User2 /> {user ? user.user : 'Anonymous'}
                   <ChevronUp className="ml-auto" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>

@@ -23,7 +23,6 @@ const chartConfig = {
 
 type MultiLineComponentProps = ChartProps & {
   type?: CurveType;
-  indicator?: 'line' | 'dot' | 'dashed';
 };
 
 interface DataType {
@@ -39,7 +38,6 @@ interface MergedDataType {
 
 export default function MultiLineComponent({
   type = 'natural',
-  indicator = 'line',
   ...props
 }: MultiLineComponentProps) {
   const { table, aggregation, duration } = props;
@@ -104,7 +102,7 @@ export default function MultiLineComponent({
             />
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent indicator={indicator} />}
+              content={<ChartTooltipContent hideLabel />}
             />
 
             <Line

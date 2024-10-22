@@ -24,7 +24,6 @@ const chartConfig = {
 
 type StackedAreaComponentProps = ChartProps & {
   layout?: CurveType;
-  indicator?: 'line' | 'dot' | 'dashed';
   stackOffset?: StackOffsetType;
 };
 
@@ -41,7 +40,6 @@ interface MergedDataType {
 
 export default function StackedAreaComponent({
   layout = 'natural',
-  indicator = 'line',
   stackOffset = 'none',
   ...props
 }: StackedAreaComponentProps) {
@@ -108,7 +106,7 @@ export default function StackedAreaComponent({
             />
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent indicator={indicator} />}
+              content={<ChartTooltipContent hideLabel />}
             />
             <Area
               dataKey="positive"

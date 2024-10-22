@@ -79,7 +79,9 @@ const formatter = (
   return null;
 };
 
-export default function HeatmapComponent() {
+export default function HeatmapComponent({
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -105,7 +107,8 @@ export default function HeatmapComponent() {
     Math.floor(dimensions.height / (24 + cellHeightPadding)) - 1;
 
   return (
-    <Card>
+    // eslint-disable-next-line react/jsx-props-no-spreading
+    <Card {...props}>
       <CardHeader>
         <CardTitle>Heatmap Chart</CardTitle>
       </CardHeader>
