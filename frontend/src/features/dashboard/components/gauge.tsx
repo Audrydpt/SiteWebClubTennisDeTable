@@ -3,6 +3,8 @@ import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from 'recharts';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartConfig, ChartContainer } from '@/components/ui/chart';
+import { GetDashboardGroupBy } from '../lib/api/dashboard';
+import { ChartProps } from '../lib/types/ChartProps';
 
 const chartConfig = {
   count: {
@@ -45,13 +47,9 @@ function CustomLabel({ value, viewBox }: CustomLabelProps) {
   return null;
 }
 
-CustomLabel.defaultProps = {
-  viewBox: undefined,
-};
-
-interface GaugeComponentProps {
+type GaugeComponentProps = ChartProps & {
   layout?: 'full' | 'half';
-}
+};
 
 interface DataType {
   timestamp: string;
@@ -63,21 +61,24 @@ interface MergedDataType {
   value: number;
 }
 
-export default function GaugeComponent({ layout }: GaugeComponentProps) {
-  const aggregated = '1 day';
-  const table = 'AcicCounting';
-  const days = 1;
+export default function GaugeComponent({
+  layout = 'full',
+  ...props
+}: GaugeComponentProps) {
+  const { aggregated, table } = props;
   const groupBy = 'direction';
 
-  const now = new Date();
-  const lastDay = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-
   const { isLoading, isError, data } = useQuery({
-    queryKey: [table, aggregated, days, groupBy],
+    queryKey: [table, aggregated, groupBy],
     queryFn: () =>
-      fetch(
-        `${process.env.MAIN_API_URL}/dashboard/${table}?aggregate=${aggregated}&time_from=${lastDay.toISOString()}&time_to=${now.toISOString()}&group_by=${groupBy}`
-      ).then((res) => res.json()),
+      GetDashboardGroupBy(
+        {
+          table,
+          aggregated,
+          duration: '1 day',
+        },
+        groupBy
+      ),
     refetchInterval: 10 * 1000,
   });
 
@@ -95,7 +96,7 @@ export default function GaugeComponent({ layout }: GaugeComponentProps) {
       return acc;
     }, {} as MergedDataType),
   ];
-  const maxValue = 3500;
+  const maxValue = 30000;
   dataMerged[0].value =
     (dataMerged[0].count / maxValue) * (layout === 'full' ? 360 : 180);
 
@@ -136,7 +137,3 @@ export default function GaugeComponent({ layout }: GaugeComponentProps) {
     </Card>
   );
 }
-
-GaugeComponent.defaultProps = {
-  layout: 'full',
-};

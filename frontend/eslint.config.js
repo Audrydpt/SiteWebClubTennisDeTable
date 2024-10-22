@@ -40,6 +40,7 @@ export default [
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      'react/require-default-props': 'off', // handled by TypeScript
       'react-refresh/only-export-components': 'warn',
       'import/extensions': 'off',
       'react/react-in-jsx-scope': 'off',

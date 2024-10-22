@@ -67,8 +67,3 @@ export function ThemeProvider({
     </ThemeProviderContext.Provider>
   );
 }
-
-ThemeProvider.defaultProps = {
-  defaultTheme: 'system',
-  storageKey: 'vite-ui-theme',
-};

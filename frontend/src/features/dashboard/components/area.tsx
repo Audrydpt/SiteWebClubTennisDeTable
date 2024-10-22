@@ -9,6 +9,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
+import { GetDashboard } from '../lib/api/dashboard';
+import { ChartProps } from '../lib/types/ChartProps';
 
 const chartConfig = {
   count: {
@@ -16,25 +18,21 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-interface AreaComponentProps {
+type AreaComponentProps = ChartProps & {
   type?: CurveType;
   indicator?: 'line' | 'dot' | 'dashed';
-}
+};
 
-export default function AreaComponent({ type, indicator }: AreaComponentProps) {
-  const aggregated = '1 hour';
-  const table = 'AcicCounting';
-  const days = 1.0;
-
-  const now = new Date();
-  const lastDay = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+export default function AreaComponent({
+  type = 'basis',
+  indicator = 'dot',
+  ...props
+}: AreaComponentProps) {
+  const { aggregated, table } = props;
 
   const { isLoading, isError, data } = useQuery({
-    queryKey: [table, aggregated, days],
-    queryFn: () =>
-      fetch(
-        `${process.env.MAIN_API_URL}/dashboard/${table}?aggregate=${aggregated}&time_from=${lastDay.toISOString()}&time_to=${now.toISOString()}`
-      ).then((res) => res.json()),
+    queryKey: [table, aggregated],
+    queryFn: () => GetDashboard({ table, aggregated, duration: '1 day' }),
     refetchInterval: 10 * 1000,
   });
 
@@ -84,8 +82,3 @@ export default function AreaComponent({ type, indicator }: AreaComponentProps) {
     </Card>
   );
 }
-
-AreaComponent.defaultProps = {
-  type: 'natural',
-  indicator: 'line',
-};

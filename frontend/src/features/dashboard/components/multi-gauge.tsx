@@ -8,6 +8,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
+import { GetDashboardGroupBy } from '../lib/api/dashboard';
+import { ChartProps } from '../lib/types/ChartProps';
 
 const chartConfig = {
   positive: {
@@ -20,9 +22,9 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-interface MultiGaugeComponentProps {
+type MultiGaugeComponentProps = ChartProps & {
   layout?: 'full' | 'half';
-}
+};
 
 interface DataType {
   timestamp: string;
@@ -36,22 +38,23 @@ interface MergedDataType {
 }
 
 export default function MultiGaugeComponent({
-  layout,
+  layout = 'full',
+  ...props
 }: MultiGaugeComponentProps) {
-  const aggregated = '1 day';
-  const table = 'AcicCounting';
-  const days = 1;
+  const { aggregated, table } = props;
   const groupBy = 'direction';
 
-  const now = new Date();
-  const lastDay = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-
   const { isLoading, isError, data } = useQuery({
-    queryKey: [table, aggregated, days, groupBy],
+    queryKey: [table, aggregated, groupBy],
     queryFn: () =>
-      fetch(
-        `${process.env.MAIN_API_URL}/dashboard/${table}?aggregate=${aggregated}&time_from=${lastDay.toISOString()}&time_to=${now.toISOString()}&group_by=${groupBy}`
-      ).then((res) => res.json()),
+      GetDashboardGroupBy(
+        {
+          table,
+          aggregated,
+          duration: '1 day',
+        },
+        groupBy
+      ),
     refetchInterval: 10 * 1000,
   });
 
@@ -107,7 +110,3 @@ export default function MultiGaugeComponent({
     </Card>
   );
 }
-
-MultiGaugeComponent.defaultProps = {
-  layout: 'full',
-};

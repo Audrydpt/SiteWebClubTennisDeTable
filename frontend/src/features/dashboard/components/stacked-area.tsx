@@ -10,6 +10,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
+import { GetDashboardGroupBy } from '../lib/api/dashboard';
+import { ChartProps } from '../lib/types/ChartProps';
 
 const chartConfig = {
   positive: {
@@ -20,11 +22,11 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-interface StackedAreaComponentProps {
+type StackedAreaComponentProps = ChartProps & {
   layout?: CurveType;
   indicator?: 'line' | 'dot' | 'dashed';
   stackOffset?: StackOffsetType;
-}
+};
 
 interface DataType {
   timestamp: string;
@@ -38,24 +40,25 @@ interface MergedDataType {
 }
 
 export default function StackedAreaComponent({
-  layout,
-  indicator,
-  stackOffset,
+  layout = 'natural',
+  indicator = 'line',
+  stackOffset = 'none',
+  ...props
 }: StackedAreaComponentProps) {
-  const aggregated = '1 hour';
-  const table = 'AcicCounting';
-  const days = 1;
+  const { aggregated, table } = props;
   const groupBy = 'direction';
 
-  const now = new Date();
-  const lastDay = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-
   const { isLoading, isError, data } = useQuery({
-    queryKey: [table, aggregated, days, groupBy],
+    queryKey: [table, aggregated, groupBy],
     queryFn: () =>
-      fetch(
-        `${process.env.MAIN_API_URL}/dashboard/${table}?aggregate=${aggregated}&time_from=${lastDay.toISOString()}&time_to=${now.toISOString()}&group_by=${groupBy}`
-      ).then((res) => res.json()),
+      GetDashboardGroupBy(
+        {
+          table,
+          aggregated,
+          duration: '1 day',
+        },
+        groupBy
+      ),
     refetchInterval: 10 * 1000,
   });
 
@@ -129,9 +132,3 @@ export default function StackedAreaComponent({
     </Card>
   );
 }
-
-StackedAreaComponent.defaultProps = {
-  layout: 'natural',
-  indicator: 'line',
-  stackOffset: 'none',
-};

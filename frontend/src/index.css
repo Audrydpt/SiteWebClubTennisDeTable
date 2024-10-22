@@ -46,6 +46,15 @@
     --chart-5: var(--purple);
 
     --radius: 0.5rem;
+
+    --sidebar-background: var(--light-gray);
+    --sidebar-foreground: var(--dark-gray);
+    --sidebar-primary: var(--green);
+    --sidebar-primary-foreground: var(--white);
+    --sidebar-accent: var(--green);
+    --sidebar-accent-foreground: var(--white);
+    --sidebar-border: var(--dark-gray);
+    --sidebar-ring: var(--dark-gray);
   }
   .dark {
     --background: var(--dark-gray);
@@ -65,5 +74,31 @@
     --border: var(--light-gray);
     --input: var(--white);
     --ring: var(--white);
+
+    --chart-1: var(--green);
+    --chart-2: var(--yellow);
+    --chart-3: var(--red);
+    --chart-4: var(--blue);
+    --chart-5: var(--purple);
+
+    --radius: 0.5rem;
+
+    --sidebar-background: var(--dark-gray);
+    --sidebar-foreground: var(--light-gray);
+    --sidebar-primary: var(--green);
+    --sidebar-primary-foreground: var(--white);
+    --sidebar-accent: var(--green);
+    --sidebar-accent-foreground: var(--white);
+    --sidebar-border: var(--dark-gray);
+    --sidebar-ring: var(--dark-gray);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }
