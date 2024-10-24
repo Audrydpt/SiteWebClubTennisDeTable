@@ -1,0 +1,207 @@
+import AreaComponent from './components/charts/area';
+import BarComponent from './components/charts/bar';
+import GaugeComponent from './components/charts/gauge';
+import HeatmapComponent from './components/charts/heatmap';
+import LineComponent from './components/charts/line';
+import MultiBarComponent from './components/charts/multi-bar';
+import MultiGaugeComponent from './components/charts/multi-gauge';
+import MultiLineComponent from './components/charts/multi-line';
+import PieComponent from './components/charts/pie';
+import StackedAreaComponent from './components/charts/stacked-area';
+import StackedBarComponent from './components/charts/stacked-bar';
+import StackedGaugeComponent from './components/charts/stacked-gauge';
+import { AcicAggregation, AcicEvent } from './lib/types/ChartProps';
+
+export default function TestCharts() {
+  return (
+    <div className="w-full grid grid-cols-3 gap-2">
+      <AreaComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="natural"
+      />
+      <AreaComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="linear"
+      />
+      <AreaComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="step"
+      />
+      <LineComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="natural"
+      />
+      <LineComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="linear"
+      />
+      <LineComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="step"
+      />
+      <StackedAreaComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="natural"
+        stackOffset="none"
+      />
+      <StackedAreaComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="natural"
+        stackOffset="expand"
+      />
+      <StackedAreaComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="natural"
+        stackOffset="wiggle"
+      />
+      <MultiLineComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="natural"
+      />
+      <MultiLineComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="linear"
+      />
+      <MultiLineComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="step"
+      />
+      <BarComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneWeek}
+        aggregation={AcicAggregation.OneDay}
+        layout="horizontal"
+      />
+      <StackedBarComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneWeek}
+        aggregation={AcicAggregation.OneDay}
+        layout="horizontal"
+      />
+      <MultiBarComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneWeek}
+        aggregation={AcicAggregation.OneDay}
+        layout="horizontal"
+      />
+      <BarComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneWeek}
+        aggregation={AcicAggregation.OneDay}
+        layout="vertical"
+      />
+      <StackedBarComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneWeek}
+        aggregation={AcicAggregation.OneDay}
+        layout="vertical"
+      />
+      <MultiBarComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneWeek}
+        aggregation={AcicAggregation.OneDay}
+        layout="vertical"
+      />
+      <PieComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="donut"
+        gap={0}
+      />
+      <PieComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="pie"
+        gap={1}
+      />
+      <PieComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="donut"
+        gap={4}
+      />
+      <PieComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="halfdonut"
+        gap={0}
+      />
+      <PieComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="halfpie"
+        gap={1}
+      />
+      <PieComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="halfdonut"
+        gap={4}
+      />
+      <GaugeComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="half"
+      />
+      <div className="col-span-1"> </div>
+      <GaugeComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="full"
+      />
+      <MultiGaugeComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="full"
+      />
+      <MultiGaugeComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="half"
+      />
+      <StackedGaugeComponent
+        table={AcicEvent.AcicCounting}
+        duration={AcicAggregation.OneDay}
+        aggregation={AcicAggregation.OneHour}
+        layout="half"
+      />
+      <div className="col-span-3">
+        <HeatmapComponent />
+      </div>
+    </div>
+  );
+}
