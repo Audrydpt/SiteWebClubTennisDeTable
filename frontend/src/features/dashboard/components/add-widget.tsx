@@ -1,6 +1,6 @@
-/* eslint-disable react/jsx-props-no-spreading */
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus } from 'lucide-react';
+import { Duration } from 'luxon';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -31,18 +31,67 @@ import {
 } from '@/components/ui/select';
 import {
   AcicAggregation,
+  AcicAggregationTypeToObject,
   AcicEvent,
   ChartSize,
   ChartType,
 } from '../lib/types/ChartProps';
 
-const formSchema = z.object({
-  table: z.nativeEnum(AcicEvent),
-  aggregation: z.nativeEnum(AcicAggregation),
-  duration: z.nativeEnum(AcicAggregation),
-  size: z.nativeEnum(ChartSize),
-  type: z.nativeEnum(ChartType),
-});
+const ALLOWED_CURVE_TYPES = ['natural', 'linear', 'step'] as const;
+const ALLOWED_LAYOUT_TYPES = ['horizontal', 'vertical'] as const;
+
+const getLayoutOptions = (chartType: ChartType): readonly string[] => {
+  switch (chartType) {
+    case ChartType.Area:
+    case ChartType.Line:
+      return ALLOWED_CURVE_TYPES;
+    case ChartType.Bar:
+      return ALLOWED_LAYOUT_TYPES;
+    default:
+      return [];
+  }
+};
+
+const formSchema = z
+  .object({
+    table: z.nativeEnum(AcicEvent),
+    aggregation: z.nativeEnum(AcicAggregation),
+    duration: z.nativeEnum(AcicAggregation),
+    size: z.nativeEnum(ChartSize),
+    type: z.nativeEnum(ChartType),
+    layout: z.union([
+      z.enum(ALLOWED_CURVE_TYPES),
+      z.enum(ALLOWED_LAYOUT_TYPES),
+    ]),
+  })
+  .refine(
+    (data) =>
+      Duration.fromObject(AcicAggregationTypeToObject[data.aggregation]) <=
+      Duration.fromObject(AcicAggregationTypeToObject[data.duration]),
+    {
+      message: 'Aggregation period must be smaller than or equal to duration',
+      path: ['aggregation'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.type === ChartType.Bar) {
+        return ALLOWED_LAYOUT_TYPES.includes(
+          data.layout as (typeof ALLOWED_LAYOUT_TYPES)[number]
+        );
+      }
+      if (data.type === ChartType.Area || data.type === ChartType.Line) {
+        return ALLOWED_CURVE_TYPES.includes(
+          data.layout as (typeof ALLOWED_CURVE_TYPES)[number]
+        );
+      }
+      return true;
+    },
+    {
+      message: 'Invalid layout for selected chart type',
+      path: ['layout'],
+    }
+  );
 export type FormSchema = z.infer<typeof formSchema>;
 
 export default function AddWidget({
@@ -54,12 +103,15 @@ export default function AddWidget({
     resolver: zodResolver(formSchema),
     defaultValues: {
       type: ChartType.Area,
+      layout: 'natural',
       table: AcicEvent.AcicCounting,
       aggregation: AcicAggregation.OneHour,
       duration: AcicAggregation.OneDay,
       size: ChartSize.medium,
     },
   });
+
+  const chartType = form.watch('type');
 
   return (
     <Dialog>
@@ -74,7 +126,7 @@ export default function AddWidget({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-1">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
             <FormField
               control={form.control}
               name="type"
@@ -92,6 +144,34 @@ export default function AddWidget({
                     </FormControl>
                     <SelectContent>
                       {Object.values(ChartType).map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="layout"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Layout</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select the layout" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {getLayoutOptions(chartType).map((item) => (
                         <SelectItem key={item} value={item}>
                           {item}
                         </SelectItem>
