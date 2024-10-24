@@ -1,14 +1,28 @@
 import { DateTime } from 'luxon';
 
-import {
-  AcicAggregationType,
-  AcicAggregationTypeToObject,
-} from '../types/ChartProps';
+import { AcicAggregation } from '../types/ChartProps';
 
 type DashboardQuery = {
   table: string;
-  aggregation: AcicAggregationType;
-  duration: AcicAggregationType;
+  aggregation: AcicAggregation;
+  duration: AcicAggregation;
+};
+
+type AggregationToObject = {
+  [K in AcicAggregation]: object;
+};
+
+const AcicAggregationTypeToObject: AggregationToObject = {
+  '1 minute': { minutes: 1 },
+  '15 minutes': { minutes: 15 },
+  '30 minutes': { minutes: 30 },
+  '1 hour': { hours: 1 },
+  '1 day': { days: 1 },
+  '1 week': { weeks: 1 },
+  '1 month': { months: 1 },
+  '6 months': { months: 6 },
+  '1 year': { years: 1 },
+  '100 years': { years: 100 },
 };
 
 export async function GetDashboard(props: DashboardQuery) {

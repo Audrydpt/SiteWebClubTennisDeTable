@@ -2,12 +2,14 @@ import { useQuery } from '@tanstack/react-query';
 import { Suspense, lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
+import LoadingSpinner from './components/ui/loading';
 import useSession from './hooks/use-session';
 import Layout from './layout';
 import GetUser from './lib/api/authenticate';
 
 const Dashboard = lazy(() => import('./features/dashboard/Dashboard'));
 const DemoDashboard = lazy(() => import('./features/dashboard/DemoDashboard'));
+const TestDashboard = lazy(() => import('./features/dashboard/TestDashboard'));
 
 export default function App() {
   const sessionId = useSession();
@@ -18,11 +20,12 @@ export default function App() {
 
   return (
     <Layout user={data}>
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           <Route path="/" element={<h1>Welcome</h1>} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/demo" element={<DemoDashboard />} />
+          <Route path="/dashboard/test" element={<TestDashboard />} />
           <Route path="*" element={<h1>Not Found</h1>} />
         </Routes>
       </Suspense>

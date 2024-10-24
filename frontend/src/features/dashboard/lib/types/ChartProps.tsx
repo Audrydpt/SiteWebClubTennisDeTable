@@ -1,41 +1,43 @@
-export type AcicAggregationType =
-  | '1 minute'
-  | '15 minutes'
-  | '30 minutes'
-  | '1 hour'
-  | '1 day'
-  | '1 week'
-  | '1 month'
-  | '6 months'
-  | '1 year'
-  | '100 years';
+export enum AcicAggregation {
+  OneMinute = '1 minute',
+  FifteenMinutes = '15 minutes',
+  ThirtyMinutes = '30 minutes',
+  OneHour = '1 hour',
+  OneDay = '1 day',
+  OneWeek = '1 week',
+  OneMonth = '1 month',
+  SixMonths = '6 months',
+  OneYear = '1 year',
+  LifeTime = '100 years',
+}
+export enum AcicEvent {
+  AcicUnattendedItem = 'AcicUnattendedItem',
+  AcicCounting = 'AcicCounting',
+  AcicNumbering = 'AcicNumbering',
+  AcicOccupancy = 'AcicOccupancy',
+  AcicLicensePlate = 'AcicLicensePlate',
+  AcicOCR = 'AcicOCR',
+  AcicAllInOneEvent = 'AcicAllInOneEvent',
+  AcicBaseEvent = 'AcicEvent',
+}
 
-export const AcicAggregationTypeToObject: Record<AcicAggregationType, object> =
-  {
-    '1 minute': { minutes: 1 },
-    '15 minutes': { minutes: 15 },
-    '30 minutes': { minutes: 30 },
-    '1 hour': { hours: 1 },
-    '1 day': { days: 1 },
-    '1 week': { weeks: 1 },
-    '1 month': { months: 1 },
-    '6 months': { months: 6 },
-    '1 year': { years: 1 },
-    '100 years': { years: 100 },
-  };
+export enum ChartSize {
+  tiny = 'tiny',
+  small = 'small',
+  medium = 'medium',
+  large = 'large',
+  big = 'big',
+  full = 'full',
+}
 
-export type AcicEventType =
-  | 'AcicUnattendedItem'
-  | 'AcicCounting'
-  | 'AcicNumbering'
-  | 'AcicOccupancy'
-  | 'AcicLicensePlate'
-  | 'AcicOCR'
-  | 'AcicAllInOneEvent'
-  | 'AcicEvent';
+export enum ChartType {
+  Area = 'Area',
+  Bar = 'Bar',
+  Line = 'Line',
+}
 
 export type ChartProps = {
-  table: AcicEventType;
-  aggregation: AcicAggregationType;
-  duration: AcicAggregationType;
+  table: AcicEvent;
+  aggregation: AcicAggregation;
+  duration: AcicAggregation;
 };

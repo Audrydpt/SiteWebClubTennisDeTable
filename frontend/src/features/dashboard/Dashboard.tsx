@@ -1,206 +1,98 @@
-import AreaComponent from './components/area';
-import BarComponent from './components/bar';
-import GaugeComponent from './components/gauge';
-import HeatmapComponent from './components/heatmap';
-import LineComponent from './components/line';
-import MultiBarComponent from './components/multi-bar';
-import MultiGaugeComponent from './components/multi-gauge';
-import MultiLineComponent from './components/multi-line';
-import PieComponent from './components/pie';
-import StackedAreaComponent from './components/stacked-area';
-import StackedBarComponent from './components/stacked-bar';
-import StackedGaugeComponent from './components/stacked-gauge';
+import { useState } from 'react';
+import { ReactSortable } from 'react-sortablejs';
+
+import Header from '@/components/header';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+import AddDashboard from './components/add-dashboard';
+import AddWidget, { FormSchema } from './components/add-widget';
+import AreaComponent from './components/charts/area';
+import BarComponent from './components/charts/bar';
+import LineComponent from './components/charts/line';
+import { ChartProps, ChartSize, ChartType } from './lib/types/ChartProps';
+import TestCharts from './TestDashboard';
+
+const widthClassMap: Record<ChartSize, string> = {
+  tiny: 'col-span-1 md:col-span-1 lg:col-span-1 2xl:col-span-1',
+  small: 'col-span-1 md:col-span-1 lg:col-span-1 2xl:col-span-2',
+  medium: 'col-span-1 md:col-span-1 lg:col-span-2 2xl:col-span-3',
+  large: 'col-span-1 md:col-span-2 lg:col-span-3 2xl:col-span-4',
+  big: 'col-span-1 md:col-span-2 lg:col-span-4 2xl:col-span-5',
+  full: 'col-span-1 md:col-span-2 lg:col-span-4 2xl:col-span-6',
+};
+const heightClassMap: Record<ChartSize, string> = {
+  tiny: 'row-span-1',
+  small: 'row-span-1',
+  medium: 'row-span-1',
+  large: 'row-span-2',
+  big: 'row-span-2 2xl:row-span-4',
+  full: 'row-span-2',
+};
+
+type ChartComponentsType = {
+  [K in ChartType]: React.ComponentType<ChartProps>;
+};
+const ChartTypeComponents: ChartComponentsType = {
+  [ChartType.Area]: AreaComponent,
+  [ChartType.Bar]: BarComponent,
+  [ChartType.Line]: LineComponent,
+} as const;
+
+type ChartTiles = {
+  id: string;
+  size: ChartSize;
+  content: JSX.Element;
+};
 
 export default function Charts() {
+  const [widgets, setWidgets] = useState([] as ChartTiles[]);
+
+  function addWidget(data: FormSchema) {
+    const { size, type, ...chart } = data;
+    const Component = ChartTypeComponents[type];
+
+    const newWidget = {
+      id: widgets.length.toString(),
+      size,
+      content: <Component {...chart} />,
+    } as ChartTiles;
+    setWidgets([...widgets, newWidget]);
+  }
+
   return (
     <>
-      <h2 className="w-full">Preview:</h2>
-      <div className="w-full grid grid-cols-3 gap-2">
-        <AreaComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          type="natural"
-        />
-        <AreaComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          type="linear"
-        />
-        <AreaComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          type="step"
-        />
-        <LineComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          type="natural"
-        />
-        <LineComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          type="linear"
-        />
-        <LineComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          type="step"
-        />
-        <StackedAreaComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          layout="natural"
-          stackOffset="none"
-        />
-        <StackedAreaComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          layout="natural"
-          stackOffset="expand"
-        />
-        <StackedAreaComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          layout="natural"
-          stackOffset="wiggle"
-        />
-        <MultiLineComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          type="natural"
-        />
-        <MultiLineComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          type="linear"
-        />
-        <MultiLineComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          type="step"
-        />
-        <BarComponent
-          table="AcicCounting"
-          duration="1 week"
-          aggregation="1 day"
-          layout="horizontal"
-        />
-        <StackedBarComponent
-          table="AcicCounting"
-          duration="1 week"
-          aggregation="1 day"
-          layout="horizontal"
-        />
-        <MultiBarComponent
-          table="AcicCounting"
-          duration="1 week"
-          aggregation="1 day"
-          layout="horizontal"
-        />
-        <BarComponent
-          table="AcicCounting"
-          duration="1 week"
-          aggregation="1 day"
-          layout="vertical"
-        />
-        <StackedBarComponent
-          table="AcicCounting"
-          duration="1 week"
-          aggregation="1 day"
-          layout="vertical"
-        />
-        <MultiBarComponent
-          table="AcicCounting"
-          duration="1 week"
-          aggregation="1 day"
-          layout="vertical"
-        />
-        <PieComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          layout="donut"
-          gap={0}
-        />
-        <PieComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          layout="pie"
-          gap={1}
-        />
-        <PieComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          layout="donut"
-          gap={4}
-        />
-        <PieComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          layout="halfdonut"
-          gap={0}
-        />
-        <PieComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          layout="halfpie"
-          gap={1}
-        />
-        <PieComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          layout="halfdonut"
-          gap={4}
-        />
-        <GaugeComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          layout="half"
-        />
-        <GaugeComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          layout="full"
-        />
-        <MultiGaugeComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          layout="full"
-        />
-        <MultiGaugeComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          layout="half"
-        />
-        <StackedGaugeComponent
-          table="AcicCounting"
-          duration="1 day"
-          aggregation="1 hour"
-          layout="half"
-        />
-        <HeatmapComponent className="col-span-3" />
-      </div>
+      <Header title="Dashboard">
+        <AddDashboard />
+        <AddWidget onSubmit={(d) => addWidget(d)} />
+      </Header>
+
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="w-full justify-start">
+          <TabsTrigger value="overview">Main dashboard</TabsTrigger>
+          <TabsTrigger value="tables">All widgets</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="w-full">
+          <ReactSortable
+            list={widgets}
+            setList={setWidgets}
+            className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6 gap-2"
+          >
+            {widgets.map((item) => (
+              <div
+                key={item.id}
+                data-id={item.id}
+                className={`${widthClassMap[item.size]} ${heightClassMap[item.size]}`}
+              >
+                {item.content}
+              </div>
+            ))}
+          </ReactSortable>
+        </TabsContent>
+        <TabsContent value="tables" className="w-full">
+          <TestCharts />
+        </TabsContent>
+      </Tabs>
     </>
   );
 }

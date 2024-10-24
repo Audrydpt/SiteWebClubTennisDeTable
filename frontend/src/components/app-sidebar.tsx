@@ -6,10 +6,10 @@ import {
   ChevronUp,
   FileOutput,
   Fingerprint,
-  Folder,
   Gauge,
   LucideProps,
   Map,
+  Server,
   Settings,
   User2,
   Wrench,
@@ -46,6 +46,8 @@ import {
 } from '@/components/ui/sidebar';
 import { UserType } from '@/lib/api/authenticate';
 
+import logo from '../assets/logo.svg';
+
 interface SidebarItem {
   title: string;
   url: string;
@@ -72,6 +74,11 @@ const analyticsItems = [
       {
         title: 'Demo dahsboard',
         url: '/dashboard/demo',
+        icon: Gauge,
+      },
+      {
+        title: 'All widgets',
+        url: '/dashboard/test',
         icon: Gauge,
       },
     ],
@@ -134,7 +141,7 @@ export default function AppSidebar({ user }: { user?: UserType }) {
         <SidebarMenu>
           <SidebarMenuItem>
             <Link to="/" className="flex items-center gap-2 font-semibold">
-              <img className="h-10" src="logo.svg" alt="ACIC" />
+              <img className="h-10" src={logo} alt="ACIC" />
             </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
@@ -145,7 +152,7 @@ export default function AppSidebar({ user }: { user?: UserType }) {
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
                   <div className="flex aspect-square size-8 items-center justify-center rounded-lg">
-                    <Folder />
+                    <Server />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">
@@ -157,10 +164,10 @@ export default function AppSidebar({ user }: { user?: UserType }) {
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-[--radix-popper-anchor-width]">
                 <DropdownMenuItem>
-                  <span>Acme Inc</span>
+                  <span>localhost</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                  <span>Acme Corp.</span>
+                  <span>192.168.20.145</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
