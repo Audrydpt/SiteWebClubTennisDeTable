@@ -51,10 +51,20 @@ export enum ChartType {
   Area = 'Area',
   Bar = 'Bar',
   Line = 'Line',
+  Gauge = 'Gauge',
+  Pie = 'Pie',
+  MultiBar = 'MultiBar',
+  MultiLine = 'MultiLine',
+  StackedBar = 'StackedBar',
+  StackedArea = 'StackedArea',
+  StackedGauge = 'StackedGauge',
 }
 
 export type ChartProps = {
   table: AcicEvent;
   aggregation: AcicAggregation;
   duration: AcicAggregation;
+};
+export type GroupByChartProps = ChartProps & {
+  groupBy: string;
 };

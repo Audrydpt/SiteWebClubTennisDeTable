@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { Duration } from 'luxon';
 import { useForm } from 'react-hook-form';
@@ -29,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { GetDashboardDescription } from '../lib/api/dashboard';
 import {
   AcicAggregation,
   AcicAggregationTypeToObject,
@@ -39,17 +41,37 @@ import {
 
 const ALLOWED_CURVE_TYPES = ['natural', 'linear', 'step'] as const;
 const ALLOWED_LAYOUT_TYPES = ['horizontal', 'vertical'] as const;
+const ALLOWED_GAUGE_TYPES = ['half', 'full'] as const;
+const ALLOWED_PIE_TYPES = ['pie', 'donut', 'halfpie', 'halfdonut'] as const;
 
-const getLayoutOptions = (chartType: ChartType): readonly string[] => {
-  switch (chartType) {
-    case ChartType.Area:
-    case ChartType.Line:
-      return ALLOWED_CURVE_TYPES;
-    case ChartType.Bar:
-      return ALLOWED_LAYOUT_TYPES;
-    default:
-      return [];
-  }
+type LayoutOptionsType = {
+  [K in ChartType]: readonly string[];
+};
+
+const LayoutOptions = {
+  [ChartType.Area]: ALLOWED_CURVE_TYPES,
+  [ChartType.StackedArea]: ALLOWED_CURVE_TYPES,
+  [ChartType.Line]: ALLOWED_CURVE_TYPES,
+  [ChartType.MultiLine]: ALLOWED_CURVE_TYPES,
+  [ChartType.Bar]: ALLOWED_LAYOUT_TYPES,
+  [ChartType.MultiBar]: ALLOWED_LAYOUT_TYPES,
+  [ChartType.StackedBar]: ALLOWED_LAYOUT_TYPES,
+  [ChartType.Gauge]: ALLOWED_GAUGE_TYPES,
+  [ChartType.Pie]: ALLOWED_PIE_TYPES,
+  [ChartType.StackedGauge]: ALLOWED_GAUGE_TYPES,
+} as LayoutOptionsType;
+
+const getLayoutOptions = (chartType: ChartType): readonly string[] =>
+  LayoutOptions[chartType] ?? [];
+
+const getGroupByOptions = (
+  tablesDescriptions: Record<string, string[]> | undefined,
+  chartTable: string
+): readonly string[] => {
+  if (!tablesDescriptions) return [];
+  if (!tablesDescriptions[chartTable]) return [];
+
+  return tablesDescriptions[chartTable];
 };
 
 const formSchema = z
@@ -57,11 +79,13 @@ const formSchema = z
     table: z.nativeEnum(AcicEvent),
     aggregation: z.nativeEnum(AcicAggregation),
     duration: z.nativeEnum(AcicAggregation),
+    groupBy: z.string().optional(),
     size: z.nativeEnum(ChartSize),
     type: z.nativeEnum(ChartType),
     layout: z.union([
       z.enum(ALLOWED_CURVE_TYPES),
       z.enum(ALLOWED_LAYOUT_TYPES),
+      z.enum(ALLOWED_GAUGE_TYPES),
     ]),
   })
   .refine(
@@ -72,25 +96,6 @@ const formSchema = z
       message: 'Aggregation period must be smaller than or equal to duration',
       path: ['aggregation'],
     }
-  )
-  .refine(
-    (data) => {
-      if (data.type === ChartType.Bar) {
-        return ALLOWED_LAYOUT_TYPES.includes(
-          data.layout as (typeof ALLOWED_LAYOUT_TYPES)[number]
-        );
-      }
-      if (data.type === ChartType.Area || data.type === ChartType.Line) {
-        return ALLOWED_CURVE_TYPES.includes(
-          data.layout as (typeof ALLOWED_CURVE_TYPES)[number]
-        );
-      }
-      return true;
-    },
-    {
-      message: 'Invalid layout for selected chart type',
-      path: ['layout'],
-    }
   );
 export type FormSchema = z.infer<typeof formSchema>;
 
@@ -99,6 +104,11 @@ export default function AddWidget({
 }: {
   onSubmit: (data: FormSchema) => void;
 }) {
+  const { data } = useQuery({
+    queryKey: ['dashboard', 'add_widget'],
+    queryFn: () => GetDashboardDescription(),
+  });
+
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -111,6 +121,7 @@ export default function AddWidget({
     },
   });
 
+  const chartTable = form.watch('table');
   const chartType = form.watch('type');
 
   return (
@@ -200,6 +211,34 @@ export default function AddWidget({
                     </FormControl>
                     <SelectContent>
                       {Object.values(AcicEvent).map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="groupBy"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Group by</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select the group by" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {getGroupByOptions(data, chartTable).map((item) => (
                         <SelectItem key={item} value={item}>
                           {item}
                         </SelectItem>

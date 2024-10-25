@@ -56,6 +56,7 @@ export default function TestCharts() {
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
         layout="natural"
+        groupBy="direction"
         stackOffset="none"
       />
       <StackedAreaComponent
@@ -63,6 +64,7 @@ export default function TestCharts() {
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
         layout="natural"
+        groupBy="direction"
         stackOffset="expand"
       />
       <StackedAreaComponent
@@ -70,6 +72,7 @@ export default function TestCharts() {
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
         layout="natural"
+        groupBy="direction"
         stackOffset="wiggle"
       />
       <MultiLineComponent
@@ -77,18 +80,21 @@ export default function TestCharts() {
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
         layout="natural"
+        groupBy="direction"
       />
       <MultiLineComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
         layout="linear"
+        groupBy="direction"
       />
       <MultiLineComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
         layout="step"
+        groupBy="direction"
       />
       <BarComponent
         table={AcicEvent.AcicCounting}
@@ -101,12 +107,14 @@ export default function TestCharts() {
         duration={AcicAggregation.OneWeek}
         aggregation={AcicAggregation.OneDay}
         layout="horizontal"
+        groupBy="direction"
       />
       <MultiBarComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneWeek}
         aggregation={AcicAggregation.OneDay}
         layout="horizontal"
+        groupBy="direction"
       />
       <BarComponent
         table={AcicEvent.AcicCounting}
@@ -119,12 +127,14 @@ export default function TestCharts() {
         duration={AcicAggregation.OneWeek}
         aggregation={AcicAggregation.OneDay}
         layout="vertical"
+        groupBy="direction"
       />
       <MultiBarComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneWeek}
         aggregation={AcicAggregation.OneDay}
         layout="vertical"
+        groupBy="direction"
       />
       <PieComponent
         table={AcicEvent.AcicCounting}

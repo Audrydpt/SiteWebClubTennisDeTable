@@ -11,6 +11,12 @@ type DashboardQuery = {
   duration: AcicAggregation;
 };
 
+export async function GetDashboardDescription() {
+  return fetch(`${process.env.MAIN_API_URL}/dashboard`).then((res) =>
+    res.json()
+  );
+}
+
 export async function GetDashboard(props: DashboardQuery) {
   const now = DateTime.now();
 

@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GetDashboardGroupBy } from '../../lib/api/dashboard';
-import { ChartProps } from '../../lib/types/ChartProps';
+import { GroupByChartProps } from '../../lib/types/ChartProps';
 
 const chartConfig = {
   positive: {
@@ -23,7 +23,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-type StackedAreaComponentProps = ChartProps & {
+type StackedAreaComponentProps = GroupByChartProps & {
   layout?: CurveType;
   stackOffset?: StackOffsetType;
 };
@@ -45,7 +45,7 @@ export default function StackedAreaComponent({
   ...props
 }: StackedAreaComponentProps) {
   const { table, aggregation, duration } = props;
-  const groupBy = 'direction';
+  const { groupBy } = props;
 
   const { isLoading, isError, data } = useQuery({
     queryKey: [table, aggregation, duration, groupBy],
