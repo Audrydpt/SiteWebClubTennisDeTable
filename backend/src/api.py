@@ -54,7 +54,8 @@ class FastAPIServer:
         else:
             os.makedirs("assets", exist_ok=True)
             self.app.mount("/static", StaticFiles(directory="assets/"), name="static")
-
+        
+        self.__registered_dashboard = {}
         self.__define_endpoints()
 
     def __define_endpoints(self):
@@ -93,15 +94,22 @@ class FastAPIServer:
         self.__create_endpoint("AcicAllInOneEvent", AcicAllInOneEvent)
         self.__create_endpoint("AcicEvent", AcicEvent)
 
+        @self.app.get("/dashboard", tags=["dashboard"])
+        async def get_dashboard():
+            return self.__registered_dashboard
+
 
     def __create_endpoint(self, path: str, model_class: Type):
-
         query = {}
         for column in inspect(model_class).mapper.column_attrs:
             if column.key not in ['id', 'timestamp'] and 'url' not in column.key:
                 python_type = column.expression.type.python_type
                 query[column.key] = (Optional[python_type], Field(default=None, description=f"Filter by {column.key}"))
 
+                if path not in self.__registered_dashboard:
+                    self.__registered_dashboard[path] = []
+                self.__registered_dashboard[path].append(column.key)
+        
         aggregate = (ModelName, Field(default=ModelName.hour, description="The time interval to aggregate the data"))
         group = (str, Field(default=None, description="The column to group by"))
         date = (datetime.datetime, Field(default=None, description="The timestamp to filter by"))

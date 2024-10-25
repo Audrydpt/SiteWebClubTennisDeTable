@@ -90,7 +90,7 @@ class EventGrabber(threading.Thread):
 
         output_dir = os.path.join("assets", "images", subdir)
         if os.path.exists("/backend/assets"):
-            output_dir = os.path.join("backend", "assets", "images", subdir)
+            output_dir = os.path.join("/backend", "assets", "images", subdir)
 
         output = os.path.join(output_dir, url.split("/")[-1])
 

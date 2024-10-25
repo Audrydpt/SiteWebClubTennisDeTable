@@ -41,7 +41,8 @@ RUN sh -c "echo 'deb https://packagecloud.io/timescale/timescaledb/ubuntu/ $(lsb
 COPY ./src/ /backend
 COPY ./requirements.txt /backend
 RUN pip3 install -r /backend/requirements.txt --break-system-packages \
-    && mkdir -p /backend/assets/ \
+    && mkdir -p /backend/assets \
+    && chown -R postgres:postgres /backend \
     && rm -rf /root/.cache
 
 # Création du script de démarrage

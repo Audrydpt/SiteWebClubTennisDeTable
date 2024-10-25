@@ -158,7 +158,7 @@ class GenericDAL:
         BaseEvent.metadata.create_all(self.engine)
 
         # got issue using the same engine, because of dialect timescaledb != postgresql
-        with create_engine('postgresql://postgres:postgres@192.168.20.145:5432/postgres', echo=True).connect() as conn:
+        with create_engine('postgresql://postgres:postgres@192.168.20.145:5432/postgres', echo=False).connect() as conn:
             trans = conn.begin()
             try:
                 # Configure the migration context with the connection
