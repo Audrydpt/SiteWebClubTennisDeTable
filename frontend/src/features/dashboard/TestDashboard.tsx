@@ -140,6 +140,7 @@ export default function TestCharts() {
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
+        groupBy="direction"
         layout="donut"
         gap={0}
       />
@@ -147,6 +148,7 @@ export default function TestCharts() {
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
+        groupBy="direction"
         layout="pie"
         gap={1}
       />
@@ -154,6 +156,7 @@ export default function TestCharts() {
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
+        groupBy="direction"
         layout="donut"
         gap={4}
       />
@@ -161,6 +164,7 @@ export default function TestCharts() {
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
+        groupBy="direction"
         layout="halfdonut"
         gap={0}
       />
@@ -168,6 +172,7 @@ export default function TestCharts() {
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
+        groupBy="direction"
         layout="halfpie"
         gap={1}
       />
@@ -175,6 +180,7 @@ export default function TestCharts() {
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
+        groupBy="direction"
         layout="halfdonut"
         gap={4}
       />
@@ -207,6 +213,7 @@ export default function TestCharts() {
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
+        groupBy="direction"
         layout="half"
       />
       <div className="col-span-3">

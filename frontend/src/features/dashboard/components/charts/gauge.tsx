@@ -4,7 +4,7 @@ import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartConfig, ChartContainer } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
-import { GetDashboardGroupBy } from '../../lib/api/dashboard';
+import { GetDashboard } from '../../lib/api/dashboard';
 import { ChartProps } from '../../lib/types/ChartProps';
 
 const chartConfig = {
@@ -67,19 +67,10 @@ export default function GaugeComponent({
   ...props
 }: GaugeComponentProps) {
   const { table, aggregation, duration } = props;
-  const groupBy = 'direction';
 
   const { isLoading, isError, data } = useQuery({
-    queryKey: [table, aggregation, duration, groupBy],
-    queryFn: () =>
-      GetDashboardGroupBy(
-        {
-          table,
-          aggregation,
-          duration,
-        },
-        groupBy
-      ),
+    queryKey: [table, aggregation, duration],
+    queryFn: () => GetDashboard({ table, aggregation, duration }),
     refetchInterval: 10 * 1000,
   });
 

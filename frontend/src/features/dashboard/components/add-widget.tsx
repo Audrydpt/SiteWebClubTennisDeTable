@@ -64,6 +64,25 @@ const LayoutOptions = {
 const getLayoutOptions = (chartType: ChartType): readonly string[] =>
   LayoutOptions[chartType] ?? [];
 
+type StackedOptionsType = {
+  [K in ChartType]: boolean;
+};
+const StackedOptions = {
+  [ChartType.Area]: false,
+  [ChartType.StackedArea]: true,
+  [ChartType.Line]: false,
+  [ChartType.MultiLine]: true,
+  [ChartType.Bar]: true,
+  [ChartType.MultiBar]: true,
+  [ChartType.StackedBar]: true,
+  [ChartType.Gauge]: true,
+  [ChartType.Pie]: true,
+  [ChartType.StackedGauge]: true,
+} as StackedOptionsType;
+
+const getStackedOptions = (chartType: ChartType): boolean =>
+  StackedOptions[chartType] ?? false;
+
 const getGroupByOptions = (
   tablesDescriptions: Record<string, string[]> | undefined,
   chartTable: string
@@ -86,6 +105,7 @@ const formSchema = z
       z.enum(ALLOWED_CURVE_TYPES),
       z.enum(ALLOWED_LAYOUT_TYPES),
       z.enum(ALLOWED_GAUGE_TYPES),
+      z.enum(ALLOWED_PIE_TYPES),
     ]),
   })
   .refine(
@@ -222,33 +242,35 @@ export default function AddWidget({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="groupBy"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Group by</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select the group by" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {getGroupByOptions(data, chartTable).map((item) => (
-                        <SelectItem key={item} value={item}>
-                          {item}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {getStackedOptions(chartType) && (
+              <FormField
+                control={form.control}
+                name="groupBy"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Group by</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select the group by" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {getGroupByOptions(data, chartTable).map((item) => (
+                          <SelectItem key={item} value={item}>
+                            {item}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}

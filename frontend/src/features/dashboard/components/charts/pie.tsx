@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GetDashboardGroupBy } from '../../lib/api/dashboard';
-import { ChartProps } from '../../lib/types/ChartProps';
+import { GroupByChartProps } from '../../lib/types/ChartProps';
 
 const chartConfig = {
   positive: {
@@ -23,7 +23,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-type PieComponentProps = ChartProps & {
+type PieComponentProps = GroupByChartProps & {
   layout?: 'pie' | 'donut' | 'halfpie' | 'halfdonut';
   gap?: number;
 };
@@ -45,7 +45,7 @@ export default function PieComponent({
   ...props
 }: PieComponentProps) {
   const { table, aggregation, duration } = props;
-  const groupBy = 'direction';
+  const { groupBy } = props;
 
   const { isLoading, isError, data } = useQuery({
     queryKey: [table, aggregation, duration, groupBy],
