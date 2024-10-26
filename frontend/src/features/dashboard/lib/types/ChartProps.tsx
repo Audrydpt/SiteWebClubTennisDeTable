@@ -55,12 +55,14 @@ export enum ChartType {
   Pie = 'Pie',
   MultiBar = 'MultiBar',
   MultiLine = 'MultiLine',
+  MultiGauge = 'MultiGauge',
   StackedBar = 'StackedBar',
   StackedArea = 'StackedArea',
   StackedGauge = 'StackedGauge',
 }
 
 export type ChartProps = {
+  title?: string;
   table: AcicEvent;
   aggregation: AcicAggregation;
   duration: AcicAggregation;

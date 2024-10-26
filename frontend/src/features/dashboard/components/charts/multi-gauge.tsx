@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GetDashboardGroupBy } from '../../lib/api/dashboard';
-import { ChartProps } from '../../lib/types/ChartProps';
+import { GroupByChartProps } from '../../lib/types/ChartProps';
 
 const chartConfig = {
   positive: {
@@ -23,7 +23,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-type MultiGaugeComponentProps = ChartProps & {
+type MultiGaugeComponentProps = GroupByChartProps & {
   layout?: 'full' | 'half';
 };
 
@@ -42,8 +42,8 @@ export default function MultiGaugeComponent({
   layout = 'full',
   ...props
 }: MultiGaugeComponentProps) {
-  const { table, aggregation, duration } = props;
-  const groupBy = 'direction';
+  const { title, table, aggregation, duration } = props;
+  const { groupBy } = props;
 
   const { isLoading, isError, data } = useQuery({
     queryKey: [table, aggregation, duration, groupBy],
@@ -63,7 +63,7 @@ export default function MultiGaugeComponent({
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
         <CardHeader>
-          <CardTitle>Area: {layout.toString()}</CardTitle>
+          <CardTitle>{title ?? `Multi-Gauge ${layout.toString()}`}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
           <ChartContainer config={chartConfig} className="h-full w-full">
@@ -99,7 +99,7 @@ export default function MultiGaugeComponent({
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">
       <CardHeader>
-        <CardTitle>Multi-Gauge {layout.toString()}</CardTitle>
+        <CardTitle>{title ?? `Multi-Gauge ${layout.toString()}`}</CardTitle>
       </CardHeader>
       <CardContent className="flex-grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
@@ -110,8 +110,7 @@ export default function MultiGaugeComponent({
             endAngle={layout === 'full' ? 360 : 180}
           >
             <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel nameKey="direction" />}
+              content={<ChartTooltipContent cursor={false} hideLabel />}
             />
             <RadialBar dataKey="count" background />
           </RadialBarChart>

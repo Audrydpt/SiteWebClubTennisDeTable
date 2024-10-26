@@ -201,12 +201,14 @@ export default function TestCharts() {
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
+        groupBy="direction"
         layout="full"
       />
       <MultiGaugeComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
+        groupBy="direction"
         layout="half"
       />
       <StackedGaugeComponent

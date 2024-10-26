@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { DateTime } from 'luxon';
 import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 import { CurveType } from 'recharts/types/shape/Curve';
 
@@ -11,6 +12,7 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GetDashboard } from '../../lib/api/dashboard';
+import getTimeFormattingConfig from '../../lib/ChartUtils';
 import { ChartProps } from '../../lib/types/ChartProps';
 
 const chartConfig = {
@@ -27,7 +29,7 @@ export default function AreaComponent({
   layout = 'basis',
   ...props
 }: AreaComponentProps) {
-  const { table, aggregation, duration } = props;
+  const { title, table, aggregation, duration } = props;
 
   const { isLoading, isError, data } = useQuery({
     queryKey: [table, aggregation, duration],
@@ -39,7 +41,7 @@ export default function AreaComponent({
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
         <CardHeader>
-          <CardTitle>Area: {layout.toString()}</CardTitle>
+          <CardTitle>{title ?? `Area ${layout.toString()}`}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
           <ChartContainer config={chartConfig} className="h-full w-full">
@@ -54,10 +56,12 @@ export default function AreaComponent({
     );
   }
 
+  const { format, interval } = getTimeFormattingConfig(duration, data.length);
+
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">
       <CardHeader>
-        <CardTitle>Area: {layout.toString()}</CardTitle>
+        <CardTitle>{title ?? `Area ${layout.toString()}`}</CardTitle>
       </CardHeader>
       <CardContent className="flex-grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
@@ -74,11 +78,23 @@ export default function AreaComponent({
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(value) => value.slice(0, 3)}
+              angle={-30}
+              tickFormatter={(t: string) =>
+                DateTime.fromISO(t).toFormat(format)
+              }
+              interval={interval}
             />
             <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel />}
+              content={
+                <ChartTooltipContent
+                  cursor={false}
+                  labelFormatter={(value: string) =>
+                    DateTime.fromISO(value).toLocaleString(
+                      DateTime.DATETIME_MED
+                    )
+                  }
+                />
+              }
             />
             <Area
               dataKey="count"

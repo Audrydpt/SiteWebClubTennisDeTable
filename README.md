@@ -21,6 +21,7 @@ WIP
 - fastapi
 
 ## readme plz:
+
 - https://openclassrooms.com/fr/courses/7008001-debutez-avec-react (component & props)
 - https://openclassrooms.com/fr/courses/7150606-creez-une-application-react-complete (state)
 - https://www.youtube.com/watch?v=38wJmjeJNAk (react-query)

@@ -6,22 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import AddDashboard from './components/add-dashboard';
 import AddWidget, { FormSchema } from './components/add-widget';
-import AreaComponent from './components/charts/area';
-import BarComponent from './components/charts/bar';
-import GaugeComponent from './components/charts/gauge';
-import LineComponent from './components/charts/line';
-import MultiBarComponent from './components/charts/multi-bar';
-import MultiLineComponent from './components/charts/multi-line';
-import PieComponent from './components/charts/pie';
-import StackedAreaComponent from './components/charts/stacked-area';
-import StackedBarComponent from './components/charts/stacked-bar';
-import StackedGaugeComponent from './components/charts/stacked-gauge';
-import {
-  ChartProps,
-  ChartSize,
-  ChartType,
-  GroupByChartProps,
-} from './lib/types/ChartProps';
+import { ChartTypeComponents } from './lib/types/ChartConst';
+import { ChartSize } from './lib/types/ChartProps';
 import TestCharts from './TestDashboard';
 
 const widthClassMap: Record<ChartSize, string> = {
@@ -40,22 +26,6 @@ const heightClassMap: Record<ChartSize, string> = {
   big: 'row-span-2 2xl:row-span-4',
   full: 'row-span-2',
 };
-
-type ChartComponentsType = {
-  [K in ChartType]: React.ComponentType<ChartProps | GroupByChartProps>;
-};
-const ChartTypeComponents = {
-  [ChartType.Area]: AreaComponent,
-  [ChartType.Bar]: BarComponent,
-  [ChartType.Line]: LineComponent,
-  [ChartType.Gauge]: GaugeComponent,
-  [ChartType.Pie]: PieComponent,
-  [ChartType.MultiBar]: MultiBarComponent,
-  [ChartType.MultiLine]: MultiLineComponent,
-  [ChartType.StackedArea]: StackedAreaComponent,
-  [ChartType.StackedBar]: StackedBarComponent,
-  [ChartType.StackedGauge]: StackedGaugeComponent,
-} as ChartComponentsType;
 
 type ChartTiles = {
   id: string;

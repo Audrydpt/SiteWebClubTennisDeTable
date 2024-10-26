@@ -10,5 +10,7 @@
     "typescript.updateImportsOnFileMove.enabled": "always"
   },
   "prettier.configPath": "frontend/package.json",
-  "python.terminal.activateEnvInCurrentTerminal": true
+  "python.terminal.activateEnvInCurrentTerminal": true,
+  "files.eol": "\n",
+  "prettier.endOfLine": "lf"
 }

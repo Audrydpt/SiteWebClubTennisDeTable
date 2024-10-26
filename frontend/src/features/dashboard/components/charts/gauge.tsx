@@ -66,7 +66,7 @@ export default function GaugeComponent({
   layout = 'full',
   ...props
 }: GaugeComponentProps) {
-  const { table, aggregation, duration } = props;
+  const { title, table, aggregation, duration } = props;
 
   const { isLoading, isError, data } = useQuery({
     queryKey: [table, aggregation, duration],
@@ -78,7 +78,7 @@ export default function GaugeComponent({
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
         <CardHeader>
-          <CardTitle>Area: {layout.toString()}</CardTitle>
+          <CardTitle>{title ?? `Gauge ${layout.toString()}`}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
           <ChartContainer config={chartConfig} className="h-full w-full">
@@ -109,7 +109,7 @@ export default function GaugeComponent({
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">
       <CardHeader>
-        <CardTitle>Gauge {layout.toString()}</CardTitle>
+        <CardTitle>{title ?? `Gauge ${layout.toString()}`}</CardTitle>
       </CardHeader>
       <CardContent className="flex-grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">

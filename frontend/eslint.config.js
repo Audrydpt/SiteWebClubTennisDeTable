@@ -48,6 +48,7 @@ export default [
       ...eslintConfigPrettier.rules,
       'prettier/prettier': 'error',
       '@stylistic/comma-dangle': 'off',
+      'linebreak-style': ['error', 'unix'],
     },
     languageOptions: {
       parserOptions: {

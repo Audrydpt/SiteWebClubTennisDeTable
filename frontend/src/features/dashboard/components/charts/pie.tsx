@@ -44,7 +44,7 @@ export default function PieComponent({
   gap = 0,
   ...props
 }: PieComponentProps) {
-  const { table, aggregation, duration } = props;
+  const { title, table, aggregation, duration } = props;
   const { groupBy } = props;
 
   const { isLoading, isError, data } = useQuery({
@@ -65,7 +65,7 @@ export default function PieComponent({
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
         <CardHeader>
-          <CardTitle>Area: {layout.toString()}</CardTitle>
+          <CardTitle>{title ?? `Pie ${layout.toString()}`}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
           <ChartContainer config={chartConfig} className="h-full w-full">
@@ -101,13 +101,13 @@ export default function PieComponent({
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">
       <CardHeader>
-        <CardTitle>Pie {layout.toString()}</CardTitle>
+        <CardTitle>{title ?? `Pie ${layout.toString()}`}</CardTitle>
       </CardHeader>
       <CardContent className="flex-grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <PieChart>
             <ChartTooltip
-              content={<ChartTooltipContent nameKey="direction" hideLabel />}
+              content={<ChartTooltipContent cursor={false} hideLabel />}
             />
             <Pie
               endAngle={

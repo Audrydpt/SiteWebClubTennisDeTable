@@ -102,8 +102,8 @@ class EventGrabber(threading.Thread):
                 link = url.replace("/stream", ":" + os.getenv('ACIC_HTTP_PORT') + "/stream")
 
             # self.logger.debug("Trying to download " + link + " to " + output)
-            with open(output, "wb") as f:
-                f.write(requests.get(link).content)
+            #with open(output, "wb") as f:
+            #    f.write(requests.get(link).content)
 
         except Exception as e:
             self.logger.warning("Error while downloading image:", e)

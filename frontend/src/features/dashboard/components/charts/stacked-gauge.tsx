@@ -44,7 +44,7 @@ export default function StackedGaugeComponent({
   stackOffset = 'none',
   ...props
 }: StackedGaugeComponentProps) {
-  const { table, aggregation, duration } = props;
+  const { title, table, aggregation, duration } = props;
   const { groupBy } = props;
 
   const { isLoading, isError, data } = useQuery({
@@ -65,7 +65,7 @@ export default function StackedGaugeComponent({
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
         <CardHeader>
-          <CardTitle>Area: {layout.toString()}</CardTitle>
+          <CardTitle>{title ?? `Stacked-Gauge ${layout.toString()}`}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
           <ChartContainer config={chartConfig} className="h-full w-full">
@@ -91,7 +91,7 @@ export default function StackedGaugeComponent({
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Stacked-Gauge {layout.toString()}</CardTitle>
+        <CardTitle>{title ?? `Stacked-Gauge ${layout.toString()}`}</CardTitle>
       </CardHeader>
       <CardContent className="flex-grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
@@ -103,8 +103,7 @@ export default function StackedGaugeComponent({
             stackOffset={stackOffset}
           >
             <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel nameKey="direction" />}
+              content={<ChartTooltipContent cursor={false} hideLabel />}
             />
             <RadialBar
               dataKey="positive"

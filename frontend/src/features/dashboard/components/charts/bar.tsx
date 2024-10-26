@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { DateTime } from 'luxon';
 import { Bar, BarChart, XAxis, YAxis } from 'recharts';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +11,7 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GetDashboard } from '../../lib/api/dashboard';
+import getTimeFormattingConfig from '../../lib/ChartUtils';
 import { ChartProps } from '../../lib/types/ChartProps';
 
 const chartConfig = {
@@ -26,7 +28,7 @@ export default function BarComponent({
   layout = 'horizontal',
   ...props
 }: BarComponentProps) {
-  const { table, aggregation, duration } = props;
+  const { title, table, aggregation, duration } = props;
 
   const { isLoading, isError, data } = useQuery({
     queryKey: [table, aggregation, duration],
@@ -38,7 +40,7 @@ export default function BarComponent({
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
         <CardHeader>
-          <CardTitle>Area: {layout.toString()}</CardTitle>
+          <CardTitle>{title ?? `Bar ${layout.toString()}`}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
           <ChartContainer config={chartConfig} className="h-full w-full">
@@ -53,10 +55,12 @@ export default function BarComponent({
     );
   }
 
+  const { format, interval } = getTimeFormattingConfig(duration, data.length);
+
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">
       <CardHeader>
-        <CardTitle>Bar: {layout.toString()}</CardTitle>
+        <CardTitle>{title ?? `Bar ${layout.toString()}`}</CardTitle>
       </CardHeader>
       <CardContent className="flex-grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
@@ -65,9 +69,13 @@ export default function BarComponent({
               <XAxis
                 dataKey="timestamp"
                 tickLine={false}
-                tickMargin={10}
                 axisLine={false}
-                tickFormatter={(value) => value.slice(0, 3)}
+                tickMargin={8}
+                angle={-30}
+                tickFormatter={(t: string) =>
+                  DateTime.fromISO(t).toFormat(format)
+                }
+                interval={interval}
               />
             ) : (
               <>
@@ -76,16 +84,26 @@ export default function BarComponent({
                   dataKey="timestamp"
                   type="category"
                   tickLine={false}
-                  tickMargin={10}
-                  axisLine={false}
-                  tickFormatter={(value) => value.slice(0, 3)}
+                  tickMargin={8}
+                  tickFormatter={(t: string) =>
+                    DateTime.fromISO(t).toFormat(format)
+                  }
+                  interval={interval}
                 />
               </>
             )}
 
             <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel />}
+              content={
+                <ChartTooltipContent
+                  cursor={false}
+                  labelFormatter={(value: string) =>
+                    DateTime.fromISO(value).toLocaleString(
+                      DateTime.DATETIME_MED
+                    )
+                  }
+                />
+              }
             />
             <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={8} />
           </BarChart>

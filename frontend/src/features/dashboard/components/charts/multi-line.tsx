@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { DateTime } from 'luxon';
 import { CartesianGrid, Line, LineChart, XAxis } from 'recharts';
 import { CurveType } from 'recharts/types/shape/Curve';
 
@@ -11,6 +12,7 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GetDashboardGroupBy } from '../../lib/api/dashboard';
+import getTimeFormattingConfig from '../../lib/ChartUtils';
 import { GroupByChartProps } from '../../lib/types/ChartProps';
 
 const chartConfig = {
@@ -41,7 +43,7 @@ export default function MultiLineComponent({
   layout = 'natural',
   ...props
 }: MultiLineComponentProps) {
-  const { table, aggregation, duration } = props;
+  const { title, table, aggregation, duration } = props;
   const { groupBy } = props;
 
   const { isLoading, isError, data } = useQuery({
@@ -62,7 +64,7 @@ export default function MultiLineComponent({
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
         <CardHeader>
-          <CardTitle>Area: {layout.toString()}</CardTitle>
+          <CardTitle>{title ?? `Multi-Line ${layout.toString()}`}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
           <ChartContainer config={chartConfig} className="h-full w-full">
@@ -91,10 +93,15 @@ export default function MultiLineComponent({
     )
   );
 
+  const { format, interval } = getTimeFormattingConfig(
+    duration,
+    dataMerged.length
+  );
+
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">
       <CardHeader>
-        <CardTitle>Multi-Line {layout.toString()}</CardTitle>
+        <CardTitle>{title ?? `Multi-Line ${layout.toString()}`}</CardTitle>
       </CardHeader>
       <CardContent className="flex-grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
@@ -111,11 +118,24 @@ export default function MultiLineComponent({
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(value) => value.slice(0, 3)}
+              angle={-30}
+              tickFormatter={(t: string) =>
+                DateTime.fromISO(t).toFormat(format)
+              }
+              interval={interval}
             />
+
             <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel />}
+              content={
+                <ChartTooltipContent
+                  cursor={false}
+                  labelFormatter={(value: string) =>
+                    DateTime.fromISO(value).toLocaleString(
+                      DateTime.DATETIME_MED
+                    )
+                  }
+                />
+              }
             />
 
             <Line

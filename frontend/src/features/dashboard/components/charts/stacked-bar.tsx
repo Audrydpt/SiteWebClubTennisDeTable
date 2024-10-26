@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { DateTime } from 'luxon';
 import { Bar, BarChart, XAxis, YAxis } from 'recharts';
 import { StackOffsetType } from 'recharts/types/util/types';
 
@@ -11,6 +12,7 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GetDashboardGroupBy } from '../../lib/api/dashboard';
+import getTimeFormattingConfig from '../../lib/ChartUtils';
 import { GroupByChartProps } from '../../lib/types/ChartProps';
 
 const chartConfig = {
@@ -43,7 +45,7 @@ export default function StackedBarComponent({
   stackOffset = 'none',
   ...props
 }: StackedBarComponentProps) {
-  const { table, aggregation, duration } = props;
+  const { title, table, aggregation, duration } = props;
   const { groupBy } = props;
 
   const { isLoading, isError, data } = useQuery({
@@ -64,7 +66,7 @@ export default function StackedBarComponent({
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
         <CardHeader>
-          <CardTitle>Area: {layout.toString()}</CardTitle>
+          <CardTitle>{title ?? `Stacked-Bar ${layout.toString()}`}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
           <ChartContainer config={chartConfig} className="h-full w-full">
@@ -93,10 +95,15 @@ export default function StackedBarComponent({
     )
   );
 
+  const { format, interval } = getTimeFormattingConfig(
+    duration,
+    dataMerged.length
+  );
+
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">
       <CardHeader>
-        <CardTitle>Stacked-Bar {layout.toString()}</CardTitle>
+        <CardTitle>{title ?? `Stacked-Bar ${layout.toString()}`}</CardTitle>
       </CardHeader>
       <CardContent className="flex-grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
@@ -105,9 +112,13 @@ export default function StackedBarComponent({
               <XAxis
                 dataKey="timestamp"
                 tickLine={false}
-                tickMargin={10}
                 axisLine={false}
-                tickFormatter={(value) => value.slice(0, 3)}
+                tickMargin={8}
+                angle={-30}
+                tickFormatter={(t: string) =>
+                  DateTime.fromISO(t).toFormat(format)
+                }
+                interval={interval}
               />
             ) : (
               <>
@@ -118,14 +129,25 @@ export default function StackedBarComponent({
                   tickLine={false}
                   tickMargin={10}
                   axisLine={false}
-                  tickFormatter={(value) => value.slice(0, 3)}
+                  tickFormatter={(t: string) =>
+                    DateTime.fromISO(t).toFormat(format)
+                  }
+                  interval={interval}
                 />
               </>
             )}
 
             <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel />}
+              content={
+                <ChartTooltipContent
+                  cursor={false}
+                  labelFormatter={(value: string) =>
+                    DateTime.fromISO(value).toLocaleString(
+                      DateTime.DATETIME_MED
+                    )
+                  }
+                />
+              }
             />
             {layout === 'horizontal' ? (
               <>
