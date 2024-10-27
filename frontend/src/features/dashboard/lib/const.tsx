@@ -1,15 +1,15 @@
-import AreaComponent from '../../components/charts/area';
-import BarComponent from '../../components/charts/bar';
-import GaugeComponent from '../../components/charts/gauge';
-import LineComponent from '../../components/charts/line';
-import MultiBarComponent from '../../components/charts/multi-bar';
-import MultiGaugeComponent from '../../components/charts/multi-gauge';
-import MultiLineComponent from '../../components/charts/multi-line';
-import PieComponent from '../../components/charts/pie';
-import StackedAreaComponent from '../../components/charts/stacked-area';
-import StackedBarComponent from '../../components/charts/stacked-bar';
-import StackedGaugeComponent from '../../components/charts/stacked-gauge';
-import { ChartProps, ChartType, GroupByChartProps } from './ChartProps';
+import AreaComponent from '../components/charts/area';
+import BarComponent from '../components/charts/bar';
+import GaugeComponent from '../components/charts/gauge';
+import LineComponent from '../components/charts/line';
+import MultiBarComponent from '../components/charts/multi-bar';
+import MultiGaugeComponent from '../components/charts/multi-gauge';
+import MultiLineComponent from '../components/charts/multi-line';
+import PieComponent from '../components/charts/pie';
+import StackedAreaComponent from '../components/charts/stacked-area';
+import StackedBarComponent from '../components/charts/stacked-bar';
+import StackedGaugeComponent from '../components/charts/stacked-gauge';
+import { ChartProps, ChartType, GroupByChartProps } from './props';
 
 type ChartComponentsType = {
   [K in ChartType]: React.ComponentType<ChartProps | GroupByChartProps>;

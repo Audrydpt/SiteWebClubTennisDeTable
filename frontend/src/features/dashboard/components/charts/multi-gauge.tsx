@@ -9,8 +9,9 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
-import { GetDashboardGroupBy } from '../../lib/api/dashboard';
-import { GroupByChartProps } from '../../lib/types/ChartProps';
+
+import { GroupByChartProps } from '../../lib/props';
+import { getWidgetData } from '../../lib/utils';
 
 const chartConfig = {
   positive: {
@@ -48,7 +49,7 @@ export default function MultiGaugeComponent({
   const { isLoading, isError, data } = useQuery({
     queryKey: [table, aggregation, duration, groupBy],
     queryFn: () =>
-      GetDashboardGroupBy(
+      getWidgetData(
         {
           table,
           aggregation,

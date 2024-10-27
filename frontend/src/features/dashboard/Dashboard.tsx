@@ -1,13 +1,13 @@
-import { useState } from 'react';
 import { ReactSortable } from 'react-sortablejs';
 
 import Header from '@/components/header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import useLocalStorage from '@/hooks/use-localstorage';
 
 import AddDashboard from './components/add-dashboard';
-import AddWidget, { FormSchema } from './components/add-widget';
-import { ChartTypeComponents } from './lib/types/ChartConst';
-import { ChartSize } from './lib/types/ChartProps';
+import { AddWidget, FormSchema } from './components/add-widget';
+import { ChartTypeComponents } from './lib/const';
+import { ChartSize } from './lib/props';
 import TestCharts from './TestDashboard';
 
 const widthClassMap: Record<ChartSize, string> = {
@@ -33,20 +33,36 @@ type ChartTiles = {
   content: JSX.Element;
 };
 
+type StoredWidget = FormSchema & {
+  id: string;
+};
+
 export default function Charts() {
-  const [widgets, setWidgets] = useState([] as ChartTiles[]);
+  const { value: storedWidgets, setValue: setStoredWidgets } = useLocalStorage<
+    StoredWidget[]
+  >('dashboard-widgets', []);
 
-  function addWidget(data: FormSchema) {
-    const { size, type, ...chart } = data;
+  const widgets = storedWidgets.map((data) => {
+    const { id, size, type, ...chart } = data;
     const Component = ChartTypeComponents[type];
-
-    const newWidget = {
-      id: widgets.length.toString(),
+    return {
+      id,
       size,
       content: <Component {...chart} />,
     } as ChartTiles;
-    setWidgets([...widgets, newWidget]);
+  });
+
+  function addWidget(data: FormSchema) {
+    const newWidget = { ...data, id: crypto.randomUUID() };
+    setStoredWidgets([...storedWidgets, newWidget]);
   }
+
+  const handleSort = (newWidgets: ChartTiles[]) => {
+    const reorderedData = newWidgets.map(
+      (widget) => storedWidgets.find((stored) => stored.id === widget.id)!
+    );
+    setStoredWidgets(reorderedData);
+  };
 
   return (
     <>
@@ -64,7 +80,7 @@ export default function Charts() {
         <TabsContent value="overview" className="w-full">
           <ReactSortable
             list={widgets}
-            setList={setWidgets}
+            setList={handleSort}
             className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6 gap-2"
           >
             {widgets.map((item) => (

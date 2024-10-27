@@ -4,8 +4,9 @@ import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartConfig, ChartContainer } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
-import { GetDashboard } from '../../lib/api/dashboard';
-import { ChartProps } from '../../lib/types/ChartProps';
+
+import { ChartProps } from '../../lib/props';
+import { getWidgetData } from '../../lib/utils';
 
 const chartConfig = {
   count: {
@@ -70,7 +71,7 @@ export default function GaugeComponent({
 
   const { isLoading, isError, data } = useQuery({
     queryKey: [table, aggregation, duration],
-    queryFn: () => GetDashboard({ table, aggregation, duration }),
+    queryFn: () => getWidgetData({ table, aggregation, duration }),
     refetchInterval: 10 * 1000,
   });
 

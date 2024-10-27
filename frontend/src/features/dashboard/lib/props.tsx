@@ -10,11 +10,12 @@ export enum AcicAggregation {
   OneYear = '1 year',
   LifeTime = '100 years',
 }
+
 type AggregationToObject = {
   [K in AcicAggregation]: object;
 };
 
-export const AcicAggregationTypeToObject: AggregationToObject = {
+export const AggregationTypeToObject: AggregationToObject = {
   '1 minute': { minutes: 1 },
   '15 minutes': { minutes: 15 },
   '30 minutes': { minutes: 30 },

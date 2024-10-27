@@ -11,9 +11,9 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
-import { GetDashboard } from '../../lib/api/dashboard';
-import getTimeFormattingConfig from '../../lib/ChartUtils';
-import { ChartProps } from '../../lib/types/ChartProps';
+
+import { ChartProps } from '../../lib/props';
+import { getTimeFormattingConfig, getWidgetData } from '../../lib/utils';
 
 const chartConfig = {
   count: {
@@ -33,7 +33,7 @@ export default function AreaComponent({
 
   const { isLoading, isError, data } = useQuery({
     queryKey: [table, aggregation, duration],
-    queryFn: () => GetDashboard({ table, aggregation, duration }),
+    queryFn: () => getWidgetData({ table, aggregation, duration }),
     refetchInterval: 10 * 1000,
   });
 

@@ -24,6 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -32,20 +33,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import { Input } from '@/components/ui/input';
-import { GetDashboardDescription } from '../lib/api/dashboard';
 import {
   ChartTypeComponents,
   LayoutOptions,
   StackedOptions,
-} from '../lib/types/ChartConst';
+} from '../lib/const';
 import {
   AcicAggregation,
-  AcicAggregationTypeToObject,
   AcicEvent,
+  AggregationTypeToObject,
   ChartSize,
   ChartType,
-} from '../lib/types/ChartProps';
+} from '../lib/props';
+import { getWidgetDescription } from '../lib/utils';
 
 const getLayoutOptions = (chartType: ChartType): readonly string[] =>
   LayoutOptions[chartType] ?? [];
@@ -78,8 +78,8 @@ const formSchema = z
   })
   .refine(
     (data) =>
-      Duration.fromObject(AcicAggregationTypeToObject[data.aggregation]) <=
-      Duration.fromObject(AcicAggregationTypeToObject[data.duration]),
+      Duration.fromObject(AggregationTypeToObject[data.aggregation]) <=
+      Duration.fromObject(AggregationTypeToObject[data.duration]),
     {
       message: 'Aggregation period must be smaller than or equal to duration',
       path: ['aggregation'],
@@ -87,7 +87,7 @@ const formSchema = z
   );
 export type FormSchema = z.infer<typeof formSchema>;
 
-export default function AddWidget({
+export function AddWidget({
   onSubmit,
 }: {
   onSubmit: (data: FormSchema) => void;
@@ -96,7 +96,7 @@ export default function AddWidget({
 
   const { data } = useQuery({
     queryKey: ['dashboard', 'add_widget'],
-    queryFn: () => GetDashboardDescription(),
+    queryFn: () => getWidgetDescription(),
   });
 
   const form = useForm<FormSchema>({

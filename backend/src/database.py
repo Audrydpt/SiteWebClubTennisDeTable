@@ -1,7 +1,7 @@
-from sqlalchemy import column, create_engine, Column, Integer, REAL, String, Text, DateTime, DDL, PrimaryKeyConstraint, cast, func, inspect, text
+from sqlalchemy import column, create_engine, Column, Integer, REAL, String, Text, DateTime, DDL, PrimaryKeyConstraint, cast, func, inspect, text, ForeignKey
 from sqlalchemy.dialects.postgresql import TIMESTAMP, INTEGER, UUID
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, relationship
 
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
@@ -14,7 +14,14 @@ class Base:
     @declared_attr
     def __tablename__(cls):
         return cls.__name__.lower()
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
+Database = declarative_base(cls=Base)
+
+class BaseEvent(Database):
+    __abstract__ = True
+    
     @declared_attr
     def __table_args__(cls):
         return (
@@ -23,13 +30,9 @@ class Base:
             },
         )
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     host = Column(Text, index=True)
     stream_id = Column(Integer, index=True)
     timestamp = Column(TIMESTAMP(timezone=True), primary_key=True)
-
-
-BaseEvent = declarative_base(cls=Base)
 
 
 class AcicUnattendedItem(BaseEvent):
@@ -90,6 +93,23 @@ class AcicEvent(BaseEvent):
     name = Column(Text)
     state = Column(Text)
 
+class Dashboard(Database):
+    title = Column(Text, nullable=False)
+    widgets = relationship("Widget", back_populates="dashboard")
+
+class Widget(Database):
+    table = Column(Text)
+    aggregation = Column(Text)
+    duration = Column(Text)
+    groupBy = Column(Text, nullable=True)
+    size = Column(Text)
+    type = Column(Text)
+    layout = Column(Text)
+    title = Column(Text)
+
+    # Clé étrangère vers Dashboard
+    dashboard_id = Column(UUID(as_uuid=True), ForeignKey('dashboard.id'), nullable=True)
+    dashboard = relationship("Dashboard", back_populates="widgets")
 
 class GenericDAL:
     initialized = False
@@ -155,16 +175,21 @@ class GenericDAL:
             session.execute(DDL("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
             session.execute(DDL("CREATE EXTENSION IF NOT EXISTS timescaledb"))
             session.commit()
-        BaseEvent.metadata.create_all(self.engine)
+        
+        print("Binding schema to engine...")
+        Database.metadata.create_all(self.engine)
 
+        print("Trying to update schema...")
         # got issue using the same engine, because of dialect timescaledb != postgresql
         with create_engine('postgresql://postgres:postgres@192.168.20.145:5432/postgres', echo=False).connect() as conn:
             trans = conn.begin()
             try:
                 # Configure the migration context with the connection
                 context = MigrationContext.configure(conn)
-                migrations = produce_migrations(context, BaseEvent.metadata)
+                migrations = produce_migrations(context, Database.metadata)
                 if not migrations.upgrade_ops.is_empty():
+
+                    print("Updating schema...")
 
                     operations = Operations(context)
 
@@ -172,6 +197,7 @@ class GenericDAL:
                     stack = [migrations.upgrade_ops]
                     while stack:
                         elem = stack.pop(0)
+                        print(elem)
 
                         if use_batch and isinstance(elem, ModifyTableOps):
                             with operations.batch_alter_table(elem.table_name, schema=elem.schema) as batch_ops:
@@ -195,12 +221,15 @@ class GenericDAL:
                 trans.rollback()
                 print(f"An error occurred during migration: {e}")
             print("Schema updated")
+        
+        print("Schema is ready")
 
 
     def add(self, obj):
         with self.Session() as session:
             session.add(obj)
             session.commit()
+            return obj.id
 
     def get(self, cls, _func=None, _group=None, _having=None, _order=None, **filters):
         with self.Session() as session:

@@ -1,4 +1,6 @@
-import { AcicAggregation } from './types/ChartProps';
+import { DateTime } from 'luxon';
+
+import { AcicAggregation, AggregationTypeToObject } from './props';
 
 function getDurationInDays(durationStr: string): number {
   const [amount, unit] = durationStr.split(' ');
@@ -25,7 +27,7 @@ function getDurationInDays(durationStr: string): number {
   }
 }
 
-export default function getTimeFormattingConfig(
+export function getTimeFormattingConfig(
   duration: AcicAggregation,
   dataLength: number
 ) {
@@ -48,4 +50,26 @@ export default function getTimeFormattingConfig(
     default:
       return { format: 'LLL yyyy', interval };
   }
+}
+
+type DashboardQuery = {
+  table: string;
+  aggregation: AcicAggregation;
+  duration: AcicAggregation;
+};
+export async function getWidgetDescription() {
+  return fetch(`${process.env.MAIN_API_URL}/dashboard/widgets`).then((res) =>
+    res.json()
+  );
+}
+
+export async function getWidgetData(props: DashboardQuery, groupBy?: string) {
+  const now = DateTime.now();
+
+  const timeFrom = now.minus(AggregationTypeToObject[props.duration]);
+  const timeTo = now;
+
+  return fetch(
+    `${process.env.MAIN_API_URL}/dashboard/widgets/${props.table}?aggregate=${props.aggregation}&time_from=${timeFrom.toISO({ includeOffset: false })}&time_to=${timeTo.toISO({ includeOffset: false })}${groupBy ? `&group_by=${groupBy}` : ''}`
+  ).then((res) => res.json());
 }
