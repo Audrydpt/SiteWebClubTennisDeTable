@@ -86,6 +86,9 @@ const formSchema = z
     }
   );
 export type FormSchema = z.infer<typeof formSchema>;
+export type StoredWidget = FormSchema & {
+  id: string;
+};
 
 export function AddWidget({
   onSubmit,

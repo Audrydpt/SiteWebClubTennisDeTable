@@ -157,7 +157,10 @@ class FastAPIServer:
         for column in inspect(Widget).mapper.column_attrs:
             if column.key not in ['id', 'dashboard_id']: 
                 python_type = column.expression.type.python_type
-                fields[column.key] = (python_type, Field(description=f"The {column.key} of the widget") )
+                if column.expression.nullable:
+                    fields[column.key] = (Optional[python_type], Field(default=None, description=f"The {column.key} of the widget"))
+                else:
+                    fields[column.key] = (python_type, Field(description=f"The {column.key} of the widget") )
 
         Model = create_model('WidgetModel', **fields)
 

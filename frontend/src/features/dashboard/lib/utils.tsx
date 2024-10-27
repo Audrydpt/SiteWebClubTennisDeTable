@@ -1,6 +1,12 @@
 import { DateTime } from 'luxon';
 
-import { AcicAggregation, AggregationTypeToObject } from './props';
+import {
+  AcicAggregation,
+  AcicEvent,
+  AggregationTypeToObject,
+  ChartSize,
+  ChartType,
+} from './props';
 
 function getDurationInDays(durationStr: string): number {
   const [amount, unit] = durationStr.split(' ');
@@ -72,4 +78,38 @@ export async function getWidgetData(props: DashboardQuery, groupBy?: string) {
   return fetch(
     `${process.env.MAIN_API_URL}/dashboard/widgets/${props.table}?aggregate=${props.aggregation}&time_from=${timeFrom.toISO({ includeOffset: false })}&time_to=${timeTo.toISO({ includeOffset: false })}${groupBy ? `&group_by=${groupBy}` : ''}`
   ).then((res) => res.json());
+}
+
+type DashboardTab = Record<string, { title: string }>;
+export async function getDashboards() {
+  return fetch(`${process.env.MAIN_API_URL}/dashboard/tabs`).then(
+    (res) => res.json() as Promise<DashboardTab>
+  );
+}
+
+// In fact, it should be StoredWidget instead of WidgetQuery, but got cycle import error
+type WidgetQuery = {
+  id: string;
+  size: ChartSize;
+  type: ChartType;
+  table: AcicEvent;
+  aggregation: AcicAggregation;
+  duration: AcicAggregation;
+  groupBy?: string;
+  layout: string;
+  title: string;
+};
+export async function getDashboardWidgets(id: string) {
+  return fetch(`${process.env.MAIN_API_URL}/dashboard/tabs/${id}/widgets`).then(
+    (res) => res.json() as Promise<WidgetQuery[]>
+  );
+}
+export async function setDashboardWidgets(id: string, widgets: WidgetQuery[]) {
+  return fetch(`${process.env.MAIN_API_URL}/dashboard/tabs/${id}/widgets`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(widgets),
+  }).then((res) => res.json());
 }

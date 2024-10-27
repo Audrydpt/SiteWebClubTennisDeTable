@@ -3,7 +3,7 @@ export type UserType = {
   privileges: 'Administrator' | 'Operator';
 };
 
-export default async function GetUser(sessionId: string) {
+export default async function getCurrentUser(sessionId: string) {
   return fetch(`${process.env.BACK_API_URL}/authenticate`, {
     headers: {
       Authorization: `X-Session-Id ${sessionId}`,

@@ -1,13 +1,16 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ReactSortable } from 'react-sortablejs';
 
 import Header from '@/components/header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import useLocalStorage from '@/hooks/use-localstorage';
+// import useLocalStorage from '@/hooks/use-localstorage';
+import LoadingSpinner from '@/components/ui/loading';
 
 import AddDashboard from './components/add-dashboard';
-import { AddWidget, FormSchema } from './components/add-widget';
+import { AddWidget, FormSchema, StoredWidget } from './components/add-widget';
 import { ChartTypeComponents } from './lib/const';
 import { ChartSize } from './lib/props';
+import { getDashboardWidgets, setDashboardWidgets } from './lib/utils';
 import TestCharts from './TestDashboard';
 
 const widthClassMap: Record<ChartSize, string> = {
@@ -33,35 +36,51 @@ type ChartTiles = {
   content: JSX.Element;
 };
 
-type StoredWidget = FormSchema & {
-  id: string;
-};
-
 export default function Charts() {
-  const { value: storedWidgets, setValue: setStoredWidgets } = useLocalStorage<
-    StoredWidget[]
-  >('dashboard-widgets', []);
-
-  const widgets = storedWidgets.map((data) => {
-    const { id, size, type, ...chart } = data;
-    const Component = ChartTypeComponents[type];
-    return {
-      id,
-      size,
-      content: <Component {...chart} />,
-    } as ChartTiles;
+  const queryClient = useQueryClient();
+  const dashboardKey = '223d8eb4-9574-4cab-90a7-8c1d9e6a28f9';
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['dashboard-widgets', dashboardKey],
+    queryFn: () => getDashboardWidgets(dashboardKey),
   });
 
-  function addWidget(data: FormSchema) {
-    const newWidget = { ...data, id: crypto.randomUUID() };
-    setStoredWidgets([...storedWidgets, newWidget]);
+  const mutation = useMutation({
+    mutationFn: async (newWidgets: StoredWidget[]) =>
+      setDashboardWidgets(dashboardKey, newWidgets),
+    onMutate: (newWidgets) =>
+      queryClient.setQueryData<StoredWidget[]>(
+        ['dashboard-widgets', dashboardKey],
+        newWidgets
+      ),
+  });
+
+  if (isLoading || !data || isError) {
+    return <LoadingSpinner />;
   }
 
+  const widgets =
+    data?.map((d: StoredWidget) => {
+      const { id, size, type, ...chart } = d;
+      const Component = ChartTypeComponents[type];
+      return {
+        id,
+        size,
+        content: <Component {...chart} />,
+      } as ChartTiles;
+    }) ?? [];
+
+  const addWidget = (d: FormSchema) => {
+    const newWidget = { ...d, id: crypto.randomUUID() } as StoredWidget;
+    mutation.mutate([...(data ?? []), newWidget]);
+  };
+
   const handleSort = (newWidgets: ChartTiles[]) => {
-    const reorderedData = newWidgets.map(
-      (widget) => storedWidgets.find((stored) => stored.id === widget.id)!
-    );
-    setStoredWidgets(reorderedData);
+    const reorderedData = newWidgets.map((widget: ChartTiles) =>
+      data?.find((stored) => stored.id === widget.id)
+    ) as StoredWidget[];
+
+    if (JSON.stringify(reorderedData) !== JSON.stringify(data))
+      mutation.mutate(reorderedData);
   };
 
   return (
@@ -83,7 +102,7 @@ export default function Charts() {
             setList={handleSort}
             className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6 gap-2"
           >
-            {widgets.map((item) => (
+            {widgets.map((item: ChartTiles) => (
               <div
                 key={item.id}
                 data-id={item.id}

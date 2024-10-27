@@ -94,14 +94,14 @@ class AcicEvent(BaseEvent):
     state = Column(Text)
 
 class Dashboard(Database):
-    title = Column(Text, nullable=False)
+    title = Column(Text)
     widgets = relationship("Widget", back_populates="dashboard")
 
 class Widget(Database):
     table = Column(Text)
     aggregation = Column(Text)
     duration = Column(Text)
-    groupBy = Column(Text, nullable=True)
+    groupBy = Column(Text, nullable=True, default=None)
     size = Column(Text)
     type = Column(Text)
     layout = Column(Text)
