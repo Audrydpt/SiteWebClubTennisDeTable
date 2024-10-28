@@ -3,8 +3,8 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -22,10 +22,12 @@ export default function AddDashboard() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add Dashboard</DialogTitle>
-          <DialogDescription>TODO</DialogDescription>
         </DialogHeader>
-        <DialogFooter>
-          <Button>Close</Button>
+        TODO
+        <DialogFooter className="p-2">
+          <DialogClose asChild>
+            <Button variant="outline">Close</Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

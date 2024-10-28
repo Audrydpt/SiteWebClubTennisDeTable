@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/chart';
 import { Separator } from '@/components/ui/separator';
 
-export default function DemoCharts() {
+export default function DemoDashboard() {
   return (
     <>
       <div className="grid w-full gap-6 sm:grid-cols-2 lg:max-w-[20rem] lg:grid-cols-1 xl:max-w-[25rem]">

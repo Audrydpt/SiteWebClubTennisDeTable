@@ -96,6 +96,7 @@ class AcicEvent(BaseEvent):
 class Dashboard(Database):
     title = Column(Text)
     widgets = relationship("Widget", back_populates="dashboard")
+    order = Column(Integer, default=0)
 
 class Widget(Database):
     table = Column(Text)
@@ -106,6 +107,7 @@ class Widget(Database):
     type = Column(Text)
     layout = Column(Text)
     title = Column(Text)
+    order = Column(Integer, default=0)
 
     # Clé étrangère vers Dashboard
     dashboard_id = Column(UUID(as_uuid=True), ForeignKey('dashboard.id'), nullable=True)
@@ -120,6 +122,7 @@ class GenericDAL:
 
         if not GenericDAL.initialized:
             GenericDAL.__update_schema(self)
+            GenericDAL.__seed_database(self)
             GenericDAL.initialized = True
     
     def __update_schema(self):
@@ -223,6 +226,14 @@ class GenericDAL:
             print("Schema updated")
         
         print("Schema is ready")
+
+    def __seed_database(self):
+        with self.Session() as session:
+            query = session.query(Dashboard).all()
+            if not query or len(query) == 0:
+                dashboard = Dashboard(title="Main dashboard")
+                session.add(dashboard)
+                session.commit()
 
 
     def add(self, obj):
