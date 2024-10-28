@@ -1,7 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useEffect } from 'react';
 import { ReactSortable } from 'react-sortablejs';
 
+import { Button } from '@/components/ui/button';
+import DeleteConfirmation from '@/components/ui/confirm-delete';
 import LoadingSpinner from '@/components/ui/loading';
 
 import { FormSchema, StoredWidget } from './components/add-widget';
@@ -70,12 +73,23 @@ export default function DashboardTab({
   }, [onAddWidget, addWidget]);
 
   const handleSort = (newWidgets: ChartTiles[]) => {
-    const reorderedData = newWidgets.map((widget: ChartTiles) =>
-      data?.find((stored) => stored.id === widget.id)
-    ) as StoredWidget[];
+    if (data) {
+      const reorderedData = newWidgets.map((widget: ChartTiles) =>
+        data.find((stored) => stored.id === widget.id)
+      ) as StoredWidget[];
 
-    if (JSON.stringify(reorderedData) !== JSON.stringify(data))
-      mutate(reorderedData);
+      if (JSON.stringify(reorderedData) !== JSON.stringify(data))
+        mutate(reorderedData);
+    }
+  };
+
+  const handleEdit = () => {};
+
+  const handleDelete = (id: string) => {
+    if (data) {
+      const newWidgets = data.filter((widget) => widget.id !== id);
+      mutate(newWidgets);
+    }
   };
 
   if (isLoading || !data || isError) return <LoadingSpinner />;
@@ -101,9 +115,24 @@ export default function DashboardTab({
         <div
           key={item.id}
           data-id={item.id}
-          className={`${widthClassMap[item.size]} ${heightClassMap[item.size]}`}
+          className={`${widthClassMap[item.size]} ${heightClassMap[item.size]} group relative`}
         >
           {item.content}
+          <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button variant="outline" size="icon" onClick={() => handleEdit()}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+
+            <DeleteConfirmation
+              onDelete={() => handleDelete(item.id)}
+              description="Cette action est irréversible. Le widget sera définitivement supprimé du dashboard."
+              trigger={
+                <Button variant="destructive" size="icon">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              }
+            />
+          </div>
         </div>
       ))}
     </ReactSortable>

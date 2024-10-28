@@ -4,7 +4,7 @@ import { ReactSortable } from 'react-sortablejs';
 import Header from '@/components/header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // import useLocalStorage from '@/hooks/use-localstorage';
-import LoadingSpinner from '@/components/ui/loading';
+import LoadingSpinner from '@/components/loading';
 
 import AddDashboard from './components/add-dashboard';
 import { AddWidget, FormSchema, StoredWidget } from './components/add-widget';

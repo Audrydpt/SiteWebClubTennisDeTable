@@ -270,37 +270,36 @@ export function AddWidget({
                   )}
                 />
 
-                {getStackedOptions(formValues.type) && (
-                  <FormField
-                    control={form.control}
-                    name="groupBy"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Group by</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select the group by" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {getGroupByOptions(data, formValues.table).map(
-                              (item) => (
-                                <SelectItem key={item} value={item}>
-                                  {item}
-                                </SelectItem>
-                              )
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
+                <FormField
+                  control={form.control}
+                  name="groupBy"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Group by</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        disabled={!getStackedOptions(formValues.type)}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select the group by" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {getGroupByOptions(data, formValues.table).map(
+                            (item) => (
+                              <SelectItem key={item} value={item}>
+                                {item}
+                              </SelectItem>
+                            )
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <div className="flex gap-2">
                   <div className="flex-1">
