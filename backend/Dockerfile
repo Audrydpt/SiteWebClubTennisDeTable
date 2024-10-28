@@ -76,7 +76,7 @@ RUN wget -O /usr/bin/dumb-init https://github.com/Yelp/dumb-init/releases/downlo
     && echo "wait" >> /start.sh \
     && chmod +x /start.sh
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+HEALTHCHECK --interval=60s --timeout=20s --start-period=60s --retries=3 \
     CMD pg_isready -U postgres && curl -f http://localhost:5000/health || exit 1
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["/start.sh"]

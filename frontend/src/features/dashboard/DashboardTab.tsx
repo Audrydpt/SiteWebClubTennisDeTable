@@ -92,7 +92,8 @@ export default function DashboardTab({
     }
   };
 
-  if (isLoading || !data || isError) return <LoadingSpinner />;
+  if (isError) return <div>Something went wrong</div>;
+  if (isLoading || !data) return <LoadingSpinner />;
 
   const widgets =
     data.map((d: StoredWidget) => {

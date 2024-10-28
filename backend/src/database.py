@@ -302,7 +302,7 @@ class GenericDAL:
                 query = query.having(_having)
             
             # ORDER BY
-            query = query.order_by('_timestamp')
+            query = query.order_by('_timestamp')            
             if _group is not None:
                 if isinstance(_group, list):
                     for group in _group:

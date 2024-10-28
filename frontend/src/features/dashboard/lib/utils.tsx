@@ -110,6 +110,8 @@ export async function setDashboardWidgets(id: string, widgets: WidgetQuery[]) {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(widgets),
+    body: JSON.stringify(
+      widgets.map((widget, index) => ({ ...widget, order: index }))
+    ),
   }).then((res) => res.json());
 }

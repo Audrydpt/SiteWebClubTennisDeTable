@@ -112,7 +112,8 @@ class FastAPIServer:
 
                 ret = {}
                 dal = GenericDAL()
-                for row in dal.get(Dashboard):
+                query = dal.get(Dashboard, _order='order')
+                for row in query:
                     data = {}
                     for column in inspect(Dashboard).mapper.column_attrs:
                         if column.key not in ['id', 'timestamp']:
@@ -172,7 +173,7 @@ class FastAPIServer:
         async def get_widgets(id: str):
             try:
                 dal = GenericDAL()
-                return dal.get(Widget, dashboard_id=id)
+                return dal.get(Widget, dashboard_id=id, _order='order')
 
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))

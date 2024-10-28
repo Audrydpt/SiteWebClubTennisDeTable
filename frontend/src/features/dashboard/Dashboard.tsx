@@ -17,7 +17,6 @@ export default function Dashboard() {
     () => {}
   );
 
-  // Fetch available dashboards
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dashboards'],
     queryFn: getDashboards,
@@ -27,7 +26,8 @@ export default function Dashboard() {
     if (data) setCurrentDashboard(Object.keys(data)[0]);
   }, [data]);
 
-  if (isLoading || !data || isError) return <LoadingSpinner />;
+  if (isError) return <div>Something went wrong</div>;
+  if (isLoading || !data) return <LoadingSpinner />;
 
   return (
     <>
