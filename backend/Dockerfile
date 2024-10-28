@@ -8,6 +8,7 @@ ARG PGDATA=/var/lib/postgresql/${PG_VERSION}/main
 # Pré-requis
 RUN apt-get update && apt-get install -y \
     wget \
+    curl \
     gnupg2 \
     lsb-release \
     python3 python3-pip python3-dev subversion \
@@ -75,5 +76,7 @@ RUN wget -O /usr/bin/dumb-init https://github.com/Yelp/dumb-init/releases/downlo
     && echo "wait" >> /start.sh \
     && chmod +x /start.sh
 
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+    CMD pg_isready -U postgres && curl -f http://localhost:5000/health || exit 1
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["/start.sh"]

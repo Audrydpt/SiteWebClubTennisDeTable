@@ -63,7 +63,11 @@ class FastAPIServer:
         @self.app.get("/", include_in_schema=False)
         async def custom_swagger_ui_html():
             return get_custom_swagger_ui_html(openapi_url="openapi.json", title=self.app.title + " - Swagger UI",)
-
+        
+        @self.app.get("/health", include_in_schema=False)
+        async def health():
+            return {"status": "ok"}
+        
         @self.app.get("/servers/grabbers", tags=["servers"])
         async def get_all_servers():
             try:

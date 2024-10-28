@@ -1,6 +1,7 @@
+SERVER ?= 192.168.20.145
 NODE_VERSION := --lts
-SERVER := 192.168.20.145
 
+.PHONY: build deploy run install lint clean nvm
 
 build:
 	make nvm CMD="npm run build"
