@@ -6,7 +6,7 @@ import LoadingSpinner from '@/components/ui/loading';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import AddDashboard from './components/add-dashboard';
-import { AddWidget, FormSchema, StoredWidget } from './components/add-widget';
+import { FormSchema, FormWidget, StoredWidget } from './components/form-widget';
 import { ChartTypeComponents } from './lib/const';
 import { ChartSize } from './lib/props';
 import { getDashboardWidgets, setDashboardWidgets } from './lib/utils';
@@ -86,7 +86,7 @@ export default function SinglePageDashboard() {
     <>
       <Header title="Dashboard">
         <AddDashboard />
-        <AddWidget onSubmit={(d) => addWidget(d)} />
+        <FormWidget onSubmit={(d) => addWidget(d)} />
       </Header>
 
       <Tabs defaultValue="overview" className="w-full">

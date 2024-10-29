@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Edit3, Trash2 } from 'lucide-react';
 import { useCallback, useEffect } from 'react';
 import { ReactSortable } from 'react-sortablejs';
 
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import DeleteConfirmation from '@/components/ui/confirm-delete';
 import LoadingSpinner from '@/components/ui/loading';
 
-import { FormSchema, StoredWidget } from './components/add-widget';
+import { FormSchema, FormWidget, StoredWidget } from './components/form-widget';
 import { ChartTypeComponents } from './lib/const';
 import { ChartSize } from './lib/props';
 import { getDashboardWidgets, setDashboardWidgets } from './lib/utils';
@@ -72,6 +72,8 @@ export default function DashboardTab({
     onAddWidget(() => addWidget);
   }, [onAddWidget, addWidget]);
 
+  // This is kind of reducer pattern: handleSort, handleEdit, handleDelete
+  // but how to add the "addWidget" properly?
   const handleSort = (newWidgets: ChartTiles[]) => {
     if (data) {
       const reorderedData = newWidgets.map((widget: ChartTiles) =>
@@ -83,7 +85,17 @@ export default function DashboardTab({
     }
   };
 
-  const handleEdit = () => {};
+  const handleEdit = (id: string, d: FormSchema) => {
+    if (data) {
+      const newWidgets = data.map((widget) => {
+        if (widget.id === id) {
+          return { ...widget, ...d };
+        }
+        return widget;
+      });
+      mutate(newWidgets);
+    }
+  };
 
   const handleDelete = (id: string) => {
     if (data) {
@@ -120,9 +132,16 @@ export default function DashboardTab({
         >
           {item.content}
           <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button variant="outline" size="icon" onClick={() => handleEdit()}>
-              <Pencil className="h-4 w-4" />
-            </Button>
+            <FormWidget
+              onSubmit={(d) => handleEdit(item.id, d)}
+              defaultValues={data.find((d) => d.id === item.id)}
+              edition
+              trigger={
+                <Button variant="outline" size="icon">
+                  <Edit3 className="h-4 w-4" />
+                </Button>
+              }
+            />
 
             <DeleteConfirmation
               onDelete={() => handleDelete(item.id)}

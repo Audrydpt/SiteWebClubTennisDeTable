@@ -1,14 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
+import { Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import Header from '@/components/header';
+import { Button } from '@/components/ui/button';
 import LoadingSpinner from '@/components/ui/loading';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import DashboardTab from './DashboardTab';
 import TestDashboard from './TestDashboard';
 import AddDashboard from './components/add-dashboard';
-import { AddWidget, FormSchema } from './components/add-widget';
+import { FormSchema, FormWidget } from './components/form-widget';
 import { getDashboards } from './lib/utils';
 
 export default function Dashboard() {
@@ -33,7 +35,14 @@ export default function Dashboard() {
     <>
       <Header title="Dashboard">
         <AddDashboard />
-        <AddWidget onSubmit={addWidgetFn} />
+        <FormWidget
+          onSubmit={addWidgetFn}
+          trigger={
+            <Button variant="outline">
+              <Plus /> Add Widget
+            </Button>
+          }
+        />
       </Header>
 
       <Tabs

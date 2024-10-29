@@ -1,8 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
 import { Duration } from 'luxon';
-import { useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -90,11 +89,19 @@ export type StoredWidget = FormSchema & {
   id: string;
 };
 
-export function AddWidget({
-  onSubmit,
-}: {
+type FormWidgetProps = {
   onSubmit: (data: FormSchema) => void;
-}) {
+  trigger: ReactNode;
+  edition?: boolean;
+  defaultValues?: FormSchema;
+};
+
+export function FormWidget({
+  onSubmit,
+  trigger,
+  edition = false,
+  defaultValues,
+}: FormWidgetProps) {
   const [open, setOpen] = useState(false);
 
   const { data } = useQuery({
@@ -114,6 +121,15 @@ export function AddWidget({
     },
   });
 
+  useEffect(() => {
+    if (defaultValues) {
+      form.reset({
+        ...defaultValues,
+        groupBy: defaultValues.groupBy ? defaultValues.groupBy : '', // database set null instead of undefined
+      });
+    }
+  }, [defaultValues, form]);
+
   const formValues = form.watch();
   const PreviewComponent = ChartTypeComponents[formValues.type];
 
@@ -124,14 +140,12 @@ export function AddWidget({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <Plus /> Add Widget
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Add a widget</DialogTitle>
+          <DialogTitle>
+            {edition ? 'Edit a widget' : 'Add a widget'}
+          </DialogTitle>
         </DialogHeader>
         <div className="flex flex-row gap-6">
           <div className="flex-1">
