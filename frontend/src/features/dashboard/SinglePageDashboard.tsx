@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus } from 'lucide-react';
 import { ReactSortable } from 'react-sortablejs';
 
 import Header from '@/components/header';
+import { Button } from '@/components/ui/button';
 import LoadingSpinner from '@/components/ui/loading';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -86,7 +88,14 @@ export default function SinglePageDashboard() {
     <>
       <Header title="Dashboard">
         <AddDashboard />
-        <FormWidget onSubmit={(d) => addWidget(d)} />
+        <FormWidget
+          onSubmit={(d) => addWidget(d)}
+          trigger={
+            <Button variant="outline">
+              <Plus /> Add Widget
+            </Button>
+          }
+        />
       </Header>
 
       <Tabs defaultValue="overview" className="w-full">

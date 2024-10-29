@@ -15,15 +15,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { GroupByChartProps } from '../../lib/props';
 import { getTimeFormattingConfig, getWidgetData } from '../../lib/utils';
 
-const chartConfig = {
-  positive: {
-    label: 'Positive',
-  },
-  negative: {
-    label: 'Negative',
-  },
-} satisfies ChartConfig;
-
 type StackedBarComponentProps = GroupByChartProps & {
   layout?: 'vertical' | 'horizontal';
   stackOffset?: StackOffsetType;
@@ -32,12 +23,13 @@ type StackedBarComponentProps = GroupByChartProps & {
 interface DataType {
   timestamp: string;
   count: number;
-  direction: 'positive' | 'negative';
+  [key: string]: string | number;
 }
-interface MergedDataType {
-  timestamp: string;
-  positive?: number;
-  negative?: number;
+interface ProcessedData {
+  dataMerged: {
+    [key: string]: { timestamp: string; [key: string]: number | string };
+  };
+  chartConfig: ChartConfig;
 }
 
 export default function StackedBarComponent({
@@ -69,7 +61,7 @@ export default function StackedBarComponent({
           <CardTitle>{title ?? `Stacked-Bar ${layout.toString()}`}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
-          <ChartContainer config={chartConfig} className="h-full w-full">
+          <ChartContainer config={{}} className="h-full w-full">
             {isLoading ? (
               <Skeleton className="h-full w-full bg-muted" />
             ) : (
@@ -81,23 +73,31 @@ export default function StackedBarComponent({
     );
   }
 
-  const dataMerged = Object.values(
-    (data as DataType[]).reduce(
-      (acc: { [key: string]: MergedDataType }, item: DataType) => {
-        const { timestamp, count, direction } = item;
-        if (!acc[timestamp]) {
-          acc[timestamp] = { timestamp };
-        }
-        acc[timestamp][direction] = (acc[timestamp][direction] || 0) + count;
-        return acc;
-      },
-      {} as { [key: string]: MergedDataType }
-    )
+  const { dataMerged, chartConfig } = (
+    data as DataType[]
+  ).reduce<ProcessedData>(
+    (acc, item) => {
+      const { timestamp, count } = item;
+      const groupValue = item[groupBy];
+
+      if (!acc.dataMerged[timestamp]) {
+        acc.dataMerged[timestamp] = { timestamp };
+      }
+      acc.dataMerged[timestamp][groupValue] =
+        ((acc.dataMerged[timestamp][groupValue] as number) || 0) + count;
+
+      if (!acc.chartConfig[groupValue]) {
+        acc.chartConfig[groupValue] = { label: String(groupValue) };
+      }
+
+      return acc;
+    },
+    { dataMerged: {}, chartConfig: {} }
   );
 
   const { format, interval } = getTimeFormattingConfig(
     duration,
-    dataMerged.length
+    Object.keys(dataMerged).length
   );
 
   return (
@@ -107,7 +107,11 @@ export default function StackedBarComponent({
       </CardHeader>
       <CardContent className="flex-grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
-          <BarChart data={dataMerged} layout={layout} stackOffset={stackOffset}>
+          <BarChart
+            data={Object.values(dataMerged)}
+            layout={layout}
+            stackOffset={stackOffset}
+          >
             {layout === 'horizontal' ? (
               <XAxis
                 dataKey="timestamp"
@@ -149,37 +153,16 @@ export default function StackedBarComponent({
                 />
               }
             />
-            {layout === 'horizontal' ? (
-              <>
-                <Bar
-                  dataKey="positive"
-                  stackId="a"
-                  fill="hsl(var(--chart-1))"
-                  radius={[0, 0, 4, 4]}
-                />
-                <Bar
-                  dataKey="negative"
-                  stackId="a"
-                  fill="hsl(var(--chart-2))"
-                  radius={[4, 4, 0, 0]}
-                />
-              </>
-            ) : (
-              <>
-                <Bar
-                  dataKey="positive"
-                  stackId="a"
-                  fill="hsl(var(--chart-1))"
-                  radius={[4, 0, 0, 4]}
-                />
-                <Bar
-                  dataKey="negative"
-                  stackId="a"
-                  fill="hsl(var(--chart-2))"
-                  radius={[0, 4, 4, 0]}
-                />
-              </>
-            )}
+
+            {Object.keys(chartConfig).map((group, index) => (
+              <Bar
+                key={group}
+                dataKey={String(group)}
+                stackId="a"
+                fill={`hsl(var(--chart-${(index % 5) + 1}))`}
+                radius={4}
+              />
+            ))}
           </BarChart>
         </ChartContainer>
       </CardContent>

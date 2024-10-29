@@ -13,17 +13,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { GroupByChartProps } from '../../lib/props';
 import { getWidgetData } from '../../lib/utils';
 
-const chartConfig = {
-  positive: {
-    label: 'Positive',
-    color: 'hsl(var(--chart-1))',
-  },
-  negative: {
-    label: 'Negative',
-    color: 'hsl(var(--chart-2))',
-  },
-} satisfies ChartConfig;
-
 type PieComponentProps = GroupByChartProps & {
   layout?: 'pie' | 'donut' | 'halfpie' | 'halfdonut';
   gap?: number;
@@ -32,12 +21,17 @@ type PieComponentProps = GroupByChartProps & {
 interface DataType {
   timestamp: string;
   count: number;
-  direction: 'positive' | 'negative';
+  [key: string]: string | number;
 }
-interface MergedDataType {
-  count: number;
-  direction: 'positive' | 'negative';
-  fill: string;
+
+interface ProcessedData {
+  dataMerged: Array<{
+    count: number;
+    fill: string;
+    name: string;
+    [key: string]: string | number;
+  }>;
+  chartConfig: ChartConfig;
 }
 
 export default function PieComponent({
@@ -45,8 +39,7 @@ export default function PieComponent({
   gap = 0,
   ...props
 }: PieComponentProps) {
-  const { title, table, aggregation, duration } = props;
-  const { groupBy } = props;
+  const { title, table, aggregation, duration, groupBy } = props;
 
   const { isLoading, isError, data } = useQuery({
     queryKey: [table, aggregation, duration, groupBy],
@@ -69,7 +62,7 @@ export default function PieComponent({
           <CardTitle>{title ?? `Pie ${layout.toString()}`}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
-          <ChartContainer config={chartConfig} className="h-full w-full">
+          <ChartContainer config={{}} className="h-full w-full">
             {isLoading ? (
               <Skeleton className="h-full w-full bg-muted" />
             ) : (
@@ -81,22 +74,39 @@ export default function PieComponent({
     );
   }
 
-  const dataMerged: MergedDataType[] = Object.values(
-    data.reduce(
-      (acc: { [key: string]: MergedDataType }, item: DataType) => {
-        if (!acc[item.direction]) {
-          acc[item.direction] = {
-            count: item.count,
-            direction: item.direction,
-            fill: chartConfig[item.direction].color,
-          };
-        } else {
-          acc[item.direction].count += item.count;
-        }
-        return acc;
-      },
-      {} as { [key: string]: MergedDataType }
-    )
+  const { dataMerged, chartConfig } = (
+    data as DataType[]
+  ).reduce<ProcessedData>(
+    (acc, item) => {
+      const groupValue = item[groupBy];
+      const { count } = item;
+
+      const existingGroup = acc.dataMerged.find(
+        (d) => d[groupBy] === groupValue
+      );
+
+      if (existingGroup) {
+        existingGroup.count += count;
+      } else {
+        const groupIndex = acc.dataMerged.length;
+        const color = `hsl(var(--chart-${(groupIndex % 5) + 1}))`;
+
+        acc.dataMerged.push({
+          count,
+          [groupBy]: groupValue,
+          name: String(groupValue),
+          fill: color,
+        });
+
+        acc.chartConfig[groupValue] = {
+          label: String(groupValue),
+          color,
+        };
+      }
+
+      return acc;
+    },
+    { dataMerged: [], chartConfig: {} }
   );
 
   return (
@@ -107,17 +117,15 @@ export default function PieComponent({
       <CardContent className="flex-grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <PieChart>
-            <ChartTooltip
-              content={<ChartTooltipContent cursor={false} hideLabel />}
-            />
+            <ChartTooltip content={<ChartTooltipContent cursor={false} />} />
             <Pie
               endAngle={
                 layout === 'halfpie' || layout === 'halfdonut' ? 180 : 360
               }
               data={dataMerged}
               dataKey="count"
+              nameKey="name"
               labelLine={false}
-              nameKey="direction"
               innerRadius={
                 layout === 'donut' || layout === 'halfdonut' ? 60 : 0
               }

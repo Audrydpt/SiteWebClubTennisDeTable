@@ -56,7 +56,6 @@ type GaugeComponentProps = ChartProps & {
 interface DataType {
   timestamp: string;
   count: number;
-  direction: 'positive' | 'negative';
 }
 interface MergedDataType {
   count: number;

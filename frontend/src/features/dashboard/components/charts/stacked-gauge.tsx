@@ -14,17 +14,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { GroupByChartProps } from '../../lib/props';
 import { getWidgetData } from '../../lib/utils';
 
-const chartConfig = {
-  positive: {
-    label: 'Positive',
-    color: 'hsl(var(--chart-1))',
-  },
-  negative: {
-    label: 'Negative',
-    color: 'hsl(var(--chart-2))',
-  },
-} satisfies ChartConfig;
-
 type StackedGaugeComponentProps = GroupByChartProps & {
   layout?: 'full' | 'half';
   stackOffset?: StackOffsetType;
@@ -33,11 +22,14 @@ type StackedGaugeComponentProps = GroupByChartProps & {
 interface DataType {
   timestamp: string;
   count: number;
-  direction: 'positive' | 'negative';
+  [key: string]: string | number;
 }
-interface MergedDataType {
-  positive: number;
-  negative: number;
+
+interface ProcessedData {
+  dataMerged: Array<{
+    [key: string]: number;
+  }>;
+  chartConfig: ChartConfig;
 }
 
 export default function StackedGaugeComponent({
@@ -69,7 +61,7 @@ export default function StackedGaugeComponent({
           <CardTitle>{title ?? `Stacked-Gauge ${layout.toString()}`}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
-          <ChartContainer config={chartConfig} className="h-full w-full">
+          <ChartContainer config={{}} className="h-full w-full">
             {isLoading ? (
               <Skeleton className="h-full w-full bg-muted" />
             ) : (
@@ -81,13 +73,32 @@ export default function StackedGaugeComponent({
     );
   }
 
-  const dataMerged: MergedDataType[] = [
-    data.reduce((acc: MergedDataType, item: DataType) => {
-      const { count, direction } = item;
-      acc[direction] = (acc[direction] || 0) + count;
+  const { dataMerged, chartConfig } = (
+    data as DataType[]
+  ).reduce<ProcessedData>(
+    (acc, item) => {
+      const groupValue = item[groupBy];
+      const { count } = item;
+
+      if (!acc.dataMerged[0]) {
+        acc.dataMerged[0] = {};
+      }
+
+      acc.dataMerged[0][groupValue] =
+        (acc.dataMerged[0][groupValue] || 0) + count;
+
+      if (!acc.chartConfig[groupValue]) {
+        const groupIndex = Object.keys(acc.chartConfig).length;
+        acc.chartConfig[groupValue] = {
+          label: String(groupValue),
+          color: `hsl(var(--chart-${(groupIndex % 5) + 1}))`,
+        };
+      }
+
       return acc;
-    }, {} as MergedDataType),
-  ];
+    },
+    { dataMerged: [{}], chartConfig: {} }
+  );
 
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">
@@ -106,20 +117,16 @@ export default function StackedGaugeComponent({
             <ChartTooltip
               content={<ChartTooltipContent cursor={false} hideLabel />}
             />
-            <RadialBar
-              dataKey="positive"
-              stackId="a"
-              cornerRadius={5}
-              fill="hsl(var(--chart-1))"
-              className="stroke-transparent stroke-2"
-            />
-            <RadialBar
-              dataKey="negative"
-              fill="hsl(var(--chart-2))"
-              stackId="a"
-              cornerRadius={5}
-              className="stroke-transparent stroke-2"
-            />
+            {Object.keys(chartConfig).map((key) => (
+              <RadialBar
+                key={key}
+                dataKey={key}
+                stackId="a"
+                cornerRadius={5}
+                fill={chartConfig[key].color}
+                className="stroke-transparent stroke-2"
+              />
+            ))}
           </RadialBarChart>
         </ChartContainer>
       </CardContent>

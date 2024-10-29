@@ -13,17 +13,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { GroupByChartProps } from '../../lib/props';
 import { getWidgetData } from '../../lib/utils';
 
-const chartConfig = {
-  positive: {
-    label: 'Positive',
-    color: 'hsl(var(--chart-1))',
-  },
-  negative: {
-    label: 'Negative',
-    color: 'hsl(var(--chart-2))',
-  },
-} satisfies ChartConfig;
-
 type MultiGaugeComponentProps = GroupByChartProps & {
   layout?: 'full' | 'half';
 };
@@ -31,12 +20,16 @@ type MultiGaugeComponentProps = GroupByChartProps & {
 interface DataType {
   timestamp: string;
   count: number;
-  direction: 'positive' | 'negative';
+  [key: string]: string | number;
 }
-interface MergedDataType {
-  count: number;
-  direction: 'positive' | 'negative';
-  fill: string;
+
+interface ProcessedData {
+  dataMerged: Array<{
+    count: number;
+    fill: string;
+    [key: string]: string | number;
+  }>;
+  chartConfig: ChartConfig;
 }
 
 export default function MultiGaugeComponent({
@@ -67,7 +60,7 @@ export default function MultiGaugeComponent({
           <CardTitle>{title ?? `Multi-Gauge ${layout.toString()}`}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
-          <ChartContainer config={chartConfig} className="h-full w-full">
+          <ChartContainer config={{}} className="h-full w-full">
             {isLoading ? (
               <Skeleton className="h-full w-full bg-muted" />
             ) : (
@@ -79,22 +72,37 @@ export default function MultiGaugeComponent({
     );
   }
 
-  const dataMerged: MergedDataType[] = Object.values(
-    data.reduce(
-      (acc: { [key: string]: MergedDataType }, item: DataType) => {
-        if (!acc[item.direction]) {
-          acc[item.direction] = {
-            count: item.count,
-            direction: item.direction,
-            fill: chartConfig[item.direction].color,
-          };
-        } else {
-          acc[item.direction].count += item.count;
-        }
-        return acc;
-      },
-      {} as { [key: string]: MergedDataType }
-    )
+  const { dataMerged, chartConfig } = (
+    data as DataType[]
+  ).reduce<ProcessedData>(
+    (acc, item) => {
+      const groupValue = item[groupBy];
+      const { count } = item;
+
+      const existingGroup = acc.dataMerged.find(
+        (d) => d[groupBy] === groupValue
+      );
+
+      if (existingGroup) {
+        existingGroup.count += count;
+      } else {
+        const groupIndex = acc.dataMerged.length;
+        acc.dataMerged.push({
+          count,
+          [groupBy]: groupValue,
+          fill: `hsl(var(--chart-${(groupIndex % 5) + 1}))`,
+          name: String(groupValue),
+        });
+
+        acc.chartConfig[groupValue] = {
+          label: String(groupValue),
+          color: `hsl(var(--chart-${(groupIndex % 5) + 1}))`,
+        };
+      }
+
+      return acc;
+    },
+    { dataMerged: [], chartConfig: {} }
   );
 
   return (
@@ -111,7 +119,12 @@ export default function MultiGaugeComponent({
             endAngle={layout === 'full' ? 360 : 180}
           >
             <ChartTooltip
-              content={<ChartTooltipContent cursor={false} hideLabel />}
+              content={
+                <ChartTooltipContent
+                  cursor={false}
+                  labelFormatter={(_, payload) => payload[0].payload.name}
+                />
+              }
             />
             <RadialBar dataKey="count" background />
           </RadialBarChart>

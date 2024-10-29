@@ -14,15 +14,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { GroupByChartProps } from '../../lib/props';
 import { getTimeFormattingConfig, getWidgetData } from '../../lib/utils';
 
-const chartConfig = {
-  positive: {
-    label: 'Positive',
-  },
-  negative: {
-    label: 'Negative',
-  },
-} satisfies ChartConfig;
-
 type MultiBarComponentProps = GroupByChartProps & {
   layout?: 'vertical' | 'horizontal';
 };
@@ -30,12 +21,13 @@ type MultiBarComponentProps = GroupByChartProps & {
 interface DataType {
   timestamp: string;
   count: number;
-  direction: 'positive' | 'negative';
+  [key: string]: string | number;
 }
-interface MergedDataType {
-  timestamp: string;
-  positive?: number;
-  negative?: number;
+interface ProcessedData {
+  dataMerged: {
+    [key: string]: { timestamp: string; [key: string]: number | string };
+  };
+  chartConfig: ChartConfig;
 }
 
 export default function MultiBarComponent({
@@ -66,7 +58,7 @@ export default function MultiBarComponent({
           <CardTitle>{title ?? `Multi-Bar ${layout.toString()}`}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
-          <ChartContainer config={chartConfig} className="h-full w-full">
+          <ChartContainer config={{}} className="h-full w-full">
             {isLoading ? (
               <Skeleton className="h-full w-full bg-muted" />
             ) : (
@@ -78,23 +70,31 @@ export default function MultiBarComponent({
     );
   }
 
-  const dataMerged = Object.values(
-    (data as DataType[]).reduce(
-      (acc: { [key: string]: MergedDataType }, item: DataType) => {
-        const { timestamp, count, direction } = item;
-        if (!acc[timestamp]) {
-          acc[timestamp] = { timestamp };
-        }
-        acc[timestamp][direction] = (acc[timestamp][direction] || 0) + count;
-        return acc;
-      },
-      {} as { [key: string]: MergedDataType }
-    )
+  const { dataMerged, chartConfig } = (
+    data as DataType[]
+  ).reduce<ProcessedData>(
+    (acc, item) => {
+      const { timestamp, count } = item;
+      const groupValue = item[groupBy];
+
+      if (!acc.dataMerged[timestamp]) {
+        acc.dataMerged[timestamp] = { timestamp };
+      }
+      acc.dataMerged[timestamp][groupValue] =
+        ((acc.dataMerged[timestamp][groupValue] as number) || 0) + count;
+
+      if (!acc.chartConfig[groupValue]) {
+        acc.chartConfig[groupValue] = { label: String(groupValue) };
+      }
+
+      return acc;
+    },
+    { dataMerged: {}, chartConfig: {} }
   );
 
   const { format, interval } = getTimeFormattingConfig(
     duration,
-    dataMerged.length
+    Object.keys(dataMerged).length
   );
 
   return (
@@ -104,7 +104,7 @@ export default function MultiBarComponent({
       </CardHeader>
       <CardContent className="flex-grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
-          <BarChart data={dataMerged} layout={layout}>
+          <BarChart data={Object.values(dataMerged)} layout={layout}>
             {layout === 'horizontal' ? (
               <XAxis
                 dataKey="timestamp"
@@ -146,17 +146,15 @@ export default function MultiBarComponent({
                 />
               }
             />
-            {layout === 'horizontal' ? (
-              <>
-                <Bar dataKey="positive" fill="hsl(var(--chart-1))" radius={4} />
-                <Bar dataKey="negative" fill="hsl(var(--chart-2))" radius={4} />
-              </>
-            ) : (
-              <>
-                <Bar dataKey="positive" fill="hsl(var(--chart-1))" radius={4} />
-                <Bar dataKey="negative" fill="hsl(var(--chart-2))" radius={4} />
-              </>
-            )}
+
+            {Object.keys(chartConfig).map((group, index) => (
+              <Bar
+                key={group}
+                dataKey={String(group)}
+                fill={`hsl(var(--chart-${(index % 5) + 1}))`}
+                radius={4}
+              />
+            ))}
           </BarChart>
         </ChartContainer>
       </CardContent>
