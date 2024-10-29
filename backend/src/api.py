@@ -293,5 +293,5 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-    def start(self, host="0.0.0.0", port=5000):
+    def start(self, host="0.0.0.0", port=5020):
         uvicorn.run(self.app, host=host, port=port, root_path="/front-api")
