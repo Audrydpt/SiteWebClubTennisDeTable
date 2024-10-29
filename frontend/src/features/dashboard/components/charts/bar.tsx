@@ -55,7 +55,11 @@ export default function BarComponent({
     );
   }
 
-  const { format, interval } = getTimeFormattingConfig(duration, data.length);
+  const { format, interval } = getTimeFormattingConfig(
+    duration,
+    data.length,
+    data.size
+  );
 
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">

@@ -83,6 +83,30 @@ const formSchema = z
       message: 'Aggregation period must be smaller than or equal to duration',
       path: ['aggregation'],
     }
+  )
+  .refine((data) => getLayoutOptions(data.type).includes(data.layout), {
+    message: 'Layout is required',
+    path: ['layout'],
+  })
+  .refine((data) => !(getStackedOptions(data.type) && !data.groupBy), {
+    message: 'Group by is required',
+    path: ['groupBy'],
+  })
+  .refine(
+    (data) =>
+      !(data.type === ChartType.Pie && data.aggregation !== data.duration),
+    {
+      message: 'Pie chart must have the same aggregation and duration',
+      path: ['aggregation'],
+    }
+  )
+  .refine(
+    (data) =>
+      !(data.type === ChartType.Gauge || data.type === ChartType.StackedGauge),
+    {
+      message: 'Gauge is not yet supported, use Pie instead',
+      path: ['type'],
+    }
   );
 export type FormSchema = z.infer<typeof formSchema>;
 export type StoredWidget = FormSchema & {

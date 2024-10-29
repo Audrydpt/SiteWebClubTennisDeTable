@@ -95,7 +95,8 @@ export default function MultiLineComponent({
 
   const { format, interval } = getTimeFormattingConfig(
     duration,
-    Object.keys(dataMerged).length
+    Object.keys(dataMerged).length,
+    data.size
   );
 
   return (

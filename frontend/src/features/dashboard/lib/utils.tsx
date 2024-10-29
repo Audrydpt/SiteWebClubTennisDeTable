@@ -33,12 +33,25 @@ function getDurationInDays(durationStr: string): number {
   }
 }
 
+type ChartSizePoints = {
+  [K in ChartSize]: number;
+};
+export const chartSizePoints = {
+  [ChartSize.tiny]: 6,
+  [ChartSize.small]: 8,
+  [ChartSize.medium]: 10,
+  [ChartSize.large]: 12,
+  [ChartSize.big]: 16,
+  [ChartSize.full]: 20,
+} as ChartSizePoints;
+
 export function getTimeFormattingConfig(
   duration: AcicAggregation,
-  dataLength: number
+  dataLength: number,
+  size: ChartSize
 ) {
   const durationDays = getDurationInDays(duration);
-  const targetPoints = 8;
+  const targetPoints = chartSizePoints[size];
   const interval = Math.max(1, Math.floor(dataLength / targetPoints));
 
   switch (true) {

@@ -48,6 +48,7 @@ export default function DashboardTab({
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dashboard-widgets', dashboardKey],
     queryFn: () => getDashboardWidgets(dashboardKey),
+    refetchInterval: 60 * 1000,
   });
 
   const { mutate } = useMutation({
