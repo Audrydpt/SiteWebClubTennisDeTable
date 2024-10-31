@@ -60,6 +60,7 @@ export enum ChartType {
   StackedBar = 'StackedBar',
   StackedArea = 'StackedArea',
   StackedGauge = 'StackedGauge',
+  Heatmap = 'Heatmap',
 }
 
 export type ChartProps = {

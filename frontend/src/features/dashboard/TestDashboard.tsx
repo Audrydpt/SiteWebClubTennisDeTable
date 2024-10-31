@@ -219,7 +219,20 @@ export default function TestCharts() {
         layout="half"
       />
       <div className="col-span-3">
-        <HeatmapComponent />
+        <HeatmapComponent
+          table={AcicEvent.AcicAllInOneEvent}
+          aggregation={AcicAggregation.OneHour}
+          duration={AcicAggregation.OneWeek}
+          layout="horizontal"
+        />
+      </div>
+      <div className="col-span-3">
+        <HeatmapComponent
+          table={AcicEvent.AcicAllInOneEvent}
+          aggregation={AcicAggregation.OneHour}
+          duration={AcicAggregation.OneWeek}
+          layout="vertical"
+        />
       </div>
     </div>
   );

@@ -125,10 +125,14 @@ const formSchema = z
   )
   .refine(
     (data) =>
-      !(data.type === ChartType.Gauge || data.type === ChartType.StackedGauge),
+      !(
+        data.type === ChartType.Heatmap &&
+        (data.aggregation !== AcicAggregation.OneHour ||
+          data.duration !== AcicAggregation.OneWeek)
+      ),
     {
-      message: 'Gauge is not yet supported, use Pie instead',
-      path: ['type'],
+      message: 'Heatmap must have aggregation OneHour and duration OneWeek',
+      path: ['aggregation'],
     }
   );
 export type FormSchema = z.infer<typeof formSchema>;
@@ -200,6 +204,14 @@ export function FormWidget({
       form.setValue('groupBy', '');
     }
   }, [form, formValues.type, formValues.groupBy, formValues.table, data]);
+
+  // set aggregation to OneHour and duration to OneWeek if the type is heatmap
+  useEffect(() => {
+    if (formValues.type === ChartType.Heatmap) {
+      form.setValue('aggregation', AcicAggregation.OneHour);
+      form.setValue('duration', AcicAggregation.OneWeek);
+    }
+  }, [form, formValues.type]);
 
   const handleSubmit = (d: FormSchema) => {
     onSubmit(d);

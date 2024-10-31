@@ -1,6 +1,7 @@
 import AreaComponent from '../components/charts/area';
 import BarComponent from '../components/charts/bar';
 import GaugeComponent from '../components/charts/gauge';
+import HeatmapComponent from '../components/charts/heatmap';
 import LineComponent from '../components/charts/line';
 import MultiBarComponent from '../components/charts/multi-bar';
 import MultiGaugeComponent from '../components/charts/multi-gauge';
@@ -26,6 +27,7 @@ export const ChartTypeComponents = {
   [ChartType.StackedArea]: StackedAreaComponent,
   [ChartType.StackedBar]: StackedBarComponent,
   [ChartType.StackedGauge]: StackedGaugeComponent,
+  [ChartType.Heatmap]: HeatmapComponent,
 } as ChartComponentsType;
 
 type StackedOptionsType = {
@@ -43,6 +45,7 @@ export const StackedOptions = {
   [ChartType.StackedArea]: true,
   [ChartType.StackedBar]: true,
   [ChartType.StackedGauge]: true,
+  [ChartType.Heatmap]: false,
 } as StackedOptionsType;
 
 export const UniqueValuesOptions = {
@@ -57,6 +60,7 @@ export const UniqueValuesOptions = {
   [ChartType.StackedArea]: false,
   [ChartType.StackedBar]: false,
   [ChartType.StackedGauge]: true,
+  [ChartType.Heatmap]: false,
 } as StackedOptionsType;
 
 export const ExperimentalChartType = {
@@ -71,6 +75,7 @@ export const ExperimentalChartType = {
   [ChartType.StackedArea]: false,
   [ChartType.StackedBar]: false,
   [ChartType.StackedGauge]: true,
+  [ChartType.Heatmap]: false,
 } as StackedOptionsType;
 
 const ALLOWED_CURVE_TYPES = ['natural', 'linear', 'step'] as const;
@@ -93,4 +98,5 @@ export const LayoutOptions = {
   [ChartType.StackedArea]: ALLOWED_CURVE_TYPES,
   [ChartType.StackedBar]: ALLOWED_LAYOUT_TYPES,
   [ChartType.StackedGauge]: ALLOWED_GAUGE_TYPES,
+  [ChartType.Heatmap]: ALLOWED_LAYOUT_TYPES,
 } as LayoutOptionsType;
