@@ -25,7 +25,7 @@ export default function Layout({
           {children}
         </div>
       </SidebarInset>
-      <TailwindSizeIndicator />
+      {process.env.NODE_ENV === 'development' && <TailwindSizeIndicator />}
     </SidebarProvider>
   );
 }

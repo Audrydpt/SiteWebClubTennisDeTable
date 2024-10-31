@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { DateTime } from 'luxon';
+import { DateTime, Duration } from 'luxon';
 import { Bar, BarChart, XAxis, YAxis } from 'recharts';
 import { StackOffsetType } from 'recharts/types/util/types';
 
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import { GroupByChartProps } from '../../lib/props';
+import { AggregationTypeToObject, GroupByChartProps } from '../../lib/props';
 import { getTimeFormattingConfig, getWidgetData } from '../../lib/utils';
 
 type StackedBarComponentProps = GroupByChartProps & {
@@ -51,7 +51,9 @@ export default function StackedBarComponent({
         },
         groupBy
       ),
-    refetchInterval: 10 * 1000,
+    refetchInterval: Duration.fromObject(
+      AggregationTypeToObject[aggregation]
+    ).as('milliseconds'),
   });
 
   if (isLoading || isError) {

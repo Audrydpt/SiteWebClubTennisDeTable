@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Duration } from 'luxon';
 import { RadialBar, RadialBarChart } from 'recharts';
 import { StackOffsetType } from 'recharts/types/util/types';
 
@@ -11,7 +12,7 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import { GroupByChartProps } from '../../lib/props';
+import { AggregationTypeToObject, GroupByChartProps } from '../../lib/props';
 import { getWidgetData } from '../../lib/utils';
 
 type StackedGaugeComponentProps = GroupByChartProps & {
@@ -51,7 +52,9 @@ export default function StackedGaugeComponent({
         },
         groupBy
       ),
-    refetchInterval: 10 * 1000,
+    refetchInterval: Duration.fromObject(
+      AggregationTypeToObject[aggregation]
+    ).as('milliseconds'),
   });
 
   if (isLoading || isError) {

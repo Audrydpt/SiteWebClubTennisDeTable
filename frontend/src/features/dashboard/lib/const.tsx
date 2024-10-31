@@ -45,6 +45,34 @@ export const StackedOptions = {
   [ChartType.StackedGauge]: true,
 } as StackedOptionsType;
 
+export const UniqueValuesOptions = {
+  [ChartType.Area]: false,
+  [ChartType.Line]: false,
+  [ChartType.Bar]: false,
+  [ChartType.Gauge]: true,
+  [ChartType.Pie]: true,
+  [ChartType.MultiBar]: false,
+  [ChartType.MultiLine]: false,
+  [ChartType.MultiGauge]: false,
+  [ChartType.StackedArea]: false,
+  [ChartType.StackedBar]: false,
+  [ChartType.StackedGauge]: true,
+} as StackedOptionsType;
+
+export const ExperimentalChartType = {
+  [ChartType.Area]: false,
+  [ChartType.Line]: false,
+  [ChartType.Bar]: false,
+  [ChartType.Gauge]: true,
+  [ChartType.Pie]: false,
+  [ChartType.MultiBar]: false,
+  [ChartType.MultiLine]: false,
+  [ChartType.MultiGauge]: false,
+  [ChartType.StackedArea]: false,
+  [ChartType.StackedBar]: false,
+  [ChartType.StackedGauge]: true,
+} as StackedOptionsType;
+
 const ALLOWED_CURVE_TYPES = ['natural', 'linear', 'step'] as const;
 const ALLOWED_LAYOUT_TYPES = ['horizontal', 'vertical'] as const;
 const ALLOWED_GAUGE_TYPES = ['half', 'full'] as const;

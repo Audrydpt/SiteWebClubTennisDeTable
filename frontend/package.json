@@ -78,5 +78,18 @@
     "tabWidth": 2,
     "trailingComma": "es5",
     "endOfLine": "lf"
+  },
+  "browserslist": {
+    "production": [
+      "last 2 years",
+      "not dead",
+      "not op_mini all",
+      "firefox esr",
+      "supports css-variables"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version"
+    ]
   }
 }

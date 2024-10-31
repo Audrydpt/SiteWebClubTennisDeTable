@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { DateTime } from 'luxon';
+import { DateTime, Duration } from 'luxon';
 import { CartesianGrid, Line, LineChart, XAxis } from 'recharts';
 import { CurveType } from 'recharts/types/shape/Curve';
 
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import { GroupByChartProps } from '../../lib/props';
+import { AggregationTypeToObject, GroupByChartProps } from '../../lib/props';
 import { getTimeFormattingConfig, getWidgetData } from '../../lib/utils';
 
 type MultiLineComponentProps = GroupByChartProps & {
@@ -49,7 +49,9 @@ export default function MultiLineComponent({
         },
         groupBy
       ),
-    refetchInterval: 10 * 1000,
+    refetchInterval: Duration.fromObject(
+      AggregationTypeToObject[aggregation]
+    ).as('milliseconds'),
   });
 
   if (isLoading || isError) {

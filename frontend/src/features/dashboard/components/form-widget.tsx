@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
+import { TriangleAlert } from 'lucide-react';
 import { Duration } from 'luxon';
 import { ReactNode, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -34,8 +36,10 @@ import {
 
 import {
   ChartTypeComponents,
+  ExperimentalChartType,
   LayoutOptions,
   StackedOptions,
+  UniqueValuesOptions,
 } from '../lib/const';
 import {
   AcicAggregation,
@@ -62,6 +66,21 @@ const getGroupByOptions = (
   return tablesDescriptions[chartTable];
 };
 
+const hasTooManyPoints = (
+  aggregation: AcicAggregation,
+  duration: AcicAggregation
+) => {
+  const aggregationDuration = Duration.fromObject(
+    AggregationTypeToObject[aggregation]
+  );
+  const durationDuration = Duration.fromObject(
+    AggregationTypeToObject[duration]
+  );
+  return (
+    durationDuration.as('minutes') / aggregationDuration.as('minutes') >= 500
+  );
+};
+
 const formSchema = z
   .object({
     table: z.nativeEnum(AcicEvent),
@@ -84,6 +103,10 @@ const formSchema = z
       path: ['aggregation'],
     }
   )
+  .refine((data) => !hasTooManyPoints(data.aggregation, data.duration), {
+    message: 'Aggregation period is too small for the given duration',
+    path: ['aggregation'],
+  })
   .refine((data) => getLayoutOptions(data.type).includes(data.layout), {
     message: 'Layout is required',
     path: ['layout'],
@@ -157,6 +180,27 @@ export function FormWidget({
   const formValues = form.watch();
   const PreviewComponent = ChartTypeComponents[formValues.type];
 
+  // Set the aggregation to the duration if the type is unique values
+  useEffect(() => {
+    if (UniqueValuesOptions[formValues.type]) {
+      form.setValue('aggregation', formValues.duration);
+    }
+  }, [form, formValues.type, formValues.duration]);
+
+  // Set the layout to the first option if the current one is not available
+  useEffect(() => {
+    if (!getLayoutOptions(formValues.type).includes(formValues.layout)) {
+      form.setValue('layout', getLayoutOptions(formValues.type)[0]);
+    }
+  }, [form, formValues.type, formValues.layout]);
+
+  // Set the group by to empty if the type is not stacked
+  useEffect(() => {
+    if (!getStackedOptions(formValues.type)) {
+      form.setValue('groupBy', '');
+    }
+  }, [form, formValues.type, formValues.groupBy, formValues.table, data]);
+
   const handleSubmit = (d: FormSchema) => {
     onSubmit(d);
     setOpen(false);
@@ -199,6 +243,7 @@ export function FormWidget({
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -207,7 +252,14 @@ export function FormWidget({
                         </FormControl>
                         <SelectContent>
                           {Object.values(ChartType).map((item) => (
-                            <SelectItem key={item} value={item}>
+                            <SelectItem
+                              key={item}
+                              value={item}
+                              disabled={
+                                ExperimentalChartType[item] &&
+                                process.env.NODE_ENV !== 'development'
+                              }
+                            >
                               {item}
                             </SelectItem>
                           ))}
@@ -229,6 +281,7 @@ export function FormWidget({
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
+                            value={field.value}
                           >
                             <FormControl>
                               <SelectTrigger>
@@ -259,6 +312,7 @@ export function FormWidget({
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
+                            value={field.value}
                           >
                             <FormControl>
                               <SelectTrigger>
@@ -289,6 +343,7 @@ export function FormWidget({
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -317,6 +372,7 @@ export function FormWidget({
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
+                        value={field.value}
                         disabled={!getStackedOptions(formValues.type)}
                       >
                         <FormControl>
@@ -349,7 +405,8 @@ export function FormWidget({
                           <FormLabel>Aggregation</FormLabel>
                           <Select
                             onValueChange={field.onChange}
-                            defaultValue={field.value}
+                            value={field.value}
+                            disabled={UniqueValuesOptions[formValues.type]}
                           >
                             <FormControl>
                               <SelectTrigger>
@@ -379,6 +436,7 @@ export function FormWidget({
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
+                            value={field.value}
                           >
                             <FormControl>
                               <SelectTrigger>
@@ -412,7 +470,17 @@ export function FormWidget({
 
           <div className="flex-1 border rounded-lg p-4 bg-accent">
             <div className="h-full w-full">
-              <PreviewComponent {...formValues} />
+              {hasTooManyPoints(formValues.aggregation, formValues.duration) ? (
+                <Alert>
+                  <TriangleAlert className="h-4 w-4" />
+                  <AlertTitle>Too many points!</AlertTitle>
+                  <AlertDescription>
+                    Aggregation period is too small for the given duration
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <PreviewComponent {...formValues} />
+              )}
             </div>
           </div>
         </div>
