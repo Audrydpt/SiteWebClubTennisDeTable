@@ -1,3 +1,6 @@
+import os
+from dotenv import load_dotenv
+
 from sqlalchemy import column, create_engine, Column, Integer, REAL, String, Text, DateTime, DDL, PrimaryKeyConstraint, cast, func, inspect, text, ForeignKey
 from sqlalchemy.dialects.postgresql import TIMESTAMP, INTEGER, UUID
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
@@ -9,6 +12,17 @@ from alembic.autogenerate import produce_migrations
 from alembic.operations.ops import ModifyTableOps, AlterColumnOp
 
 import uuid
+
+def get_database_url(use_timescaledb=True):
+    db_host = os.getenv("DB_HOST", "localhost")
+    db_user = os.getenv("DB_USER", "postgres")
+    db_pass = os.getenv("DB_PASS", "postgres")
+    db_port = os.getenv("DB_PORT", "5432")
+    db_name = os.getenv("DB_NAME", "postgres")
+    
+    if use_timescaledb:
+        return f'timescaledb+psycopg2://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}'
+    return f'postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}'
 
 class Base:
     @declared_attr
@@ -117,7 +131,7 @@ class GenericDAL:
     initialized = False
 
     def __init__(self):
-        self.engine = create_engine('timescaledb+psycopg2://postgres:postgres@192.168.20.145:5432/postgres', echo=False)
+        self.engine = create_engine(get_database_url(use_timescaledb=True), echo=False)
         self.Session = sessionmaker(bind=self.engine)
 
         if not GenericDAL.initialized:
@@ -184,7 +198,7 @@ class GenericDAL:
 
         print("Trying to update schema...")
         # got issue using the same engine, because of dialect timescaledb != postgresql
-        with create_engine('postgresql://postgres:postgres@192.168.20.145:5432/postgres', echo=False).connect() as conn:
+        with create_engine(get_database_url(use_timescaledb=False), echo=False).connect() as conn:
             trans = conn.begin()
             try:
                 # Configure the migration context with the connection
