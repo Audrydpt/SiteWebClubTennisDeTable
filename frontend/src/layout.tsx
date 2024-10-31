@@ -5,7 +5,7 @@ import {
 } from '@/components/ui/sidebar';
 import AppSidebar from './components/app-sidebar';
 import TailwindSizeIndicator from './components/tailwind-size';
-import { UserType } from './lib/api/authenticate';
+import { UserType } from './lib/authenticate';
 
 export default function Layout({
   user,

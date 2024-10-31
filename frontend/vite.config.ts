@@ -26,6 +26,6 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       'process.env': env,
-    }
+    },
   };
 });

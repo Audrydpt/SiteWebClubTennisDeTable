@@ -10,6 +10,35 @@ deploy: build
 	ssh root@$(SERVER) 'mkdir -p /home/www/front-react'
 	scp -r dist/* root@$(SERVER):/home/www/front-react
 
+
+	ssh root@$(SERVER) 'if ! grep -q "mod_proxy" /opt/ACIC/etc/lighttpd.conf; then \
+		sed -i '\''/[[:space:]]*"mod_rewrite",/a \                    "mod_proxy",'\'' /opt/ACIC/etc/lighttpd.conf && \
+        	systemctl restart acic-httpd; \
+	fi'
+
+	ssh root@$(SERVER) 'if ! grep -q "image/svg+xml" /opt/ACIC/etc/lighttpd.conf; then \
+		sed -i '\''/.png"[[:space:]]*=>[[:space:]]*"image\/png",/a \
+		".svg" => "image/svg+xml",'\'' /opt/ACIC/etc/lighttpd.conf && \
+		systemctl restart acic-httpd; \
+        fi'
+
+	ssh root@$(SERVER) 'if ! grep -q "/front-api" /opt/ACIC/etc/lighttpd.conf; then \
+		echo "" >> /opt/ACIC/etc/lighttpd.conf && \
+		echo "\$$HTTP[\"url\"] =~ \"^/front-api/\" {" >> /opt/ACIC/etc/lighttpd.conf && \
+		echo "	proxy.header = ( \"map-urlpath\" => ( \"/front-api\" => \"\" ) )" >> /opt/ACIC/etc/lighttpd.conf && \
+		echo "	proxy.server = ( \"\" => ( ( \"host\" => \"127.0.0.1\", \"port\" => 5020 ) ) )" >> /opt/ACIC/etc/lighttpd.conf && \
+		echo "}" >> /opt/ACIC/etc/lighttpd.conf && \
+		systemctl restart acic-httpd; \
+	fi'
+
+	ssh root@$(SERVER) 'if ! grep -q "/front-react" /opt/ACIC/etc/lighttpd.conf; then \
+		echo "" >> /opt/ACIC/etc/lighttpd.conf && \
+		echo "\$$HTTP[\"url\"] =~ \"^/front-react/\" {" >> /opt/ACIC/etc/lighttpd.conf && \
+		echo "    server.error-handler-404 = \"/front-react/index.html\"" >> /opt/ACIC/etc/lighttpd.conf && \
+		echo "}" >> /opt/ACIC/etc/lighttpd.conf && \
+		systemctl restart acic-httpd; \
+	fi'
+
 run:
 	make nvm CMD="npm run dev"
 

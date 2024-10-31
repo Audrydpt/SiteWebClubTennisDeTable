@@ -44,7 +44,7 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import { UserType } from '@/lib/api/authenticate';
+import { UserType } from '@/lib/authenticate';
 
 import logo from '../assets/logo.svg';
 

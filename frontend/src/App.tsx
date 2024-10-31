@@ -5,7 +5,7 @@ import { Route, Routes } from 'react-router-dom';
 import LoadingSpinner from './components/ui/loading';
 import useSession from './hooks/use-session';
 import Layout from './layout';
-import getCurrentUser from './lib/api/authenticate';
+import { AuthError, getCurrentUser } from './lib/authenticate';
 
 const Dashboard = lazy(() => import('./features/dashboard/Dashboard'));
 const DemoDashboard = lazy(() => import('./features/dashboard/DemoDashboard'));
@@ -16,6 +16,7 @@ export default function App() {
   const { data } = useQuery({
     queryKey: [sessionId],
     queryFn: () => getCurrentUser(sessionId),
+    retry: (_count, err) => !(err instanceof AuthError && err.status === 401),
   });
 
   return (
