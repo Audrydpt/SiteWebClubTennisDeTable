@@ -115,7 +115,7 @@ export default function HeatmapComponent({
           <table className="w-full text-sm">
             <thead>
               <tr className="text-center">
-                <th className="p-2 font-medium">Day</th>
+                <th className="p-2 font-medium">Day/Hour</th>
                 {hours.map((hour) => (
                   <th key={hour} className="p-2 font-medium">
                     {hour}
@@ -154,7 +154,7 @@ export default function HeatmapComponent({
           <table className="w-full text-sm">
             <thead>
               <tr className="text-center">
-                <th className="p-2 font-medium">Hour</th>
+                <th className="p-2 font-medium">Hour/Day</th>
                 {sortedDays.map((day) => (
                   <th key={day} className="p-2 font-medium">
                     {DateTime.fromISO(day).toFormat('ccc dd/MM')}
