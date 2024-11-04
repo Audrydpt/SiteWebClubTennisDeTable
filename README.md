@@ -20,6 +20,16 @@ WIP
 - alembic
 - fastapi
 
+## Recommanded extensions:
+
+- bradlc.vscode-tailwindcss
+- YoavBls.pretty-ts-errors
+- meganrogge.template-string-converter
+- dbaeumer.vscode-eslint
+- esbenp.prettier-vscode
+- ms-python.vscode-pylance
+- donjayamanne.python-environment-manager
+
 ## readme plz:
 
 - https://openclassrooms.com/fr/courses/7008001-debutez-avec-react (component & props)

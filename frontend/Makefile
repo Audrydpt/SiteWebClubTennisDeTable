@@ -12,7 +12,7 @@ deploy: build
 
 
 	ssh root@$(SERVER) 'if ! grep -q "mod_proxy" /opt/ACIC/etc/lighttpd.conf; then \
-		sed -i '\''/[[:space:]]*"mod_rewrite",/a \                    "mod_proxy",'\'' /opt/ACIC/etc/lighttpd.conf && \
+		sed -i '\''/[[:space:]]*"mod_cgi",/a \                    "mod_proxy",'\'' /opt/ACIC/etc/lighttpd.conf && \
         	systemctl restart acic-httpd; \
 	fi'
 
