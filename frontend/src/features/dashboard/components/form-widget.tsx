@@ -77,7 +77,7 @@ const hasTooManyPoints = (
     AggregationTypeToObject[duration]
   );
   return (
-    durationDuration.as('minutes') / aggregationDuration.as('minutes') >= 500
+    durationDuration.as('minutes') / aggregationDuration.as('minutes') > 1440
   );
 };
 

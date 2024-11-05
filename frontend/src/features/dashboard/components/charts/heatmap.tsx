@@ -63,6 +63,34 @@ const getOpacityClass = (
 
 const formatTimestamp = (timestamp: string, aggregation: AcicAggregation) => {
   const date = DateTime.fromISO(timestamp);
+  if (aggregation === AcicAggregation.OneMinute) {
+    return {
+      rowKey: date.toFormat('yyyy-MM-dd HH'),
+      rowLabel: date.toFormat('HH:00'),
+      columnKey: date.toFormat('mm'),
+      columnLabel: date.toFormat('mm'),
+    };
+  }
+  if (aggregation === AcicAggregation.FifteenMinutes) {
+    const minutes = date.minute;
+    const slot = Math.floor(minutes / 15) * 15;
+    return {
+      rowKey: date.toFormat('yyyy-MM-dd HH'),
+      rowLabel: date.toFormat('HH:00'),
+      columnKey: slot.toString().padStart(2, '0'),
+      columnLabel: `${slot.toString().padStart(2, '0')}-${(slot + 14).toString().padStart(2, '0')}`,
+    };
+  }
+  if (aggregation === AcicAggregation.ThirtyMinutes) {
+    const minutes = date.minute;
+    const slot = Math.floor(minutes / 30) * 30;
+    return {
+      rowKey: date.toFormat('yyyy-MM-dd HH'),
+      rowLabel: date.toFormat('HH:00'),
+      columnKey: slot.toString().padStart(2, '0'),
+      columnLabel: `${slot.toString().padStart(2, '0')}-${(slot + 29).toString().padStart(2, '0')}`,
+    };
+  }
   if (aggregation === AcicAggregation.OneHour) {
     return {
       rowKey: date.toFormat('yyyy-MM-dd'),
@@ -86,7 +114,34 @@ const formatTimestamp = (timestamp: string, aggregation: AcicAggregation) => {
     columnLabel: '',
   };
 };
+
 const generateColumns = (aggregation: AcicAggregation) => {
+  if (aggregation === AcicAggregation.OneMinute) {
+    return Array.from({ length: 60 }, (_, i) => ({
+      key: i.toString().padStart(2, '0'),
+      label: i.toString().padStart(2, '0'),
+    }));
+  }
+  if (aggregation === AcicAggregation.FifteenMinutes) {
+    return Array.from({ length: 4 }, (_, i) => {
+      const start = i * 15;
+      const end = start + 14;
+      return {
+        key: start.toString().padStart(2, '0'),
+        label: `${start.toString().padStart(2, '0')}-${end.toString().padStart(2, '0')}`,
+      };
+    });
+  }
+  if (aggregation === AcicAggregation.ThirtyMinutes) {
+    return Array.from({ length: 2 }, (_, i) => {
+      const start = i * 30;
+      const end = start + 29;
+      return {
+        key: start.toString().padStart(2, '0'),
+        label: `${start.toString().padStart(2, '0')}-${end.toString().padStart(2, '0')}`,
+      };
+    });
+  }
   if (aggregation === AcicAggregation.OneHour) {
     return Array.from({ length: 24 }, (_, i) => ({
       key: i.toString().padStart(2, '0'),
@@ -102,10 +157,28 @@ const generateColumns = (aggregation: AcicAggregation) => {
   return [];
 };
 
+const getAggregationLabel = (aggregation: AcicAggregation) => {
+  switch (aggregation) {
+    case AcicAggregation.OneMinute:
+      return 'Hour/Minute';
+    case AcicAggregation.FifteenMinutes:
+      return 'Hour/15min';
+    case AcicAggregation.ThirtyMinutes:
+      return 'Hour/30min';
+    case AcicAggregation.OneHour:
+      return 'Day/Hour';
+    case AcicAggregation.OneDay:
+      return 'Month/Day';
+    default:
+      return '';
+  }
+};
+
 interface HeatmapCellProps {
   cellData: DataItem | undefined;
   maxCount: number;
 }
+
 function HeatmapCell({ cellData, maxCount }: HeatmapCellProps) {
   const opacityClass = getOpacityClass(cellData?.count, maxCount);
 
@@ -188,9 +261,7 @@ export default function HeatmapComponent({
               <thead>
                 <tr className="text-center">
                   <th className="p-1 font-medium">
-                    {aggregation === AcicAggregation.OneHour
-                      ? 'Day/Hour'
-                      : 'Month/Day'}
+                    {getAggregationLabel(aggregation)}
                   </th>
                   {columns.map((col) => (
                     <th key={col.key} className="p-1 font-medium">
@@ -235,9 +306,7 @@ export default function HeatmapComponent({
               <thead>
                 <tr className="text-center">
                   <th className="p-2 font-medium">
-                    {aggregation === AcicAggregation.OneHour
-                      ? 'Hour/Day'
-                      : 'Day/Month'}
+                    {getAggregationLabel(aggregation)}
                   </th>
                   {sortedRows.map((row) => {
                     const firstItem = dataMerged[row][0];
