@@ -125,14 +125,10 @@ const formSchema = z
   )
   .refine(
     (data) =>
-      !(
-        data.type === ChartType.Heatmap &&
-        (data.aggregation !== AcicAggregation.OneHour ||
-          data.duration !== AcicAggregation.OneWeek)
-      ),
+      !(data.type === ChartType.Heatmap && data.size !== ChartSize.full),
     {
-      message: 'Heatmap must have aggregation OneHour and duration OneWeek',
-      path: ['aggregation'],
+      message: 'Heatmap should be full size',
+      path: ['size'],
     }
   );
 export type FormSchema = z.infer<typeof formSchema>;
@@ -205,11 +201,10 @@ export function FormWidget({
     }
   }, [form, formValues.type, formValues.groupBy, formValues.table, data]);
 
-  // set aggregation to OneHour and duration to OneWeek if the type is heatmap
+  // set size to full if the type is heatmap
   useEffect(() => {
     if (formValues.type === ChartType.Heatmap) {
-      form.setValue('aggregation', AcicAggregation.OneHour);
-      form.setValue('duration', AcicAggregation.OneWeek);
+      form.setValue('size', ChartSize.full);
     }
   }, [form, formValues.type]);
 
