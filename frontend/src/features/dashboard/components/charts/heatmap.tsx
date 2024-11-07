@@ -107,6 +107,18 @@ const formatTimestamp = (timestamp: string, aggregation: AcicAggregation) => {
       columnLabel: date.toFormat('dd'),
     };
   }
+  if (aggregation === AcicAggregation.OneWeek) {
+    const { weekNumber } = date;
+    const weekStart = date.startOf('week');
+    const weekEnd = date.endOf('week');
+
+    return {
+      rowKey: date.toFormat('yyyy-MM'),
+      rowLabel: date.toFormat('MMM yyyy'),
+      columnKey: weekStart.toFormat('dd'),
+      columnLabel: `W${weekNumber}\n${weekStart.toFormat('dd')}-${weekEnd.toFormat('dd')}`,
+    };
+  }
   return {
     rowKey: '',
     rowLabel: '',
@@ -154,6 +166,12 @@ const generateColumns = (aggregation: AcicAggregation) => {
       label: (i + 1).toString().padStart(2, '0'),
     }));
   }
+  if (aggregation === AcicAggregation.OneWeek) {
+    return Array.from({ length: 6 }, (_, i) => ({
+      key: (i * 7 + 1).toString().padStart(2, '0'),
+      label: `W${i + 1}`,
+    }));
+  }
   return [];
 };
 
@@ -169,6 +187,8 @@ const getAggregationLabel = (aggregation: AcicAggregation) => {
       return 'Day/Hour';
     case AcicAggregation.OneDay:
       return 'Month/Day';
+    case AcicAggregation.OneWeek:
+      return 'Month/Week';
     default:
       return '';
   }

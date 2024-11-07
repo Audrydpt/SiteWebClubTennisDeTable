@@ -76,8 +76,10 @@ const hasTooManyPoints = (
   const durationDuration = Duration.fromObject(
     AggregationTypeToObject[duration]
   );
-  return (
-    durationDuration.as('minutes') / aggregationDuration.as('minutes') > 1440
+  return !(
+    durationDuration.as('minutes') / aggregationDuration.as('minutes') < 500 ||
+    (aggregation === AcicAggregation.OneMinute &&
+      duration === AcicAggregation.OneDay)
   );
 };
 
@@ -134,6 +136,7 @@ const formSchema = z
 export type FormSchema = z.infer<typeof formSchema>;
 export type StoredWidget = FormSchema & {
   id: string;
+  order?: number;
 };
 
 type FormWidgetProps = {

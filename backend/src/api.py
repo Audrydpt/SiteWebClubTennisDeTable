@@ -9,7 +9,7 @@ import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from typing import Annotated, Optional, Type
+from typing import Annotated, Literal, Optional, Type
 from sqlalchemy.inspection import inspect
 from enum import Enum
 
@@ -215,6 +215,52 @@ class FastAPIServer:
                     dal.add(widget)
                     
                 return True
+                
+            except ValueError as e:
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.patch("/dashboard/tabs/{id}/widgets", tags=["/dashboard/tabs/widgets"])
+        async def patch_all_widgets(id: str, data: list[dict]):
+            try:
+                dal = GenericDAL()
+                
+                # Verify dashboard exists
+                dashboard = dal.get(Dashboard, id=id)
+                if not dashboard or len(dashboard) != 1:
+                    raise HTTPException(status_code=404, detail="Dashboard tab not found")
+                
+                # Validate all widgets must have an id
+                for widget_data in data:
+                    if 'id' not in widget_data:
+                        raise HTTPException(status_code=400, detail="Each widget must have an id")
+                
+                # Validate and prepare widgets
+                widgets_to_update = []
+                for widget_data in data:
+                    widget_id = widget_data.pop('id')  # Remove id from update data
+                    
+                    # Get existing widget
+                    widget = dal.get(Widget, id=widget_id)
+                    if widget is None or len(widget) != 1:
+                        raise HTTPException(status_code=404, detail=f"Widget {widget_id} not found")
+                        
+                    widget = widget[0]
+                    # Verify widget belongs to the specified dashboard
+                    if str(widget.dashboard_id) != id:
+                        raise HTTPException(
+                            status_code=400, 
+                            detail=f"Widget {widget_id} does not belong to specified dashboard"
+                        )
+                    
+                    # Update fields in memory
+                    for field, value in widget_data.items():
+                        if hasattr(widget, field):
+                            setattr(widget, field, value)
+                            
+                    widgets_to_update.append(widget)
+                
+                # All validations passed, perform updates
+                return [dal.update(widget) for widget in widgets_to_update]
                 
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))

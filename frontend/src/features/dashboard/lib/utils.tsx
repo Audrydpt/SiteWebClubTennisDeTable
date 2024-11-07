@@ -111,6 +111,7 @@ type WidgetQuery = {
   groupBy?: string;
   layout: string;
   title: string;
+  order?: number;
 };
 export async function getDashboardWidgets(id: string) {
   return fetch(`${process.env.MAIN_API_URL}/dashboard/tabs/${id}/widgets`).then(

@@ -1,6 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Edit3, Trash2 } from 'lucide-react';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { ReactSortable } from 'react-sortablejs';
 
 import { Button } from '@/components/ui/button';
@@ -8,9 +7,9 @@ import DeleteConfirmation from '@/components/ui/confirm-delete';
 import LoadingSpinner from '@/components/ui/loading';
 
 import { FormSchema, FormWidget, StoredWidget } from './components/form-widget';
+import useWidgetAPI from './hooks/use-widget';
 import { ChartTypeComponents } from './lib/const';
 import { ChartSize } from './lib/props';
-import { getDashboardWidgets, setDashboardWidgets } from './lib/utils';
 
 const widthClassMap: Record<ChartSize, string> = {
   tiny: 'col-span-1 md:col-span-1 lg:col-span-1 2xl:col-span-1',
@@ -44,64 +43,30 @@ export default function DashboardTab({
   dashboardKey,
   onAddWidget,
 }: DashboardTabProps) {
-  const queryClient = useQueryClient();
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['dashboard-widgets', dashboardKey],
-    queryFn: () => getDashboardWidgets(dashboardKey),
-    refetchInterval: 60 * 1000,
-  });
-
-  const { mutate } = useMutation({
-    mutationFn: async (newWidgets: StoredWidget[]) =>
-      setDashboardWidgets(dashboardKey, newWidgets),
-    onMutate: (newWidgets) =>
-      queryClient.setQueryData<StoredWidget[]>(
-        ['dashboard-widgets', dashboardKey],
-        newWidgets
-      ),
-  });
-
-  const addWidget = useCallback(
-    (d: FormSchema) => {
-      const newWidget = { ...d, id: crypto.randomUUID() } as StoredWidget;
-      mutate([...(data ?? []), newWidget]);
-    },
-    [data, mutate]
-  );
+  const { query, add, edit, remove, patch } = useWidgetAPI(dashboardKey);
+  const { data, isLoading, isError } = query;
 
   useEffect(() => {
-    onAddWidget(() => addWidget);
-  }, [onAddWidget, addWidget]);
+    onAddWidget(() => add);
+  }, [onAddWidget, add]);
 
-  // This is kind of reducer pattern: handleSort, handleEdit, handleDelete
-  // but how to add the "addWidget" properly?
   const handleSort = (newWidgets: ChartTiles[]) => {
     if (data) {
-      const reorderedData = newWidgets.map((widget: ChartTiles) =>
-        data.find((stored) => stored.id === widget.id)
-      ) as StoredWidget[];
+      const reordered = newWidgets
+        .map((widget: ChartTiles, index: number) => {
+          const storedWidget = data.find((stored) => stored.id === widget.id);
+          if (!storedWidget) return null;
 
-      if (JSON.stringify(reorderedData) !== JSON.stringify(data))
-        mutate(reorderedData);
-    }
-  };
+          return {
+            ...storedWidget,
+            order: index,
+          } as StoredWidget;
+        })
+        .filter((w): w is StoredWidget => w !== null);
 
-  const handleEdit = (id: string, d: FormSchema) => {
-    if (data) {
-      const newWidgets = data.map((widget) => {
-        if (widget.id === id) {
-          return { ...widget, ...d };
-        }
-        return widget;
-      });
-      mutate(newWidgets);
-    }
-  };
-
-  const handleDelete = (id: string) => {
-    if (data) {
-      const newWidgets = data.filter((widget) => widget.id !== id);
-      mutate(newWidgets);
+      if (JSON.stringify(reordered) !== JSON.stringify(data)) {
+        patch({ oldData: data, newData: reordered });
+      }
     }
   };
 
@@ -134,7 +99,7 @@ export default function DashboardTab({
           {item.content}
           <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <FormWidget
-              onSubmit={(d) => handleEdit(item.id, d)}
+              onSubmit={(d) => edit({ id: item.id, formData: d })}
               defaultValues={data.find((d) => d.id === item.id)}
               edition
               trigger={
@@ -145,7 +110,7 @@ export default function DashboardTab({
             />
 
             <DeleteConfirmation
-              onDelete={() => handleDelete(item.id)}
+              onDelete={() => remove(item.id)}
               description="Cette action est irréversible. Le widget sera définitivement supprimé du dashboard."
               trigger={
                 <Button variant="destructive" size="icon">
