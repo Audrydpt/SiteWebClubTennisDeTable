@@ -1,4 +1,4 @@
-export SERVER := 192.168.20.147
+export SERVER := 192.168.20.145
 
 .PHONY: build install
 

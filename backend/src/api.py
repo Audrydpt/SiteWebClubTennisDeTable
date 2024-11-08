@@ -130,7 +130,9 @@ class FastAPIServer:
             try:
                 dal = GenericDAL()
                 tab = Dashboard(title=title)
-                return dal.add(tab)
+                guid = dal.add(tab)
+                tab.id = guid
+                return tab
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
         
@@ -190,7 +192,9 @@ class FastAPIServer:
                     dashboard_id=id,
                     **data.dict()
                 )
-                return dal.add(widget)
+                guid = dal.add(widget)
+                widget.id = guid
+                return widget
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
         

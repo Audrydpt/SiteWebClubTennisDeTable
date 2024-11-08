@@ -135,7 +135,7 @@ const formSchema = z
   );
 export type FormSchema = z.infer<typeof formSchema>;
 export type StoredWidget = FormSchema & {
-  id: string;
+  id?: string;
   order?: number;
 };
 
@@ -162,23 +162,15 @@ export function FormWidget({
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      type: ChartType.Area,
+      type: ChartType.Bar,
       layout: 'natural',
       table: AcicEvent.AcicCounting,
       aggregation: AcicAggregation.OneHour,
       duration: AcicAggregation.OneDay,
       size: ChartSize.medium,
+      ...defaultValues,
     },
   });
-
-  useEffect(() => {
-    if (defaultValues) {
-      form.reset({
-        ...defaultValues,
-        groupBy: defaultValues.groupBy ? defaultValues.groupBy : '', // database set null instead of undefined
-      });
-    }
-  }, [defaultValues, form]);
 
   const formValues = form.watch();
   const PreviewComponent = ChartTypeComponents[formValues.type];
@@ -214,6 +206,7 @@ export function FormWidget({
   const handleSubmit = (d: FormSchema) => {
     onSubmit(d);
     setOpen(false);
+    form.reset();
   };
 
   return (

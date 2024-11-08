@@ -30,8 +30,8 @@ const heightClassMap: Record<ChartSize, string> = {
 
 type ChartTiles = {
   id: string;
-  size: ChartSize;
   content: JSX.Element;
+  widget: StoredWidget;
 };
 
 interface DashboardTabProps {
@@ -74,12 +74,12 @@ export default function DashboardTab({
   if (isLoading || !data) return <LoadingSpinner />;
 
   const widgets =
-    data.map((d: StoredWidget) => {
-      const { id, size, type, ...chart } = d;
+    data.map((widget: StoredWidget) => {
+      const { id, size, type, ...chart } = widget;
       const Component = ChartTypeComponents[type];
       return {
         id,
-        size,
+        widget,
         content: <Component {...chart} />,
       } as ChartTiles;
     }) ?? [];
@@ -94,13 +94,13 @@ export default function DashboardTab({
         <div
           key={item.id}
           data-id={item.id}
-          className={`${widthClassMap[item.size]} ${heightClassMap[item.size]} group relative`}
+          className={`${widthClassMap[item.widget.size]} ${heightClassMap[item.widget.size]} group relative`}
         >
           {item.content}
           <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <FormWidget
-              onSubmit={(d) => edit({ id: item.id, formData: d })}
-              defaultValues={data.find((d) => d.id === item.id)}
+              onSubmit={(d) => edit({ ...item.widget, ...d })}
+              defaultValues={item.widget}
               edition
               trigger={
                 <Button variant="outline" size="icon">
