@@ -22,8 +22,9 @@ deploy: build
 	rm /tmp/newfront.tar
 	
 
-run:
-	make venv CMD="python src/main.py"	
+run: build
+	docker run -d --restart unless-stopped --shm-size=512m --net host -v /opt/ACIC/front/database:/var/lib/postgresql/16/main:z localhost/newfront
+	make venv CMD="python src/main.py --port 5021"	
 
 install:
 	python3 -m venv .venv

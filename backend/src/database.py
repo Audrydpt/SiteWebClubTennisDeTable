@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-from sqlalchemy import column, create_engine, Column, Integer, REAL, String, Text, DateTime, DDL, PrimaryKeyConstraint, cast, func, inspect, text, ForeignKey
+from sqlalchemy import JSON, column, create_engine, Column, Integer, REAL, String, Text, DateTime, DDL, PrimaryKeyConstraint, cast, func, inspect, text, ForeignKey
 from sqlalchemy.dialects.postgresql import TIMESTAMP, INTEGER, UUID
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import sessionmaker, relationship
@@ -117,6 +117,7 @@ class Widget(Database):
     aggregation = Column(Text)
     duration = Column(Text)
     groupBy = Column(Text, nullable=True, default=None)
+    where = Column(JSON, nullable=True, default=lambda: {"column": "any", "value": ""})
     size = Column(Text)
     type = Column(Text)
     layout = Column(Text)

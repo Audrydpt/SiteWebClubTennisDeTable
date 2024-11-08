@@ -35,17 +35,18 @@ export default function MultiLineComponent({
   layout = 'natural',
   ...props
 }: MultiLineComponentProps) {
-  const { title, table, aggregation, duration } = props;
+  const { title, table, aggregation, duration, where } = props;
   const { groupBy } = props;
 
   const { isLoading, isError, data } = useQuery({
-    queryKey: [table, aggregation, duration, groupBy],
+    queryKey: [table, aggregation, duration, where, groupBy],
     queryFn: () =>
       getWidgetData(
         {
           table,
           aggregation,
           duration,
+          where,
         },
         groupBy
       ),

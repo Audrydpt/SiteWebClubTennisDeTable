@@ -2,6 +2,7 @@ from database import GenericDAL
 from event_grabber import EventGrabber
 from api import FastAPIServer
 import socket
+import argparse
 
 def getNetworkIp():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -18,6 +19,11 @@ if __name__ == "__main__":
     ip = getNetworkIp()
     print(ip)
 
+    # parse command line arguments using argparse
+    parser = argparse.ArgumentParser(description="Event grabber")
+    parser.add_argument("--port", type=int, default=5020, help="Port of the server")
+
+    args = parser.parse_args()
 
     # init grabber
     print("Init grabber")
@@ -38,7 +44,7 @@ if __name__ == "__main__":
     # init web server
     print("Init web server")
     server = FastAPIServer(grabber)
-    server.start(port=5020)
+    server.start(port=args.port)
     # wait for the server to stop
 
     

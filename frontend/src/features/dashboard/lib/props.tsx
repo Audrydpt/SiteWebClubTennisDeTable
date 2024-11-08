@@ -68,6 +68,10 @@ export type ChartProps = {
   table: AcicEvent;
   aggregation: AcicAggregation;
   duration: AcicAggregation;
+  where?: {
+    column?: string;
+    value?: string;
+  };
 };
 export type GroupByChartProps = ChartProps & {
   groupBy: string;

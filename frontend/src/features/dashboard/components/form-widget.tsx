@@ -89,6 +89,12 @@ const formSchema = z
     aggregation: z.nativeEnum(AcicAggregation),
     duration: z.nativeEnum(AcicAggregation),
     groupBy: z.string().optional(),
+    where: z
+      .object({
+        column: z.string().optional(),
+        value: z.string().optional(),
+      })
+      .optional(),
     size: z.nativeEnum(ChartSize),
     type: z.nativeEnum(ChartType),
     layout: z.enum(
@@ -168,6 +174,10 @@ export function FormWidget({
       aggregation: AcicAggregation.OneHour,
       duration: AcicAggregation.OneDay,
       size: ChartSize.medium,
+      where: {
+        column: 'any',
+        value: '',
+      },
       ...defaultValues,
     },
   });
@@ -337,66 +347,122 @@ export function FormWidget({
                   </div>
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="table"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Table</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select the table" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Object.values(AcicEvent).map((item) => (
-                            <SelectItem key={item} value={item}>
-                              {item}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <FormField
+                      control={form.control}
+                      name="table"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Table</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select the table" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {Object.values(AcicEvent).map((item) => (
+                                <SelectItem key={item} value={item}>
+                                  {item}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <FormField
+                      control={form.control}
+                      name="groupBy"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Group by</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            value={field.value}
+                            disabled={!getStackedOptions(formValues.type)}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select the group by" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {getGroupByOptions(data, formValues.table).map(
+                                (item) => (
+                                  <SelectItem key={item} value={item}>
+                                    {item}
+                                  </SelectItem>
+                                )
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
 
-                <FormField
-                  control={form.control}
-                  name="groupBy"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Group by</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        value={field.value}
-                        disabled={!getStackedOptions(formValues.type)}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select the group by" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {getGroupByOptions(data, formValues.table).map(
-                            (item) => (
-                              <SelectItem key={item} value={item}>
-                                {item}
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <FormField
+                      control={form.control}
+                      name="where.column"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Where</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select the colomn" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem key="any" value="any">
+                                Any
                               </SelectItem>
-                            )
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                              {getGroupByOptions(data, formValues.table).map(
+                                (item) => (
+                                  <SelectItem key={item} value={item}>
+                                    {item}
+                                  </SelectItem>
+                                )
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <FormField
+                      control={form.control}
+                      name="where.value"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Equal</FormLabel>
+                          <Input {...field} />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
 
                 <div className="flex gap-2">
                   <div className="flex-1">

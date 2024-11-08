@@ -75,6 +75,7 @@ type DashboardQuery = {
   table: string;
   aggregation: AcicAggregation;
   duration: AcicAggregation;
+  where?: { column?: string; value?: string };
 };
 export async function getWidgetDescription() {
   return fetch(`${process.env.MAIN_API_URL}/dashboard/widgets`).then((res) =>
@@ -88,8 +89,16 @@ export async function getWidgetData(props: DashboardQuery, groupBy?: string) {
   const timeFrom = now.minus(AggregationTypeToObject[props.duration]);
   const timeTo = now;
 
+  let queryString = `aggregate=${props.aggregation}`;
+  queryString += `&time_from=${timeFrom.toISO({ includeOffset: false })}`;
+  queryString += `&time_to=${timeTo.toISO({ includeOffset: false })}`;
+
+  if (groupBy) queryString += `&group_by=${groupBy}`;
+  if (props.where && props.where.column && props.where.value)
+    queryString += `&${props.where.column}=${props.where.value}`;
+
   return fetch(
-    `${process.env.MAIN_API_URL}/dashboard/widgets/${props.table}?aggregate=${props.aggregation}&time_from=${timeFrom.toISO({ includeOffset: false })}&time_to=${timeTo.toISO({ includeOffset: false })}${groupBy ? `&group_by=${groupBy}` : ''}`
+    `${process.env.MAIN_API_URL}/dashboard/widgets/${props.table}?${queryString}`
   ).then((res) => res.json());
 }
 

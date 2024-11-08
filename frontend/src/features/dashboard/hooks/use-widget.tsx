@@ -131,7 +131,10 @@ export default function useWidgetAPI(dashboardKey: string) {
         []
       );
 
-      if (changedWidgets.length === 0) {
+      if (
+        changedWidgets.length === 0 ||
+        (changedWidgets.length === 1 && Object.keys(changedWidgets)[0] === 'id')
+      ) {
         return newData;
       }
 

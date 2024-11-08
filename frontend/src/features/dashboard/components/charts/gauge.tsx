@@ -67,11 +67,11 @@ export default function GaugeComponent({
   layout = 'full',
   ...props
 }: GaugeComponentProps) {
-  const { title, table, aggregation, duration } = props;
+  const { title, table, aggregation, duration, where } = props;
 
   const { isLoading, isError, data } = useQuery({
-    queryKey: [table, aggregation, duration],
-    queryFn: () => getWidgetData({ table, aggregation, duration }),
+    queryKey: [table, aggregation, duration, where],
+    queryFn: () => getWidgetData({ table, aggregation, duration, where }),
     refetchInterval: Duration.fromObject(
       AggregationTypeToObject[aggregation]
     ).as('milliseconds'),
