@@ -94,7 +94,13 @@ export async function getWidgetData(props: DashboardQuery, groupBy?: string) {
   queryString += `&time_to=${timeTo.toISO({ includeOffset: false })}`;
 
   if (groupBy) queryString += `&group_by=${groupBy}`;
-  if (props.where && props.where.column && props.where.value)
+  if (
+    props.where &&
+    props.where?.column &&
+    props.where?.value &&
+    props.where?.column?.toLowerCase() !== 'any' &&
+    props.where?.value?.length > 0
+  )
     queryString += `&${props.where.column}=${props.where.value}`;
 
   return fetch(

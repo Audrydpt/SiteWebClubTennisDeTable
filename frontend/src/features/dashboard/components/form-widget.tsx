@@ -450,17 +450,19 @@ export function FormWidget({
                     />
                   </div>
                   <div className="flex-1">
-                    <FormField
-                      control={form.control}
-                      name="where.value"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Equal</FormLabel>
-                          <Input {...field} />
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {formValues?.where?.column !== 'any' && (
+                      <FormField
+                        control={form.control}
+                        name="where.value"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Equal</FormLabel>
+                            <Input {...field} />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                   </div>
                 </div>
 
