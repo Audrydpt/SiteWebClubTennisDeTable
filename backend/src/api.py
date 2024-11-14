@@ -106,10 +106,14 @@ class FastAPIServer:
         self.__create_widgets()
     
     def __create_tabs(self):
+        Model = create_model('TabModel', 
+            title=(str, Field(description="The title of the dashboard tab")),
+            order=(Optional[int], Field(default=None, description="The order of the tab"))
+        )
+
         @self.app.get("/dashboard/tabs", tags=["/dashboard/tabs"])
         async def get_tabs():
             try:
-
                 ret = {}
                 dal = GenericDAL()
                 query = dal.get(Dashboard, _order='order')
@@ -126,10 +130,10 @@ class FastAPIServer:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.post("/dashboard/tabs", tags=["/dashboard/tabs"])
-        async def add_tab(title: str):
+        async def add_tab(data: Model):
             try:
                 dal = GenericDAL()
-                tab = Dashboard(title=title)
+                tab = Dashboard(**data.dict(exclude_unset=True))
                 guid = dal.add(tab)
                 tab.id = guid
                 return tab
@@ -137,13 +141,16 @@ class FastAPIServer:
                 raise HTTPException(status_code=500, detail=str(e))
         
         @self.app.put("/dashboard/tabs/{id}", tags=["/dashboard/tabs"])
-        async def update_tab(id: str, title: str):
+        async def update_tab(id: str, data: Model):
             try:
                 dal = GenericDAL()
                 obj = dal.get(Dashboard, id=id)
                 if obj is None or len(obj) != 1:
                     raise HTTPException(status_code=404, detail="Tab not found")
-                obj[0].title = title
+                
+                for field, value in data.dict(exclude_unset=True).items():
+                    setattr(obj[0], field, value)
+                    
                 return dal.update(obj[0])
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))

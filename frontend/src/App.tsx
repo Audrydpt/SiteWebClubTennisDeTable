@@ -27,6 +27,7 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/demo" element={<DemoDashboard />} />
           <Route path="/dashboard/test" element={<TestDashboard />} />
+          <Route path="/dashboard/*" element={<Dashboard />} />
           <Route path="*" element={<h1>Not Found</h1>} />
         </Routes>
       </Suspense>

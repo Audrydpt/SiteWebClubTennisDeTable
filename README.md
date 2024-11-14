@@ -36,3 +36,4 @@ WIP
 - https://openclassrooms.com/fr/courses/7150606-creez-une-application-react-complete (state)
 - https://www.youtube.com/watch?v=38wJmjeJNAk (react-query)
 - https://www.belgif.be/specification/rest/api-guide/ (rest api)
+- https://www.uidesign.tips (ui/ux)

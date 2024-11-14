@@ -139,17 +139,17 @@ const formSchema = z
       path: ['size'],
     }
   );
-export type FormSchema = z.infer<typeof formSchema>;
-export type StoredWidget = FormSchema & {
+export type WidgetSchema = z.infer<typeof formSchema>;
+export type StoredWidget = WidgetSchema & {
   id?: string;
   order?: number;
 };
 
 type FormWidgetProps = {
-  onSubmit: (data: FormSchema) => void;
+  onSubmit: (data: WidgetSchema) => void;
   trigger: ReactNode;
   edition?: boolean;
-  defaultValues?: FormSchema;
+  defaultValues?: WidgetSchema;
 };
 
 export function FormWidget({
@@ -165,7 +165,7 @@ export function FormWidget({
     queryFn: () => getWidgetDescription(),
   });
 
-  const form = useForm<FormSchema>({
+  const form = useForm<WidgetSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       type: ChartType.Bar,
@@ -213,7 +213,7 @@ export function FormWidget({
     }
   }, [form, formValues.type]);
 
-  const handleSubmit = (d: FormSchema) => {
+  const handleSubmit = (d: WidgetSchema) => {
     onSubmit(d);
     setOpen(false);
     form.reset();

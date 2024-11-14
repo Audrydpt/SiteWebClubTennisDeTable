@@ -6,7 +6,11 @@ import { Button } from '@/components/ui/button';
 import DeleteConfirmation from '@/components/ui/confirm-delete';
 import LoadingSpinner from '@/components/ui/loading';
 
-import { FormSchema, FormWidget, StoredWidget } from './components/form-widget';
+import {
+  FormWidget,
+  StoredWidget,
+  WidgetSchema,
+} from './components/form-widget';
 import useWidgetAPI from './hooks/use-widget';
 import { ChartTypeComponents } from './lib/const';
 import { ChartSize } from './lib/props';
@@ -36,7 +40,7 @@ type ChartTiles = {
 
 interface DashboardTabProps {
   dashboardKey: string;
-  onAddWidget: (fn: (d: FormSchema) => void) => void;
+  onAddWidget: (fn: (d: WidgetSchema) => void) => void;
 }
 
 export default function DashboardTab({

@@ -245,9 +245,16 @@ class GenericDAL:
     def __seed_database(self):
         with self.Session() as session:
             query = session.query(Dashboard).all()
+            
+            # Create a default dashboard if none exists
             if not query or len(query) == 0:
-                dashboard = Dashboard(title="Main dashboard")
+                dashboard = Dashboard(title="Main dashboard", order=0)
                 session.add(dashboard)
+                session.commit()
+            
+            # Update the order of the default dashboard
+            if query and len(query) == 1 and not query[0].order:
+                query[0].order = 0
                 session.commit()
 
 

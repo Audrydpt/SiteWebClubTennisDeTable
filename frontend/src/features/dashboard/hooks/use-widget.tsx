@@ -23,7 +23,7 @@ export default function useWidgetAPI(dashboardKey: string) {
     }
   };
 
-  const { mutate: add } = useMutation({
+  const { mutateAsync: add } = useMutation({
     mutationFn: async (formData: StoredWidget) => {
       const previous = client.getQueryData<StoredWidget[]>(queryKey);
 
@@ -54,7 +54,7 @@ export default function useWidgetAPI(dashboardKey: string) {
 
       return { previous, tempId: temp.id };
     },
-    onSuccess: (savedWidget: StoredWidget, _variables, context) => {
+    onSuccess: async (savedWidget: StoredWidget, _variables, context) => {
       client.setQueryData<StoredWidget[]>(queryKey, (old) => {
         if (!old) return [savedWidget];
         return old.map((widget) =>
