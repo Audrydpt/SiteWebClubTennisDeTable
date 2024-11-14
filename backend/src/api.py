@@ -9,7 +9,7 @@ import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from typing import Annotated, Literal, Optional, Type
+from typing import Annotated, Literal, Optional, Type, Union, List
 from sqlalchemy.inspection import inspect
 from enum import Enum
 
@@ -306,7 +306,7 @@ class FastAPIServer:
         for column in inspect(model_class).mapper.column_attrs:
             if column.key not in ['id', 'timestamp'] and 'url' not in column.key:
                 python_type = column.expression.type.python_type
-                query[column.key] = (Optional[python_type], Field(default=None, description=f"Filter by {column.key}"))
+                query[column.key] = (Optional[Union[python_type, List[python_type]]], Field(default=None, description=f"Filter by {column.key}"))
 
                 if path not in self.__registered_dashboard:
                     self.__registered_dashboard[path] = []

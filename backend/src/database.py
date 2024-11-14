@@ -297,7 +297,12 @@ class GenericDAL:
 
             # WHERE
             if filters:
-                query = query.filter_by(**filters)
+                conditions = [
+                    getattr(cls, key).in_(value) if isinstance(value, list) else getattr(cls, key) == value
+                    for key, value in filters.items()
+                ]
+                query = query.filter(*conditions)
+
             if _between is not None and len(_between) == 2 and _between[0] is not None and _between[1] is not None:
                 query = query.filter(cls.timestamp >= _between[0], cls.timestamp <= _between[1])
             

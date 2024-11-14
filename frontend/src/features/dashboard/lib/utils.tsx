@@ -100,8 +100,24 @@ export async function getWidgetData(props: DashboardQuery, groupBy?: string) {
     props.where?.value &&
     props.where?.column?.toLowerCase() !== 'any' &&
     props.where?.value?.length > 0
-  )
-    queryString += `&${props.where.column}=${props.where.value}`;
+  ) {
+    const { column, value } = props.where;
+
+    if (value.includes(',')) {
+      const values = value
+        .split(',')
+        .map((v) => v.trim())
+        .filter((v) => v !== '');
+
+      if (values.length > 0) {
+        values.forEach((v) => {
+          queryString += `&${column}=${encodeURIComponent(v)}`;
+        });
+      }
+    } else if (value !== '') {
+      queryString += `&${column}=${encodeURIComponent(value)}`;
+    }
+  }
 
   return fetch(
     `${process.env.MAIN_API_URL}/dashboard/widgets/${props.table}?${queryString}`
