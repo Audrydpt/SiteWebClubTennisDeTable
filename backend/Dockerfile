@@ -15,18 +15,12 @@ RUN apt-get update && apt-get install -y \
     gosu \
     && rm -rf /var/lib/apt/lists/*
 
-# Installation de PostgreSQL 16
+# Installation PostgreSQL 16 + l'extension pgvector
 RUN sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' \
+    && cat /etc/apt/sources.list.d/pgdg.list \
     && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
     && apt-get update \
-    && apt-get install -y postgresql-${PG_VERSION} postgresql-client-${PG_VERSION} libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Installation de l'extension pgvector
-RUN sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' \
-    && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
-    && apt-get update \
-    && apt-get install -y postgresql-${PG_VERSION}-pgvector \
+    && apt-get install -y postgresql-${PG_VERSION} postgresql-client-${PG_VERSION} libpq-dev postgresql-${PG_VERSION}-pgvector \
     && rm -rf /var/lib/apt/lists/* \
     && echo "shared_preload_libraries = 'vector'" >> /etc/postgresql/${PG_VERSION}/main/postgresql.conf
 
