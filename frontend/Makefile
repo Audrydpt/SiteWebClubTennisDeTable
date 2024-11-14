@@ -39,6 +39,12 @@ deploy: build
 		systemctl restart acic-httpd; \
 	fi'
 
+dist: build
+	rm -Rf dist/home/
+	mkdir -p dist/home/www/front-react
+	mv dist/assets/ dist/home/www/front-react/
+	mv dist/*.* dist/home/www/front-react/
+
 run:
 	make nvm CMD="npm run dev"
 

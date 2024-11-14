@@ -20,7 +20,11 @@ deploy: build
 	ssh root@$(SERVER) 'systemctl start acic-database.service'
 	# ssh root@$(SERVER) 'docker run -d --restart unless-stopped --shm-size=512m --net host -v /opt/ACIC/front/database:/var/lib/postgresql/16/main:z localhost/newfront'
 	rm /tmp/newfront.tar
-	
+
+dist: build
+	mkdir -p dist
+	docker save localhost/newfront > dist/newfront.tar
+	cp acic-database.service dist/
 
 run: build
 	docker run -d --restart unless-stopped --shm-size=512m --net host -v /opt/ACIC/front/database:/var/lib/postgresql/16/main:z localhost/newfront
@@ -29,6 +33,9 @@ run: build
 install:
 	python3 -m venv .venv
 	make venv CMD="pip install -r requirements.txt"	
+
+clean:
+	rm -rf .venv/ dist/
 
 venv:
 	bash -c 'source .venv/bin/activate ; $(CMD)'

@@ -13,3 +13,18 @@ deploy:
 install:
 	$(MAKE) -C frontend install
 	$(MAKE) -C backend install
+
+dist:
+	$(MAKE) -C frontend dist
+	$(MAKE) -C backend dist
+
+	rm -Rf dist/frontend/ dist/backend/
+	mkdir -p dist/frontend/ dist/backend/
+
+	mv frontend/dist/* dist/frontend/
+	mv backend/dist/* dist/backend/
+
+clean:
+	rm -Rf dist/
+	$(MAKE) -C frontend clean
+	$(MAKE) -C backend clean
