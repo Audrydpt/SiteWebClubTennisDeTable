@@ -91,8 +91,8 @@ class FastAPIServer:
         
         self.__create_endpoint("AcicUnattendedItem", AcicUnattendedItem)
         self.__create_endpoint("AcicCounting", AcicCounting)
-        self.__create_endpoint("AcicNumbering", AcicNumbering)
-        self.__create_endpoint("AcicOccupancy", AcicOccupancy)
+        self.__create_endpoint("AcicNumbering", AcicNumbering, agg_func=func.avg(AcicNumbering.count))
+        self.__create_endpoint("AcicOccupancy", AcicOccupancy, agg_func=func.avg(AcicOccupancy.value))
         self.__create_endpoint("AcicLicensePlate", AcicLicensePlate)
         self.__create_endpoint("AcicOCR", AcicOCR)
         self.__create_endpoint("AcicAllInOneEvent", AcicAllInOneEvent)
@@ -308,7 +308,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
         
-    def __create_endpoint(self, path: str, model_class: Type):
+    def __create_endpoint(self, path: str, model_class: Type, agg_func=None):
         query = {}
         for column in inspect(model_class).mapper.column_attrs:
             if column.key not in ['id', 'timestamp'] and 'url' not in column.key:
@@ -334,8 +334,10 @@ class FastAPIServer:
 
                 dal = GenericDAL()
 
+                aggregation = agg_func if agg_func is not None else func.count(model_class.id)
+
                 ret = []
-                for row in dal.get_bucket(model_class, _func=func.count(model_class.id), _time=time, _group=group_by, _between=between, **where):
+                for row in dal.get_bucket(model_class, _func=aggregation, _time=time, _group=group_by, _between=between, **where):
                     data = {
                         "timestamp": row[0],
                         "count": row[1]
