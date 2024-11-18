@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter as Router } from 'react-router-dom';
 
 import App from './App.tsx';
+import HttpsProvider from './https-provider.tsx';
 import './index.css';
 import { ThemeProvider } from './theme-provider.tsx';
 
@@ -12,12 +13,14 @@ const queryClient = new QueryClient();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider defaultTheme="light" storageKey="ui-theme">
-      <QueryClientProvider client={queryClient}>
-        <Router basename={basename}>
-          <App />
-        </Router>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <HttpsProvider>
+      <ThemeProvider defaultTheme="light" storageKey="ui-theme">
+        <QueryClientProvider client={queryClient}>
+          <Router basename={basename}>
+            <App />
+          </Router>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </HttpsProvider>
   </StrictMode>
 );
