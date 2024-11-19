@@ -101,6 +101,9 @@ export default function MultiBarComponent({
     data.size
   );
 
+  const getBarRadius = (): [number, number, number, number] =>
+    layout === 'horizontal' ? [4, 4, 0, 0] : [0, 4, 4, 0];
+
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">
       <CardHeader>
@@ -156,7 +159,7 @@ export default function MultiBarComponent({
                 key={group}
                 dataKey={String(group)}
                 fill={`hsl(var(--chart-${(index % 5) + 1}))`}
-                radius={4}
+                radius={getBarRadius()}
               />
             ))}
           </BarChart>

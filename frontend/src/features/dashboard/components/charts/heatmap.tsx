@@ -66,7 +66,7 @@ const formatTimestamp = (timestamp: string, aggregation: AcicAggregation) => {
   if (aggregation === AcicAggregation.OneMinute) {
     return {
       rowKey: date.toFormat('yyyy-MM-dd HH'),
-      rowLabel: date.toFormat('HH:00'),
+      rowLabel: date.toFormat("HH'h'"),
       columnKey: date.toFormat('mm'),
       columnLabel: date.toFormat('mm'),
     };
@@ -76,7 +76,7 @@ const formatTimestamp = (timestamp: string, aggregation: AcicAggregation) => {
     const slot = Math.floor(minutes / 15) * 15;
     return {
       rowKey: date.toFormat('yyyy-MM-dd HH'),
-      rowLabel: date.toFormat('HH:00'),
+      rowLabel: date.toFormat("HH'h'"),
       columnKey: slot.toString().padStart(2, '0'),
       columnLabel: `${slot.toString().padStart(2, '0')}-${(slot + 14).toString().padStart(2, '0')}`,
     };
@@ -86,7 +86,7 @@ const formatTimestamp = (timestamp: string, aggregation: AcicAggregation) => {
     const slot = Math.floor(minutes / 30) * 30;
     return {
       rowKey: date.toFormat('yyyy-MM-dd HH'),
-      rowLabel: date.toFormat('HH:00'),
+      rowLabel: date.toFormat("HH'h'"),
       columnKey: slot.toString().padStart(2, '0'),
       columnLabel: `${slot.toString().padStart(2, '0')}-${(slot + 29).toString().padStart(2, '0')}`,
     };
@@ -157,7 +157,7 @@ const generateColumns = (aggregation: AcicAggregation) => {
   if (aggregation === AcicAggregation.OneHour) {
     return Array.from({ length: 24 }, (_, i) => ({
       key: i.toString().padStart(2, '0'),
-      label: i.toString().padStart(2, '0'),
+      label: `${i.toString().padStart(2, '0')}h`,
     }));
   }
   if (aggregation === AcicAggregation.OneDay) {

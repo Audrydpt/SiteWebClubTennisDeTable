@@ -63,6 +63,9 @@ export default function BarComponent({
     data.size
   );
 
+  const getBarRadius = (): [number, number, number, number] =>
+    layout === 'horizontal' ? [8, 8, 0, 0] : [0, 8, 8, 0];
+
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">
       <CardHeader>
@@ -111,7 +114,11 @@ export default function BarComponent({
                 />
               }
             />
-            <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={8} />
+            <Bar
+              dataKey="count"
+              fill="hsl(var(--chart-1))"
+              radius={getBarRadius()}
+            />
           </BarChart>
         </ChartContainer>
       </CardContent>

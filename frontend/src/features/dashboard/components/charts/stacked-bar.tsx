@@ -104,6 +104,12 @@ export default function StackedBarComponent({
     data.size
   );
 
+  const lastIndex = Object.keys(chartConfig).length - 1;
+  const getBarRadius = (index: number): [number, number, number, number] => {
+    if (index !== lastIndex) return [0, 0, 0, 0];
+    return layout === 'horizontal' ? [4, 4, 0, 0] : [0, 4, 4, 0];
+  };
+
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">
       <CardHeader>
@@ -164,7 +170,7 @@ export default function StackedBarComponent({
                 dataKey={String(group)}
                 stackId="a"
                 fill={`hsl(var(--chart-${(index % 5) + 1}))`}
-                radius={4}
+                radius={getBarRadius(index)}
               />
             ))}
           </BarChart>
