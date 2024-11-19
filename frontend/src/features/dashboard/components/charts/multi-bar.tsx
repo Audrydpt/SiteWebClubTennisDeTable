@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { DateTime, Duration } from 'luxon';
-import { Bar, BarChart, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -112,21 +112,38 @@ export default function MultiBarComponent({
       <CardContent className="flex-grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <BarChart data={Object.values(dataMerged)} layout={layout}>
+            <CartesianGrid
+              vertical={layout === 'vertical'}
+              horizontal={layout === 'horizontal'}
+            />
             {layout === 'horizontal' ? (
-              <XAxis
-                dataKey="timestamp"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                angle={-30}
-                tickFormatter={(t: string) =>
-                  DateTime.fromISO(t).toFormat(format)
-                }
-                interval={interval}
-              />
+              <>
+                <XAxis
+                  dataKey="timestamp"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  angle={-30}
+                  tickFormatter={(t: string) =>
+                    DateTime.fromISO(t).toFormat(format)
+                  }
+                  interval={interval}
+                />
+                <YAxis
+                  type="number"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                />
+              </>
             ) : (
               <>
-                <XAxis type="number" hide />
+                <XAxis
+                  type="number"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                />
                 <YAxis
                   dataKey="timestamp"
                   type="category"

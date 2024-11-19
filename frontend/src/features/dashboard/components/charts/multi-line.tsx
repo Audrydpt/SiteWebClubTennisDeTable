@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { DateTime, Duration } from 'luxon';
-import { CartesianGrid, Line, LineChart, XAxis } from 'recharts';
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 import { CurveType } from 'recharts/types/shape/Curve';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -128,7 +128,7 @@ export default function MultiLineComponent({
               }
               interval={interval}
             />
-
+            <YAxis tickLine={false} axisLine={false} tickMargin={8} />
             <ChartTooltip
               content={
                 <ChartTooltipContent

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { DateTime, Duration } from 'luxon';
-import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { CurveType } from 'recharts/types/shape/Curve';
 import { StackOffsetType } from 'recharts/types/util/types';
 
@@ -132,6 +132,7 @@ export default function StackedAreaComponent({
               }
               interval={interval}
             />
+            <YAxis tickLine={false} axisLine={false} tickMargin={8} />
             <ChartTooltip
               content={
                 <ChartTooltipContent
