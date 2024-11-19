@@ -30,15 +30,10 @@ if __name__ == "__main__":
     grabber = EventGrabber()
     grabber.add_grabber("127.0.0.1",     8081)   # localhost
     if ip == "192.168.20.145":
-        grabber.add_grabber("192.168.20.44", 8081)   # new showroom
-        grabber.add_grabber("192.168.20.45", 8081)   # old showroom
-        grabber.add_grabber("192.168.20.126", 8081)  # VM de infrabel (arnaud)
-        grabber.add_grabber("192.168.20.134", 8081)  # ASN
-        grabber.add_grabber("192.168.20.145", 8081)  # SoukSimulator
-        grabber.add_grabber("192.168.20.150", 8081)  # VM de samy
-        grabber.add_grabber("192.168.20.153", 8081)  # VM de jacques
-        grabber.add_grabber("192.168.20.213", 8081)  # VM de bertrand
-        grabber.add_grabber("192.168.20.234", 8081)  # VM de bench (steve)
+        for i in range(40, 240):
+            server_ip = f"192.168.20.{i}"
+            if server_ip != ip:
+                grabber.add_grabber(server_ip, 8081)
     grabber.start()
 
     # init web server
