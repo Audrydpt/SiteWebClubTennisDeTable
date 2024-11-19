@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartConfig,
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
@@ -169,6 +171,10 @@ export default function MultiBarComponent({
                   }
                 />
               }
+            />
+            <ChartLegend
+              content={<ChartLegendContent />}
+              className="flex-wrap"
             />
 
             {Object.keys(chartConfig).map((group, index) => (

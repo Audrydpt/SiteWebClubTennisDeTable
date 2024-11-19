@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartConfig,
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
@@ -121,6 +123,11 @@ export default function StackedGaugeComponent({
             <ChartTooltip
               content={<ChartTooltipContent cursor={false} hideLabel />}
             />
+            <ChartLegend
+              content={<ChartLegendContent />}
+              className="flex-wrap"
+            />
+
             {Object.keys(chartConfig).map((key) => (
               <RadialBar
                 key={key}

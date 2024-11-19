@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartConfig,
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
@@ -129,6 +131,10 @@ export default function MultiGaugeComponent({
                   labelFormatter={(_, payload) => payload[0].payload.name}
                 />
               }
+            />
+            <ChartLegend
+              content={<ChartLegendContent />}
+              className="flex-wrap"
             />
             <RadialBar dataKey="count" background />
           </RadialBarChart>

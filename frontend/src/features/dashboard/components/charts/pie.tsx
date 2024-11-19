@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartConfig,
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
@@ -123,6 +125,10 @@ export default function PieComponent({
         <ChartContainer config={chartConfig} className="h-full w-full">
           <PieChart>
             <ChartTooltip content={<ChartTooltipContent cursor={false} />} />
+            <ChartLegend
+              content={<ChartLegendContent />}
+              className="flex-wrap"
+            />
             <Pie
               endAngle={
                 layout === 'halfpie' || layout === 'halfdonut' ? 180 : 360
