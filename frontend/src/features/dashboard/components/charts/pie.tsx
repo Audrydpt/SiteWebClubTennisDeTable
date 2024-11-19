@@ -132,9 +132,9 @@ export default function PieComponent({
               nameKey="name"
               labelLine={false}
               innerRadius={
-                layout === 'donut' || layout === 'halfdonut' ? 60 : 0
+                layout === 'donut' || layout === 'halfdonut' ? '80%' : 0
               }
-              outerRadius={80}
+              outerRadius="100%"
               paddingAngle={
                 layout === 'donut' || layout === 'halfdonut' ? gap : 0
               }
