@@ -55,7 +55,7 @@ const getOpacityClass = (
   count: number | undefined,
   maxCount: number
 ): string => {
-  if (count === undefined) return 'bg-muted';
+  if (count === undefined || count === null) return 'bg-muted';
   const ratio = count / maxCount;
   const index = Math.floor(ratio * (hourClasses.length - 1));
   return hourClasses[index];
@@ -209,7 +209,9 @@ function HeatmapCell({ cellData, maxCount }: HeatmapCellProps) {
       </TooltipTrigger>
       <TooltipContent>
         <p className="font-medium">
-          {cellData ? `Count: ${cellData.count}` : 'No data'}
+          {cellData && cellData.count !== null
+            ? `Count: ${cellData.count}`
+            : 'No data'}
         </p>
       </TooltipContent>
     </Tooltip>
