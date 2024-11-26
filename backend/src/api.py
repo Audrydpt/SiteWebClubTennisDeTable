@@ -66,23 +66,42 @@ class FastAPIServer:
         
         @self.app.get("/health", include_in_schema=False)
         async def health():
-            return {"status": "ok"}
+            grabbers = {}
+            for grabber in self.event_grabber.get_grabbers():
+                grabbers[grabber.acichost] = "ok" if grabber.is_long_running() else "error"
+            
+            return {
+                "api": "ok",
+                "database": "ok",
+                "grabbers": grabbers
+            }
         
         @self.app.get("/servers/grabbers", tags=["servers"])
-        async def get_all_servers():
+        async def get_all_servers(health: Optional[bool] = False):
             try:
                 ret = []
 
                 for grabber in self.event_grabber.get_grabbers():
-                    ret.append({
-                        "type": grabber.hosttype,
-                        "host": grabber.acichost,
-                        "ports": {
-                            "http": grabber.acicaliveport,
-                            "https": 443,
-                            "streaming": grabber.acichostport
+                    status = dict()
+                    status["type"] = grabber.hosttype
+                    status["host"] = grabber.acichost
+                    status["ports"] = {
+                        "http": grabber.acicaliveport,
+                        "https": 443,
+                        "streaming": grabber.acichostport
+                    }
+
+
+                    if health:
+                        status["health"] = {
+                            "last_event": grabber.time_last_event,
+                            "is_alive": grabber.is_alive(),
+                            "is_longrunning": grabber.is_long_running(),
+                            "is_reachable": grabber.is_reachable(timeout=0.2),
+                            "is_streaming": grabber.is_streaming(timeout=0.2)
                         }
-                    })
+
+                    ret.append(status)
                 
                 return ret
 

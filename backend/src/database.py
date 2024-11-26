@@ -295,7 +295,7 @@ class GenericDAL:
         with self.Session() as session:
 
             query = session.query(
-                func.time_bucket(_time, cls.timestamp).label('_timestamp'),
+                func.time_bucket_gapfill(_time, cls.timestamp).label('_timestamp'),
             )
 
             # FUNCTION()
@@ -330,14 +330,6 @@ class GenericDAL:
             
             # ORDER BY
             query = query.order_by('_timestamp')            
-            if _group is not None:
-                if isinstance(_group, list):
-                    for group in _group:
-                        query = query.add_column(column(group))
-                        query = query.group_by(column(group))
-                else:
-                    query = query.add_column(column(_group))
-                    query = query.group_by(column(_group))
             
             return query.all()
 

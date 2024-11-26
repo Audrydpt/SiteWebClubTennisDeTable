@@ -17,7 +17,7 @@ class EventGrabber(threading.Thread):
         self.grabbers = []
         self.running = False
         self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.INFO)
         self.logger.addHandler(logging.StreamHandler())
         self.logger.addHandler(logging.FileHandler("/tmp/eventgrabber.log"))
 
@@ -29,7 +29,7 @@ class EventGrabber(threading.Thread):
 
     def add_grabber(self, host, port):
         self.logger.info(f"Adding grabber {host}:{port}")
-        grabber = AcMetadataEventReceiverThread(acichost=host, acichostport=port)
+        grabber = AcMetadataEventReceiverThread(acichost=host, acichostport=port) # , logger=self.logger)
         self.grabbers.append(grabber)
         return grabber
 
@@ -64,7 +64,7 @@ class EventGrabber(threading.Thread):
             for grabber in self.grabbers:
 
                 if keep_alive_check:
-                    if grabber.is_alive() is False or grabber.is_reachable() is False:
+                    if grabber.is_alive() is False or grabber.is_reachable(timeout=1.0) is False:
                         self.logger.warning(
                             f"Grabber {grabber.acichost}:{grabber.acichostport} is not alive or not reachable. Restarting...")
 
@@ -73,13 +73,22 @@ class EventGrabber(threading.Thread):
                         grabber = self.add_grabber(grabber.acichost, grabber.acichostport)
                         grabber.start()
                         continue
+                
 
                 q = grabber.get_queue_copy()
+
+                is_full = False
+                if q.qsize() > 80:
+                    self.logger.warning(f"Grabber {grabber.acichost}:{grabber.acichostport} event queue is full.")
+                    is_full = True
+
                 while q.empty() is False:
                     event = q.get()
+                    if is_full:
+                        self.logger.warning(f"Got this event in the full queue: {event}")
+
                     if self.parse_event(grabber.acichost, event) is False:
-                        self.logger.warning(
-                            f"Could not parse event: {event} from {grabber.acichost}:{grabber.acichostport}")
+                        self.logger.warning(f"Could not parse event: {event} from {grabber.acichost}:{grabber.acichostport}")
 
             time.sleep(0.05)
 

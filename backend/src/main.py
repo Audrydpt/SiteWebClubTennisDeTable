@@ -1,6 +1,7 @@
 from database import GenericDAL
 from event_grabber import EventGrabber
 from api import FastAPIServer
+from acic.metadata import AcMetadataEventReceiverThread
 import socket
 import argparse
 
@@ -33,7 +34,9 @@ if __name__ == "__main__":
         for i in range(40, 240):
             server_ip = f"192.168.20.{i}"
             if server_ip != ip:
-                grabber.add_grabber(server_ip, 8081)
+                serv = AcMetadataEventReceiverThread(acichost=server_ip, acichostport=8081)
+                if serv.is_reachable(timeout=0.2) and serv.is_streaming(timeout=0.2):
+                    grabber.add_grabber(server_ip, 8081)
     grabber.start()
 
     # init web server
