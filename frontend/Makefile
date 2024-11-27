@@ -39,7 +39,7 @@ deploy: build
 		systemctl restart acic-httpd; \
 	fi'
 
-dist: build
+dist: install build
 	rm -Rf dist/home/
 	mkdir -p dist/home/www/front-react
 	mv dist/assets/ dist/home/www/front-react/
