@@ -116,6 +116,14 @@ export default function PieComponent({
     { dataMerged: [], chartConfig: {} }
   );
 
+  const sortedDataMerged = dataMerged
+    .slice()
+    .sort((a, b) => b.count - a.count)
+    .map((item, index) => ({
+      ...item,
+      fill: `hsl(var(--chart-${(index % 5) + 1}))`,
+    }));
+
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">
       <CardHeader>
@@ -133,14 +141,13 @@ export default function PieComponent({
               endAngle={
                 layout === 'halfpie' || layout === 'halfdonut' ? 180 : 360
               }
-              data={dataMerged}
+              data={sortedDataMerged}
               dataKey="count"
               nameKey="name"
-              labelLine={false}
               innerRadius={
-                layout === 'donut' || layout === 'halfdonut' ? '80%' : 0
+                layout === 'donut' || layout === 'halfdonut' ? '70%' : 0
               }
-              outerRadius="100%"
+              outerRadius="90%"
               paddingAngle={
                 layout === 'donut' || layout === 'halfdonut' ? gap : 0
               }
@@ -148,6 +155,7 @@ export default function PieComponent({
                 layout === 'donut' || layout === 'halfdonut' ? 0 : gap
               }
               stroke="hsl(var(--muted))"
+              fill="hsl(var(--muted))"
             />
           </PieChart>
         </ChartContainer>

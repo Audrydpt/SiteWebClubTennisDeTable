@@ -106,22 +106,20 @@ export default function DashboardTab({
               onSubmit={(d) => edit({ ...item.widget, ...d })}
               defaultValues={item.widget}
               edition
-              trigger={
-                <Button variant="outline" size="icon">
-                  <Edit3 className="h-4 w-4" />
-                </Button>
-              }
-            />
+            >
+              <Button variant="outline" size="icon">
+                <Edit3 className="h-4 w-4" />
+              </Button>
+            </FormWidget>
 
             <DeleteConfirmation
               onDelete={() => remove(item.id)}
               description="Cette action est irréversible. Le widget sera définitivement supprimé du dashboard."
-              trigger={
-                <Button variant="destructive" size="icon">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              }
-            />
+            >
+              <Button variant="destructive" size="icon">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </DeleteConfirmation>
           </div>
         </div>
       ))}

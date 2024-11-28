@@ -147,14 +147,14 @@ export type StoredWidget = WidgetSchema & {
 
 type FormWidgetProps = {
   onSubmit: (data: WidgetSchema) => void;
-  trigger: ReactNode;
+  children: ReactNode;
   edition?: boolean;
   defaultValues?: WidgetSchema;
 };
 
 export function FormWidget({
   onSubmit,
-  trigger,
+  children,
   edition = false,
   defaultValues,
 }: FormWidgetProps) {
@@ -221,7 +221,7 @@ export function FormWidget({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>

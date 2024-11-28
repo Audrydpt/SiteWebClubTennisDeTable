@@ -34,14 +34,14 @@ export type StoredDashboard = DashboardSchema & {
 
 type FormWidgetProps = {
   onSubmit: (data: DashboardSchema) => void;
-  trigger: ReactNode;
+  children: ReactNode;
   edition?: boolean;
   defaultValues?: DashboardSchema;
 };
 
 export function FormDashboard({
   onSubmit,
-  trigger,
+  children,
   edition = false,
   defaultValues,
 }: FormWidgetProps) {
@@ -62,7 +62,7 @@ export function FormDashboard({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>

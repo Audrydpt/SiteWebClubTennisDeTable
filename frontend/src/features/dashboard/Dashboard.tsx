@@ -56,22 +56,16 @@ function DashboardContent() {
   return (
     <>
       <Header title="Dashboard">
-        <FormDashboard
-          onSubmit={handleAdd}
-          trigger={
-            <Button variant="outline">
-              <Plus /> Add Dashboard
-            </Button>
-          }
-        />
-        <FormWidget
-          onSubmit={addWidgetFn}
-          trigger={
-            <Button variant="outline">
-              <Plus /> Add Widget
-            </Button>
-          }
-        />
+        <FormDashboard onSubmit={handleAdd}>
+          <Button variant="outline">
+            <Plus /> Add Dashboard
+          </Button>
+        </FormDashboard>
+        <FormWidget onSubmit={addWidgetFn}>
+          <Button variant="outline">
+            <Plus /> Add Widget
+          </Button>
+        </FormWidget>
       </Header>
 
       <Tabs
@@ -89,12 +83,11 @@ function DashboardContent() {
                   <DeleteConfirmation
                     onDelete={() => handleDelete(key)}
                     description="Cette action est irréversible. Le dashboard sera définitivement supprimé."
-                    trigger={
-                      <Button variant="destructive" className="h-4 w-4 p-0">
-                        <Trash2 className="!h-3 !w-3" />
-                      </Button>
-                    }
-                  />
+                  >
+                    <Button variant="destructive" className="h-4 w-4 p-0">
+                      <Trash2 className="!h-3 !w-3" />
+                    </Button>
+                  </DeleteConfirmation>
                 </div>
               )}
             </TabsTrigger>

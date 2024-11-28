@@ -14,7 +14,7 @@ import {
 
 interface DeleteConfirmationProps {
   onDelete: () => void;
-  trigger: ReactNode;
+  children: ReactNode;
   title?: string;
   description?: string;
   cancelText?: string;
@@ -23,7 +23,7 @@ interface DeleteConfirmationProps {
 
 export default function DeleteConfirmation({
   onDelete,
-  trigger,
+  children,
   title = 'Êtes-vous sûr ?',
   description = 'Cette action est irréversible et ne pourra pas être annulée.',
   cancelText = 'Annuler',
@@ -31,7 +31,7 @@ export default function DeleteConfirmation({
 }: DeleteConfirmationProps) {
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
+      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
