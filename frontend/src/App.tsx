@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Suspense, lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
-import LoadingSpinner from './components/ui/loading';
+import LoadingSpinner from '@/components/loading';
 import useSession from './hooks/use-session';
 import Layout from './layout';
 import { AuthError, getCurrentUser } from './lib/authenticate';
@@ -10,6 +10,7 @@ import { AuthError, getCurrentUser } from './lib/authenticate';
 const Dashboard = lazy(() => import('./features/dashboard/Dashboard'));
 const DemoDashboard = lazy(() => import('./features/dashboard/DemoDashboard'));
 const TestDashboard = lazy(() => import('./features/dashboard/TestDashboard'));
+const Camera = lazy(() => import('./features/camera/Camera'));
 
 export default function App() {
   const sessionId = useSession();
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/dashboard/demo" element={<DemoDashboard />} />
           <Route path="/dashboard/test" element={<TestDashboard />} />
           <Route path="/dashboard/*" element={<Dashboard />} />
+          <Route path="/cameras" element={<Camera />} />
           <Route path="*" element={<h1>Not Found</h1>} />
         </Routes>
       </Suspense>

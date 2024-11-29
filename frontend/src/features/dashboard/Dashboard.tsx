@@ -2,10 +2,10 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Route, Routes, useNavigate, useParams } from 'react-router-dom';
 
+import DeleteConfirmation from '@/components/confirm-delete';
 import Header from '@/components/header';
+import LoadingSpinner from '@/components/loading';
 import { Button } from '@/components/ui/button';
-import DeleteConfirmation from '@/components/ui/confirm-delete';
-import LoadingSpinner from '@/components/ui/loading';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import DashboardTab from './DashboardTab';

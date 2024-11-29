@@ -2,9 +2,9 @@ import { Edit3, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { ReactSortable } from 'react-sortablejs';
 
+import DeleteConfirmation from '@/components/confirm-delete';
+import LoadingSpinner from '@/components/loading';
 import { Button } from '@/components/ui/button';
-import DeleteConfirmation from '@/components/ui/confirm-delete';
-import LoadingSpinner from '@/components/ui/loading';
 
 import {
   FormWidget,
