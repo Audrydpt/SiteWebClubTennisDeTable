@@ -70,7 +70,7 @@ export type ChartProps = {
   table: AcicEvent;
   aggregation: AcicAggregation;
   duration: AcicAggregation;
-  where: WhereClause[];
+  where?: WhereClause[];
 };
 export type GroupByChartProps = ChartProps & {
   groupBy: string;

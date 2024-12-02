@@ -76,7 +76,7 @@ type DashboardQuery = {
   table: string;
   aggregation: AcicAggregation;
   duration: AcicAggregation;
-  where: WhereClause[];
+  where?: WhereClause[];
 };
 export async function getWidgetDescription() {
   return fetch(`${process.env.MAIN_API_URL}/dashboard/widgets`).then((res) =>
@@ -90,15 +90,14 @@ export async function getWidgetData(props: DashboardQuery, groupBy?: string) {
   const timeFrom = now.minus(AggregationTypeToObject[props.duration]);
   const timeTo = now;
 
-  const query = new URL(
-    `${process.env.MAIN_API_URL}/dashboard/widgets/${props.table}`
-  );
-  const params = query.searchParams;
-  params.append('aggregate', props.aggregation);
-  params.append('time_from', timeFrom.toISO({ includeOffset: false }));
-  params.append('time_to', timeTo.toISO({ includeOffset: false }));
+  const query = `${process.env.MAIN_API_URL}/dashboard/widgets/${props.table}`;
 
-  if (groupBy) params.append('group_by', groupBy);
+  let params = '?';
+  params += `&aggregate=${props.aggregation}`;
+  params += `&time_from=${timeFrom.toISO({ includeOffset: false })}`;
+  params += `&time_to=${timeTo.toISO({ includeOffset: false })}`;
+
+  if (groupBy) params += `&group_by=${groupBy}`;
 
   if (props.where) {
     const columns = Array.isArray(props.where) ? props.where : [props.where];
@@ -106,13 +105,13 @@ export async function getWidgetData(props: DashboardQuery, groupBy?: string) {
     columns.forEach((where) => {
       const { column, value } = where;
 
-      if (column && value && column !== 'any') {
-        params.append(column, value);
+      if (column && value && column !== 'any' && value.length > 0) {
+        params += `&${column}=${value}`;
       }
     });
   }
 
-  return fetch(query).then((res) => res.json());
+  return fetch(query + params).then((res) => res.json());
 }
 
 type DashboardTab = Record<string, { title: string }>;
