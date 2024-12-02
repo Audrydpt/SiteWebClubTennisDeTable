@@ -1,3 +1,5 @@
+import { WhereClause } from '@/components/where-clauses';
+
 export enum AcicAggregation {
   OneMinute = '1 minute',
   FifteenMinutes = '15 minutes',
@@ -68,10 +70,7 @@ export type ChartProps = {
   table: AcicEvent;
   aggregation: AcicAggregation;
   duration: AcicAggregation;
-  where?: {
-    column?: string;
-    value?: string;
-  };
+  where: WhereClause[];
 };
 export type GroupByChartProps = ChartProps & {
   groupBy: string;

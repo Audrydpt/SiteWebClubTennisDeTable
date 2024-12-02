@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -53,6 +53,11 @@ export function FormDashboard({
       ...defaultValues,
     },
   });
+
+  // Set default value on change
+  useEffect(() => {
+    form.reset(defaultValues);
+  }, [form, defaultValues]);
 
   const handleSubmit = (d: DashboardSchema) => {
     onSubmit(d);

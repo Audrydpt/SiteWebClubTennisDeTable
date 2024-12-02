@@ -1,5 +1,6 @@
 import { DateTime } from 'luxon';
 
+import { WhereClause } from '@/components/where-clauses';
 import {
   AcicAggregation,
   AcicEvent,
@@ -75,7 +76,7 @@ type DashboardQuery = {
   table: string;
   aggregation: AcicAggregation;
   duration: AcicAggregation;
-  where?: { column?: string; value?: string };
+  where: WhereClause[];
 };
 export async function getWidgetDescription() {
   return fetch(`${process.env.MAIN_API_URL}/dashboard/widgets`).then((res) =>
@@ -89,39 +90,29 @@ export async function getWidgetData(props: DashboardQuery, groupBy?: string) {
   const timeFrom = now.minus(AggregationTypeToObject[props.duration]);
   const timeTo = now;
 
-  let queryString = `aggregate=${props.aggregation}`;
-  queryString += `&time_from=${timeFrom.toISO({ includeOffset: false })}`;
-  queryString += `&time_to=${timeTo.toISO({ includeOffset: false })}`;
+  const query = new URL(
+    `${process.env.MAIN_API_URL}/dashboard/widgets/${props.table}`
+  );
+  const params = query.searchParams;
+  params.append('aggregate', props.aggregation);
+  params.append('time_from', timeFrom.toISO({ includeOffset: false }));
+  params.append('time_to', timeTo.toISO({ includeOffset: false }));
 
-  if (groupBy) queryString += `&group_by=${groupBy}`;
-  if (
-    props.where &&
-    props.where?.column &&
-    props.where?.value &&
-    props.where?.column?.toLowerCase() !== 'any' &&
-    props.where?.value?.length > 0
-  ) {
-    const { column, value } = props.where;
+  if (groupBy) params.append('group_by', groupBy);
 
-    if (value.includes(',')) {
-      const values = value
-        .split(',')
-        .map((v) => v.trim())
-        .filter((v) => v !== '');
+  if (props.where) {
+    const columns = Array.isArray(props.where) ? props.where : [props.where];
 
-      if (values.length > 0) {
-        values.forEach((v) => {
-          queryString += `&${column}=${encodeURIComponent(v)}`;
-        });
+    columns.forEach((where) => {
+      const { column, value } = where;
+
+      if (column && value && column !== 'any') {
+        params.append(column, value);
       }
-    } else if (value !== '') {
-      queryString += `&${column}=${encodeURIComponent(value)}`;
-    }
+    });
   }
 
-  return fetch(
-    `${process.env.MAIN_API_URL}/dashboard/widgets/${props.table}?${queryString}`
-  ).then((res) => res.json());
+  return fetch(query).then((res) => res.json());
 }
 
 type DashboardTab = Record<string, { title: string }>;
