@@ -117,7 +117,7 @@ class Widget(Database):
     aggregation = Column(Text)
     duration = Column(Text)
     groupBy = Column(Text, nullable=True, default=None)
-    where = Column(JSON, nullable=True, default=lambda: {"column": "any", "value": ""})
+    where = Column(JSON, nullable=True, default=lambda: [])
     size = Column(Text)
     type = Column(Text)
     layout = Column(Text)

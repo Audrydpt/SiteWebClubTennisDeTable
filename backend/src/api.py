@@ -4,12 +4,12 @@ from fastapi.staticfiles import StaticFiles
 
 
 from pydantic import Field, create_model
-from sqlalchemy import func
+from sqlalchemy import func, JSON
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from typing import Annotated, Literal, Optional, Type, Union, List
+from typing import Annotated, Literal, Optional, Type, Union, List, Dict, Any
 from sqlalchemy.inspection import inspect
 from enum import Enum
 
@@ -190,7 +190,9 @@ class FastAPIServer:
         for column in inspect(Widget).mapper.column_attrs:
             if column.key not in ['id', 'dashboard_id']: 
                 python_type = column.expression.type.python_type
-                if column.expression.nullable:
+                if isinstance(column.expression.type, JSON):
+                    fields[column.key] = (Optional[Union[Dict[str, Any], List[Dict[str, Any]]]], Field(default=None))
+                elif column.expression.nullable:
                     fields[column.key] = (Optional[python_type], Field(default=None, description=f"The {column.key} of the widget"))
                 else:
                     fields[column.key] = (python_type, Field(description=f"The {column.key} of the widget") )
