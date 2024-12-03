@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Duration } from 'luxon';
+import { useMemo } from 'react';
 import { RadialBar, RadialBarChart } from 'recharts';
 import { StackOffsetType } from 'recharts/types/util/types';
 
@@ -60,6 +61,35 @@ export default function StackedGaugeComponent({
     ).as('milliseconds'),
   });
 
+  const { dataMerged, chartConfig } = useMemo(() => {
+    if (!data) return { dataMerged: [{}], chartConfig: {} };
+
+    return (data as DataType[]).reduce<ProcessedData>(
+      (acc, item) => {
+        const groupValue = item[groupBy];
+        const { count } = item;
+
+        if (!acc.dataMerged[0]) {
+          acc.dataMerged[0] = {};
+        }
+
+        acc.dataMerged[0][groupValue] =
+          (acc.dataMerged[0][groupValue] || 0) + count;
+
+        if (!acc.chartConfig[groupValue]) {
+          const groupIndex = Object.keys(acc.chartConfig).length;
+          acc.chartConfig[groupValue] = {
+            label: String(groupValue),
+            color: `hsl(var(--chart-${(groupIndex % 5) + 1}))`,
+          };
+        }
+
+        return acc;
+      },
+      { dataMerged: [{}], chartConfig: {} }
+    );
+  }, [data, groupBy]);
+
   if (isLoading || isError) {
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
@@ -78,33 +108,6 @@ export default function StackedGaugeComponent({
       </Card>
     );
   }
-
-  const { dataMerged, chartConfig } = (
-    data as DataType[]
-  ).reduce<ProcessedData>(
-    (acc, item) => {
-      const groupValue = item[groupBy];
-      const { count } = item;
-
-      if (!acc.dataMerged[0]) {
-        acc.dataMerged[0] = {};
-      }
-
-      acc.dataMerged[0][groupValue] =
-        (acc.dataMerged[0][groupValue] || 0) + count;
-
-      if (!acc.chartConfig[groupValue]) {
-        const groupIndex = Object.keys(acc.chartConfig).length;
-        acc.chartConfig[groupValue] = {
-          label: String(groupValue),
-          color: `hsl(var(--chart-${(groupIndex % 5) + 1}))`,
-        };
-      }
-
-      return acc;
-    },
-    { dataMerged: [{}], chartConfig: {} }
-  );
 
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">

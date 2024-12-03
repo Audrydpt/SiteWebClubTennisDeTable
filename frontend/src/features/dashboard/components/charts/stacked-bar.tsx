@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { DateTime, Duration } from 'luxon';
+import { useMemo } from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { StackOffsetType } from 'recharts/types/util/types';
 
@@ -59,11 +60,35 @@ export default function StackedBarComponent({
     ).as('milliseconds'),
   });
 
+  const { dataMerged, chartConfig } = useMemo(() => {
+    if (!data) return { dataMerged: {}, chartConfig: {} };
+
+    return (data as DataType[]).reduce<ProcessedData>(
+      (acc, item) => {
+        const { timestamp, count } = item;
+        const groupValue = item[groupBy];
+
+        if (!acc.dataMerged[timestamp]) {
+          acc.dataMerged[timestamp] = { timestamp };
+        }
+        acc.dataMerged[timestamp][groupValue] =
+          ((acc.dataMerged[timestamp][groupValue] as number) || 0) + count;
+
+        if (!acc.chartConfig[groupValue]) {
+          acc.chartConfig[groupValue] = { label: String(groupValue) };
+        }
+
+        return acc;
+      },
+      { dataMerged: {}, chartConfig: {} }
+    );
+  }, [data, groupBy]);
+
   if (isLoading || isError) {
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
         <CardHeader>
-          <CardTitle>{title ?? `Stacked-Bar ${layout.toString()}`}</CardTitle>
+          <CardTitle>{title ?? `Multi-Bar ${layout.toString()}`}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
           <ChartContainer config={{}} className="h-full w-full">
@@ -77,28 +102,6 @@ export default function StackedBarComponent({
       </Card>
     );
   }
-
-  const { dataMerged, chartConfig } = (
-    data as DataType[]
-  ).reduce<ProcessedData>(
-    (acc, item) => {
-      const { timestamp, count } = item;
-      const groupValue = item[groupBy];
-
-      if (!acc.dataMerged[timestamp]) {
-        acc.dataMerged[timestamp] = { timestamp };
-      }
-      acc.dataMerged[timestamp][groupValue] =
-        ((acc.dataMerged[timestamp][groupValue] as number) || 0) + count;
-
-      if (!acc.chartConfig[groupValue]) {
-        acc.chartConfig[groupValue] = { label: String(groupValue) };
-      }
-
-      return acc;
-    },
-    { dataMerged: {}, chartConfig: {} }
-  );
 
   const { format, interval } = getTimeFormattingConfig(
     duration,

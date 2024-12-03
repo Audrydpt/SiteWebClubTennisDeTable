@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Duration } from 'luxon';
+import { useMemo } from 'react';
 import { RadialBar, RadialBarChart } from 'recharts';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -59,6 +60,41 @@ export default function MultiGaugeComponent({
     ).as('milliseconds'),
   });
 
+  const { dataMerged, chartConfig } = useMemo(() => {
+    if (!data) return { dataMerged: [], chartConfig: {} };
+
+    return (data as DataType[]).reduce<ProcessedData>(
+      (acc, item) => {
+        const groupValue = item[groupBy];
+        const { count } = item;
+
+        const existingGroup = acc.dataMerged.find(
+          (d) => d[groupBy] === groupValue
+        );
+
+        if (existingGroup) {
+          existingGroup.count += count;
+        } else {
+          const groupIndex = acc.dataMerged.length;
+          acc.dataMerged.push({
+            count,
+            [groupBy]: groupValue,
+            fill: `hsl(var(--chart-${(groupIndex % 5) + 1}))`,
+            name: String(groupValue),
+          });
+
+          acc.chartConfig[groupValue] = {
+            label: String(groupValue),
+            color: `hsl(var(--chart-${(groupIndex % 5) + 1}))`,
+          };
+        }
+
+        return acc;
+      },
+      { dataMerged: [], chartConfig: {} }
+    );
+  }, [data, groupBy]);
+
   if (isLoading || isError) {
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
@@ -77,39 +113,6 @@ export default function MultiGaugeComponent({
       </Card>
     );
   }
-
-  const { dataMerged, chartConfig } = (
-    data as DataType[]
-  ).reduce<ProcessedData>(
-    (acc, item) => {
-      const groupValue = item[groupBy];
-      const { count } = item;
-
-      const existingGroup = acc.dataMerged.find(
-        (d) => d[groupBy] === groupValue
-      );
-
-      if (existingGroup) {
-        existingGroup.count += count;
-      } else {
-        const groupIndex = acc.dataMerged.length;
-        acc.dataMerged.push({
-          count,
-          [groupBy]: groupValue,
-          fill: `hsl(var(--chart-${(groupIndex % 5) + 1}))`,
-          name: String(groupValue),
-        });
-
-        acc.chartConfig[groupValue] = {
-          label: String(groupValue),
-          color: `hsl(var(--chart-${(groupIndex % 5) + 1}))`,
-        };
-      }
-
-      return acc;
-    },
-    { dataMerged: [], chartConfig: {} }
-  );
 
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">

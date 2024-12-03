@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Duration } from 'luxon';
+import { useMemo } from 'react';
 import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from 'recharts';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -77,6 +78,25 @@ export default function GaugeComponent({
     ).as('milliseconds'),
   });
 
+  const dataMerged = useMemo(() => {
+    if (!data) return [{ count: 0, value: 0 }];
+
+    const merged = [
+      data.reduce((acc: MergedDataType, item: DataType) => {
+        const { count } = item;
+        acc.count = (acc.count || 0) + count;
+        return acc;
+      }, {} as MergedDataType),
+    ];
+
+    const maxValue =
+      Math.max(...data.map((item: DataType) => item.count)) * data.length;
+    merged[0].value =
+      (merged[0].count / maxValue) * (layout === 'full' ? 360 : 180);
+
+    return merged;
+  }, [data, layout]);
+
   if (isLoading || isError) {
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
@@ -95,14 +115,6 @@ export default function GaugeComponent({
       </Card>
     );
   }
-
-  const dataMerged: MergedDataType[] = [
-    data.reduce((acc: MergedDataType, item: DataType) => {
-      const { count } = item;
-      acc.count = (acc.count || 0) + count;
-      return acc;
-    }, {} as MergedDataType),
-  ];
 
   const maxValue =
     Math.max(...data.map((item: DataType) => item.count)) * data.length;

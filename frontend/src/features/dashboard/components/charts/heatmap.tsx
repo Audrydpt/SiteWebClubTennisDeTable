@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { DateTime, Duration } from 'luxon';
+import { useMemo } from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -232,6 +233,43 @@ export default function HeatmapComponent({
     ).as('milliseconds'),
   });
 
+  const { dataMerged, chartConfig, sortedRows } = useMemo(() => {
+    if (!data)
+      return {
+        dataMerged: {},
+        chartConfig: { maxCount: 0 },
+        sortedRows: [],
+      };
+
+    const reduced = (data as DataItem[]).reduce<ProcessedData>(
+      (acc, item) => {
+        const { rowKey } = formatTimestamp(item.timestamp, aggregation);
+
+        if (!acc.dataMerged[rowKey]) acc.dataMerged[rowKey] = [];
+
+        acc.dataMerged[rowKey].push(item);
+        acc.chartConfig.maxCount = Math.max(
+          acc.chartConfig.maxCount,
+          item.count
+        );
+
+        return acc;
+      },
+      {
+        dataMerged: {},
+        chartConfig: { maxCount: 0 },
+      }
+    );
+
+    return {
+      dataMerged: reduced.dataMerged,
+      chartConfig: reduced.chartConfig,
+      sortedRows: Object.keys(reduced.dataMerged).sort(),
+    };
+  }, [data, aggregation]);
+
+  const columns = useMemo(() => generateColumns(aggregation), [aggregation]);
+
   if (isLoading || isError) {
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
@@ -248,28 +286,6 @@ export default function HeatmapComponent({
       </Card>
     );
   }
-
-  const { dataMerged, chartConfig } = (
-    data as DataItem[]
-  ).reduce<ProcessedData>(
-    (acc, item) => {
-      const { rowKey } = formatTimestamp(item.timestamp, aggregation);
-
-      if (!acc.dataMerged[rowKey]) acc.dataMerged[rowKey] = [];
-
-      acc.dataMerged[rowKey].push(item);
-      acc.chartConfig.maxCount = Math.max(acc.chartConfig.maxCount, item.count);
-
-      return acc;
-    },
-    {
-      dataMerged: {},
-      chartConfig: { maxCount: 0 },
-    }
-  );
-
-  const columns = generateColumns(aggregation);
-  const sortedRows = Object.keys(dataMerged).sort();
 
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">

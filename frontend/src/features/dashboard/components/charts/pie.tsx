@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Duration } from 'luxon';
+import { useMemo } from 'react';
 import { Pie, PieChart } from 'recharts';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -62,6 +63,56 @@ export default function PieComponent({
     ).as('milliseconds'),
   });
 
+  const { dataMerged, chartConfig } = useMemo(() => {
+    if (!data) return { dataMerged: [], chartConfig: {} };
+
+    const processed = (data as DataType[]).reduce<ProcessedData>(
+      (acc, item) => {
+        const groupValue = item[groupBy];
+        const { count } = item;
+
+        const existingGroup = acc.dataMerged.find(
+          (d) => d[groupBy] === groupValue
+        );
+
+        if (existingGroup) {
+          existingGroup.count += count;
+        } else {
+          const groupIndex = acc.dataMerged.length;
+          const color = `hsl(var(--chart-${(groupIndex % 5) + 1}))`;
+
+          acc.dataMerged.push({
+            count,
+            [groupBy]: groupValue,
+            name: String(groupValue),
+            fill: color,
+          });
+
+          acc.chartConfig[groupValue] = {
+            label: String(groupValue),
+            color,
+          };
+        }
+
+        return acc;
+      },
+      { dataMerged: [], chartConfig: {} }
+    );
+
+    const sortedData = processed.dataMerged
+      .slice()
+      .sort((a, b) => b.count - a.count)
+      .map((item, index) => ({
+        ...item,
+        fill: `hsl(var(--chart-${(index % 5) + 1}))`,
+      }));
+
+    return {
+      dataMerged: sortedData,
+      chartConfig: processed.chartConfig,
+    };
+  }, [data, groupBy]);
+
   if (isLoading || isError) {
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
@@ -81,49 +132,6 @@ export default function PieComponent({
     );
   }
 
-  const { dataMerged, chartConfig } = (
-    data as DataType[]
-  ).reduce<ProcessedData>(
-    (acc, item) => {
-      const groupValue = item[groupBy];
-      const { count } = item;
-
-      const existingGroup = acc.dataMerged.find(
-        (d) => d[groupBy] === groupValue
-      );
-
-      if (existingGroup) {
-        existingGroup.count += count;
-      } else {
-        const groupIndex = acc.dataMerged.length;
-        const color = `hsl(var(--chart-${(groupIndex % 5) + 1}))`;
-
-        acc.dataMerged.push({
-          count,
-          [groupBy]: groupValue,
-          name: String(groupValue),
-          fill: color,
-        });
-
-        acc.chartConfig[groupValue] = {
-          label: String(groupValue),
-          color,
-        };
-      }
-
-      return acc;
-    },
-    { dataMerged: [], chartConfig: {} }
-  );
-
-  const sortedDataMerged = dataMerged
-    .slice()
-    .sort((a, b) => b.count - a.count)
-    .map((item, index) => ({
-      ...item,
-      fill: `hsl(var(--chart-${(index % 5) + 1}))`,
-    }));
-
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">
       <CardHeader>
@@ -141,7 +149,7 @@ export default function PieComponent({
               endAngle={
                 layout === 'halfpie' || layout === 'halfdonut' ? 180 : 360
               }
-              data={sortedDataMerged}
+              data={dataMerged}
               dataKey="count"
               nameKey="name"
               innerRadius={
