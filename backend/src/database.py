@@ -133,7 +133,7 @@ class GenericDAL:
     initialized = False
 
     def __init__(self):
-        self.engine = create_engine(get_database_url(use_timescaledb=True), echo=False)
+        self.engine = create_engine(get_database_url(use_timescaledb=True), echo=False, connect_args={'client_encoding': 'utf8'})
         self.Session = sessionmaker(bind=self.engine)
 
         if not GenericDAL.initialized:
@@ -191,6 +191,7 @@ class GenericDAL:
                 return op
 
         with self.Session() as session:
+            session.execute(DDL("SET client_encoding TO 'UTF8'"))
             session.execute(DDL("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
             session.execute(DDL("CREATE EXTENSION IF NOT EXISTS timescaledb"))
             session.commit()
@@ -200,7 +201,7 @@ class GenericDAL:
 
         print("Trying to update schema...")
         # got issue using the same engine, because of dialect timescaledb != postgresql
-        with create_engine(get_database_url(use_timescaledb=False), echo=False).connect() as conn:
+        with create_engine(get_database_url(use_timescaledb=False), echo=False, connect_args={'client_encoding': 'utf8'}).connect() as conn:
             trans = conn.begin()
             try:
                 # Configure the migration context with the connection
