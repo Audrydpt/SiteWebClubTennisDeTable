@@ -129,6 +129,7 @@ class EventGrabber(threading.Thread):
             roi_index = event.event_kvdata['roiIndex'] if 'roiIndex' in event.event_kvdata else None
             class_name = event.event_kvdata['class'] if 'class' in event.event_kvdata else None
             rule_type = event.event_kvdata['ruleType'] if 'ruleType' in event.event_kvdata else None
+            public_name = event.event_kvdata['externalEventName'] if 'externalEventName' in event.event_kvdata else None
 
             # Ignore those events for now
             if event_name in ["MvTestIO"]:
@@ -327,6 +328,7 @@ class EventGrabber(threading.Thread):
                     timestamp=timestamp,
                     class_name=class_name,
                     event_name=event_name,
+                    public_name=public_name,
                     event_type=rule_type,
                     rois=roi_index,
                     lines=line_index

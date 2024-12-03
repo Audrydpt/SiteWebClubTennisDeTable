@@ -94,6 +94,7 @@ class FastAPIServer:
 
                     if health:
                         status["health"] = {
+                            "last_ping": grabber.time_last_ping,
                             "last_event": grabber.time_last_event,
                             "is_alive": grabber.is_alive(),
                             "is_longrunning": grabber.is_long_running(),

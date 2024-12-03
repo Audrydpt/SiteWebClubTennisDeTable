@@ -99,6 +99,7 @@ class AcicOCR(BaseEvent):
 class AcicAllInOneEvent(BaseEvent):
     class_name = Column(Text)
     event_name = Column(Text)
+    public_name = Column(Text)
     event_type = Column(Text)
     rois = Column(Text, nullable=True)
     lines = Column(Text, nullable=True)
