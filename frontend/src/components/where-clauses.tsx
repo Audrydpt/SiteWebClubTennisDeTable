@@ -29,9 +29,22 @@ export interface WhereClausesProps
 
 const WhereClauses = React.forwardRef<HTMLDivElement, WhereClausesProps>(
   ({ columns, value, onValueChange, className, disabled, ...props }, ref) => {
+    const getAvailableColumns = React.useCallback(
+      (currentIndex?: number) => {
+        const selectedColumns = value
+          .filter((_, index) => index !== currentIndex)
+          .map((clause) => clause.column);
+        return columns.filter((column) => !selectedColumns.includes(column));
+      },
+      [columns, value]
+    );
+
     const handleAddClause = React.useCallback(() => {
-      onValueChange([...value, { column: columns[0], value: '' }]);
-    }, [onValueChange, value, columns]);
+      const availableColumn = getAvailableColumns().at(0);
+      if (availableColumn) {
+        onValueChange([...value, { column: availableColumn, value: '' }]);
+      }
+    }, [getAvailableColumns, onValueChange, value]);
 
     const handleRemoveClause = React.useCallback(
       (index: number) => {
@@ -54,54 +67,52 @@ const WhereClauses = React.forwardRef<HTMLDivElement, WhereClausesProps>(
     return (
       <div ref={ref} className={cn('space-y-3', className)} {...props}>
         <div className="space-y-2">
-          {Array.isArray(value) &&
-            value.map((clause, index) => (
-              // eslint-disable-next-line react/no-array-index-key
-              <div key={index} className="flex gap-2 items-center">
-                <div className="flex-1">
-                  <Select
-                    value={clause.column}
-                    onValueChange={(newValue) =>
-                      handleChangeClause(index, 'column', newValue)
-                    }
-                    disabled={disabled}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select column" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {columns.map((column) => (
-                        <SelectItem key={column} value={column}>
-                          {column}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex-1">
-                  <Input
-                    placeholder="Value"
-                    value={clause.value}
-                    onChange={(e) =>
-                      handleChangeClause(index, 'value', e.target.value)
-                    }
-                    disabled={disabled}
-                  />
-                </div>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9"
-                  onClick={() => handleRemoveClause(index)}
+          {value.map((clause, index) => (
+            <div key={clause.column} className="flex gap-2 items-center">
+              <div className="flex-1">
+                <Select
+                  value={clause.column}
+                  onValueChange={(newValue) =>
+                    handleChangeClause(index, 'column', newValue)
+                  }
                   disabled={disabled}
                 >
-                  <X className="h-4 w-4" />
-                </Button>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select column" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getAvailableColumns(index).map((column) => (
+                      <SelectItem key={column} value={column}>
+                        {column}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            ))}
+
+              <div className="flex-1">
+                <Input
+                  placeholder="Value"
+                  value={clause.value}
+                  onChange={(e) =>
+                    handleChangeClause(index, 'value', e.target.value)
+                  }
+                  disabled={disabled}
+                />
+              </div>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => handleRemoveClause(index)}
+                disabled={disabled}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
         </div>
 
         <Button
@@ -110,7 +121,7 @@ const WhereClauses = React.forwardRef<HTMLDivElement, WhereClausesProps>(
           size="sm"
           className="h-8"
           onClick={handleAddClause}
-          disabled={disabled}
+          disabled={disabled || value.length >= columns.length}
         >
           <PlusCircle className="mr-2 h-4 w-4" />
           Add filter
