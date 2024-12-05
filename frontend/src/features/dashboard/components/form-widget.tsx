@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { TriangleAlert } from 'lucide-react';
 import { Duration } from 'luxon';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -181,7 +181,10 @@ export function FormWidget({
   });
 
   const formValues = form.watch();
-  const PreviewComponent = ChartTypeComponents[formValues.type];
+  const PreviewComponent = useMemo(
+    () => ChartTypeComponents[formValues.type],
+    [formValues.type]
+  );
 
   // Set default value on change
   useEffect(() => {
@@ -216,11 +219,14 @@ export function FormWidget({
     }
   }, [form, formValues.type]);
 
-  const handleSubmit = (d: WidgetSchema) => {
-    onSubmit(d);
-    setOpen(false);
-    form.reset();
-  };
+  const handleSubmit = useCallback(
+    (d: WidgetSchema) => {
+      onSubmit(d);
+      setOpen(false);
+      form.reset();
+    },
+    [form, onSubmit]
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
