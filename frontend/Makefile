@@ -4,6 +4,7 @@ NODE_VERSION := --lts
 .PHONY: build deploy run install lint clean nvm
 
 build:
+	make nvm CMD="npm run license"
 	make nvm CMD="npm run build"
 
 deploy: build
