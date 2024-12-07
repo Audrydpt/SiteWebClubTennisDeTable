@@ -108,6 +108,7 @@ const WhereClauses = React.forwardRef<HTMLDivElement, WhereClausesProps>(
                 className="h-9 w-9"
                 onClick={() => handleRemoveClause(index)}
                 disabled={disabled}
+                aria-label="Remove filter"
               >
                 <X className="h-4 w-4" />
               </Button>

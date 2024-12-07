@@ -57,6 +57,12 @@ install:
 lint:
 	make nvm CMD="npm run lint"
 
+test:
+	make nvm CMD="npm run test"
+
+coverage:
+	make nvm CMD="npm run coverage"
+
 clean:
 	rm -rf node_modules/ dist/ package-lock.json
 
