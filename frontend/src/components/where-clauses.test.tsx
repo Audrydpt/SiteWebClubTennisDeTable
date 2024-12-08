@@ -83,6 +83,30 @@ describe('WhereClauses', () => {
       ]);
     });
 
+    it('only updates the targeted filter while preserving others', () => {
+      const handleChange = vi.fn();
+      const initialFilters = [
+        { column: 'name', value: 'John' },
+        { column: 'age', value: '25' },
+      ];
+
+      render(
+        <WhereClauses
+          {...defaultProps}
+          value={initialFilters}
+          onValueChange={handleChange}
+        />
+      );
+
+      const inputs = screen.getAllByPlaceholderText('Value');
+      fireEvent.change(inputs[1], { target: { value: '30' } });
+
+      expect(handleChange).toHaveBeenCalledWith([
+        { column: 'name', value: 'John' },
+        { column: 'age', value: '30' },
+      ]);
+    });
+
     it('updates filter column when selecting new column', () => {
       const handleChange = vi.fn();
       render(
