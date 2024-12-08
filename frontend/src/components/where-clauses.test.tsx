@@ -25,6 +25,33 @@ describe('WhereClauses', () => {
         screen.getByRole('button', { name: 'Add filter' }).parentElement
       ).toHaveClass('test-class');
     });
+
+    it('disables all inputs when disabled prop is true', () => {
+      render(
+        <WhereClauses
+          {...defaultProps}
+          value={[{ column: 'name', value: '' }]}
+          disabled
+        />
+      );
+
+      expect(screen.getByPlaceholderText('Value')).toBeDisabled();
+      expect(screen.getByRole('combobox')).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Add filter' })).toBeDisabled();
+    });
+
+    it('disables add button when all columns are used', () => {
+      const allColumns = [
+        { column: 'name', value: '' },
+        { column: 'age', value: '' },
+        { column: 'email', value: '' },
+      ];
+
+      render(<WhereClauses {...defaultProps} value={allColumns} />);
+
+      const addButton = screen.getByRole('button', { name: 'Add filter' });
+      expect(addButton).toBeDisabled();
+    });
   });
 
   describe('User Interactions', () => {
@@ -121,35 +148,6 @@ describe('WhereClauses', () => {
       fireEvent.click(screen.getByText('age'));
 
       expect(handleChange).toHaveBeenCalledWith([{ column: 'age', value: '' }]);
-    });
-  });
-
-  describe('Disabled State', () => {
-    it('disables all inputs when disabled prop is true', () => {
-      render(
-        <WhereClauses
-          {...defaultProps}
-          value={[{ column: 'name', value: '' }]}
-          disabled
-        />
-      );
-
-      expect(screen.getByPlaceholderText('Value')).toBeDisabled();
-      expect(screen.getByRole('combobox')).toBeDisabled();
-      expect(screen.getByRole('button', { name: 'Add filter' })).toBeDisabled();
-    });
-
-    it('disables add button when all columns are used', () => {
-      const allColumns = [
-        { column: 'name', value: '' },
-        { column: 'age', value: '' },
-        { column: 'email', value: '' },
-      ];
-
-      render(<WhereClauses {...defaultProps} value={allColumns} />);
-
-      const addButton = screen.getByRole('button', { name: 'Add filter' });
-      expect(addButton).toBeDisabled();
     });
 
     it('excludes used columns from available options', () => {
