@@ -27,5 +27,11 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env': env,
     },
+    test: {
+      environment: 'jsdom',
+      exclude: ['**/node_modules/**', '**/dist/**', '**/src/components/ui/**'],
+      globals: true,
+      setupFiles: './vitest-setup.ts',
+    },
   };
 });
