@@ -106,7 +106,17 @@ export async function getWidgetData(props: DashboardQuery, groupBy?: string) {
       const { column, value } = where;
 
       if (column && value && column !== 'any' && value.length > 0) {
-        params += `&${column}=${value}`;
+        if (value.includes(',')) {
+          value
+            .split(',')
+            .map((v) => v.trim())
+            .filter((v) => v.length > 0)
+            .forEach((v) => {
+              params += `&${column}=${encodeURIComponent(v)}`;
+            });
+        } else {
+          params += `&${column}=${encodeURIComponent(value)}`;
+        }
       }
     });
   }
