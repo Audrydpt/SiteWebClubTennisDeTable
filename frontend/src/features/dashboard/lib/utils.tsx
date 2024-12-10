@@ -169,7 +169,10 @@ export async function getWidgetData(
     });
   }
 
-  return fetch(query + params).then((res) => res.json());
+  return fetch(query + params).then((res) => {
+    if (!res.ok) throw new Error(res.statusText);
+    return res.json();
+  });
 }
 
 type DashboardTab = Record<string, { title: string }>;
