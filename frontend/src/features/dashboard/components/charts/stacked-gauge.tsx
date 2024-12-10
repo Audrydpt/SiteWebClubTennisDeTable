@@ -127,7 +127,7 @@ export default function StackedGaugeComponent({
             <ChartTooltip
               content={
                 <ChartTooltipContent
-                  formatter={CustomChartTooltip}
+                  formatter={(...d) => CustomChartTooltip(...d, chartConfig)}
                   cursor={false}
                   hideLabel
                 />

@@ -10,6 +10,7 @@ import {
   AggregationTypeToObject,
 } from '@/features/dashboard/lib/props';
 import { cn } from '@/lib/utils';
+import { ChartConfig } from './ui/chart';
 
 export function CustomChartTooltip(
   value: ValueType,
@@ -18,11 +19,13 @@ export function CustomChartTooltip(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _index: number,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _payload: Array<Payload<ValueType, NameType>>
+  _payload: Array<Payload<ValueType, NameType>>,
+  chartConfig: ChartConfig | null = null
 ) {
   const color = item.color || item.stroke || item.payload.fill;
   const unit = item.unit || '';
   const v = unit === '%' ? Math.round(Number(value) * 100) : Number(value);
+  const label = chartConfig?.[String(name)]?.label || name;
 
   return (
     <>
@@ -41,7 +44,7 @@ export function CustomChartTooltip(
         )}
       >
         <div className="grid gap-1.5">
-          <span className="text-muted-foreground">{name}</span>
+          <span className="text-muted-foreground">{label}</span>
         </div>
         {value && (
           <span className="font-mono font-medium tabular-nums text-foreground">
@@ -68,4 +71,10 @@ export function CustomChartTickDate(
   }
 
   return dt.toFormat(format);
+}
+export function CustomChartLabel(value: string | number, label: string) {
+  if (!Number.isNaN(value)) {
+    return `${label}: ${Number(value).toLocaleString()}`;
+  }
+  return value;
 }

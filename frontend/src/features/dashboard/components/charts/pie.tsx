@@ -144,7 +144,7 @@ export default function PieComponent({
             <ChartTooltip
               content={
                 <ChartTooltipContent
-                  formatter={CustomChartTooltip}
+                  formatter={(...d) => CustomChartTooltip(...d, chartConfig)}
                   cursor={false}
                 />
               }

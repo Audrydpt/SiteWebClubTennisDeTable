@@ -148,7 +148,7 @@ export default function MultiLineComponent({
               content={
                 <ChartTooltipContent
                   cursor={false}
-                  formatter={CustomChartTooltip}
+                  formatter={(...d) => CustomChartTooltip(...d, chartConfig)}
                   labelFormatter={(value: string) =>
                     DateTime.fromISO(value).toLocaleString(
                       DateTime.DATETIME_MED

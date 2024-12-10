@@ -15,6 +15,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 
 import {
+  CustomChartLabel,
   CustomChartTickDate,
   CustomChartTickValue,
   CustomChartTooltip,
@@ -77,7 +78,9 @@ export default function MultiBarComponent({
           ((acc.dataMerged[timestamp][groupValue] as number) || 0) + count;
 
         if (!acc.chartConfig[groupValue]) {
-          acc.chartConfig[groupValue] = { label: String(groupValue) };
+          acc.chartConfig[groupValue] = {
+            label: CustomChartLabel(item[groupBy], groupBy),
+          };
         }
 
         return acc;
@@ -180,7 +183,7 @@ export default function MultiBarComponent({
               content={
                 <ChartTooltipContent
                   cursor={false}
-                  formatter={CustomChartTooltip}
+                  formatter={(...d) => CustomChartTooltip(...d, chartConfig)}
                   labelFormatter={(value: string) =>
                     DateTime.fromISO(value).toLocaleString(
                       DateTime.DATETIME_MED

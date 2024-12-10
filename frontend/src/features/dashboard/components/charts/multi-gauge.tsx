@@ -131,7 +131,7 @@ export default function MultiGaugeComponent({
             <ChartTooltip
               content={
                 <ChartTooltipContent
-                  formatter={CustomChartTooltip}
+                  formatter={(...d) => CustomChartTooltip(...d, chartConfig)}
                   cursor={false}
                   labelFormatter={(_, payload) => payload[0].payload.name}
                 />
