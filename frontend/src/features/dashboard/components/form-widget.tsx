@@ -170,7 +170,7 @@ export function FormWidget({
     resolver: zodResolver(formSchema),
     defaultValues: {
       type: ChartType.Bar,
-      layout: 'natural',
+      layout: 'basis',
       table: AcicEvent.AcicCounting,
       aggregation: AcicAggregation.OneHour,
       duration: AcicAggregation.OneDay,
