@@ -135,6 +135,23 @@ const allItems = [
 ];
 
 export default function AppSidebar({ user }: { user?: UserType }) {
+  const current = window.location.hostname;
+  const workspaces: string[] = [];
+
+  // Hard-coded demo for ACIC environment. Should come from API.
+  if (current.startsWith('192.168.20.') || current.startsWith('local')) {
+    workspaces.push('localhost');
+    workspaces.push('192.168.20.44');
+    workspaces.push('192.168.20.145');
+    workspaces.push('192.168.20.150');
+  } else {
+    workspaces.push(current);
+  }
+
+  const navigate = (workspace: string) => {
+    window.location.href = `https://${workspace}/front-react/`;
+  };
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -163,12 +180,14 @@ export default function AppSidebar({ user }: { user?: UserType }) {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-[--radix-popper-anchor-width]">
-                <DropdownMenuItem>
-                  <span>localhost</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <span>192.168.20.145</span>
-                </DropdownMenuItem>
+                {workspaces.map((workspace) => (
+                  <DropdownMenuItem
+                    key={workspace}
+                    onClick={() => navigate(workspace)}
+                  >
+                    <span>{workspace}</span>
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
