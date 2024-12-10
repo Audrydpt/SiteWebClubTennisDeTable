@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { DateTime, Duration } from 'luxon';
-
 import { useMemo } from 'react';
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 import { CurveType } from 'recharts/types/shape/Curve';
@@ -16,6 +15,7 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 
+import CustomChartTooltip from '@/components/charts';
 import { AggregationTypeToObject, GroupByChartProps } from '../../lib/props';
 import { getTimeFormattingConfig, getWidgetData } from '../../lib/utils';
 
@@ -139,6 +139,7 @@ export default function MultiLineComponent({
               content={
                 <ChartTooltipContent
                   cursor={false}
+                  formatter={CustomChartTooltip}
                   labelFormatter={(value: string) =>
                     DateTime.fromISO(value).toLocaleString(
                       DateTime.DATETIME_MED

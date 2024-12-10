@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 
+import CustomChartTooltip from '@/components/charts';
 import { AggregationTypeToObject, ChartProps } from '../../lib/props';
 import { getTimeFormattingConfig, getWidgetData } from '../../lib/utils';
 
@@ -95,6 +96,7 @@ export default function LineComponent({
               content={
                 <ChartTooltipContent
                   cursor={false}
+                  formatter={CustomChartTooltip}
                   labelFormatter={(value: string) =>
                     DateTime.fromISO(value).toLocaleString(
                       DateTime.DATETIME_MED
@@ -108,6 +110,7 @@ export default function LineComponent({
               type={layout}
               stroke="hsl(var(--chart-1))"
               strokeWidth={2}
+              unit={table === 'AcicOccupancy' ? '%' : ''}
               dot={false}
             />
           </LineChart>

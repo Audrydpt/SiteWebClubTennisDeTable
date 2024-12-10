@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 
+import CustomChartTooltip from '@/components/charts';
 import { AggregationTypeToObject, GroupByChartProps } from '../../lib/props';
 import { getWidgetData } from '../../lib/utils';
 
@@ -140,7 +141,14 @@ export default function PieComponent({
       <CardContent className="flex-grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <PieChart>
-            <ChartTooltip content={<ChartTooltipContent cursor={false} />} />
+            <ChartTooltip
+              content={
+                <ChartTooltipContent
+                  formatter={CustomChartTooltip}
+                  cursor={false}
+                />
+              }
+            />
             <ChartLegend
               content={<ChartLegendContent />}
               className="flex-wrap"

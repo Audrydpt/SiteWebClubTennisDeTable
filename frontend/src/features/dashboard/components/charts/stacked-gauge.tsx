@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 
+import CustomChartTooltip from '@/components/charts';
 import { AggregationTypeToObject, GroupByChartProps } from '../../lib/props';
 import { getWidgetData } from '../../lib/utils';
 
@@ -124,7 +125,13 @@ export default function StackedGaugeComponent({
             stackOffset={stackOffset}
           >
             <ChartTooltip
-              content={<ChartTooltipContent cursor={false} hideLabel />}
+              content={
+                <ChartTooltipContent
+                  formatter={CustomChartTooltip}
+                  cursor={false}
+                  hideLabel
+                />
+              }
             />
             <ChartLegend
               content={<ChartLegendContent />}

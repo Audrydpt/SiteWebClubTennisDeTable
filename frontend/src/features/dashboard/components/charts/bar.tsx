@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 
+import CustomChartTooltip from '@/components/charts';
 import { AggregationTypeToObject, ChartProps } from '../../lib/props';
 import { getTimeFormattingConfig, getWidgetData } from '../../lib/utils';
 
@@ -123,6 +124,7 @@ export default function BarComponent({
               content={
                 <ChartTooltipContent
                   cursor={false}
+                  formatter={CustomChartTooltip}
                   labelFormatter={(value: string) =>
                     DateTime.fromISO(value).toLocaleString(
                       DateTime.DATETIME_MED
