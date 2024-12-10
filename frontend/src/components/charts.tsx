@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+import { DateTime } from 'luxon';
 import {
   NameType,
   Payload,
@@ -7,11 +7,13 @@ import {
 
 import { cn } from '@/lib/utils';
 
-export default function CustomChartTooltip(
+export function CustomChartTooltip(
   value: ValueType,
   name: NameType,
   item: Payload<ValueType, NameType>,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _index: number,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _payload: Array<Payload<ValueType, NameType>>
 ) {
   const color = item.color || item.stroke || item.payload.fill;
@@ -45,4 +47,11 @@ export default function CustomChartTooltip(
       </div>
     </>
   );
+}
+export function CustomChartTickValue(value: string, unit: string = '') {
+  const v = unit === '%' ? Math.round(Number(value) * 100) : Number(value);
+  return `${v.toLocaleString()} ${unit}`;
+}
+export function CustomChartTickDate(value: string, format: string) {
+  return DateTime.fromISO(value).toFormat(format);
 }

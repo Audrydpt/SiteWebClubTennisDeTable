@@ -15,7 +15,11 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import CustomChartTooltip from '@/components/charts';
+import {
+  CustomChartTickDate,
+  CustomChartTickValue,
+  CustomChartTooltip,
+} from '@/components/charts';
 import { AggregationTypeToObject, GroupByChartProps } from '../../lib/props';
 import { getTimeFormattingConfig, getWidgetData } from '../../lib/utils';
 
@@ -140,9 +144,7 @@ export default function StackedBarComponent({
                   axisLine={false}
                   tickMargin={8}
                   angle={-30}
-                  tickFormatter={(t: string) =>
-                    DateTime.fromISO(t).toFormat(format)
-                  }
+                  tickFormatter={(t: string) => CustomChartTickDate(t, format)}
                   interval={interval}
                 />
                 <YAxis
@@ -150,6 +152,12 @@ export default function StackedBarComponent({
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
+                  tickFormatter={(v: string) =>
+                    CustomChartTickValue(
+                      v,
+                      table === 'AcicOccupancy' ? '%' : ''
+                    )
+                  }
                 />
               </>
             ) : (
@@ -159,6 +167,12 @@ export default function StackedBarComponent({
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
+                  tickFormatter={(v: string) =>
+                    CustomChartTickValue(
+                      v,
+                      table === 'AcicOccupancy' ? '%' : ''
+                    )
+                  }
                 />
                 <YAxis
                   dataKey="timestamp"
@@ -166,9 +180,7 @@ export default function StackedBarComponent({
                   tickLine={false}
                   tickMargin={10}
                   axisLine={false}
-                  tickFormatter={(t: string) =>
-                    DateTime.fromISO(t).toFormat(format)
-                  }
+                  tickFormatter={(t: string) => CustomChartTickDate(t, format)}
                   interval={interval}
                 />
               </>
@@ -199,6 +211,7 @@ export default function StackedBarComponent({
                 stackId="a"
                 fill={`hsl(var(--chart-${(index % 5) + 1}))`}
                 radius={getBarRadius(index)}
+                unit={table === 'AcicOccupancy' ? '%' : ''}
               />
             ))}
           </BarChart>

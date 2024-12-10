@@ -11,7 +11,11 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import CustomChartTooltip from '@/components/charts';
+import {
+  CustomChartTickDate,
+  CustomChartTickValue,
+  CustomChartTooltip,
+} from '@/components/charts';
 import { AggregationTypeToObject, ChartProps } from '../../lib/props';
 import { getTimeFormattingConfig, getWidgetData } from '../../lib/utils';
 
@@ -87,9 +91,7 @@ export default function BarComponent({
                   axisLine={false}
                   tickMargin={8}
                   angle={-30}
-                  tickFormatter={(t: string) =>
-                    DateTime.fromISO(t).toFormat(format)
-                  }
+                  tickFormatter={(t: string) => CustomChartTickDate(t, format)}
                   interval={interval}
                 />
                 <YAxis
@@ -97,6 +99,12 @@ export default function BarComponent({
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
+                  tickFormatter={(v: string) =>
+                    CustomChartTickValue(
+                      v,
+                      table === 'AcicOccupancy' ? '%' : ''
+                    )
+                  }
                 />
               </>
             ) : (
@@ -106,6 +114,12 @@ export default function BarComponent({
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
+                  tickFormatter={(v: string) =>
+                    CustomChartTickValue(
+                      v,
+                      table === 'AcicOccupancy' ? '%' : ''
+                    )
+                  }
                 />
                 <YAxis
                   dataKey="timestamp"
@@ -137,6 +151,7 @@ export default function BarComponent({
               dataKey="count"
               fill="hsl(var(--chart-1))"
               radius={getBarRadius()}
+              unit={table === 'AcicOccupancy' ? '%' : ''}
             />
           </BarChart>
         </ChartContainer>

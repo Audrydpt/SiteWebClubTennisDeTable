@@ -12,7 +12,11 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import CustomChartTooltip from '@/components/charts';
+import {
+  CustomChartTickDate,
+  CustomChartTickValue,
+  CustomChartTooltip,
+} from '@/components/charts';
 import { AggregationTypeToObject, ChartProps } from '../../lib/props';
 import { getTimeFormattingConfig, getWidgetData } from '../../lib/utils';
 
@@ -86,12 +90,17 @@ export default function LineComponent({
               axisLine={false}
               tickMargin={8}
               angle={-30}
-              tickFormatter={(t: string) =>
-                DateTime.fromISO(t).toFormat(format)
-              }
+              tickFormatter={(t: string) => CustomChartTickDate(t, format)}
               interval={interval}
             />
-            <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickFormatter={(v: string) =>
+                CustomChartTickValue(v, table === 'AcicOccupancy' ? '%' : '')
+              }
+            />
             <ChartTooltip
               content={
                 <ChartTooltipContent

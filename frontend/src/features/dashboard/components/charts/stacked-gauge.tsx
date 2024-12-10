@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import CustomChartTooltip from '@/components/charts';
+import { CustomChartTooltip } from '@/components/charts';
 import { AggregationTypeToObject, GroupByChartProps } from '../../lib/props';
 import { getWidgetData } from '../../lib/utils';
 
