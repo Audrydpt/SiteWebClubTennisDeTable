@@ -5,6 +5,10 @@ import {
   ValueType,
 } from 'recharts/types/component/DefaultTooltipContent';
 
+import {
+  AcicAggregation,
+  AggregationTypeToObject,
+} from '@/features/dashboard/lib/props';
 import { cn } from '@/lib/utils';
 
 export function CustomChartTooltip(
@@ -52,6 +56,16 @@ export function CustomChartTickValue(value: string, unit: string = '') {
   const v = unit === '%' ? Math.round(Number(value) * 100) : Number(value);
   return `${v.toLocaleString()} ${unit}`;
 }
-export function CustomChartTickDate(value: string, format: string) {
-  return DateTime.fromISO(value).toFormat(format);
+export function CustomChartTickDate(
+  value: string,
+  format: string,
+  aggregation?: AcicAggregation
+) {
+  const dt = DateTime.fromISO(value);
+  if (aggregation) {
+    const dur = AggregationTypeToObject[aggregation];
+    return dt.minus(dur).toFormat(format);
+  }
+
+  return dt.toFormat(format);
 }

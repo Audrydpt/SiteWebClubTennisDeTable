@@ -90,7 +90,9 @@ export default function AreaComponent({
               axisLine={false}
               tickMargin={8}
               angle={-30}
-              tickFormatter={(t: string) => CustomChartTickDate(t, format)}
+              tickFormatter={(t: string) =>
+                CustomChartTickDate(t, format, aggregation)
+              }
               interval={interval}
             />
             <YAxis
