@@ -78,13 +78,7 @@ export const ExperimentalChartType = {
   [ChartType.Heatmap]: false,
 } as StackedOptionsType;
 
-const ALLOWED_CURVE_TYPES = [
-  'basis',
-  'monotone',
-  'bump',
-  'linear',
-  'step',
-] as const;
+const ALLOWED_CURVE_TYPES = ['monotone', 'bump', 'linear', 'step'] as const;
 const ALLOWED_LAYOUT_TYPES = ['horizontal', 'vertical'] as const;
 const ALLOWED_GAUGE_TYPES = ['half', 'full'] as const;
 const ALLOWED_PIE_TYPES = ['pie', 'donut', 'halfpie', 'halfdonut'] as const;
