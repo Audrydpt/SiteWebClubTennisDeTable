@@ -140,7 +140,7 @@ export default function AppSidebar({ user }: { user?: UserType }) {
 
   // Hard-coded demo for ACIC environment. Should come from API.
   if (current.startsWith('192.168.20.') || current.startsWith('local')) {
-    workspaces.push('localhost');
+    workspaces.push('localhost:5173');
     workspaces.push('192.168.20.44');
     workspaces.push('192.168.20.145');
     workspaces.push('192.168.20.150');
@@ -149,7 +149,8 @@ export default function AppSidebar({ user }: { user?: UserType }) {
   }
 
   const navigate = (workspace: string) => {
-    window.location.href = `https://${workspace}/front-react/`;
+    const protocol = workspace.startsWith('localhost') ? 'http' : 'https';
+    window.location.href = `${protocol}://${workspace}/front-react/`;
   };
 
   return (
