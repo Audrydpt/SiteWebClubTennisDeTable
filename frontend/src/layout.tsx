@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import {
   SidebarInset,
   SidebarProvider,
@@ -14,8 +16,10 @@ export default function Layout({
   user?: UserType;
   children: React.ReactNode;
 }) {
+  const [open, setOpen] = useState(window.innerWidth >= 1024);
+
   return (
-    <SidebarProvider>
+    <SidebarProvider open={open} onOpenChange={setOpen}>
       <AppSidebar user={user} />
       <SidebarInset>
         <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b bg-muted px-4 md:hidden">

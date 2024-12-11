@@ -52,12 +52,10 @@ interface SidebarItem {
   title: string;
   url: string;
   icon: React.FC<LucideProps>;
-  children?: [
-    {
-      title: string;
-      url: string;
-    },
-  ];
+  children?: {
+    title: string;
+    url: string;
+  }[];
 }
 
 const analyticsItems = [
@@ -65,23 +63,6 @@ const analyticsItems = [
     title: 'Dashboard',
     url: '/dashboard',
     icon: Gauge,
-    children: [
-      {
-        title: 'Main dahsboard',
-        url: '/dashboard',
-        icon: Gauge,
-      },
-      {
-        title: 'Demo dahsboard',
-        url: '/dashboard/demo',
-        icon: Gauge,
-      },
-      {
-        title: 'All widgets',
-        url: '/dashboard/test',
-        icon: Gauge,
-      },
-    ],
   },
   {
     title: 'Maps',
@@ -134,16 +115,39 @@ const allItems = [
   },
 ];
 
+const testChildren = [
+  {
+    title: 'Main dahsboard',
+    url: '/dashboard',
+    icon: Gauge,
+  },
+  {
+    title: 'Demo dahsboard',
+    url: '/dashboard/demo',
+    icon: Gauge,
+  },
+  {
+    title: 'All widgets',
+    url: '/dashboard/test',
+    icon: Gauge,
+  },
+] as SidebarItem[];
+
 export default function AppSidebar({ user }: { user?: UserType }) {
   const current = window.location.hostname;
   const workspaces: string[] = [];
 
-  // Hard-coded demo for ACIC environment. Should come from API.
+  // Hard-coded demo for ACIC environment.
   if (current.startsWith('192.168.20.') || current.startsWith('local')) {
+    // This should come from API.
     workspaces.push('localhost:5173');
     workspaces.push('192.168.20.44');
     workspaces.push('192.168.20.145');
     workspaces.push('192.168.20.150');
+
+    // Development only.
+    if (process.env.NODE_ENV === 'development')
+      analyticsItems[0].children = testChildren;
   } else {
     workspaces.push(current);
   }
