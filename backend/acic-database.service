@@ -20,6 +20,11 @@ ExecStart=/usr/bin/podman run \
 	--sdnotify=conmon \
 	-d \
 	--health-on-failure=restart \
+	--healthcheck-command='pg_isready -U postgres && curl -f http://localhost:5020/health || exit 1' \
+	--healthcheck-interval=60s \
+	--healthcheck-timeout=20s \
+	--healthcheck-retries=3 \
+	--healthcheck-start-period=60s \ 
 	--shm-size=512m \
 	--net host \
 	-v /opt/ACIC/front/database:/var/lib/postgresql/16/main:z localhost/newfront
