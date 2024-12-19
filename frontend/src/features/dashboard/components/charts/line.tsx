@@ -106,10 +106,10 @@ export default function LineComponent({
                 <ChartTooltipContent
                   cursor={false}
                   formatter={(...d) => CustomChartTooltip(...d, chartConfig)}
-                  labelFormatter={(value: string) =>
-                    DateTime.fromISO(value).toLocaleString(
-                      DateTime.DATETIME_MED
-                    )
+                  labelFormatter={(value, payload) =>
+                    DateTime.fromISO(
+                      payload[0]?.payload?.timestamp
+                    ).toLocaleString(DateTime.DATETIME_MED) ?? value
                   }
                 />
               }
