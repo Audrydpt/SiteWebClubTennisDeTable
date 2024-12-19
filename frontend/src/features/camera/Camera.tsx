@@ -20,6 +20,7 @@ export default function Camera() {
                 title="results"
                 className="w-full h-[425px]"
                 src={`${serverUrl}/cgi-bin/CameraView.cgi?stream=${streamId}`}
+                aria-label="Camera results view"
               />
             </td>
             <td>
@@ -27,6 +28,7 @@ export default function Camera() {
                 title="cameraForm"
                 className="w-full h-[610px]"
                 src={`${serverUrl}/cgi-bin/CameraForm.cgi?stream=${streamId}`}
+                aria-label="Camera form view"
               />
             </td>
           </tr>

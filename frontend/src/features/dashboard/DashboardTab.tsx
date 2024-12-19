@@ -1,5 +1,5 @@
 import { Edit3, Trash2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { JSX, useEffect } from 'react';
 import { ReactSortable } from 'react-sortablejs';
 
 import DeleteConfirmation from '@/components/confirm-delete';

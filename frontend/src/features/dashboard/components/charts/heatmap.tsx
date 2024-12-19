@@ -206,7 +206,10 @@ function HeatmapCell({ cellData, maxCount }: HeatmapCellProps) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <td className={`border ${opacityClass}`} />
+        <td
+          className={`border ${opacityClass}`}
+          aria-label={`Count: ${cellData?.count ?? 'No data'}`}
+        />
       </TooltipTrigger>
       <TooltipContent>
         <p className="font-medium">
