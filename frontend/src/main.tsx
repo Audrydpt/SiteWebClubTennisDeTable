@@ -6,7 +6,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import App from './App.tsx';
 import HttpsProvider from './https-provider.tsx';
 import './index.css';
-import { ThemeProvider } from './theme-provider.tsx';
+import ThemeProvider from './theme-provider.tsx';
 
 const basename = import.meta.env.BASE_URL || '';
 const queryClient = new QueryClient();
