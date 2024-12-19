@@ -73,8 +73,14 @@ export function CustomChartTickDate(
   return dt.toFormat(format);
 }
 export function CustomChartLabel(value: string | number, label: string) {
-  if (!Number.isNaN(value)) {
-    return `${label}: ${Number(value).toLocaleString()}`;
+  if (typeof value === 'number') {
+    return `${label}: ${value.toLocaleString()}`;
   }
+
+  const num = Number(value);
+  if (Number.isFinite(num) && value !== '') {
+    return `${label}: ${num.toLocaleString()}`;
+  }
+
   return value;
 }
