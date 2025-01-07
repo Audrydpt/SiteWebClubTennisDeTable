@@ -40,8 +40,10 @@ deploy: build
 		systemctl restart acic-httpd; \
 	fi'
 
+PWD := $(shell pwd)
+UID := $(shell id -u)
 docker-dist:
-	docker run --rm -u $UID -v $(pwd):/src node:23-bookworm bash -c "cd /src && make dist"
+	docker run --rm -u $(UID) -v $(PWD):/src node:lts-bookworm bash -c "cd /src && make dist"
 
 dist: install build
 	rm -Rf dist/home/
