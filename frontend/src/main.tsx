@@ -4,9 +4,9 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter as Router } from 'react-router-dom';
 
 import App from './App.tsx';
-import HttpsProvider from './https-provider.tsx';
 import './index.css';
-import ThemeProvider from './theme-provider.tsx';
+import HttpsProvider from './providers/https-provider.tsx';
+import ThemeProvider from './providers/theme-provider.tsx';
 
 const basename = import.meta.env.BASE_URL || '';
 const queryClient = new QueryClient();
