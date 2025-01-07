@@ -1,7 +1,7 @@
 SERVER ?= 192.168.20.145
 NODE_VERSION := --lts
 
-.PHONY: build deploy run install lint clean nvm
+.PHONY: build deploy run install lint clean nvm docker-dist
 
 build:
 	make nvm CMD="npm run license"
@@ -39,6 +39,9 @@ deploy: build
 		echo "}" >> /opt/ACIC/etc/lighttpd.conf && \
 		systemctl restart acic-httpd; \
 	fi'
+
+docker-dist:
+	docker run --rm -u $UID -v $(pwd):/src node:23-bookworm bash -c "cd /src && make dist"
 
 dist: install build
 	rm -Rf dist/home/
