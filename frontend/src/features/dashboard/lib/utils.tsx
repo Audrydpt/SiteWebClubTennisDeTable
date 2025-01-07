@@ -9,7 +9,7 @@ import {
   ChartType,
 } from './props';
 
-function getDurationInDays(durationStr: string): number {
+export function getDurationInDays(durationStr: AcicAggregation): number {
   const [amount, unit] = durationStr.split(' ');
   switch (unit) {
     case 'minute':
@@ -84,7 +84,10 @@ export async function getWidgetDescription() {
   );
 }
 
-function roundDateTime(dt: DateTime, aggregation: AcicAggregation): DateTime {
+export function roundDateTime(
+  dt: DateTime,
+  aggregation: AcicAggregation
+): DateTime {
   switch (aggregation) {
     case '1 minute':
       return dt.startOf('minute');
@@ -109,14 +112,16 @@ function roundDateTime(dt: DateTime, aggregation: AcicAggregation): DateTime {
     case '1 month':
       return dt.startOf('month');
     case '6 months':
-      return dt.set({
-        month: Math.floor(dt.month / 6) * 6,
-        day: 1,
-        hour: 0,
-        minute: 0,
-        second: 0,
-        millisecond: 0,
-      });
+      return dt
+        .set({
+          month: dt.month <= 6 ? 1 : 7,
+          day: 15,
+          hour: 0,
+          minute: 0,
+          second: 0,
+          millisecond: 0,
+        })
+        .startOf('month');
     case '1 year':
       return dt.startOf('year');
     case '100 years':

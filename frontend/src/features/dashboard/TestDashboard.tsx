@@ -12,7 +12,7 @@ import StackedBarComponent from './components/charts/stacked-bar';
 import StackedGaugeComponent from './components/charts/stacked-gauge';
 import { AcicAggregation, AcicEvent } from './lib/props';
 
-export default function TestCharts() {
+export default function TestDashboard() {
   return (
     <div className="w-full grid grid-cols-3 gap-2">
       <AreaComponent
