@@ -1,6 +1,17 @@
-export default function TailwindSizeIndicator() {
+import { cn } from '@/lib/utils';
+
+export default function TailwindSizeIndicator({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) {
   return (
-    <div className="fixed top-0 right-0 p-3 bg-gray-800 text-white z-50">
+    <div
+      {...props}
+      className={cn(
+        'fixed top-0 right-0 p-3 bg-gray-800 text-white z-50',
+        className
+      )}
+    >
       <div className="xs:block sm:hidden">XS</div>
       <div className="hidden sm:block md:hidden">SM</div>
       <div className="hidden md:block lg:hidden">MD</div>

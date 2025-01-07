@@ -16,6 +16,14 @@ describe('TailwindSizeIndicator', () => {
       const wrapper = container.firstChild as HTMLElement;
       expect(wrapper).toHaveClass('fixed', 'top-0', 'right-0', 'z-50');
     });
+
+    it('accepts className prop and applies it correctly', () => {
+      const { container } = render(
+        <TailwindSizeIndicator className="test-class" />
+      );
+      const wrapper = container.firstChild as HTMLElement;
+      expect(wrapper).toHaveClass('test-class');
+    });
   });
 
   describe('Visibility Classes', () => {

@@ -29,9 +29,20 @@ export default function DeleteConfirmation({
   cancelText = 'Annuler',
   confirmText = 'Supprimer',
 }: DeleteConfirmationProps) {
+  const handleDelete = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    onDelete();
+  };
+
+  const handleTriggerClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+  };
+
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+      <AlertDialogTrigger asChild onClick={handleTriggerClick}>
+        {children}
+      </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
@@ -40,7 +51,7 @@ export default function DeleteConfirmation({
         <AlertDialogFooter>
           <AlertDialogCancel>{cancelText}</AlertDialogCancel>
           <AlertDialogAction
-            onClick={onDelete}
+            onClick={handleDelete}
             className="bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90"
           >
             {confirmText}

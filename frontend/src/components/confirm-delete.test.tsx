@@ -2,64 +2,144 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import DeleteConfirmation from './confirm-delete';
 
 describe('DeleteConfirmation', () => {
-  const setup = (props = {}) =>
-    render(
-      <DeleteConfirmation onDelete={() => {}} {...props}>
-        <Button>Delete</Button>
-      </DeleteConfirmation>
-    );
+  const defaultProps = {
+    onDelete: vi.fn(),
+    children: <Button>Test</Button>,
+  };
 
-  it('renders with default props', async () => {
-    setup();
-
-    fireEvent.click(screen.getByText('Delete'));
-
-    expect(await screen.findByText('Êtes-vous sûr ?')).toBeInTheDocument();
-    expect(
-      await screen.findByText(
-        'Cette action est irréversible et ne pourra pas être annulée.'
-      )
-    ).toBeInTheDocument();
-    expect(await screen.findByText('Annuler')).toBeInTheDocument();
-    expect(await screen.findByText('Supprimer')).toBeInTheDocument();
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it('renders with custom props', async () => {
-    setup({
-      title: 'Custom Title',
-      description: 'Custom Description',
-      cancelText: 'Cancel Custom',
-      confirmText: 'Confirm Custom',
+  describe('Basic Rendering', () => {
+    it('renders the trigger element (children)', () => {
+      render(<DeleteConfirmation {...defaultProps} />);
+      expect(screen.getByRole('button', { name: 'Test' })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Delete'));
+    it('dialog is not visible by default', () => {
+      render(<DeleteConfirmation {...defaultProps} />);
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    });
 
-    expect(await screen.findByText('Custom Title')).toBeInTheDocument();
-    expect(await screen.findByText('Custom Description')).toBeInTheDocument();
-    expect(await screen.findByText('Cancel Custom')).toBeInTheDocument();
-    expect(await screen.findByText('Confirm Custom')).toBeInTheDocument();
+    it('renders with default props when not provided', () => {
+      render(<DeleteConfirmation {...defaultProps} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }));
+
+      expect(screen.getByText('Êtes-vous sûr ?')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'Cette action est irréversible et ne pourra pas être annulée.'
+        )
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Annuler' })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Supprimer' })
+      ).toBeInTheDocument();
+    });
+
+    it('renders with custom props when provided', () => {
+      const customProps = {
+        ...defaultProps,
+        title: 'Custom Title',
+        description: 'Custom Description',
+        cancelText: 'Custom Cancel',
+        confirmText: 'Custom Confirm',
+      };
+
+      render(<DeleteConfirmation {...customProps} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }));
+
+      expect(screen.getByText('Custom Title')).toBeInTheDocument();
+      expect(screen.getByText('Custom Description')).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Custom Cancel' })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Custom Confirm' })
+      ).toBeInTheDocument();
+    });
   });
 
-  it('calls onDelete when confirm button is clicked', async () => {
-    const handleDelete = vi.fn();
-    setup({ onDelete: handleDelete });
+  describe('Interaction Tests', () => {
+    it('opens dialog when trigger is clicked', () => {
+      render(<DeleteConfirmation {...defaultProps} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }));
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    });
 
-    fireEvent.click(screen.getByText('Delete'));
-    fireEvent.click(await screen.findByText('Supprimer'));
+    it('calls onDelete when confirm button is clicked', () => {
+      render(<DeleteConfirmation {...defaultProps} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }));
+      expect(defaultProps.onDelete).toHaveBeenCalledTimes(1);
+    });
 
-    expect(handleDelete).toHaveBeenCalledTimes(1);
+    it('does not call onDelete when cancel button is clicked', () => {
+      render(<DeleteConfirmation {...defaultProps} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+      expect(defaultProps.onDelete).not.toHaveBeenCalled();
+    });
+
+    it('closes dialog when cancel button is clicked', () => {
+      render(<DeleteConfirmation {...defaultProps} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    });
+
+    it('closes dialog when confirm button is clicked', () => {
+      render(<DeleteConfirmation {...defaultProps} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }));
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    });
   });
 
-  it('does not call onDelete when cancel button is clicked', async () => {
-    const handleDelete = vi.fn();
-    setup({ onDelete: handleDelete });
+  describe('Edge Cases', () => {
+    it('handles empty strings for text props', () => {
+      const emptyProps = {
+        ...defaultProps,
+        title: '',
+        description: '',
+        cancelText: '',
+        confirmText: '',
+      };
 
-    fireEvent.click(screen.getByText('Delete'));
-    fireEvent.click(await screen.findByText('Annuler'));
+      render(<DeleteConfirmation {...emptyProps} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }));
 
-    expect(handleDelete).not.toHaveBeenCalled();
+      // Even with empty strings, buttons should still be present and clickable
+      const buttons = screen.getAllByRole('button');
+      expect(buttons.length).toBeGreaterThan(1);
+    });
+
+    it('prevents event propagation on delete button click', () => {
+      const parentClick = vi.fn();
+      const testId = 'parent-card';
+
+      render(
+        <Card
+          data-testid={testId}
+          className="hover:cursor-pointer"
+          onClick={parentClick}
+        >
+          <DeleteConfirmation {...defaultProps} />
+        </Card>
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }));
+
+      expect(defaultProps.onDelete).toHaveBeenCalledTimes(1);
+      expect(parentClick).not.toHaveBeenCalled();
+    });
   });
 });
