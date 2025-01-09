@@ -11,10 +11,6 @@ describe('DeleteConfirmation', () => {
     children: <Button>Test</Button>,
   };
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   describe('Basic Rendering', () => {
     it('renders the trigger element (children)', () => {
       render(<DeleteConfirmation {...defaultProps} />);

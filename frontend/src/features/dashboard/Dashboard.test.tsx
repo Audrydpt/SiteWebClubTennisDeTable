@@ -6,30 +6,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Dashboard from './Dashboard';
 import useDashboardAPI from './hooks/use-dashboard';
 
-// Mock the ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
-
 // Mock the custom hook
 vi.mock('./hooks/use-dashboard', () => ({
   default: vi.fn(),
 }));
-
-// Mock useQuery
-vi.mock('@tanstack/react-query', async () => {
-  const actual = await vi.importActual('@tanstack/react-query');
-  return {
-    ...actual,
-    useQuery: vi.fn().mockReturnValue({
-      data: [],
-      isLoading: false,
-      error: null,
-    }),
-  };
-});
 
 // Mock only child dashboard components
 vi.mock('./DashboardTab', () => ({

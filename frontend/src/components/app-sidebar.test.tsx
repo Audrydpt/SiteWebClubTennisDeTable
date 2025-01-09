@@ -12,21 +12,6 @@ vi.mock('../assets/logo.svg', () => ({
   default: 'mocked-logo.svg',
 }));
 
-// Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
-  value: vi.fn().mockImplementation((query) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
-  writable: true,
-});
-
 const mockUsers: Record<string, UserType> = {
   admin: {
     user: 'AdminUser',
@@ -58,13 +43,14 @@ const renderSidebar = (props = defaultProps) =>
 describe('AppSidebar', () => {
   // Reset mocks and environment before each test
   beforeEach(() => {
-    vi.clearAllMocks();
     vi.stubEnv('NODE_ENV', 'development');
+    window.location.href = 'http://localhost:5173/front-react/';
   });
 
   describe('Basic Rendering', () => {
     it('renders with default props (no user)', () => {
       renderSidebar();
+
       expect(screen.getByRole('img', { name: /acic/i })).toBeInTheDocument();
       expect(screen.getByText('Select Workspace')).toBeInTheDocument();
       expect(screen.getByText('Anonymous')).toBeInTheDocument();

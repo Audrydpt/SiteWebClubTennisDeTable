@@ -5,7 +5,7 @@ import {
   Payload,
   ValueType,
 } from 'recharts/types/component/DefaultTooltipContent';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { AcicAggregation } from '@/features/dashboard/lib/props';
 import {
@@ -25,17 +25,6 @@ type CustomPayload = Payload<ValueType, NameType> & {
 };
 
 describe('Chart Utils', () => {
-  beforeAll(() => {
-    // Force a specific locale for all tests
-    const forcedLocale = 'en-US';
-    const numberFormatter = new Intl.NumberFormat(forcedLocale);
-    vi.spyOn(Number.prototype, 'toLocaleString').mockImplementation(
-      function toLocaleStringMock(this: number) {
-        return numberFormatter.format(this);
-      }
-    );
-  });
-
   describe('CustomChartTooltip', () => {
     it('renders with basic values', () => {
       const payload: CustomPayload = {

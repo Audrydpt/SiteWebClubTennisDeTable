@@ -1,38 +1,13 @@
 import { act, renderHook } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import {
+  mockAddEventListener,
+  mockRemoveEventListener,
+} from '../../vitest-setup';
 
 import useIsMobile from './use-mobile';
 
 describe('useIsMobile', () => {
-  // Mock matchMedia
-  const mockMatchMedia = vi.fn();
-  const mockAddEventListener = vi.fn();
-  const mockRemoveEventListener = vi.fn();
-
-  beforeEach(() => {
-    // Reset all mocks before each test
-    vi.clearAllMocks();
-
-    // Setup window.matchMedia mock
-    window.matchMedia = mockMatchMedia;
-    mockMatchMedia.mockReturnValue({
-      matches: false,
-      addEventListener: mockAddEventListener,
-      removeEventListener: mockRemoveEventListener,
-    });
-
-    // Mock window.innerWidth
-    Object.defineProperty(window, 'innerWidth', {
-      writable: true,
-      configurable: true,
-      value: 1024,
-    });
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
   describe('Basic Functionality', () => {
     it('should initialize correctly', () => {
       const { result } = renderHook(() => useIsMobile());

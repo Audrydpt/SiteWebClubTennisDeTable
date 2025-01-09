@@ -6,27 +6,6 @@ describe('HttpsProvider', () => {
   const originalEnv = process.env.NODE_ENV;
   const originalLocation = window.location;
 
-  beforeEach(() => {
-    let href = 'http://example.com';
-    let protocol = 'http:';
-
-    Object.defineProperty(window, 'location', {
-      value: {
-        get href() {
-          return href;
-        },
-        set href(newHref: string) {
-          href = newHref;
-          protocol = `${newHref.split(':')[0]}:`;
-        },
-        get protocol() {
-          return protocol;
-        },
-      },
-      writable: true,
-    });
-  });
-
   afterEach(() => {
     process.env.NODE_ENV = originalEnv;
     Object.defineProperty(window, 'location', {

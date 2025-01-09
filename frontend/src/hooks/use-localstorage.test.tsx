@@ -1,14 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import useLocalStorage from './use-localstorage';
 
 describe('useLocalStorage', () => {
-  beforeEach(() => {
-    // Clear localStorage before each test
-    localStorage.clear();
-    vi.clearAllMocks();
-  });
-
   describe('Basic Functionality', () => {
     it('should initialize with default value when localStorage is empty', () => {
       const { result } = renderHook(() =>

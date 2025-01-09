@@ -1,28 +1,9 @@
 import { render } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import ThemeProvider from './theme-provider';
 
 describe('ThemeProvider', () => {
-  const mockMatchMedia = vi.fn();
-
-  beforeEach(() => {
-    localStorage.clear();
-    document.documentElement.classList.remove('light', 'dark');
-
-    window.matchMedia = mockMatchMedia.mockImplementation(() => ({
-      matches: false,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    }));
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
-    localStorage.clear();
-    document.documentElement.classList.remove('light', 'dark');
-  });
-
   describe('Basic Rendering', () => {
     it('renders children correctly', () => {
       const { getByTestId } = render(
@@ -101,11 +82,11 @@ describe('ThemeProvider', () => {
 
   describe('System Theme', () => {
     it('applies system dark theme when system preference is dark', () => {
-      window.matchMedia = mockMatchMedia.mockImplementation(() => ({
-        matches: true,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      }));
+      Object.defineProperty(window, 'matchMedia', {
+        value: vi.fn().mockImplementation(() => ({
+          matches: true,
+        })),
+      });
 
       render(
         <ThemeProvider defaultTheme="system">
@@ -117,11 +98,11 @@ describe('ThemeProvider', () => {
     });
 
     it('applies system light theme when system preference is light', () => {
-      window.matchMedia = mockMatchMedia.mockImplementation(() => ({
-        matches: false,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      }));
+      Object.defineProperty(window, 'matchMedia', {
+        value: vi.fn().mockImplementation(() => ({
+          matches: false,
+        })),
+      });
 
       render(
         <ThemeProvider defaultTheme="system">

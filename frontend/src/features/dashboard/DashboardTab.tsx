@@ -32,7 +32,7 @@ const heightClassMap: Record<ChartSize, string> = {
   full: 'row-span-2',
 };
 
-type ChartTiles = {
+export type ChartTiles = {
   id: string;
   content: JSX.Element;
   widget: StoredWidget;
@@ -107,7 +107,7 @@ export default function DashboardTab({
               defaultValues={item.widget}
               edition
             >
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" area-label="Edit">
                 <Edit3 className="h-4 w-4" />
               </Button>
             </FormWidget>
@@ -116,7 +116,7 @@ export default function DashboardTab({
               onDelete={() => remove(item.id)}
               description="Cette action est irréversible. Le widget sera définitivement supprimé du dashboard."
             >
-              <Button variant="destructive" size="icon">
+              <Button variant="destructive" size="icon" aria-label="Delete">
                 <Trash2 className="h-4 w-4" />
               </Button>
             </DeleteConfirmation>
