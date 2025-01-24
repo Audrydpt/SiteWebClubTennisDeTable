@@ -178,7 +178,7 @@ class EventGrabber(threading.Thread):
 
             if event_name == "AcicOccupancy":
                 value = float(event.event_kvdata["value"])  # guess it's a percentage
-                count = int(event.event_kvdata["count"])  # guess it's the number of people
+                count = float(event.event_kvdata["count"])  # guess it's the number of people
                 dal.add(AcicOccupancy(
                     host=host,
                     stream_id=stream_id,

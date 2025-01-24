@@ -64,8 +64,8 @@ class AcicNumbering(BaseEvent):
     count = Column(Integer)
 
 class AcicOccupancy(BaseEvent):
-    count = Column(Integer)
-    value = Column(REAL)
+    count = Column(REAL)            # Number of people
+    value = Column(REAL)            # Percentage of occupancy
 
 class AcicLicensePlate(BaseEvent):
     roi_index = Column(Integer)
