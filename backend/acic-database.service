@@ -24,7 +24,6 @@ ExecStart=/usr/bin/podman run \
 	--healthcheck-interval=60s \
 	--healthcheck-timeout=20s \
 	--healthcheck-retries=3 \
-	--healthcheck-start-period=60s \ 
 	--shm-size=512m \
 	--net host \
 	-v /opt/ACIC/front/database:/var/lib/postgresql/16/main:z localhost/newfront
