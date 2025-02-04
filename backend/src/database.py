@@ -1,4 +1,7 @@
 import os
+import threading
+import uuid
+from datetime import timedelta
 from dotenv import load_dotenv
 
 from sqlalchemy import JSON, column, create_engine, Column, Integer, REAL, String, Text, DateTime, DDL, PrimaryKeyConstraint, cast, func, inspect, text, ForeignKey
@@ -11,7 +14,7 @@ from alembic.operations import Operations
 from alembic.autogenerate import produce_migrations
 from alembic.operations.ops import ModifyTableOps, AlterColumnOp
 
-import uuid
+from cron import Cron
 
 def get_database_url(use_timescaledb=True):
     db_host = os.getenv("DB_HOST", "localhost")
@@ -47,7 +50,6 @@ class BaseEvent(Database):
     host = Column(Text, index=True)
     stream_id = Column(Integer, index=True)
     timestamp = Column(TIMESTAMP(timezone=True), primary_key=True)
-
 
 class AcicUnattendedItem(BaseEvent):
     roi_index = Column(Integer)
@@ -108,6 +110,7 @@ class AcicEvent(BaseEvent):
     name = Column(Text)
     state = Column(Text)
 
+
 class Dashboard(Database):
     title = Column(Text)
     widgets = relationship("Widget", back_populates="dashboard")
@@ -131,15 +134,19 @@ class Widget(Database):
 
 class GenericDAL:
     initialized = False
+    lock = threading.Lock()
 
     def __init__(self):
         self.engine = create_engine(get_database_url(use_timescaledb=True), echo=False, connect_args={'client_encoding': 'utf8'})
         self.Session = sessionmaker(bind=self.engine)
-
+        
         if not GenericDAL.initialized:
-            GenericDAL.__update_schema(self)
-            GenericDAL.__seed_database(self)
-            GenericDAL.initialized = True
+            with GenericDAL.lock:
+                if not GenericDAL.initialized:
+                    GenericDAL.__update_schema(self)
+                    GenericDAL.__seed_database(self)
+                    GenericDAL.__init_cron(self)
+                    GenericDAL.initialized = True
     
     def __update_schema(self):
         def add_using_clause(op):
@@ -197,6 +204,7 @@ class GenericDAL:
             session.commit()
         
         print("Binding schema to engine...")
+        Database.metadata.reflect(self.engine)
         Database.metadata.create_all(self.engine)
 
         print("Trying to update schema...")
@@ -259,6 +267,18 @@ class GenericDAL:
                 query[0].order = 0
                 session.commit()
 
+    def __init_cron(self):
+        trigger = "0 0 * * *"
+
+        event_classes = []
+        for name, cls in Database.registry._class_registry.items():
+            if isinstance(cls, type) and issubclass(cls, BaseEvent):
+                if '__abstract__' not in cls.__dict__:
+                    event_classes.append(cls)
+
+        cron = Cron()
+        for event_class in event_classes:
+            cron.add_job(lambda: self.clean(event_class), trigger)
 
     def add(self, obj):
         with self.Session() as session:
@@ -343,5 +363,15 @@ class GenericDAL:
     def remove(self, obj):
         with self.Session() as session:
             session.delete(obj)
+            session.commit()
+    
+    def clean(self, cls, days=100):
+        print("Cleaning", cls)
+        with self.Session() as session:
+
+            query = session.query(cls)
+            query = query.filter(cls.timestamp < func.now() - timedelta(days=days))
+            query.delete()
+
             session.commit()
 

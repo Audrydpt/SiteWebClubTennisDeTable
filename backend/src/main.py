@@ -18,7 +18,6 @@ if __name__ == "__main__":
     del dal
 
     ip = getNetworkIp()
-    print(ip)
 
     # parse command line arguments using argparse
     parser = argparse.ArgumentParser(description="Event grabber")
@@ -30,7 +29,16 @@ if __name__ == "__main__":
     print("Init grabber")
     grabber = EventGrabber()
     grabber.add_grabber("127.0.0.1",     8081)   # localhost
+
     if ip == "192.168.20.145":
+        for i in ["44", "150"]:
+            server_ip = f"192.168.20.{i}"
+            if server_ip != ip:
+                serv = AcMetadataEventReceiverThread(acichost=server_ip, acichostport=8081)
+                if serv.is_reachable(timeout=0.2) and serv.is_streaming(timeout=0.2):
+                    grabber.add_grabber(server_ip, 8081)
+
+    if False:
         for i in range(40, 240):
             server_ip = f"192.168.20.{i}"
             if server_ip != ip:
