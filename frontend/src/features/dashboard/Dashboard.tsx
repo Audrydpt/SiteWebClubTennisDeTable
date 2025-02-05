@@ -82,7 +82,7 @@ function DashboardContent() {
                 <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
                   <DeleteConfirmation
                     onDelete={() => handleDelete(key)}
-                    description="Cette action est irréversible. Le dashboard sera définitivement supprimé."
+                    description="This action is irreversible. The dashboard will be permanently deleted."
                   >
                     <Button variant="destructive" className="h-4 w-4 p-0">
                       <Trash2 className="!h-3 !w-3" />
