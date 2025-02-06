@@ -1,3 +1,4 @@
+// a
 export default function Camera() {
   const streamId = 1;
   let url = new URL(window.location.href);

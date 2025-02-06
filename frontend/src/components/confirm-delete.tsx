@@ -24,10 +24,10 @@ interface DeleteConfirmationProps {
 export default function DeleteConfirmation({
   onDelete,
   children,
-  title = 'Êtes-vous sûr ?',
-  description = 'Cette action est irréversible et ne pourra pas être annulée.',
-  cancelText = 'Annuler',
-  confirmText = 'Supprimer',
+  title = 'Are you sure ?',
+  description = 'This action is irreversible and cannot be undone.',
+  cancelText = 'Cancel',
+  confirmText = 'Delete',
 }: DeleteConfirmationProps) {
   const handleDelete = (event: React.MouseEvent) => {
     event.stopPropagation();

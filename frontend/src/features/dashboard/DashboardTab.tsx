@@ -114,7 +114,7 @@ export default function DashboardTab({
 
             <DeleteConfirmation
               onDelete={() => remove(item.id)}
-              description="Cette action est irréversible. Le widget sera définitivement supprimé du dashboard."
+              description="This action is irreversible. The widget will be permanently deleted."
             >
               <Button variant="destructive" size="icon" aria-label="Delete">
                 <Trash2 className="h-4 w-4" />
