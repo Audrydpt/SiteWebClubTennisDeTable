@@ -271,14 +271,14 @@ class GenericDAL:
         trigger = "0 0 * * *"
 
         event_classes = []
-        for name, cls in Database.registry._class_registry.items():
+        for _, cls in Database.registry._class_registry.items():
             if isinstance(cls, type) and issubclass(cls, BaseEvent):
                 if '__abstract__' not in cls.__dict__:
                     event_classes.append(cls)
 
         cron = Cron()
         for event_class in event_classes:
-            cron.add_job(lambda: self.clean(event_class), trigger)
+            cron.add_job(lambda cls=event_class: self.clean(cls), trigger)
 
     def add(self, obj):
         with self.Session() as session:
