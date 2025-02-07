@@ -10,6 +10,9 @@ import { AuthError, getCurrentUser } from './lib/authenticate';
 const Dashboard = lazy(() => import('./features/dashboard/Dashboard'));
 const DemoDashboard = lazy(() => import('./features/dashboard/DemoDashboard'));
 const TestDashboard = lazy(() => import('./features/dashboard/TestDashboard'));
+const ExportDashboard = lazy(
+  () => import('./features/dashboard/ExportDashboard')
+);
 const Camera = lazy(() => import('./features/camera/Camera'));
 
 export default function App() {
@@ -28,6 +31,7 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/demo" element={<DemoDashboard />} />
           <Route path="/dashboard/test" element={<TestDashboard />} />
+          <Route path="/dashboard/export" element={<ExportDashboard />} />
           <Route path="/dashboard/*" element={<Dashboard />} />
           <Route path="/cameras" element={<Camera />} />
           <Route path="*" element={<h1>Not Found</h1>} />

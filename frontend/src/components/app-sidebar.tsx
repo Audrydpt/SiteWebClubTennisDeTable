@@ -63,6 +63,12 @@ const analyticsItems = [
     title: 'Dashboard',
     url: '/dashboard',
     icon: Gauge,
+    children: [
+      {
+        title: 'Export data',
+        url: '/dashboard/export',
+      },
+    ],
   },
   {
     title: 'Maps',
@@ -147,7 +153,13 @@ export default function AppSidebar({ user }: { user?: UserType }) {
 
     // Development only.
     if (process.env.NODE_ENV === 'development')
-      analyticsItems[0].children = testChildren;
+      analyticsItems[0].children = [
+        {
+          title: 'Export data',
+          url: '/dashboard/export',
+        },
+        ...testChildren,
+      ];
   } else {
     workspaces.push(current);
   }
