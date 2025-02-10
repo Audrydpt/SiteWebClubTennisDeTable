@@ -14,6 +14,7 @@ import {
   User2,
   Wrench,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import {
@@ -140,6 +141,7 @@ const testChildren = [
 ] as SidebarItem[];
 
 export default function AppSidebar({ user }: { user?: UserType }) {
+  const { t } = useTranslation('common');
   const current = window.location.hostname;
   const workspaces: string[] = [];
 
@@ -190,7 +192,7 @@ export default function AppSidebar({ user }: { user?: UserType }) {
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">
-                      Select Workspace
+                      {t('selectWorkspace')}
                     </span>
                   </div>
                   <ChevronsUpDown className="ml-auto" />

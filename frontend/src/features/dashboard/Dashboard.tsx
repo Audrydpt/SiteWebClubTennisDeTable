@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Route, Routes, useNavigate, useParams } from 'react-router-dom';
 
 import DeleteConfirmation from '@/components/confirm-delete';
@@ -24,6 +25,7 @@ function DashboardContent() {
 
   const { query, add, remove } = useDashboardAPI();
   const { data, isLoading, isError } = query;
+  const { t } = useTranslation();
 
   if (isError) return <div>Something went wrong</div>;
   if (isLoading || !data) return <LoadingSpinner />;
@@ -58,12 +60,12 @@ function DashboardContent() {
       <Header title="Dashboard">
         <FormDashboard onSubmit={handleAdd}>
           <Button variant="outline">
-            <Plus /> Add Dashboard
+            <Plus /> {t('dashboard:addDashboard')}
           </Button>
         </FormDashboard>
         <FormWidget onSubmit={addWidgetFn}>
           <Button variant="outline">
-            <Plus /> Add Widget
+            <Plus /> {t('dashboard:addWidget')}
           </Button>
         </FormWidget>
       </Header>

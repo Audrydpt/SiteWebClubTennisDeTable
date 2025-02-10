@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Suspense, lazy } from 'react';
+import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
 import LoadingSpinner from '@/components/loading';
@@ -7,13 +7,21 @@ import useSession from './hooks/use-session';
 import Layout from './layout';
 import { AuthError, getCurrentUser } from './lib/authenticate';
 
-const Dashboard = lazy(() => import('./features/dashboard/Dashboard'));
-const DemoDashboard = lazy(() => import('./features/dashboard/DemoDashboard'));
-const TestDashboard = lazy(() => import('./features/dashboard/TestDashboard'));
-const ExportDashboard = lazy(
+import { lazyLoadFeature } from './lib/i18n';
+
+const Dashboard = lazyLoadFeature(
+  () => import('./features/dashboard/Dashboard')
+);
+const DemoDashboard = lazyLoadFeature(
+  () => import('./features/dashboard/DemoDashboard')
+);
+const TestDashboard = lazyLoadFeature(
+  () => import('./features/dashboard/TestDashboard')
+);
+const ExportDashboard = lazyLoadFeature(
   () => import('./features/dashboard/ExportDashboard')
 );
-const Camera = lazy(() => import('./features/camera/Camera'));
+const Camera = lazyLoadFeature(() => import('./features/camera/Camera'));
 
 export default function App() {
   const sessionId = useSession();
