@@ -5,9 +5,7 @@ import HeatmapComponent from './components/charts/heatmap';
 import LineComponent from './components/charts/line';
 import MultiBarComponent from './components/charts/multi-bar';
 import MultiGaugeComponent from './components/charts/multi-gauge';
-import MultiLineComponent from './components/charts/multi-line';
 import PieComponent from './components/charts/pie';
-import StackedAreaComponent from './components/charts/stacked-area';
 import StackedBarComponent from './components/charts/stacked-bar';
 import StackedGaugeComponent from './components/charts/stacked-gauge';
 import { AcicAggregation, AcicEvent } from './lib/props';
@@ -51,7 +49,7 @@ export default function TestDashboard() {
         aggregation={AcicAggregation.OneHour}
         layout="step"
       />
-      <StackedAreaComponent
+      <AreaComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
@@ -59,7 +57,7 @@ export default function TestDashboard() {
         groupBy="direction"
         stackOffset="none"
       />
-      <StackedAreaComponent
+      <AreaComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
@@ -67,7 +65,7 @@ export default function TestDashboard() {
         groupBy="direction"
         stackOffset="expand"
       />
-      <StackedAreaComponent
+      <AreaComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
@@ -75,21 +73,21 @@ export default function TestDashboard() {
         groupBy="direction"
         stackOffset="wiggle"
       />
-      <MultiLineComponent
+      <LineComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
         layout="natural"
         groupBy="direction"
       />
-      <MultiLineComponent
+      <LineComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
         layout="linear"
         groupBy="direction"
       />
-      <MultiLineComponent
+      <LineComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}

@@ -29,7 +29,7 @@
     },
     "groupBy": {
       "label": "Grouper par",
-      "placeholder": "Sélectionner une colonne"
+      "placeholder": "Sélectionnez une dimension"
     },
     "filters": {
       "label": "Filtres",

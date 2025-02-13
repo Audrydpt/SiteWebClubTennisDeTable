@@ -1,3 +1,5 @@
+import { StackOffsetType } from 'recharts/types/util/types';
+
 import { WhereClause } from '@/components/where-clauses';
 
 export enum AcicAggregation {
@@ -57,10 +59,8 @@ export enum ChartType {
   Gauge = 'Gauge',
   Pie = 'Pie',
   MultiBar = 'MultiBar',
-  MultiLine = 'MultiLine',
   MultiGauge = 'MultiGauge',
   StackedBar = 'StackedBar',
-  StackedArea = 'StackedArea',
   StackedGauge = 'StackedGauge',
   Heatmap = 'Heatmap',
 }
@@ -73,5 +73,8 @@ export type ChartProps = {
   where?: WhereClause[];
 };
 export type GroupByChartProps = ChartProps & {
-  groupBy: string;
+  groupBy?: string;
+};
+export type StackedChartProps = GroupByChartProps & {
+  stackOffset?: StackOffsetType;
 };

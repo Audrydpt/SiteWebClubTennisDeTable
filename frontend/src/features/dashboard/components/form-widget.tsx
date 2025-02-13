@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+import ClearableSelect from '@/components/clearable-select';
 import { WhereClauses } from '@/components/where-clauses';
 import {
   ChartTypeComponents,
@@ -121,10 +122,10 @@ const formSchema = z
     message: 'Layout is required',
     path: ['layout'],
   })
-  .refine((data) => !(getStackedOptions(data.type) && !data.groupBy), {
+  /* .refine((data) => !(getStackedOptions(data.type) && !data.groupBy), {
     message: 'Group by is required',
     path: ['groupBy'],
-  })
+  }) */
   .refine(
     (data) =>
       !(data.type === ChartType.Pie && data.aggregation !== data.duration),
@@ -233,7 +234,7 @@ export function FormWidget({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-5xl">
         <DialogHeader>
           <DialogTitle>
             {edition ? t('dashboard:widget.edit') : t('dashboard:widget.add')}
@@ -420,7 +421,7 @@ export function FormWidget({
                           <FormLabel>
                             {t('dashboard:widget.groupBy.label')}
                           </FormLabel>
-                          <Select
+                          <ClearableSelect
                             onValueChange={field.onChange}
                             defaultValue={field.value}
                             value={field.value}
@@ -444,7 +445,7 @@ export function FormWidget({
                                 )
                               )}
                             </SelectContent>
-                          </Select>
+                          </ClearableSelect>
                           <FormMessage />
                         </FormItem>
                       )}
