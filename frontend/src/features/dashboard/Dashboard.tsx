@@ -60,12 +60,12 @@ function DashboardContent() {
       <Header title="Dashboard">
         <FormDashboard onSubmit={handleAdd}>
           <Button variant="outline">
-            <Plus /> {t('dashboard:addDashboard')}
+            <Plus /> {t('dashboard:dashboard.add')}
           </Button>
         </FormDashboard>
         <FormWidget onSubmit={addWidgetFn}>
           <Button variant="outline">
-            <Plus /> {t('dashboard:addWidget')}
+            <Plus /> {t('dashboard:widget.add')}
           </Button>
         </FormWidget>
       </Header>
@@ -84,7 +84,7 @@ function DashboardContent() {
                 <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
                   <DeleteConfirmation
                     onDelete={() => handleDelete(key)}
-                    description="This action is irreversible. The dashboard will be permanently deleted."
+                    description={t('dashboard:dashboard.deleteConfirmation')}
                   >
                     <Button variant="destructive" className="h-4 w-4 p-0">
                       <Trash2 className="!h-3 !w-3" />

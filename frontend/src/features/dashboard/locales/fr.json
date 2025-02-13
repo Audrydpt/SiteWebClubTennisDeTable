@@ -1,4 +1,47 @@
 {
-  "addDashboard": "Ajouter un onglet",
-  "addWidget": "Ajouter une tuile"
+  "dashboard": {
+    "add": "Ajouter un onglet",
+    "edit": "Modifier l'onglet",
+    "title": "Titre de l'onglet",
+    "deleteConfirmation": "Cette action est irréversible. L'onglet sera supprimé définitivement."
+  },
+  "widget": {
+    "add": "Ajouter une vignette",
+    "edit": "Modifier la vignette",
+    "title": "Titre de la vignette",
+    "deleteConfirmation": "Cette action est irréversible. La vignette sera supprimée définitivement.",
+
+    "type": {
+      "label": "Type de vignette",
+      "placeholder": "Sélectionner un type"
+    },
+    "layout": {
+      "label": "Disposition de la vignette",
+      "placeholder": "Sélectionner une disposition"
+    },
+    "size": {
+      "label": "Taille de la vignette",
+      "placeholder": "Sélectionner une taille"
+    },
+    "table": {
+      "label": "Source",
+      "placeholder": "Sélectionner une source"
+    },
+    "groupBy": {
+      "label": "Grouper par",
+      "placeholder": "Sélectionner une colonne"
+    },
+    "filters": {
+      "label": "Filtres",
+      "placeholder": "Sélectionner un champ pour filtrer"
+    },
+    "aggregation": {
+      "label": "Agrégation",
+      "placeholder": "Sélectionner une agrégation"
+    },
+    "duration": {
+      "label": "Durée",
+      "placeholder": "Sélectionner une durée"
+    }
+  }
 }

@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   AlertDialog,
@@ -24,11 +25,20 @@ interface DeleteConfirmationProps {
 export default function DeleteConfirmation({
   onDelete,
   children,
-  title = 'Are you sure ?',
-  description = 'This action is irreversible and cannot be undone.',
-  cancelText = 'Cancel',
-  confirmText = 'Delete',
+  title,
+  description,
+  cancelText,
+  confirmText,
 }: DeleteConfirmationProps) {
+  const { t } = useTranslation();
+
+  const defaultValues = {
+    title: title || t('deleteConfirmation.title'),
+    description: description || t('deleteConfirmation.description'),
+    cancelText: cancelText || t('cancel'),
+    confirmText: confirmText || t('delete'),
+  };
+
   const handleDelete = (event: React.MouseEvent) => {
     event.stopPropagation();
     onDelete();
@@ -45,16 +55,18 @@ export default function DeleteConfirmation({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
+          <AlertDialogTitle>{defaultValues.title}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {defaultValues.description}
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>{cancelText}</AlertDialogCancel>
+          <AlertDialogCancel>{defaultValues.cancelText}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             className="bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90"
           >
-            {confirmText}
+            {defaultValues.confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

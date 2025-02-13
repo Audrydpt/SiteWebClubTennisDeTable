@@ -1,5 +1,6 @@
 import { Edit3, Trash2 } from 'lucide-react';
 import { JSX, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ReactSortable } from 'react-sortablejs';
 
 import DeleteConfirmation from '@/components/confirm-delete';
@@ -49,6 +50,7 @@ export default function DashboardTab({
 }: DashboardTabProps) {
   const { query, add, edit, remove, patch } = useWidgetAPI(dashboardKey);
   const { data, isLoading, isError } = query;
+  const { t } = useTranslation();
 
   useEffect(() => {
     onAddWidget(() => add);
@@ -114,7 +116,7 @@ export default function DashboardTab({
 
             <DeleteConfirmation
               onDelete={() => remove(item.id)}
-              description="This action is irreversible. The widget will be permanently deleted."
+              description={t('dashboard:widget.deleteConfirmation')}
             >
               <Button variant="destructive" size="icon" aria-label="Delete">
                 <Trash2 className="h-4 w-4" />

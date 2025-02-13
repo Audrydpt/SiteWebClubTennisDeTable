@@ -4,6 +4,7 @@ import { TriangleAlert } from 'lucide-react';
 import { Duration } from 'luxon';
 import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -160,6 +161,7 @@ export function FormWidget({
   defaultValues,
 }: FormWidgetProps) {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
 
   const { data } = useQuery({
     queryKey: ['dashboard', 'add_widget'],
@@ -234,7 +236,7 @@ export function FormWidget({
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>
-            {edition ? 'Edit a widget' : 'Add a widget'}
+            {edition ? t('dashboard:widget.edit') : t('dashboard:widget.add')}
           </DialogTitle>
         </DialogHeader>
         <div className="flex flex-row gap-6">
@@ -249,7 +251,7 @@ export function FormWidget({
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Title</FormLabel>
+                      <FormLabel>{t('dashboard:widget.title')}</FormLabel>
                       <Input {...field} />
                       <FormMessage />
                     </FormItem>
@@ -261,7 +263,7 @@ export function FormWidget({
                   name="type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Type</FormLabel>
+                      <FormLabel>{t('dashboard:widget.type.label')}</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
@@ -269,7 +271,11 @@ export function FormWidget({
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select the type" />
+                            <SelectValue
+                              placeholder={t(
+                                'dashboard:widget.type.placeholder'
+                              )}
+                            />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -299,7 +305,9 @@ export function FormWidget({
                       name="layout"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Layout</FormLabel>
+                          <FormLabel>
+                            {t('dashboard:widget.layout.label')}
+                          </FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
@@ -307,7 +315,11 @@ export function FormWidget({
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select the layout" />
+                                <SelectValue
+                                  placeholder={t(
+                                    'dashboard:widget.layout.placeholder'
+                                  )}
+                                />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -330,7 +342,9 @@ export function FormWidget({
                       name="size"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Size</FormLabel>
+                          <FormLabel>
+                            {t('dashboard:widget.size.label')}
+                          </FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
@@ -338,7 +352,11 @@ export function FormWidget({
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select the size" />
+                                <SelectValue
+                                  placeholder={t(
+                                    'dashboard:widget.size.placeholder'
+                                  )}
+                                />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -363,7 +381,9 @@ export function FormWidget({
                       name="table"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Table</FormLabel>
+                          <FormLabel>
+                            {t('dashboard:widget.table.label')}
+                          </FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
@@ -371,7 +391,11 @@ export function FormWidget({
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select the table" />
+                                <SelectValue
+                                  placeholder={t(
+                                    'dashboard:widget.table.placeholder'
+                                  )}
+                                />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -393,7 +417,9 @@ export function FormWidget({
                       name="groupBy"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Group by</FormLabel>
+                          <FormLabel>
+                            {t('dashboard:widget.groupBy.label')}
+                          </FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
@@ -402,7 +428,11 @@ export function FormWidget({
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select the group by" />
+                                <SelectValue
+                                  placeholder={t(
+                                    'dashboard:widget.groupBy.placeholder'
+                                  )}
+                                />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -427,7 +457,9 @@ export function FormWidget({
                   name="where"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Filters</FormLabel>
+                      <FormLabel>
+                        {t('dashboard:widget.filters.label')}
+                      </FormLabel>
                       <WhereClauses
                         columns={getGroupByOptions(data, formValues.table)}
                         value={Array.isArray(field.value) ? field.value : []}
@@ -445,7 +477,9 @@ export function FormWidget({
                       name="aggregation"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Aggregation</FormLabel>
+                          <FormLabel>
+                            {t('dashboard:widget.aggregation.label')}
+                          </FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             value={field.value}
@@ -453,7 +487,11 @@ export function FormWidget({
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select the aggregation" />
+                                <SelectValue
+                                  placeholder={t(
+                                    'dashboard:widget.aggregation.placeholder'
+                                  )}
+                                />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -475,7 +513,9 @@ export function FormWidget({
                       name="duration"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Duration</FormLabel>
+                          <FormLabel>
+                            {t('dashboard:widget.duration.label')}
+                          </FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
@@ -483,7 +523,11 @@ export function FormWidget({
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select the duration" />
+                                <SelectValue
+                                  placeholder={t(
+                                    'dashboard:widget.duration.placeholder'
+                                  )}
+                                />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -503,9 +547,9 @@ export function FormWidget({
 
                 <DialogFooter className="p-2">
                   <DialogClose asChild>
-                    <Button variant="outline">Close</Button>
+                    <Button variant="outline">{t('close')}</Button>
                   </DialogClose>
-                  <Button type="submit">Submit</Button>
+                  <Button type="submit">{t('submit')}</Button>
                 </DialogFooter>
               </form>
             </Form>

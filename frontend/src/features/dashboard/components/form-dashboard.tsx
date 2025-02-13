@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ReactNode, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,7 @@ export function FormDashboard({
   edition = false,
   defaultValues,
 }: FormWidgetProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   const form = useForm<DashboardSchema>({
@@ -71,7 +73,9 @@ export function FormDashboard({
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>
-            {edition ? 'Edit a dashboard' : 'Add a dashboard'}
+            {edition
+              ? t('dashboard:dashboard.edit')
+              : t('dashboard:dashboard.add')}
           </DialogTitle>
         </DialogHeader>
         <div className="flex flex-row gap-6">
@@ -86,7 +90,7 @@ export function FormDashboard({
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Title</FormLabel>
+                      <FormLabel>{t('dashboard:dashboard.title')}</FormLabel>
                       <Input {...field} />
                       <FormMessage />
                     </FormItem>
@@ -95,9 +99,9 @@ export function FormDashboard({
 
                 <DialogFooter className="p-2">
                   <DialogClose asChild>
-                    <Button variant="outline">Close</Button>
+                    <Button variant="outline">{t('close')}</Button>
                   </DialogClose>
-                  <Button type="submit">Submit</Button>
+                  <Button type="submit">{t('add')}</Button>
                 </DialogFooter>
               </form>
             </Form>

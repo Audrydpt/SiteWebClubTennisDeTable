@@ -1,3 +1,15 @@
 {
+  "add": "Add",
+  "submit": "Submit",
+  "edit": "Edit",
+  "close": "Close",
+  "cancel": "Cancel",
+  "delete": "Delete",
+
+  "deleteConfirmation": {
+    "title": "Are you sure?",
+    "description": "This action is irreversible and cannot be undone."
+  },
+
   "selectWorkspace": "Select a workspace"
 }

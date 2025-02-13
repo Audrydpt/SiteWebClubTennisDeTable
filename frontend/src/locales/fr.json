@@ -1,3 +1,15 @@
 {
+  "add": "Ajouter",
+  "submit": "Envoyer",
+  "edit": "Modifier",
+  "close": "Fermer",
+  "cancel": "Annuler",
+  "delete": "Supprimer",
+
+  "deleteConfirmation": {
+    "title": "Êtes-vous sûr ?",
+    "description": "Cette action est irréversible et ne peut pas être annulée."
+  },
+
   "selectWorkspace": "Sélectionner un espace de travail"
 }
