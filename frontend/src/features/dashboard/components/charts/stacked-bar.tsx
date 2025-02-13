@@ -120,6 +120,9 @@ export default function StackedBarComponent({
     return layout === 'horizontal' ? [4, 4, 0, 0] : [0, 4, 4, 0];
   };
 
+  const Axis1 = layout === 'horizontal' ? XAxis : YAxis;
+  const Axis2 = layout === 'horizontal' ? YAxis : XAxis;
+
   return (
     <Card className="w-full h-full flex flex-col justify-center items-center">
       <CardHeader>
@@ -136,55 +139,25 @@ export default function StackedBarComponent({
               vertical={layout === 'vertical'}
               horizontal={layout === 'horizontal'}
             />
-            {layout === 'horizontal' ? (
-              <>
-                <XAxis
-                  dataKey="timestamp"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  angle={-30}
-                  tickFormatter={(t: string) => CustomChartTickDate(t, format)}
-                  interval={interval}
-                />
-                <YAxis
-                  type="number"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  tickFormatter={(v: string) =>
-                    CustomChartTickValue(
-                      v,
-                      table === 'AcicOccupancy' ? '%' : ''
-                    )
-                  }
-                />
-              </>
-            ) : (
-              <>
-                <XAxis
-                  type="number"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  tickFormatter={(v: string) =>
-                    CustomChartTickValue(
-                      v,
-                      table === 'AcicOccupancy' ? '%' : ''
-                    )
-                  }
-                />
-                <YAxis
-                  dataKey="timestamp"
-                  type="category"
-                  tickLine={false}
-                  tickMargin={10}
-                  axisLine={false}
-                  tickFormatter={(t: string) => CustomChartTickDate(t, format)}
-                  interval={interval}
-                />
-              </>
-            )}
+
+            <Axis1
+              dataKey="timestamp"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              angle={-30}
+              tickFormatter={(t: string) => CustomChartTickDate(t, format)}
+              interval={interval}
+            />
+            <Axis2
+              type="number"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickFormatter={(v: string) =>
+                CustomChartTickValue(v, table === 'AcicOccupancy' ? '%' : '')
+              }
+            />
 
             <ChartTooltip
               content={
