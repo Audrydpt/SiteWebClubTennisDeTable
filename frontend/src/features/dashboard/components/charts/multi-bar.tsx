@@ -135,6 +135,7 @@ export default function MultiBarComponent({
 
             <Axis1
               dataKey="timestamp"
+              type="category"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
