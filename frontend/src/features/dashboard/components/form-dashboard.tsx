@@ -27,17 +27,17 @@ const formSchema = z.object({
   title: z.string(),
 });
 
-export type DashboardSchema = z.infer<typeof formSchema>;
+type DashboardSchema = z.infer<typeof formSchema>;
 export type StoredDashboard = DashboardSchema & {
   id?: string;
   order?: number;
 };
 
 type FormWidgetProps = {
-  onSubmit: (data: DashboardSchema) => void;
+  onSubmit: (data: StoredDashboard) => void;
   children: ReactNode;
   edition?: boolean;
-  defaultValues?: DashboardSchema;
+  defaultValues?: StoredDashboard;
 };
 
 export function FormDashboard({

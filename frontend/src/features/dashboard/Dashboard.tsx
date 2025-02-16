@@ -1,25 +1,34 @@
 import { Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import {
+  Navigate,
+  Route,
+  Routes,
+  useNavigate,
+  useParams,
+} from 'react-router-dom';
 
 import DeleteConfirmation from '@/components/confirm-delete';
 import Header from '@/components/header';
 import LoadingSpinner from '@/components/loading';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/providers/auth-context';
 
 import DashboardTab from './DashboardTab';
 import TestDashboard from './TestDashboard';
-import { DashboardSchema, FormDashboard } from './components/form-dashboard';
-import { FormWidget, WidgetSchema } from './components/form-widget';
+import { FormDashboard, StoredDashboard } from './components/form-dashboard';
+import { FormWidget, StoredWidget } from './components/form-widget';
 import useDashboardAPI from './hooks/use-dashboard';
 
 function DashboardContent() {
   const { dashboardId } = useParams();
-  const setDashboardId = useNavigate();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const isOperator = user?.privileges === 'Operator';
 
-  const [addWidgetFn, setAddWidgetFn] = useState<(d: WidgetSchema) => void>(
+  const [addWidgetFn, setAddWidgetFn] = useState<(d: StoredWidget) => void>(
     () => {}
   );
 
@@ -27,53 +36,62 @@ function DashboardContent() {
   const { data, isLoading, isError } = query;
   const { t } = useTranslation();
 
-  if (isError) return <div>Something went wrong</div>;
-  if (isLoading || !data) return <LoadingSpinner />;
-
   const effectiveDashboardId =
     data && (!dashboardId || !data[dashboardId])
       ? Object.keys(data)[0]
       : dashboardId;
 
+  useEffect(() => {
+    if (effectiveDashboardId !== dashboardId) {
+      navigate(`/dashboard/${effectiveDashboardId}`, { replace: true });
+    }
+  }, [effectiveDashboardId, dashboardId, navigate]);
+
+  if (isError) return <div>Something went wrong</div>;
+  if (isLoading || !data) return <LoadingSpinner />;
+
   const couldBeRemoved = (key: string) => {
-    if (!data) return false;
+    if (!data || isOperator) return false;
     if (Object.keys(data).length === 1) return false;
     if (key !== dashboardId) return false;
-    if (data[key].title.toLowerCase() === 'main dashboard') return false;
-    return true;
+    return data[key].title.toLowerCase() !== 'main dashboard';
   };
 
-  const handleAdd = async (d: DashboardSchema) => {
+  const handleAdd = async (d: StoredDashboard) => {
     const newDashboard = await add(d);
-    if (newDashboard.id) setDashboardId(newDashboard.id);
+    if (newDashboard.id) navigate(`/dashboard/${newDashboard.id}`);
   };
 
   const handleDelete = (key: string) => {
     if (couldBeRemoved(key)) {
       remove(key);
-      setDashboardId('');
+      navigate('/dashboard');
     }
   };
 
   return (
     <>
       <Header title="Dashboard">
-        <FormDashboard onSubmit={handleAdd}>
-          <Button variant="outline">
-            <Plus /> {t('dashboard:dashboard.add')}
-          </Button>
-        </FormDashboard>
-        <FormWidget onSubmit={addWidgetFn}>
-          <Button variant="outline">
-            <Plus /> {t('dashboard:widget.add')}
-          </Button>
-        </FormWidget>
+        {!isOperator && (
+          <FormDashboard onSubmit={handleAdd}>
+            <Button variant="outline">
+              <Plus /> {t('dashboard:dashboard.add')}
+            </Button>
+          </FormDashboard>
+        )}
+        {!isOperator && (
+          <FormWidget onSubmit={addWidgetFn}>
+            <Button variant="outline">
+              <Plus /> {t('dashboard:widget.add')}
+            </Button>
+          </FormWidget>
+        )}
       </Header>
 
       <Tabs
         className="w-full"
         value={effectiveDashboardId}
-        onValueChange={(value) => setDashboardId(value)}
+        onValueChange={(value) => navigate(`/dashboard/${value}`)}
       >
         <TabsList className="w-full justify-start">
           {Object.entries(data).map(([key, value]) => (
@@ -111,11 +129,19 @@ function DashboardContent() {
 }
 
 export default function Dashboard() {
+  const { isAuthenticated } = useAuth();
+  const { dashboardId } = useParams();
+
+  // If the user is not authenticated, we only show the dashboard if the dashboardId is set
+  if (!isAuthenticated) {
+    if (!dashboardId) return <Navigate to="/login" />;
+    return <DashboardTab dashboardKey={dashboardId} />;
+  }
+
   return (
     <Routes>
-      <Route path="/" element={<DashboardContent />}>
-        <Route path=":dashboardId" element={<DashboardContent />} />
-      </Route>
+      <Route path="/" element={<DashboardContent />} />
+      <Route path="/:dashboardId" element={<DashboardContent />} />
     </Routes>
   );
 }

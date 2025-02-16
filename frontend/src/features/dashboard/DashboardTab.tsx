@@ -6,12 +6,9 @@ import { ReactSortable } from 'react-sortablejs';
 import DeleteConfirmation from '@/components/confirm-delete';
 import LoadingSpinner from '@/components/loading';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/providers/auth-context';
 
-import {
-  FormWidget,
-  StoredWidget,
-  WidgetSchema,
-} from './components/form-widget';
+import { FormWidget, StoredWidget } from './components/form-widget';
 import useWidgetAPI from './hooks/use-widget';
 import { ChartTypeComponents } from './lib/const';
 import { ChartSize } from './lib/props';
@@ -41,15 +38,17 @@ export type ChartTiles = {
 
 interface DashboardTabProps {
   dashboardKey: string;
-  onAddWidget: (fn: (d: WidgetSchema) => void) => void;
+  onAddWidget?: (fn: (d: StoredWidget) => void) => void;
 }
 
 export default function DashboardTab({
   dashboardKey,
-  onAddWidget,
+  onAddWidget = () => {},
 }: DashboardTabProps) {
   const { query, add, edit, remove, patch } = useWidgetAPI(dashboardKey);
   const { data, isLoading, isError } = query;
+  const { user } = useAuth();
+  const isOperator = user?.privileges === 'Operator';
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -104,24 +103,28 @@ export default function DashboardTab({
         >
           {item.content}
           <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <FormWidget
-              onSubmit={(d) => edit({ ...item.widget, ...d })}
-              defaultValues={item.widget}
-              edition
-            >
-              <Button variant="outline" size="icon" area-label="Edit">
-                <Edit3 className="h-4 w-4" />
-              </Button>
-            </FormWidget>
+            {!isOperator && (
+              <FormWidget
+                onSubmit={(d) => edit({ ...item.widget, ...d })}
+                defaultValues={item.widget}
+                edition
+              >
+                <Button variant="outline" size="icon" area-label="Edit">
+                  <Edit3 className="h-4 w-4" />
+                </Button>
+              </FormWidget>
+            )}
 
-            <DeleteConfirmation
-              onDelete={() => remove(item.id)}
-              description={t('dashboard:widget.deleteConfirmation')}
-            >
-              <Button variant="destructive" size="icon" aria-label="Delete">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </DeleteConfirmation>
+            {!isOperator && (
+              <DeleteConfirmation
+                onDelete={() => remove(item.id)}
+                description={t('dashboard:widget.deleteConfirmation')}
+              >
+                <Button variant="destructive" size="icon" aria-label="Delete">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </DeleteConfirmation>
+            )}
           </div>
         </div>
       ))}

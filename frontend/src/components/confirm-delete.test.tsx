@@ -26,17 +26,15 @@ describe('DeleteConfirmation', () => {
       render(<DeleteConfirmation {...defaultProps} />);
       fireEvent.click(screen.getByRole('button', { name: 'Test' }));
 
-      expect(screen.getByText('Êtes-vous sûr ?')).toBeInTheDocument();
+      expect(screen.getByText('deleteConfirmation.title')).toBeInTheDocument();
       expect(
-        screen.getByText(
-          'Cette action est irréversible et ne pourra pas être annulée.'
-        )
+        screen.getByText('deleteConfirmation.description')
       ).toBeInTheDocument();
       expect(
-        screen.getByRole('button', { name: 'Annuler' })
+        screen.getByRole('button', { name: 'cancel' })
       ).toBeInTheDocument();
       expect(
-        screen.getByRole('button', { name: 'Supprimer' })
+        screen.getByRole('button', { name: 'delete' })
       ).toBeInTheDocument();
     });
 
@@ -73,28 +71,28 @@ describe('DeleteConfirmation', () => {
     it('calls onDelete when confirm button is clicked', () => {
       render(<DeleteConfirmation {...defaultProps} />);
       fireEvent.click(screen.getByRole('button', { name: 'Test' }));
-      fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }));
+      fireEvent.click(screen.getByRole('button', { name: 'delete' }));
       expect(defaultProps.onDelete).toHaveBeenCalledTimes(1);
     });
 
     it('does not call onDelete when cancel button is clicked', () => {
       render(<DeleteConfirmation {...defaultProps} />);
       fireEvent.click(screen.getByRole('button', { name: 'Test' }));
-      fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+      fireEvent.click(screen.getByRole('button', { name: 'cancel' }));
       expect(defaultProps.onDelete).not.toHaveBeenCalled();
     });
 
     it('closes dialog when cancel button is clicked', () => {
       render(<DeleteConfirmation {...defaultProps} />);
       fireEvent.click(screen.getByRole('button', { name: 'Test' }));
-      fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+      fireEvent.click(screen.getByRole('button', { name: 'cancel' }));
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     });
 
     it('closes dialog when confirm button is clicked', () => {
       render(<DeleteConfirmation {...defaultProps} />);
       fireEvent.click(screen.getByRole('button', { name: 'Test' }));
-      fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }));
+      fireEvent.click(screen.getByRole('button', { name: 'cancel' }));
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     });
   });
@@ -132,7 +130,7 @@ describe('DeleteConfirmation', () => {
       );
 
       fireEvent.click(screen.getByRole('button', { name: 'Test' }));
-      fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }));
+      fireEvent.click(screen.getByRole('button', { name: 'delete' }));
 
       expect(defaultProps.onDelete).toHaveBeenCalledTimes(1);
       expect(parentClick).not.toHaveBeenCalled();

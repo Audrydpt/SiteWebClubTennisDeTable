@@ -2,6 +2,8 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 
+import { UserPrivileges, UserType } from '@/lib/authenticate';
+
 // Mock the ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
@@ -90,6 +92,38 @@ Object.defineProperty(window, 'location', {
   },
   writable: true,
 });
+
+// Mock pointer events
+class MockPointerEvent extends Event {
+  button: number;
+  ctrlKey: boolean;
+  pointerType: string;
+
+  constructor(type: string, props: PointerEventInit) {
+    super(type, props);
+    this.button = props.button || 0;
+    this.ctrlKey = props.ctrlKey || false;
+    this.pointerType = props.pointerType || 'mouse';
+  }
+}
+
+window.PointerEvent = MockPointerEvent as any;
+window.HTMLElement.prototype.scrollIntoView = vi.fn();
+window.HTMLElement.prototype.releasePointerCapture = vi.fn();
+window.HTMLElement.prototype.hasPointerCapture = vi.fn();
+
+// Mock the auth context
+vi.mock('@/providers/auth-context', () => ({
+  useAuth: () => ({
+    user: {
+      user: 'Administrator',
+      privileges: UserPrivileges.Administrator,
+    } as UserType,
+    isAuthenticated: true,
+    isLoading: false,
+    sessionId: 'test-session-id',
+  }),
+}));
 
 afterEach(() => {
   cleanup();

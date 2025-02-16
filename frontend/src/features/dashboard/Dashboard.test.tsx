@@ -100,10 +100,10 @@ describe('Dashboard', () => {
       // Test for actual Header content
       expect(screen.getByText('Dashboard')).toBeInTheDocument();
       expect(
-        screen.getByRole('button', { name: /add dashboard/i })
+        screen.getByRole('button', { name: 'dashboard:dashboard.add' })
       ).toBeInTheDocument();
       expect(
-        screen.getByRole('button', { name: /add widget/i })
+        screen.getByRole('button', { name: 'dashboard:widget.add' })
       ).toBeInTheDocument();
     });
 
@@ -141,7 +141,7 @@ describe('Dashboard', () => {
         </MemoryRouter>
       );
 
-      const addButton = screen.getByText(/add dashboard/i);
+      const addButton = screen.getByText('dashboard:dashboard.add');
       await userEvent.click(addButton);
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -214,7 +214,7 @@ describe('Dashboard', () => {
       });
       await userEvent.click(secondaryTab);
 
-      expect(mockNavigate).toHaveBeenCalledWith('dashboard-2');
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard/dashboard-2');
     });
   });
 });

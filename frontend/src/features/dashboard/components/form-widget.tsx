@@ -119,7 +119,7 @@ const formSchema = z
     path: ['aggregation'],
   })
   .refine((data) => getLayoutOptions(data.type).includes(data.layout), {
-    message: 'Layout is required',
+    message: 'SidebarLayout is required',
     path: ['layout'],
   })
   /* .refine((data) => !(getStackedOptions(data.type) && !data.groupBy), {
@@ -142,17 +142,17 @@ const formSchema = z
       path: ['size'],
     }
   );
-export type WidgetSchema = z.infer<typeof formSchema>;
+type WidgetSchema = z.infer<typeof formSchema>;
 export type StoredWidget = WidgetSchema & {
   id?: string;
   order?: number;
 };
 
 type FormWidgetProps = {
-  onSubmit: (data: WidgetSchema) => void;
+  onSubmit: (data: StoredWidget) => void;
   children: ReactNode;
   edition?: boolean;
-  defaultValues?: WidgetSchema;
+  defaultValues?: StoredWidget;
 };
 
 export function FormWidget({

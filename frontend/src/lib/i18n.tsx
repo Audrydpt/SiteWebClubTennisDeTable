@@ -47,10 +47,23 @@ export function lazyLoadFeature<T>(
     await Promise.all(
       languages.map(async (lang) => {
         if (!i18n.hasResourceBundle(lang, featureName)) {
-          const module = await import(
-            `@/features/${featureName}/locales/${lang}.json`
-          );
-          i18n.addResourceBundle(lang, featureName, module.default, true, true);
+          try {
+            const module = await import(
+              `@/features/${featureName}/locales/${lang}.json`
+            );
+            i18n.addResourceBundle(
+              lang,
+              featureName,
+              module.default,
+              true,
+              true
+            );
+          } catch {
+            // eslint-disable-next-line no-console
+            console.error(
+              `Impossible de charger les ressources de la feature ${featureName} pour la langue ${lang}`
+            );
+          }
         }
       })
     );

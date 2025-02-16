@@ -33,5 +33,10 @@ export default defineConfig(({ mode }) => {
       globals: true,
       setupFiles: './vitest-setup.ts',
     },
+    server: {
+      watch: {
+        usePolling: true,
+      },
+    },
   };
 });

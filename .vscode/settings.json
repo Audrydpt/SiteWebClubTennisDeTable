@@ -12,5 +12,6 @@
   "prettier.configPath": "frontend/package.json",
   "python.terminal.activateEnvInCurrentTerminal": true,
   "files.eol": "\n",
-  "prettier.endOfLine": "lf"
+  "prettier.endOfLine": "lf",
+  "prettier.requireConfig": false
 }

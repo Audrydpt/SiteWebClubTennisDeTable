@@ -263,9 +263,7 @@ describe('DashboardTab', () => {
         const dialog = screen.getByRole('alertdialog');
         expect(dialog).toBeInTheDocument();
 
-        screen.debug();
-
-        const confirm = within(dialog).getByText('Supprimer');
+        const confirm = within(dialog).getByText('delete');
         await userEvent.click(confirm);
 
         expect(mockRemove).toHaveBeenCalledWith('widget-1');

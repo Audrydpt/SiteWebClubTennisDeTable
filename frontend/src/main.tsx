@@ -5,6 +5,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 
 import App from './App.tsx';
 import './index.css';
+import AuthProvider from './providers/auth-provider.tsx';
 import HttpsProvider from './providers/https-provider.tsx';
 import ThemeProvider from './providers/theme-provider.tsx';
 
@@ -16,9 +17,11 @@ createRoot(document.getElementById('root')!).render(
     <HttpsProvider>
       <ThemeProvider defaultTheme="light" storageKey="ui-theme">
         <QueryClientProvider client={queryClient}>
-          <Router basename={basename}>
-            <App />
-          </Router>
+          <AuthProvider>
+            <Router basename={basename}>
+              <App />
+            </Router>
+          </AuthProvider>
         </QueryClientProvider>
       </ThemeProvider>
     </HttpsProvider>

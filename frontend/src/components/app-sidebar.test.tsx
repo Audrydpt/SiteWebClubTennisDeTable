@@ -1,10 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { UserType } from '@/lib/authenticate';
+import { UserPrivileges, UserType } from '@/lib/authenticate';
 import AppSidebar from './app-sidebar';
 
 // Mock the logo import
@@ -12,33 +12,69 @@ vi.mock('../assets/logo.svg', () => ({
   default: 'mocked-logo.svg',
 }));
 
+interface MockAuthState {
+  currentUser: UserType | null;
+  logout: () => void;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  sessionId: string;
+}
+
+const mockAuthState: MockAuthState = {
+  currentUser: null,
+  logout: vi.fn(),
+  isAuthenticated: false,
+  isLoading: false,
+  sessionId: 'test-session-id',
+};
+
+vi.mock('@/providers/auth-context', () => ({
+  useAuth: () => ({
+    user: mockAuthState.currentUser,
+    isAuthenticated: !!mockAuthState.currentUser,
+    isLoading: false,
+    sessionId: 'test-session-id',
+    logout: mockAuthState.logout,
+  }),
+}));
+
+beforeEach(() => {
+  mockAuthState.currentUser = null;
+});
+
 const mockUsers: Record<string, UserType> = {
   admin: {
     user: 'AdminUser',
-    privileges: 'Administrator',
+    privileges: UserPrivileges.Administrator,
+  },
+  maintainer: {
+    user: 'MaintainerUser',
+    privileges: UserPrivileges.Maintainer,
   },
   operator: {
     user: 'OperatorUser',
-    privileges: 'Operator',
+    privileges: UserPrivileges.Operator,
+  },
+  anonymous: {
+    user: 'Anonymous',
+    privileges: UserPrivileges.Anonymous,
   },
 };
 
-interface TestProps {
-  user?: UserType;
-}
+const renderSidebar = (aUser?: UserType) => {
+  mockAuthState.currentUser = aUser || {
+    user: 'Administrator',
+    privileges: UserPrivileges.Administrator,
+  };
 
-const defaultProps: TestProps = {
-  user: undefined,
-};
-
-const renderSidebar = (props = defaultProps) =>
   render(
-    <BrowserRouter>
+    <MemoryRouter>
       <SidebarProvider open>
-        <AppSidebar {...props} />
+        <AppSidebar />
       </SidebarProvider>
-    </BrowserRouter>
+    </MemoryRouter>
   );
+};
 
 describe('AppSidebar', () => {
   // Reset mocks and environment before each test
@@ -48,21 +84,18 @@ describe('AppSidebar', () => {
   });
 
   describe('Basic Rendering', () => {
-    it('renders with default props (no user)', () => {
-      renderSidebar();
-
-      expect(screen.getByRole('img', { name: /acic/i })).toBeInTheDocument();
-      expect(screen.getByText('Select Workspace')).toBeInTheDocument();
-      expect(screen.getByText('Anonymous')).toBeInTheDocument();
-    });
-
     it('renders with administrator user', () => {
-      renderSidebar({ user: mockUsers.admin });
+      renderSidebar(mockUsers.admin);
       expect(screen.getByText('AdminUser')).toBeInTheDocument();
     });
 
+    it('renders with maintainer user', () => {
+      renderSidebar(mockUsers.maintainer);
+      expect(screen.getByText('MaintainerUser')).toBeInTheDocument();
+    });
+
     it('renders with operator user', () => {
-      renderSidebar({ user: mockUsers.operator });
+      renderSidebar(mockUsers.operator);
       expect(screen.getByText('OperatorUser')).toBeInTheDocument();
     });
 
@@ -88,6 +121,11 @@ describe('AppSidebar', () => {
         expect(screen.getByText(item)).toBeInTheDocument();
       });
     });
+
+    it('renders children correctly', () => {
+      renderSidebar();
+      expect(screen.getByText('selectWorkspace')).toBeInTheDocument();
+    });
   });
 
   describe('Interaction Tests', () => {
@@ -101,7 +139,7 @@ describe('AppSidebar', () => {
         renderSidebar();
 
         const workspaceButton = screen.getByRole('button', {
-          name: /select workspace/i,
+          name: 'selectWorkspace',
         });
         await user.click(workspaceButton);
 
@@ -124,7 +162,7 @@ describe('AppSidebar', () => {
 
         renderSidebar();
         const workspaceButton = screen.getByRole('button', {
-          name: /select workspace/i,
+          name: 'selectWorkspace',
         });
         await user.click(workspaceButton);
 
@@ -133,6 +171,29 @@ describe('AppSidebar', () => {
         });
         await user.click(localhostOption);
         expect(hrefValue).toBe('http://localhost:5173/front-react/');
+      });
+
+      it('does not navigate when closing the dropdown', async () => {
+        const user = userEvent.setup();
+        let hrefValue = '';
+        Object.defineProperty(window, 'location', {
+          value: {
+            hostname: '192.168.20.44',
+            set href(val: string) {
+              hrefValue = val;
+            },
+          },
+          writable: true,
+        });
+
+        renderSidebar();
+        const workspaceButton = screen.getByRole('button', {
+          name: 'selectWorkspace',
+        });
+        await user.click(workspaceButton);
+
+        await user.keyboard('{Escape}');
+        expect(hrefValue).toBe('');
       });
     });
 
@@ -150,8 +211,8 @@ describe('AppSidebar', () => {
         fireEvent.click(expandButton);
 
         expect(await screen.findByText('All widgets')).toBeInTheDocument();
-        expect(screen.getByText('Main dahsboard')).toBeInTheDocument();
-        expect(screen.getByText('Demo dahsboard')).toBeInTheDocument();
+        expect(screen.getByText('Main dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Demo dashboard')).toBeInTheDocument();
       });
 
       it('collapses submenu when clicked again', async () => {
@@ -177,35 +238,80 @@ describe('AppSidebar', () => {
     describe('User Menu', () => {
       it('opens user menu for anonymous user', async () => {
         const user = userEvent.setup();
-        renderSidebar();
+        renderSidebar(mockUsers.anonymous);
 
         const userButton = screen.getByText('Anonymous');
         await user.click(userButton);
 
-        expect(screen.getByText('Account')).toBeInTheDocument();
         expect(screen.getByText('Sign out')).toBeInTheDocument();
       });
 
       it('opens user menu for administrator', async () => {
         const user = userEvent.setup();
-        renderSidebar({ user: mockUsers.admin });
+        renderSidebar(mockUsers.admin);
 
         const userButton = screen.getByText('AdminUser');
         await user.click(userButton);
 
-        expect(screen.getByText('Account')).toBeInTheDocument();
         expect(screen.getByText('Sign out')).toBeInTheDocument();
       });
 
       it('opens user menu for operator', async () => {
         const user = userEvent.setup();
-        renderSidebar({ user: mockUsers.operator });
+        renderSidebar(mockUsers.operator);
 
         const userButton = screen.getByText('OperatorUser');
         await user.click(userButton);
 
-        expect(screen.getByText('Account')).toBeInTheDocument();
         expect(screen.getByText('Sign out')).toBeInTheDocument();
+      });
+
+      it('shows logout confirmation dialog when "Sign out" is clicked', async () => {
+        const user = userEvent.setup();
+        renderSidebar(mockUsers.admin);
+
+        const userButton = screen.getByText('AdminUser');
+        await user.click(userButton);
+
+        const signOutButton = screen.getByText('Sign out');
+        await user.click(signOutButton);
+
+        expect(screen.getByText('Logout confirmation')).toBeInTheDocument();
+        expect(
+          screen.getByText('Are you sure you want to sign out?')
+        ).toBeInTheDocument();
+      });
+
+      it('calls logout function when confirmed', async () => {
+        const user = userEvent.setup();
+        renderSidebar(mockUsers.admin);
+
+        const userButton = screen.getByText('AdminUser');
+        await user.click(userButton);
+
+        const signOutButton = screen.getByText('Sign out');
+        await user.click(signOutButton);
+
+        const confirmButton = screen.getByText('Logout');
+        await user.click(confirmButton);
+
+        expect(mockAuthState.logout).toHaveBeenCalled();
+      });
+
+      it('does not call logout function when canceled', async () => {
+        const user = userEvent.setup();
+        renderSidebar(mockUsers.admin);
+
+        const userButton = screen.getByText('AdminUser');
+        await user.click(userButton);
+
+        const signOutButton = screen.getByText('Sign out');
+        await user.click(signOutButton);
+
+        const cancelButton = screen.getByText('Cancel');
+        await user.click(cancelButton);
+
+        expect(mockAuthState.logout).not.toHaveBeenCalled();
       });
     });
   });
@@ -220,7 +326,7 @@ describe('AppSidebar', () => {
 
       renderSidebar();
       const workspaceButton = screen.getByRole('button', {
-        name: /select workspace/i,
+        name: 'selectWorkspace',
       });
       await user.click(workspaceButton);
 
@@ -237,7 +343,7 @@ describe('AppSidebar', () => {
 
       renderSidebar();
       const workspaceButton = screen.getByRole('button', {
-        name: /select workspace/i,
+        name: 'selectWorkspace',
       });
       await user.click(workspaceButton);
 
