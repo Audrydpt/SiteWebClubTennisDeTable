@@ -2,9 +2,13 @@ import i18n from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import React from 'react';
 import { initReactI18next } from 'react-i18next';
+import { z } from 'zod';
+import { zodI18nMap } from 'zod-i18n-map';
+import zodEN from 'zod-i18n-map/locales/en/zod.json';
+import zodFR from 'zod-i18n-map/locales/fr/zod.json';
 
-import en from '@/locales/en.json';
-import fr from '@/locales/fr.json';
+import commonEN from '@/locales/en.json';
+import commonFR from '@/locales/fr.json';
 
 i18n
   .use(LanguageDetector)
@@ -21,13 +25,17 @@ i18n
     defaultNS: 'common',
     resources: {
       en: {
-        common: en,
+        common: commonEN,
+        zod: zodEN,
       },
       fr: {
-        common: fr,
+        common: commonFR,
+        zod: zodFR,
       },
     },
   });
+
+z.setErrorMap(zodI18nMap);
 
 export function lazyLoadFeature<T>(
   featureName: string,

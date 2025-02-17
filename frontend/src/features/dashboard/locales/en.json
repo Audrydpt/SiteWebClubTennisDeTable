@@ -43,5 +43,23 @@
       "label": "Duration",
       "placeholder": "Select a duration"
     }
+  },
+  "validation": {
+    "aggregation": {
+      "tooLarge": "Aggregation period must be smaller than or equal to duration",
+      "tooManyPoints": "Aggregation period is too small for the given duration"
+    },
+    "layout": {
+      "required": "Layout is required"
+    },
+    "pie": {
+      "sameAggregation": "Pie chart must have the same aggregation and duration"
+    },
+    "heatmap": {
+      "fullSize": "Heatmap should be full size"
+    },
+    "title": {
+      "minLength": "Title must be at least {{count}} characters"
+    }
   }
 }
