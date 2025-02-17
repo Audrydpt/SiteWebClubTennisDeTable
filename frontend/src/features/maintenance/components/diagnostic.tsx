@@ -2,8 +2,11 @@ import React from 'react';
 import { FileText, Activity, CircleArrowOutUpRight } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import useDump from '../hooks/use-dump';
 
 function Diagnostic() {
+  const { downloadDump, loading } = useDump();
+
   return (
     <Card>
       <CardHeader>
@@ -13,9 +16,14 @@ function Diagnostic() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Button variant="secondary" className="w-full">
+        <Button
+          variant="secondary"
+          className="w-full"
+          onClick={downloadDump}
+          disabled={loading}
+        >
           <FileText className="mr-2" />
-          Create Server Report
+          {loading ? 'Generating Report...' : 'Create Server Report'}
         </Button>
         <Button variant="outline" className="w-full mt-2">
           <CircleArrowOutUpRight className="mr-2" />
