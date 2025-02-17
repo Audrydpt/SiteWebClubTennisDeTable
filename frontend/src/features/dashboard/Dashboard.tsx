@@ -21,6 +21,7 @@ import TestDashboard from './TestDashboard';
 import { FormDashboard, StoredDashboard } from './components/form-dashboard';
 import { FormWidget, StoredWidget } from './components/form-widget';
 import useDashboardAPI from './hooks/use-dashboard';
+import PublicDashboard from '@/features/dashboard/PublicDashboard.tsx';
 
 function DashboardContent() {
   const { dashboardId } = useParams();
@@ -132,10 +133,9 @@ export default function Dashboard() {
   const { isAuthenticated } = useAuth();
   const { dashboardId } = useParams();
 
-  // If the user is not authenticated, we only show the dashboard if the dashboardId is set
   if (!isAuthenticated) {
     if (!dashboardId) return <Navigate to="/login" />;
-    return <DashboardTab dashboardKey={dashboardId} />;
+    return <PublicDashboard dashboardKey={dashboardId} />;
   }
 
   return (

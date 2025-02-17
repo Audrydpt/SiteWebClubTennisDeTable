@@ -1,5 +1,4 @@
 import { JSX } from 'react';
-import { useParams } from 'react-router-dom';
 
 import LoadingSpinner from '@/components/loading';
 
@@ -32,9 +31,15 @@ export type ChartTiles = {
   widget: StoredWidget;
 };
 
-export default function PublicDashboard() {
-  const { dashboardId } = useParams();
-  const { query } = useWidgetAPI(dashboardId || '');
+export interface PublicDashboardProps {
+  dashboardKey: string;
+}
+
+export default function PublicDashboard({
+  dashboardKey,
+}: PublicDashboardProps) {
+  const { query } = useWidgetAPI(dashboardKey);
+
   const { data, isLoading, isError } = query;
 
   if (isError) {
