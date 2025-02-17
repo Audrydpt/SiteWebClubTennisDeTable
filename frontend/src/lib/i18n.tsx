@@ -30,19 +30,10 @@ i18n
   });
 
 export function lazyLoadFeature<T>(
+  featureName: string,
   importFunc: () => Promise<{ default: React.ComponentType<T> }>,
   languages: string[] = ['en', 'fr']
 ) {
-  // On extrait le nom de la feature en cherchant le pattern "/features/{{featureName}}/"
-  const fnStr = importFunc.toString();
-  const match = fnStr.match(/\/features\/(\w+)\//);
-  if (!match || !match[1]) {
-    throw new Error(
-      "Impossible de déduire le nom de la feature depuis le chemin d'import"
-    );
-  }
-  const featureName = match[1];
-
   return React.lazy(async () => {
     await Promise.all(
       languages.map(async (lang) => {
