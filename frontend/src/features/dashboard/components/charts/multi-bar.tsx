@@ -69,7 +69,7 @@ export default function MultiBarComponent({
     return (data as DataType[]).reduce<ProcessedData>(
       (acc, item) => {
         const { timestamp, count } = item;
-        const groupValue = item[groupBy];
+        const groupValue = groupBy ? item[groupBy] : 'count';
 
         if (!acc.dataMerged[timestamp]) {
           acc.dataMerged[timestamp] = { timestamp };
@@ -79,7 +79,7 @@ export default function MultiBarComponent({
 
         if (!acc.chartConfig[groupValue]) {
           acc.chartConfig[groupValue] = {
-            label: CustomChartLabel(item[groupBy], groupBy),
+            label: CustomChartLabel(item[groupValue], String(groupValue)),
           };
         }
 

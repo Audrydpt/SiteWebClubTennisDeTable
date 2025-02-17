@@ -69,11 +69,11 @@ export default function PieComponent({
 
     const processed = (data as DataType[]).reduce<ProcessedData>(
       (acc, item) => {
-        const groupValue = item[groupBy];
+        const groupValue = groupBy ? item[groupBy] : 'count';
         const { count } = item;
 
         const existingGroup = acc.dataMerged.find(
-          (d) => d[groupBy] === groupValue
+          (d) => d[groupValue] === groupValue
         );
 
         if (existingGroup) {
@@ -84,7 +84,7 @@ export default function PieComponent({
 
           acc.dataMerged.push({
             count,
-            [groupBy]: groupValue,
+            [groupValue]: groupValue,
             name: String(groupValue),
             fill: color,
           });

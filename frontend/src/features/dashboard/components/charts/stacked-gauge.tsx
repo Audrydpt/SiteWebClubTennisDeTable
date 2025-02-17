@@ -67,7 +67,7 @@ export default function StackedGaugeComponent({
 
     return (data as DataType[]).reduce<ProcessedData>(
       (acc, item) => {
-        const groupValue = item[groupBy];
+        const groupValue = groupBy ? item[groupBy] : 'count';
         const { count } = item;
 
         if (!acc.dataMerged[0]) {

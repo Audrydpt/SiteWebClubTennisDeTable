@@ -71,7 +71,7 @@ export default function StackedBarComponent({
     return (data as DataType[]).reduce<ProcessedData>(
       (acc, item) => {
         const { timestamp, count } = item;
-        const groupValue = item[groupBy];
+        const groupValue = groupBy ? item[groupBy] : 'count';
 
         if (!acc.dataMerged[timestamp]) {
           acc.dataMerged[timestamp] = { timestamp };

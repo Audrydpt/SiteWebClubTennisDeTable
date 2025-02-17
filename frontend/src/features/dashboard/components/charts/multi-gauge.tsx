@@ -66,11 +66,11 @@ export default function MultiGaugeComponent({
 
     return (data as DataType[]).reduce<ProcessedData>(
       (acc, item) => {
-        const groupValue = item[groupBy];
+        const groupValue = groupBy ? item[groupBy] : 'count';
         const { count } = item;
 
         const existingGroup = acc.dataMerged.find(
-          (d) => d[groupBy] === groupValue
+          (d) => d[groupValue] === groupValue
         );
 
         if (existingGroup) {
@@ -79,7 +79,7 @@ export default function MultiGaugeComponent({
           const groupIndex = acc.dataMerged.length;
           acc.dataMerged.push({
             count,
-            [groupBy]: groupValue,
+            [groupValue]: groupValue,
             fill: `hsl(var(--chart-${(groupIndex % 5) + 1}))`,
             name: String(groupValue),
           });
