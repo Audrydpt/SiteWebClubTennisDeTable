@@ -75,7 +75,15 @@ class FastAPIServer:
                 "database": "ok",
                 "grabbers": grabbers
             }
-        
+
+
+        @self.app.get("/health/aiServer/{ip}")
+        async def health_ai_server(ip: str):
+
+            return {
+                "sattus": "ok"
+            }
+
         @self.app.get("/servers/grabbers", tags=["servers"])
         async def get_all_servers(health: Optional[bool] = False):
             try:
@@ -185,7 +193,7 @@ class FastAPIServer:
                 return dal.remove(obj[0])
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
-        
+
     def __create_widgets(self):
         fields = {}
         for column in inspect(Widget).mapper.column_attrs:
