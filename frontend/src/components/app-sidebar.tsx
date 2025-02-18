@@ -362,7 +362,7 @@ export default function AppSidebar() {
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-4 mt-4">
-            <Button variant="default" onClick={cancelLogout}>
+            <Button variant="ghost" onClick={cancelLogout}>
               Cancel
             </Button>
             <Button variant="destructive" onClick={confirmLogout}>
