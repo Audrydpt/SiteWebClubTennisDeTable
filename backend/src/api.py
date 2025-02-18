@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import Field, create_model
 from sqlalchemy import func, JSON
 import uvicorn
-from fastapi import Depends, FastAPI, HTTPException, Query, requests
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from typing import Annotated, Literal, Optional, Type, Union, List, Dict, Any
@@ -17,6 +17,8 @@ from swagger import get_custom_swagger_ui_html
 from event_grabber import EventGrabber
 from database import Dashboard, GenericDAL, Widget
 from database import AcicAllInOneEvent, AcicCounting, AcicEvent, AcicLicensePlate, AcicNumbering, AcicOCR, AcicOccupancy, AcicUnattendedItem
+
+import requests
 
 class ModelName(str, Enum):
     minute = "1 minute"
