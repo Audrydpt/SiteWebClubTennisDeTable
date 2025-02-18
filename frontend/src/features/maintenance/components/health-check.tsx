@@ -28,7 +28,7 @@ function HealthCheck() {
 
     try {
       const response = await fetch(
-        'https://192.168.20.145/front-api/health/aiServer'
+        'https://192.168.20.145/front-api/health/aiServer/192.168.20.145'
       );
       const data = await response.json();
       setStatus(data.status);
