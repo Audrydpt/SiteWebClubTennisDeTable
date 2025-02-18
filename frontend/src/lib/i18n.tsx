@@ -2,9 +2,13 @@ import i18n from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import React from 'react';
 import { initReactI18next } from 'react-i18next';
+import { z } from 'zod';
+import { zodI18nMap } from 'zod-i18n-map';
+import zodEN from 'zod-i18n-map/locales/en/zod.json';
+import zodFR from 'zod-i18n-map/locales/fr/zod.json';
 
-import en from '@/locales/en.json';
-import fr from '@/locales/fr.json';
+import commonEN from '@/locales/en.json';
+import commonFR from '@/locales/fr.json';
 
 i18n
   .use(LanguageDetector)
@@ -21,28 +25,23 @@ i18n
     defaultNS: 'common',
     resources: {
       en: {
-        common: en,
+        common: commonEN,
+        zod: zodEN,
       },
       fr: {
-        common: fr,
+        common: commonFR,
+        zod: zodFR,
       },
     },
   });
 
+z.setErrorMap(zodI18nMap);
+
 export function lazyLoadFeature<T>(
+  featureName: string,
   importFunc: () => Promise<{ default: React.ComponentType<T> }>,
   languages: string[] = ['en', 'fr']
 ) {
-  // On extrait le nom de la feature en cherchant le pattern "/features/{{featureName}}/"
-  const fnStr = importFunc.toString();
-  const match = fnStr.match(/\/features\/(\w+)\//);
-  if (!match || !match[1]) {
-    throw new Error(
-      "Impossible de déduire le nom de la feature depuis le chemin d'import"
-    );
-  }
-  const featureName = match[1];
-
   return React.lazy(async () => {
     await Promise.all(
       languages.map(async (lang) => {

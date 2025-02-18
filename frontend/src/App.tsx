@@ -9,21 +9,26 @@ import { lazyLoadFeature } from './lib/i18n';
 import Login from './pages/Login';
 
 const Dashboard = lazyLoadFeature(
+  'dashboard',
   () => import('./features/dashboard/Dashboard')
 );
 const DemoDashboard = lazyLoadFeature(
+  'dashboard',
   () => import('./features/dashboard/DemoDashboard')
 );
 const TestDashboard = lazyLoadFeature(
+  'dashboard',
   () => import('./features/dashboard/TestDashboard')
 );
 const ExportDashboard = lazyLoadFeature(
+  'dashboard',
   () => import('./features/dashboard/ExportDashboard')
 );
 const Maintenance = lazyLoadFeature(
+  'maintenance',
   () => import('./features/maintenance/Maintenance')
 );
-const Users = lazyLoadFeature(() => import('./features/users/Users'));
+const Users = lazyLoadFeature('users', () => import('./features/users/Users'));
 
 export default function App() {
   return (
