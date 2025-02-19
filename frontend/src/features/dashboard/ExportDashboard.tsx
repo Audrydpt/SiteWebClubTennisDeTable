@@ -5,7 +5,7 @@ import { useState } from 'react';
 import Header from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { defineStepper } from '@/components/ui/stepper';
-import StepSource from './components/export-source';
+import { AcicEvent } from './lib/props';
 
 const {
   StepperProvider,
@@ -22,16 +22,20 @@ const {
 
 export default function ExportDashboard() {
   const [formData, setFormData] = useState({
-    eventType: '',
-    startDate: '',
-    endDate: '',
-    streamIds: [],
-    tables: [],
+    source: {
+      startDate: '',
+      endDate: '',
+      table: {} as AcicEvent,
+      streams: [] as number[],
+    },
+    options: {
+      groupBy: '',
+      aggregation: '',
+      where: [],
+    },
+    format: 'Excel' as 'Excel' | 'PDF',
   });
 
-  const handleFormUpdate = (updates: Partial<typeof formData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
-  };
   return (
     <>
       <Header title="Export Dashboard"> </Header>
@@ -40,18 +44,20 @@ export default function ExportDashboard() {
           <>
             <StepperNavigation className="p-8">
               {methods.all.map((step) => (
-                <StepperStep of={step.id} onClick={() => methods.goTo(step.id)}>
+                <StepperStep
+                  key={step.id}
+                  of={step.id}
+                  onClick={() => methods.goTo(step.id)}
+                >
                   <StepperTitle>{step.title}</StepperTitle>
                 </StepperStep>
               ))}
             </StepperNavigation>
             <StepperPanel className="h-[600px] content-center rounded border bg-slate-50 p-8">
               {methods.switch({
-                'step-1': (step) => (
-                  <StepSource formData={formData} onUpdate={handleFormUpdate} />
-                ),
-                'step-2': (step) => <div>Step: {step.id}</div>,
-                'step-3': (step) => <div>Step: {step.id}</div>,
+                'step-1': () => <div>StepSource</div>,
+                'step-2': () => <div>StepOptions</div>,
+                'step-3': () => <div>StepFormat</div>,
               })}
             </StepperPanel>
             <StepperControls className="p-8">
