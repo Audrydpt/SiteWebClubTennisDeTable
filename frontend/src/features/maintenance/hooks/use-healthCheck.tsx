@@ -3,12 +3,12 @@ import checkAIService from '../lib/tests/ai-service';
 import checkCameraAnomaly from '../lib/tests/camera-anomaly';
 import checkCameraActivity from '../lib/tests/camera-activity';
 import checkImageInStreams from '../lib/tests/image-in-streams';
+import checkAverageFps from '../lib/tests/average-fps';
 import {
   HealthStatus,
   HealthResult,
   HealthState,
   ServiceType,
-  Item,
 } from '../lib/utils/types';
 
 export default function useHealthCheck() {
@@ -38,6 +38,10 @@ export default function useHealthCheck() {
       name: ServiceType.IMAGE_IN_STREAMS,
       fn: checkImageInStreams,
     },
+    {
+      name: ServiceType.AVERAGE_FPS,
+      fn: checkAverageFps,
+    },
   ];
 
   async function startHealthCheck(sessionId: string) {
@@ -56,6 +60,7 @@ export default function useHealthCheck() {
 
           const testPromise = test.fn(sessionId);
           const result = await Promise.race([testPromise, timeoutPromise]);
+
           const progress = ((index + 1) / tests.length) * 100;
 
           setHealthCheckState(
@@ -81,11 +86,13 @@ export default function useHealthCheck() {
             ],
           };
 
+          const progress = ((index + 1) / tests.length) * 100;
+
           setHealthCheckState(
             (prev: HealthState): HealthState => ({
               ...prev,
               statuses: { ...prev.statuses, [test.name]: errorResult },
-              progress: ((index + 1) / tests.length) * 100,
+              progress,
             })
           );
 
@@ -93,11 +100,11 @@ export default function useHealthCheck() {
         }
       })
     );
-
     setHealthCheckState(
       (prev: HealthState): HealthState => ({
         ...prev,
         running: false,
+        progress: 100,
         statuses: Object.fromEntries(
           results.map(({ name, result }) => [name, result])
         ),

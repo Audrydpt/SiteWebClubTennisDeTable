@@ -65,9 +65,7 @@ function HealthCheck() {
   };
 
   const handleStartHealthCheck = () => {
-    // Check if sessionId is defined before starting
     if (!sessionId) {
-      console.error('Session ID is undefined.');
       return;
     }
     setHasStarted(true);
@@ -76,13 +74,19 @@ function HealthCheck() {
 
   const renderDetailItem = (service: ServiceType, item: DetailItem) => {
     if (service === ServiceType.CAMERA_ACTIVITY) {
-      return `${item.name || item.id} ${item.reason}`;
+      return `${item.name || item.id} ${item.message}`;
     }
     if (service === ServiceType.CAMERA_ANOMALY) {
       return `Stream ${item.id} ${item.reason}`;
     }
     if (service === ServiceType.IMAGE_IN_STREAMS) {
       return `${item.name} ${item.reason}`;
+    }
+    if (service === ServiceType.AI_SERVICE) {
+      return item.message || '';
+    }
+    if (service === ServiceType.AVERAGE_FPS) {
+      return `Camera ${item.id} ${item.message}`;
     }
     return item.message || '';
   };

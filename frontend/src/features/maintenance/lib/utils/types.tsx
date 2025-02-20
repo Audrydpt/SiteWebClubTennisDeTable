@@ -31,6 +31,7 @@ export enum ServiceType {
   CAMERA_ACTIVITY = 'camera-activity',
   CAMERA_ANOMALY = 'camera-anomaly',
   IMAGE_IN_STREAMS = 'image-in-streams',
+  AVERAGE_FPS = 'average-fps',
 }
 
 export const SERVICE_LABELS: Record<ServiceType, string> = {
@@ -38,4 +39,5 @@ export const SERVICE_LABELS: Record<ServiceType, string> = {
   [ServiceType.CAMERA_ACTIVITY]: 'Camera Activity',
   [ServiceType.CAMERA_ANOMALY]: 'Camera Configuration',
   [ServiceType.IMAGE_IN_STREAMS]: 'Snapshot Configuration',
+  [ServiceType.AVERAGE_FPS]: 'Average FPS',
 };

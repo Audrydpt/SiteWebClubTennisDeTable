@@ -1,22 +1,21 @@
 import { Item } from './types';
 
 const BASE_URL = process.env.BACK_API_URL;
+const { MAIN_API_URL } = process.env;
 
 interface ApiResponse<T> {
   data?: T;
   error?: string;
 }
 
-// Authentication helper that accepts the sessionId as a parameter
 export const getAuthHeader = (sessionId: string) => ({
   Authorization: `X-Session-Id ${sessionId}`,
 });
 
-// Generic fetch function that also accepts the sessionId parameter
-async function fetchApi<T>(
+export async function fetchApi<T>(
   endpoint: string,
   sessionId: string,
-  options?: RequestInit
+  options?: RequestInit & { responseType?: 'json' | 'text' }
 ): Promise<ApiResponse<T>> {
   try {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
@@ -31,18 +30,40 @@ async function fetchApi<T>(
       throw new Error(`API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data =
+      options?.responseType === 'text'
+        ? ((await response.text()) as unknown as T)
+        : await response.json();
     return { data };
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
-// Specific API endpoints updated to receive the sessionId
-export async function getStreams(sessionId: string) {
-  return fetchApi<Item[]>('/streams', sessionId);
-}
+// Shared API calls
+export const apiService = {
+  async getStreams(sessionId: string): Promise<ApiResponse<Item[]>> {
+    return fetchApi<Item[]>('/streams', sessionId);
+  },
 
-export async function getSourceLog(sourceId: string, sessionId: string) {
-  return fetchApi<string>(`/sourceLog/${sourceId}`, sessionId);
-}
+  async getSourceLog(
+    sourceId: string,
+    sessionId: string
+  ): Promise<ApiResponse<string>> {
+    return fetchApi<string>(`/sourceLog/${sourceId}`, sessionId, {
+      responseType: 'text',
+    });
+  },
+
+  async getSnapshot(source: string, sessionId: string): Promise<Response> {
+    return fetch(`${BASE_URL}/snapshot/${source}?width=32&height=32`, {
+      headers: getAuthHeader(sessionId),
+    });
+  },
+
+  async checkAIHealth(sessionId: string): Promise<Response> {
+    return fetch(`${MAIN_API_URL}/health/aiServer/192.168.20.145`, {
+      headers: getAuthHeader(sessionId),
+    });
+  },
+};

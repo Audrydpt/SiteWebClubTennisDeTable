@@ -1,75 +1,70 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+// camera-anomaly.tsx
+import { HealthStatus, HealthResult, Item } from '../utils/types';
+import { apiService } from '../utils/api';
+import sortStreamsByNumericId from '../utils/utils';
 
-interface StreamItem {
-  id: string;
-  source: string;
-  application: string;
-  name?: string;
-}
-
-interface DetailedStreamItem {
-  id: string;
-  name: string;
-  reason: string;
-}
-
-export default async function checkCameraAnomaly(sessionId: string): Promise<{
-  status: 'ok' | 'warning' | 'error';
-  details?: DetailedStreamItem[];
-}> {
+export default async function checkCameraAnomaly(
+  sessionId: string
+): Promise<HealthResult> {
   try {
-    const response = await fetch(`${process.env.BACK_API_URL}/streams`, {
-      headers: {
-        Authorization: `X-Session-Id ${sessionId}`,
-      },
-    });
+    const response = await apiService.getStreams(sessionId);
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch streams');
+    if (response.error) {
+      return {
+        status: HealthStatus.ERROR,
+        details: [
+          {
+            id: 'error',
+            name: 'Camera Anomaly',
+            status: HealthStatus.ERROR,
+            message: response.error,
+          },
+        ],
+      };
     }
 
-    const streams: StreamItem[] = await response.json();
+    const streams = response.data || [];
     const nullStreams = streams.filter(
       (stream) => stream.application === 'MvNullApplication'
     );
-    const anomalyStreams: DetailedStreamItem[] = nullStreams
-      .map((stream) => ({
-        id: stream.id,
-        name: `Camera ${stream.id}`,
-        reason: 'is not configured properly',
-      }))
-      .sort((a, b) => {
-        const idA = parseInt(a.id, 10);
-        const idB = parseInt(b.id, 10);
-        return Number.isNaN(idA) || Number.isNaN(idB) ? 0 : idA - idB;
-      });
+    const anomalyStreams: Item[] = nullStreams.map((stream) => ({
+      id: stream.id,
+      name: `Camera ${stream.id}`,
+      status: HealthStatus.WARNING,
+      reason: 'is not configured properly',
+    }));
 
-    let status: 'ok' | 'warning' | 'error';
+    const sortedAnomalyStreams = sortStreamsByNumericId(anomalyStreams);
+
+    let status: HealthStatus;
     if (nullStreams.length === 0) {
-      status = 'ok';
+      status = HealthStatus.OK;
     } else if (nullStreams.length < streams.length) {
-      status = 'warning';
+      status = HealthStatus.WARNING;
     } else {
-      status = 'error';
-      anomalyStreams.unshift({
+      status = HealthStatus.ERROR;
+      sortedAnomalyStreams.unshift({
         id: 'all',
         name: 'All Cameras',
+        status: HealthStatus.ERROR,
         reason: 'No cameras are configured',
       });
     }
 
     return {
       status,
-      details: anomalyStreams.length > 0 ? anomalyStreams : undefined,
+      details:
+        sortedAnomalyStreams.length > 0 ? sortedAnomalyStreams : undefined,
     };
   } catch (error) {
     return {
-      status: 'error',
+      status: HealthStatus.ERROR,
       details: [
         {
           id: 'error',
           name: 'System Error',
-          reason: 'Failed to check camera configuration',
+          status: HealthStatus.ERROR,
+          message: error instanceof Error ? error.message : 'Unknown error',
         },
       ],
     };
