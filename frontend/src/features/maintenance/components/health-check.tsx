@@ -1,4 +1,4 @@
-/* eslint-disable */
+/* eslint-disable prettier/prettier */
 import {
   HeartPulse,
   Play,
@@ -14,13 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import LoadingSpinner from '@/components/loading';
-
-const SERVICE_LABELS: Record<string, string> = {
-  'ai-service': 'AI Service',
-  'camera-activity': 'Camera Activity',
-  'camera-anomaly': 'Camera Configuration',
-  'image-in-streams': 'Snapshot Configuration',
-};
+import { HealthStatus, ServiceType, SERVICE_LABELS } from '../lib/utils/types';
+import { useAuth } from '@/providers/auth-context.tsx';
 
 interface DetailItem {
   id?: string;
@@ -31,15 +26,15 @@ interface DetailItem {
 }
 
 interface ServiceStatus {
-  status?: string;
+  status?: HealthStatus;
   details?: DetailItem[];
 }
 
-function getStatusColor(status: string): string {
+function getStatusColor(status: HealthStatus): string {
   switch (status) {
-    case 'ok':
+    case HealthStatus.OK:
       return 'text-green-500';
-    case 'warning':
+    case HealthStatus.WARNING:
       return 'text-yellow-500';
     default:
       return 'text-red-500';
@@ -47,13 +42,22 @@ function getStatusColor(status: string): string {
 }
 
 function HealthCheck() {
+  const { sessionId } = useAuth();
   const { progress, running, statuses, startHealthCheck } = useHealthCheck();
   const [expandedServices, setExpandedServices] = useState<
-    Record<string, boolean>
-  >({});
+    Record<ServiceType, boolean>
+  >(() =>
+    Object.values(ServiceType).reduce(
+      (acc, service) => ({
+        ...acc,
+        [service]: false,
+      }),
+      {} as Record<ServiceType, boolean>
+    )
+  );
   const [hasStarted, setHasStarted] = useState(false);
 
-  const toggleDetails = (service: string) => {
+  const toggleDetails = (service: ServiceType) => {
     setExpandedServices((prev) => ({
       ...prev,
       [service]: !prev[service],
@@ -61,36 +65,41 @@ function HealthCheck() {
   };
 
   const handleStartHealthCheck = () => {
+    // Check if sessionId is defined before starting
+    if (!sessionId) {
+      console.error('Session ID is undefined.');
+      return;
+    }
     setHasStarted(true);
-    startHealthCheck();
+    startHealthCheck(sessionId);
   };
 
-  const renderDetailItem = (service: string, item: DetailItem) => {
-    if (service === 'camera-activity') {
+  const renderDetailItem = (service: ServiceType, item: DetailItem) => {
+    if (service === ServiceType.CAMERA_ACTIVITY) {
       return `${item.name || item.id} ${item.reason}`;
     }
-    if (service === 'camera-anomaly') {
+    if (service === ServiceType.CAMERA_ANOMALY) {
       return `Stream ${item.id} ${item.reason}`;
     }
-    if (service === 'image-in-streams') {
+    if (service === ServiceType.IMAGE_IN_STREAMS) {
       return `${item.name} ${item.reason}`;
     }
-    return item.message;
+    return item.message || '';
   };
 
-  const renderServiceStatus = (service: string) => {
+  const renderServiceStatus = (service: ServiceType) => {
     const serviceData = statuses[service] as ServiceStatus | undefined;
 
     if (!running && serviceData?.status) {
       return (
         <div className="flex items-center">
-          {serviceData.status === 'ok' && (
+          {serviceData.status === HealthStatus.OK && (
             <CheckCircle className="text-green-500 mr-2" />
           )}
-          {serviceData.status === 'warning' && (
+          {serviceData.status === HealthStatus.WARNING && (
             <AlertTriangle className="text-yellow-500 mr-2" />
           )}
-          {serviceData.status === 'error' && (
+          {serviceData.status === HealthStatus.ERROR && (
             <XCircle className="text-red-500 mr-2" />
           )}
           <span className={getStatusColor(serviceData.status)}>
@@ -110,7 +119,7 @@ function HealthCheck() {
     );
   };
 
-  const hasDetails = (service: string): boolean => {
+  const hasDetails = (service: ServiceType): boolean => {
     const serviceData = statuses[service] as ServiceStatus | undefined;
     return Boolean(serviceData?.details && serviceData.details.length > 0);
   };
@@ -136,7 +145,7 @@ function HealthCheck() {
         {progress > 0 && <Progress value={progress} className="mt-4" />}
         {hasStarted && (
           <div className="mt-4 space-y-2">
-            {Object.keys(SERVICE_LABELS).map((service) => (
+            {Object.values(ServiceType).map((service) => (
               <div key={service} className="mb-2">
                 <div className="flex items-center justify-between">
                   {renderServiceStatus(service)}
@@ -163,7 +172,8 @@ function HealthCheck() {
                           <li
                             key={`${service}-${item.id || item.name || item.message}`}
                             className={getStatusColor(
-                              (statuses[service] as ServiceStatus).status || ''
+                              (statuses[service] as ServiceStatus)?.status ||
+                                HealthStatus.ERROR
                             )}
                           >
                             {renderDetailItem(service, item)}

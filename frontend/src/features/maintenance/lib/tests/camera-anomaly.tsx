@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+
 interface StreamItem {
   id: string;
   source: string;
@@ -12,17 +13,14 @@ interface DetailedStreamItem {
   reason: string;
 }
 
-export default async function checkCameraAnomaly(
-  username: string = 'administrator',
-  password: string = 'ACIC'
-): Promise<{
+export default async function checkCameraAnomaly(sessionId: string): Promise<{
   status: 'ok' | 'warning' | 'error';
   details?: DetailedStreamItem[];
 }> {
   try {
     const response = await fetch(`${process.env.BACK_API_URL}/streams`, {
       headers: {
-        Authorization: `Basic ${btoa(`${username}:${password}`)}`,
+        Authorization: `X-Session-Id ${sessionId}`,
       },
     });
 
