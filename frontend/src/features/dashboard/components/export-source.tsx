@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import useExportAPI from '../hooks/use-export';
 
 import {
   Form,
@@ -17,27 +20,55 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { AcicEvent } from '../lib/props';
-import formSchema, { ExportSchema } from './form-export';
+import { exportSchema } from './form-export';
 
-export default function ExportSource(formData: ExportSchema, setFormData) {
-  const [data, setData] = useState(null);
+const baseSchema =
+  exportSchema instanceof z.ZodEffects
+    ? // eslint-disable-next-line no-underscore-dangle, @stylistic/indent
+      exportSchema._def.schema
+    : exportSchema;
 
-  const form = useForm({
-    resolver: zodResolver(formSchema),
-    defaultValues: defaultValues as ExportSchema,
+const exportSourceSchema = baseSchema.shape.source.pick({
+  table: true,
+  startDate: true,
+  endDate: true,
+  streams: true,
+});
+
+type ExportSourceSchema = z.infer<typeof exportSourceSchema>;
+
+export default function ExportSource() {
+  const form = useForm<ExportSourceSchema>({
+    resolver: zodResolver(exportSourceSchema),
+    defaultValues: {
+      table: '' as AcicEvent,
+      startDate: '',
+      endDate: '',
+      streams: [],
+    },
   });
 
+  const { data: exportData } = useExportAPI(
+    form.watch('table'),
+    form.watch('startDate'),
+    form.watch('endDate')
+  );
+  console.log(exportData);
+
+  const onSubmit = (data: ExportSourceSchema) => {
+    console.log(data);
+  };
+
   return (
-    <Form {...formData}>
-      <form onSubmit={Form.handleSubmit(handleSubmit)} className="space-y-4">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormDescription>
           Select the event type, date range, and stream IDs for your export.
         </FormDescription>
 
         <FormField
-          control={formData.control}
+          control={form.control}
           name="table"
           render={({ field }) => (
             <FormItem>
@@ -66,7 +97,7 @@ export default function ExportSource(formData: ExportSchema, setFormData) {
         />
 
         <FormField
-          control={formData.control}
+          control={form.control}
           name="startDate"
           render={({ field }) => (
             <FormItem>
@@ -80,7 +111,7 @@ export default function ExportSource(formData: ExportSchema, setFormData) {
         />
 
         <FormField
-          control={formData.control}
+          control={form.control}
           name="endDate"
           render={({ field }) => (
             <FormItem>
@@ -94,27 +125,34 @@ export default function ExportSource(formData: ExportSchema, setFormData) {
         />
 
         <FormField
-          control={formData.control}
+          control={form.control}
           name="streams"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Stream IDs</FormLabel>
               <Select
                 onValueChange={field.onChange}
-                defaultValue={field.value}
-                value={field.value}
+                defaultValue={field.value.toString()}
+                value={field.value.toString()}
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a stream ID" />
+                    <SelectValue placeholder="Select a stream ID">
+                      {field.value ? field.value : 'Select a stream ID'}
+                    </SelectValue>
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {data?.map((item) => (
-                    <SelectItem key={item.stream_id} value={item.stream_id}>
-                      {item.stream_id}
-                    </SelectItem>
-                  ))}
+                  {exportData &&
+                    exportData[0] &&
+                    exportData[0].map((stream: { stream_id: string }) => (
+                      <SelectItem
+                        key={stream.stream_id}
+                        value={stream.stream_id}
+                      >
+                        {stream.stream_id}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
               <FormMessage />

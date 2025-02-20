@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { AcicEvent } from '../lib/props';
 
-const formSchema = z
+export const exportSchema = z
   .object({
     source: z.object({
       table: z.nativeEnum(AcicEvent),
@@ -35,6 +35,4 @@ const formSchema = z
     }
   );
 
-export type ExportSchema = z.infer<typeof formSchema>;
-
-export default formSchema;
+export type ExportSchema = z.infer<typeof exportSchema>;

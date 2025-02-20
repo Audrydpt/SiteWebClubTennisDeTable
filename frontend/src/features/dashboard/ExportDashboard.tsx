@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react/no-unstable-nested-components */
 import { useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 import Header from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { defineStepper } from '@/components/ui/stepper';
+import ExportSource from './components/export-source';
 import { AcicEvent } from './lib/props';
 
 const {
@@ -33,8 +35,12 @@ export default function ExportDashboard() {
       aggregation: '',
       where: [],
     },
-    format: 'Excel' as 'Excel' | 'PDF',
+    format: '' as 'Excel' | 'PDF',
   });
+
+  function updateFields(fields: Partial<typeof formData>) {
+    setFormData((prev) => ({ ...prev, ...fields }));
+  }
 
   return (
     <>
@@ -55,7 +61,7 @@ export default function ExportDashboard() {
             </StepperNavigation>
             <StepperPanel className="h-[600px] content-center rounded border bg-slate-50 p-8">
               {methods.switch({
-                'step-1': () => <div>StepSource</div>,
+                'step-1': () => <ExportSource />,
                 'step-2': () => <div>StepOptions</div>,
                 'step-3': () => <div>StepFormat</div>,
               })}
@@ -68,7 +74,20 @@ export default function ExportDashboard() {
               >
                 Previous
               </Button>
-              <Button onClick={methods.isLast ? methods.reset : methods.next}>
+              <Button
+                onClick={() => {
+                  if (methods.isLast) {
+                    methods.reset();
+                  } else {
+                    const { formData } = useFormContext();
+                    localStorage.setItem(
+                      'exportFormData',
+                      JSON.stringify(formData)
+                    );
+                    methods.next();
+                  }
+                }}
+              >
                 {methods.isLast ? 'Reset' : 'Next'}
               </Button>
             </StepperControls>

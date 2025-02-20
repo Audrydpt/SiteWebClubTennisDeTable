@@ -7,7 +7,7 @@ export default function useExportAPI(
   endDate: string
 ) {
   const queryKey = ['export', table, startDate, endDate];
-  const baseUrl = `${process.env.MAIN_API_URL}/dashboard/widget/`;
+  const baseUrl = `${process.env.MAIN_API_URL}/dashboard/widgets/`;
   const streamByEvent = `${table}?aggregate=100%20years&group_by=stream_id&time_from=${startDate}&time_to=${endDate}`;
 
   const query = useQuery({
@@ -15,19 +15,22 @@ export default function useExportAPI(
     queryKey,
     queryFn: () => axios.get(baseUrl + streamByEvent).then(({ data }) => data),
     enabled: !!table && !!startDate && !!endDate,
-    refetchInterval: 30_000,
   });
 
-  const optionsQuery = useQuery({
+  /* const optionsQuery = useQuery({
     queryKey: ['options', table, baseUrl],
     queryFn: () => axios.get(baseUrl).then(({ data }) => data[table]),
     enabled: !!table,
-  });
+  }); */
+
+  const data = [];
+
+  if (query.isSuccess) {
+    data.push(query.data);
+  }
 
   return {
-    ...query,
-    options: optionsQuery.data,
-    optionsLoading: optionsQuery.isLoading,
-    optionsError: optionsQuery.error,
+    isSuccess: query.isSuccess,
+    data,
   };
 }
