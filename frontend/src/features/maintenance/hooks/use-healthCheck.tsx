@@ -2,6 +2,7 @@ import { useState } from 'react';
 import checkAIService from '../components/health-tests/ai-service';
 import checkCameraAnomaly from '../components/health-tests/camera-anomaly';
 import checkCameraActivity from '../components/health-tests/camera-activity';
+import checkImageInStreams from '../components/health-tests/image-in-streams.tsx';
 
 type HealthStatus = 'ok' | 'warning' | 'error';
 
@@ -43,6 +44,7 @@ export default function useHealthCheck() {
     { name: 'ai-service', fn: checkAIService },
     { name: 'camera-anomaly', fn: checkCameraAnomaly },
     { name: 'camera-activity', fn: checkCameraActivity },
+    { name: 'image-in-streams', fn: checkImageInStreams },
   ];
 
   async function startHealthCheck() {

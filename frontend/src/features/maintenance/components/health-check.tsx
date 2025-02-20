@@ -19,6 +19,7 @@ const SERVICE_LABELS: Record<string, string> = {
   'ai-service': 'AI Service',
   'camera-activity': 'Camera Activity',
   'camera-anomaly': 'Camera Configuration',
+  'image-in-streams': 'Snapshot Configuration',
 };
 
 interface DetailItem {
@@ -70,6 +71,9 @@ function HealthCheck() {
     }
     if (service === 'camera-anomaly') {
       return `Stream ${item.id} ${item.reason}`;
+    }
+    if (service === 'image-in-streams') {
+      return `${item.name} ${item.reason}`;
     }
     return item.message;
   };

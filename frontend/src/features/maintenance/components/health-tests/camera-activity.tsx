@@ -28,18 +28,15 @@ export default async function checkCameraActivity(
     }
 
     const streams: StreamItem[] = await streamsResponse.json();
-    const activeStreams = streams.filter(
-      (stream) => stream.application !== 'MvNullApplication'
-    );
 
-    if (activeStreams.length === 0) {
+    if (streams.length === 0) {
       return {
         status: 'error',
         details: [
           {
             id: 'none',
             name: 'No Cameras',
-            reason: 'No active cameras found',
+            reason: 'No cameras found',
           },
         ],
       };
@@ -48,16 +45,32 @@ export default async function checkCameraActivity(
     const outdatedStreams: DetailedStreamItem[] = [];
 
     await Promise.all(
-      activeStreams.map(async (stream) => {
+      streams.map(async (stream) => {
         try {
-          const logResponse = await fetch(
-            `${process.env.BACK_API_URL}/sourceLog/${stream.source}`,
-            {
+          const controller = new AbortController();
+          const { signal } = controller;
+
+          const logResponse = await new Promise<Response>((resolve) => {
+            fetch(`${process.env.BACK_API_URL}/sourceLog/${stream.source}`, {
               headers: {
                 Authorization: `Basic ${btoa(`${username}:${password}`)}`,
               },
-            }
-          );
+              signal,
+            })
+              .then(resolve)
+              .catch(() => {
+                resolve(new Response(null, { status: 404 }));
+              });
+          });
+
+          if (logResponse.status === 404) {
+            outdatedStreams.push({
+              id: stream.id,
+              name: `Camera ${stream.id}`,
+              reason: 'is unreachable',
+            });
+            return;
+          }
 
           if (!logResponse.ok) {
             outdatedStreams.push({
