@@ -6,6 +6,7 @@ import { UserPrivileges } from '@/lib/authenticate';
 
 import OptionalSidebarLayout from './layouts/OptionalLayout';
 import { lazyLoadFeature } from './lib/i18n';
+import Error from './pages/Error';
 import Login from './pages/Login';
 
 const Dashboard = lazyLoadFeature(
@@ -28,7 +29,10 @@ const Maintenance = lazyLoadFeature(
   'maintenance',
   () => import('./features/maintenance/Maintenance')
 );
-const Users = lazyLoadFeature('users', () => import('./features/users/Users'));
+const Users = lazyLoadFeature(
+  'settings',
+  () => import('./features/settings/Users')
+);
 
 export default function App() {
   return (
@@ -39,8 +43,6 @@ export default function App() {
           <Route path="/dashboard/demo" element={<DemoDashboard />} />
           <Route path="/dashboard/test" element={<TestDashboard />} />
           <Route path="/dashboard/export" element={<ExportDashboard />} />
-
-          <Route path="*" element={<h1>Welcome!</h1>} />
         </Route>
 
         <Route element={<ProtectedRoute role={UserPrivileges.Maintainer} />}>
@@ -55,10 +57,13 @@ export default function App() {
         {/* Routes publiques où la sidebar apparait si connecté */}
         <Route path="/dashboard/:dashboardId/*" element={<Dashboard />} />
         <Route path="/dashboard/*" element={<Dashboard />} />
+
+        <Route path="*" element={<Error type="404" />} />
       </Route>
 
       {/* Routes publiques sans sidebar */}
       <Route element={<NoSidebarLayout />}>
+        <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
       </Route>
 
