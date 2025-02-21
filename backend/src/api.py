@@ -18,6 +18,8 @@ from event_grabber import EventGrabber
 from database import Dashboard, GenericDAL, Widget
 from database import AcicAllInOneEvent, AcicCounting, AcicEvent, AcicLicensePlate, AcicNumbering, AcicOCR, AcicOccupancy, AcicUnattendedItem
 
+import requests
+
 class ModelName(str, Enum):
     minute = "1 minute"
     quarter = "15 minutes"
@@ -127,7 +129,7 @@ class FastAPIServer:
                 describe_response = requests.get(describe_url, timeout=3)
 
                 if describe_response.status_code == 401:
-                    return {"status": "ok", "message": "Secndary server is reachable"}
+                    return {"status": "ok", "message": "Secondary server is reachable"}
                 else:
                     return {"status": "error", "message": f"Unexpected response: {describe_response.status_code}"}
 

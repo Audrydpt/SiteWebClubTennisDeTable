@@ -1,5 +1,32 @@
 import { CheckCircle, Package, Clock } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import LoadingSpinner from '@/components/loading';
+import useOverview from '../hooks/use-overview';
+
+function VersionDisplay() {
+  const { version, productVersion, isLoading, error } = useOverview();
+
+  if (isLoading) {
+    return <LoadingSpinner className="w-4 h-4" />;
+  }
+
+  if (error) {
+    return <span className="text-destructive">Error: {error}</span>;
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-col">
+        <span className="text-sm text-gray-500">API Version</span>
+        <span>{version}</span>
+      </div>
+      <div className="flex flex-col">
+        <span className="text-sm text-gray-500">Product Version</span>
+        <span>{productVersion}</span>
+      </div>
+    </div>
+  );
+}
 
 function Overview() {
   return (
@@ -8,7 +35,7 @@ function Overview() {
         <CardHeader>
           <CardTitle className="flex items-center">
             <CheckCircle className="mr-2" />
-            System Status :
+            System Status
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -23,13 +50,12 @@ function Overview() {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Package className="mr-2" />
-            Current Version :
+            Current Versions
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="mb-2 md:mb-0 md:mr-4">
-            <span className="font-mono">v3.2.24010</span>
-            <p className="text-sm text-gray-500">Released on: 2024-01-10</p>
+            <VersionDisplay />
           </div>
         </CardContent>
       </Card>
@@ -38,7 +64,7 @@ function Overview() {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Clock className="mr-2" />
-            Last Backup :
+            Last Backup
           </CardTitle>
         </CardHeader>
         <CardContent>
