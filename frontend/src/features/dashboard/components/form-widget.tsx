@@ -110,27 +110,23 @@ const formSchema = z
       Duration.fromObject(AggregationTypeToObject[data.aggregation]) <=
       Duration.fromObject(AggregationTypeToObject[data.duration]),
     {
-      message: 'Aggregation period must be smaller than or equal to duration',
+      params: { i18n: 'dashboard:validation.aggregation.tooLarge' },
       path: ['aggregation'],
     }
   )
   .refine((data) => !hasTooManyPoints(data.aggregation, data.duration), {
-    message: 'Aggregation period is too small for the given duration',
+    params: { i18n: 'dashboard:validation.aggregation.tooManyPoints' },
     path: ['aggregation'],
   })
   .refine((data) => getLayoutOptions(data.type).includes(data.layout), {
-    message: 'SidebarLayout is required',
+    params: { i18n: 'dashboard:validation.layout.required' },
     path: ['layout'],
   })
-  /* .refine((data) => !(getStackedOptions(data.type) && !data.groupBy), {
-    message: 'Group by is required',
-    path: ['groupBy'],
-  }) */
   .refine(
     (data) =>
       !(data.type === ChartType.Pie && data.aggregation !== data.duration),
     {
-      message: 'Pie chart must have the same aggregation and duration',
+      params: { i18n: 'dashboard:validation.pie.sameAggregation' },
       path: ['aggregation'],
     }
   )
@@ -138,11 +134,13 @@ const formSchema = z
     (data) =>
       !(data.type === ChartType.Heatmap && data.size !== ChartSize.full),
     {
-      message: 'Heatmap should be full size',
+      params: { i18n: 'dashboard:validation.heatmap.fullSize' },
       path: ['size'],
     }
   );
+
 type WidgetSchema = z.infer<typeof formSchema>;
+
 export type StoredWidget = WidgetSchema & {
   id?: string;
   order?: number;

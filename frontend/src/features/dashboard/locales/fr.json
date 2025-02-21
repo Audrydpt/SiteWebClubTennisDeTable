@@ -43,5 +43,23 @@
       "label": "Durée",
       "placeholder": "Sélectionner une durée"
     }
+  },
+  "validation": {
+    "aggregation": {
+      "tooLarge": "La période d'agrégation doit être inférieure ou égale à la durée",
+      "tooManyPoints": "La période d'agrégation est trop petite pour la durée donnée"
+    },
+    "layout": {
+      "required": "La disposition est requise"
+    },
+    "pie": {
+      "sameAggregation": "Le graphique en camembert doit avoir la même agrégation et durée"
+    },
+    "heatmap": {
+      "fullSize": "La carte de chaleur doit être en taille complète"
+    },
+    "title": {
+      "minLength": "Le titre doit contenir au moins {{count}} caractères"
+    }
   }
 }

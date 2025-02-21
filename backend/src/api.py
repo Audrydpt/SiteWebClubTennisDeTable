@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import Field, create_model
 from sqlalchemy import func, JSON
 import uvicorn
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, requests
 from fastapi.middleware.cors import CORSMiddleware
 
 from typing import Annotated, Literal, Optional, Type, Union, List, Dict, Any
