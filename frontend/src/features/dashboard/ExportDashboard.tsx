@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react/no-unstable-nested-components */
 import { useState } from 'react';
-import { useFormContext } from 'react-hook-form';
 
 import Header from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { defineStepper } from '@/components/ui/stepper';
 import ExportSource from './components/export-source';
+import { ExportSchema } from './components/form-export';
 import { AcicEvent } from './lib/props';
 
 const {
@@ -23,7 +23,7 @@ const {
 );
 
 export default function ExportDashboard() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ExportSchema>({
     source: {
       startDate: '',
       endDate: '',
@@ -38,9 +38,12 @@ export default function ExportDashboard() {
     format: '' as 'Excel' | 'PDF',
   });
 
-  function updateFields(fields: Partial<typeof formData>) {
-    setFormData((prev) => ({ ...prev, ...fields }));
-  }
+  const updateFormData = (newData: Partial<ExportSchema['source']>) => {
+    setFormData((prev) => ({
+      ...prev,
+      source: { ...prev.source, ...newData },
+    }));
+  };
 
   return (
     <>
@@ -61,9 +64,24 @@ export default function ExportDashboard() {
             </StepperNavigation>
             <StepperPanel className="h-[600px] content-center rounded border bg-slate-50 p-8">
               {methods.switch({
-                'step-1': () => <ExportSource />,
-                'step-2': () => <div>StepOptions</div>,
-                'step-3': () => <div>StepFormat</div>,
+                'step-1': () => (
+                  <>
+                    <ExportSource updateFormData={updateFormData} />
+                    {console.log('formData before step-1:', formData)}
+                  </>
+                ),
+                'step-2': () => (
+                  <>
+                    <div>StepOptions</div>
+                    {console.log('formData before step-2:', formData)}
+                  </>
+                ),
+                'step-3': () => (
+                  <>
+                    <div>StepFormat</div>
+                    {console.log('formData before step-3:', formData)}
+                  </>
+                ),
               })}
             </StepperPanel>
             <StepperControls className="p-8">
@@ -79,11 +97,6 @@ export default function ExportDashboard() {
                   if (methods.isLast) {
                     methods.reset();
                   } else {
-                    const { formData } = useFormContext();
-                    localStorage.setItem(
-                      'exportFormData',
-                      JSON.stringify(formData)
-                    );
                     methods.next();
                   }
                 }}
