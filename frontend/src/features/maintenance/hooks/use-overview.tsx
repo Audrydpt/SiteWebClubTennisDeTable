@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+
 import { useAuth } from '@/providers/auth-context.tsx';
 
 interface ApiVersion {

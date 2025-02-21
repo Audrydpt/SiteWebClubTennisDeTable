@@ -1,14 +1,15 @@
 import { useState } from 'react';
+
 import checkAIService from '../lib/tests/ai-service';
-import checkCameraAnomaly from '../lib/tests/camera-anomaly';
-import checkCameraActivity from '../lib/tests/camera-activity';
-import checkImageInStreams from '../lib/tests/image-in-streams';
 import checkAverageFps from '../lib/tests/average-fps';
+import checkCameraActivity from '../lib/tests/camera-activity';
+import checkCameraAnomaly from '../lib/tests/camera-anomaly';
+import checkImageInStreams from '../lib/tests/image-in-streams';
 import checkSecondaryServerHealth from '../lib/tests/secondary-port';
 import {
-  HealthStatus,
   HealthResult,
   HealthState,
+  HealthStatus,
   ServiceType,
 } from '../lib/utils/types';
 

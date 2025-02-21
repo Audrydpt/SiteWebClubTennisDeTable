@@ -1,6 +1,8 @@
-import { CheckCircle, Package, Clock } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { CheckCircle, Clock, Package } from 'lucide-react';
+
 import LoadingSpinner from '@/components/loading';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
 import useOverview from '../hooks/use-overview';
 
 function VersionDisplay() {
@@ -40,8 +42,8 @@ function Overview() {
         </CardHeader>
         <CardContent>
           <div className="mb-2 md:mb-0 md:mr-4">
-            <span className="text-green-600 font-bold">Operational</span>
-            <p className="text-sm text-gray-500">Last checked: 5 minutes ago</p>
+            <span className="text-primary font-bold">Operational</span>
+            <p className="text-sm">Last checked: 5 minutes ago</p>
           </div>
         </CardContent>
       </Card>

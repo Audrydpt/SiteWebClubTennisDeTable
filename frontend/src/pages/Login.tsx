@@ -87,7 +87,7 @@ function Login() {
                   }}
                 />
                 {form.formState.errors.username && (
-                  <p className="text-red-500">
+                  <p className="text-destructive">
                     {form.formState.errors.username.message}
                   </p>
                 )}
@@ -105,12 +105,12 @@ function Login() {
                   }}
                 />
                 {form.formState.errors.password && (
-                  <p className="text-red-500">
+                  <p className="text-destructive">
                     {form.formState.errors.password.message}
                   </p>
                 )}
               </div>
-              {error && <p className="text-red-500">{error}</p>}
+              {error && <p className="text-destructive">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <LoadingSpinner className="w-5 h-5 mx-auto" />

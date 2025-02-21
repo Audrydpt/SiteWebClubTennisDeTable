@@ -1,25 +1,26 @@
-/* eslint-disable prettier/prettier */
 import {
+  AlertTriangle,
+  CheckCircle,
+  ChevronRight,
   HeartPulse,
   Play,
-  CheckCircle,
-  AlertTriangle,
   XCircle,
-  ChevronRight,
 } from 'lucide-react';
 import { useState } from 'react';
+
+import LoadingSpinner from '@/components/loading';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import useHealthCheck from '../hooks/use-healthCheck';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import LoadingSpinner from '@/components/loading';
-import { HealthStatus, ServiceType, SERVICE_LABELS } from '../lib/utils/types';
 import { useAuth } from '@/providers/auth-context.tsx';
+
+import useHealthCheck from '../hooks/use-healthCheck';
+import { HealthStatus, SERVICE_LABELS, ServiceType } from '../lib/utils/types';
 
 interface DetailItem {
   id?: string;
@@ -89,10 +90,14 @@ function HealthCheck() {
       return (
         <div className="flex items-center">
           {serviceData.status === HealthStatus.OK && (
-            <CheckCircle className={`${getStatusColor(serviceData.status)} mr-2`} />
+            <CheckCircle
+              className={`${getStatusColor(serviceData.status)} mr-2`}
+            />
           )}
           {serviceData.status === HealthStatus.WARNING && (
-            <AlertTriangle className={`${getStatusColor(serviceData.status)} mr-2`} />
+            <AlertTriangle
+              className={`${getStatusColor(serviceData.status)} mr-2`}
+            />
           )}
           {serviceData.status === HealthStatus.ERROR && (
             <XCircle className={`${getStatusColor(serviceData.status)} mr-2`} />
@@ -155,17 +160,19 @@ function HealthCheck() {
                 <CollapsibleContent className="mt-2">
                   {(statuses[service] as ServiceStatus)?.details && (
                     <ul className="ml-6 text-sm text-gray-500">
-                      {(statuses[service] as ServiceStatus).details?.map((item) => (
-                        <li
-                          key={`${service}-${item.id || item.name || item.message}`}
-                          className={getStatusColor(
-                            (statuses[service] as ServiceStatus)?.status ||
-                            HealthStatus.ERROR
-                          )}
-                        >
-                          {renderDetailItem(service, item)}
-                        </li>
-                      ))}
+                      {(statuses[service] as ServiceStatus).details?.map(
+                        (item) => (
+                          <li
+                            key={`${service}-${item.id || item.name || item.message}`}
+                            className={getStatusColor(
+                              (statuses[service] as ServiceStatus)?.status ||
+                                HealthStatus.ERROR
+                            )}
+                          >
+                            {renderDetailItem(service, item)}
+                          </li>
+                        )
+                      )}
                     </ul>
                   )}
                 </CollapsibleContent>

@@ -10,14 +10,14 @@ const permissionDetails = [
   },
   {
     action: 'Users management',
-    basic: <XIcon className="h-4 w-4 text-red-500" />,
-    advanced: <XIcon className="h-4 w-4 text-red-500" />,
-    admin: <CheckIcon className="h-4 w-4 text-green-500" />,
+    basic: <XIcon className="h-4 w-4 text-destructive" />,
+    advanced: <XIcon className="h-4 w-4 text-destructive" />,
+    admin: <CheckIcon className="h-4 w-4 text-destructive" />,
     tooltip: 'Create, Modify & Delete users accounts',
   },
   {
     action: 'System configuration',
-    basic: <XIcon className="h-4 w-4 text-red-500" />,
+    basic: <XIcon className="h-4 w-4 text-destructive" />,
     advanced: 'Read only',
     admin: 'Total control',
     tooltip: 'Configuration & Maintenance of the system',

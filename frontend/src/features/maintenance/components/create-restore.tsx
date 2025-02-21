@@ -1,7 +1,8 @@
+import { FileDown, FileUp, Save } from 'lucide-react';
 import { useState } from 'react';
-import { Save, FileDown, FileUp } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 function CreateRestoreBackup() {
   const [backupStatus, setBackupStatus] = useState('');
@@ -41,7 +42,7 @@ function CreateRestoreBackup() {
           <FileDown className="mr-2" />
           Restore Backup
         </Button>
-        {backupStatus && <p className="mt-2 text-green-600">{backupStatus}</p>}
+        {backupStatus && <p className="mt-2 text-primary">{backupStatus}</p>}
       </CardContent>
     </Card>
   );
