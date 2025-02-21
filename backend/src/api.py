@@ -125,7 +125,7 @@ class FastAPIServer:
                 ai_ip = ai_data["address"]
                 ai_port = "8080"
 
-                describe_url = f"http://{ai_ip}:{ai_port}/ConfigTool.html"
+                describe_url = f"http://{ai_ip}:{ai_port}/ConfigTool"
                 describe_response = requests.get(describe_url, timeout=3)
 
                 if describe_response.status_code == 401:
