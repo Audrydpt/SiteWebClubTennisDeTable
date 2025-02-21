@@ -66,4 +66,10 @@ export const apiService = {
       headers: getAuthHeader(sessionId),
     });
   },
+
+  async checkSecondarySeverHealth(sessionId: string): Promise<Response> {
+    return fetch(`${MAIN_API_URL}/health/secondaryServer/192.145.20.145`, {
+      headers: getAuthHeader(sessionId),
+    });
+  },
 };

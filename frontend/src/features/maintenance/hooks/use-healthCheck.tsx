@@ -4,6 +4,7 @@ import checkCameraAnomaly from '../lib/tests/camera-anomaly';
 import checkCameraActivity from '../lib/tests/camera-activity';
 import checkImageInStreams from '../lib/tests/image-in-streams';
 import checkAverageFps from '../lib/tests/average-fps';
+import checkSecondaryServerHealth from '../lib/tests/secondary-port';
 import {
   HealthStatus,
   HealthResult,
@@ -41,6 +42,10 @@ export default function useHealthCheck() {
     {
       name: ServiceType.AVERAGE_FPS,
       fn: checkAverageFps,
+    },
+    {
+      name: ServiceType.SECONDARY,
+      fn: checkSecondaryServerHealth,
     },
   ];
 

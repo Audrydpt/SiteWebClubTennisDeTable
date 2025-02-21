@@ -107,6 +107,39 @@ class FastAPIServer:
             except requests.exceptions.RequestException as e:
                 return {"status": "error", "message": f"Request failed: {str(e)}"}
 
+
+        @self.app.get("/health/secondaryServer/{ip}")
+        async def health_secondary_server(ip: str):
+            try:
+                username = "administrator"
+                password = "ACIC"
+
+                ai_service_url = f"https://{ip}/api/aiService"
+                response = requests.get(ai_service_url, auth=(username, password), headers={"Accept": "application/json"},
+                                        verify=False, timeout=3)
+
+                if response.status_code != 200:
+                    return {"status": "error", "message": "Impossible to get AI IP"}
+
+                ai_data = response.json()
+                ai_ip = ai_data["address"]
+                ai_port = "8080"
+
+                describe_url = f"http://{ai_ip}:{ai_port}/ConfigTool.html"
+                describe_response = requests.get(describe_url, timeout=3)
+
+                if describe_response.status_code == 401:
+                    return {"status": "ok", "message": "Secndary server is reachable"}
+                else:
+                    return {"status": "error", "message": f"Unexpected response: {describe_response.status_code}"}
+
+            except requests.exceptions.Timeout:
+                return {"status": "error", "message": "Timeout"}
+            except requests.exceptions.ConnectionError:
+                return {"status": "error", "message": "Connection error"}
+            except requests.exceptions.RequestException as e:
+                return {"status": "error", "message": f"Request failed: {str(e)}"}
+
         @self.app.get("/servers/grabbers", tags=["servers"])
         async def get_all_servers(health: Optional[bool] = False):
             try:
