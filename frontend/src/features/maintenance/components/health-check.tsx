@@ -88,6 +88,9 @@ function HealthCheck() {
     if (service === ServiceType.AVERAGE_FPS) {
       return `Camera ${item.id} ${item.message}`;
     }
+    if (service === ServiceType.SECONDARY) {
+      return item.message || '';
+    }
     return item.message || '';
   };
 

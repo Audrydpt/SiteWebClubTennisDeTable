@@ -125,11 +125,11 @@ class FastAPIServer:
                 ai_ip = ai_data["address"]
                 ai_port = "8080"
 
-                describe_url = f"http://{ai_ip}:{ai_port}/ConfigTool"
+                describe_url = f"http://{ai_ip}:{ai_port}/ConfigTool.html"
                 describe_response = requests.get(describe_url, timeout=3)
 
                 if describe_response.status_code == 401:
-                    return {"status": "ok", "message": "Secndary server is reachable"}
+                    return {"status": "ok", "message": "Secondary server is reachable"}
                 else:
                     return {"status": "error", "message": f"Unexpected response: {describe_response.status_code}"}
 
