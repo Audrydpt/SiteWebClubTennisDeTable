@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/providers/auth-context.tsx';
 
-interface Version {
+interface ApiVersion {
   major: number;
   minor: number;
   revision: number;
@@ -12,65 +12,54 @@ interface ProductVersion {
   version: string;
 }
 
-interface OverviewState {
-  version: string;
-  productVersion: string;
-  isLoading: boolean;
-  error: string | null;
+async function fetchVersion(sessionId: string) {
+  const response = await fetch(`${process.env.BACK_API_URL}/version`, {
+    headers: {
+      Authorization: `X-Session-Id ${sessionId}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch version');
+  }
+  const data: ApiVersion = await response.json();
+  return `v${data.major}.${data.minor}.${data.revision}`;
+}
+
+async function fetchProductVersion(sessionId: string) {
+  const response = await fetch(`${process.env.BACK_API_URL}/productVersion`, {
+    headers: {
+      Authorization: `X-Session-Id ${sessionId}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch product version');
+  }
+  const data: ProductVersion = await response.json();
+  return `v${data.version}`;
 }
 
 export default function useOverview() {
-  const [state, setState] = useState<OverviewState>({
-    version: '',
-    productVersion: '',
-    isLoading: true,
-    error: null,
-  });
   const { sessionId } = useAuth();
 
-  useEffect(() => {
-    async function fetchVersions() {
-      try {
-        const [versionResponse, productVersionResponse] = await Promise.all([
-          fetch(`${process.env.BACK_API_URL}/version`, {
-            headers: {
-              Authorization: `X-Session-Id ${sessionId}`,
-            },
-          }),
-          fetch(`${process.env.BACK_API_URL}/productVersion`, {
-            headers: {
-              Authorization: `X-Session-Id ${sessionId}`,
-            },
-          }),
-        ]);
+  const versionQuery = useQuery({
+    queryKey: ['version', sessionId],
+    queryFn: () => fetchVersion(sessionId ?? ''),
+    enabled: !!sessionId,
+  });
 
-        if (!versionResponse.ok || !productVersionResponse.ok) {
-          throw new Error('Failed to fetch versions');
-        }
+  const productVersionQuery = useQuery({
+    queryKey: ['productVersion', sessionId],
+    queryFn: () => fetchProductVersion(sessionId ?? ''),
+    enabled: !!sessionId,
+  });
 
-        const versionData: Version = await versionResponse.json();
-        const productData: ProductVersion = await productVersionResponse.json();
+  const isLoading = versionQuery.isLoading || productVersionQuery.isLoading;
+  const error = versionQuery.error || productVersionQuery.error;
 
-        const formattedVersion = `v${versionData.major}.${versionData.minor}.${versionData.revision}`;
-        const formattedProductVersion = `v${productData.version}`;
-
-        setState({
-          version: formattedVersion,
-          productVersion: formattedProductVersion,
-          isLoading: false,
-          error: null,
-        });
-      } catch (error) {
-        setState((prev) => ({
-          ...prev,
-          isLoading: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }));
-      }
-    }
-
-    fetchVersions();
-  }, [sessionId]);
-
-  return state;
+  return {
+    version: versionQuery.data ?? '',
+    productVersion: productVersionQuery.data ?? '',
+    isLoading,
+    error: error ? error.message : null,
+  };
 }

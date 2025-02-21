@@ -6,9 +6,13 @@ import {
   AlertTriangle,
   XCircle,
   ChevronRight,
-  ChevronDown,
 } from 'lucide-react';
 import { useState } from 'react';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import useHealthCheck from '../hooks/use-healthCheck';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -33,36 +37,20 @@ interface ServiceStatus {
 function getStatusColor(status: HealthStatus): string {
   switch (status) {
     case HealthStatus.OK:
-      return 'text-green-500';
+      return 'text-primary';
     case HealthStatus.WARNING:
-      return 'text-yellow-500';
+      return 'text-secondary';
+    case HealthStatus.ERROR:
+      return 'text-destructive';
     default:
-      return 'text-red-500';
+      return 'text-muted-foreground';
   }
 }
 
 function HealthCheck() {
   const { sessionId } = useAuth();
   const { progress, running, statuses, startHealthCheck } = useHealthCheck();
-  const [expandedServices, setExpandedServices] = useState<
-    Record<ServiceType, boolean>
-  >(() =>
-    Object.values(ServiceType).reduce(
-      (acc, service) => ({
-        ...acc,
-        [service]: false,
-      }),
-      {} as Record<ServiceType, boolean>
-    )
-  );
   const [hasStarted, setHasStarted] = useState(false);
-
-  const toggleDetails = (service: ServiceType) => {
-    setExpandedServices((prev) => ({
-      ...prev,
-      [service]: !prev[service],
-    }));
-  };
 
   const handleStartHealthCheck = () => {
     if (!sessionId) {
@@ -101,13 +89,13 @@ function HealthCheck() {
       return (
         <div className="flex items-center">
           {serviceData.status === HealthStatus.OK && (
-            <CheckCircle className="text-green-500 mr-2" />
+            <CheckCircle className={`${getStatusColor(serviceData.status)} mr-2`} />
           )}
           {serviceData.status === HealthStatus.WARNING && (
-            <AlertTriangle className="text-yellow-500 mr-2" />
+            <AlertTriangle className={`${getStatusColor(serviceData.status)} mr-2`} />
           )}
           {serviceData.status === HealthStatus.ERROR && (
-            <XCircle className="text-red-500 mr-2" />
+            <XCircle className={`${getStatusColor(serviceData.status)} mr-2`} />
           )}
           <span className={getStatusColor(serviceData.status)}>
             {SERVICE_LABELS[service]} is {serviceData.status.toUpperCase()}
@@ -153,45 +141,36 @@ function HealthCheck() {
         {hasStarted && (
           <div className="mt-4 space-y-2">
             {Object.values(ServiceType).map((service) => (
-              <div key={service} className="mb-2">
+              <Collapsible key={service}>
                 <div className="flex items-center justify-between">
-                  {renderServiceStatus(service)}
+                  <div className="flex-1">{renderServiceStatus(service)}</div>
                   {hasDetails(service) && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-0 h-6 w-6"
-                      onClick={() => toggleDetails(service)}
-                    >
-                      {expandedServices[service] ? (
-                        <ChevronDown />
-                      ) : (
-                        <ChevronRight />
-                      )}
-                    </Button>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm" className="p-0 h-6 w-6">
+                        <ChevronRight className="h-4 w-4 transition-transform duration-200 collapsible-rotate" />
+                      </Button>
+                    </CollapsibleTrigger>
                   )}
                 </div>
-                {expandedServices[service] &&
-                  (statuses[service] as ServiceStatus)?.details && (
-                    <ul className="ml-6 mt-2 text-sm text-gray-500">
-                      {(statuses[service] as ServiceStatus).details?.map(
-                        (item) => (
-                          <li
-                            key={`${service}-${item.id || item.name || item.message}`}
-                            className={getStatusColor(
-                              (statuses[service] as ServiceStatus)?.status ||
-                                HealthStatus.ERROR
-                            )}
-                          >
-                            {renderDetailItem(service, item)}
-                          </li>
-                        )
-                      )}
+                <CollapsibleContent className="mt-2">
+                  {(statuses[service] as ServiceStatus)?.details && (
+                    <ul className="ml-6 text-sm text-gray-500">
+                      {(statuses[service] as ServiceStatus).details?.map((item) => (
+                        <li
+                          key={`${service}-${item.id || item.name || item.message}`}
+                          className={getStatusColor(
+                            (statuses[service] as ServiceStatus)?.status ||
+                            HealthStatus.ERROR
+                          )}
+                        >
+                          {renderDetailItem(service, item)}
+                        </li>
+                      ))}
                     </ul>
-                )}
-              </div>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
             ))}
-
           </div>
         )}
       </CardContent>

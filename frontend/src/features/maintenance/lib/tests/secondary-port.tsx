@@ -10,9 +10,9 @@ export default async function checkSecondaryServerHealth(
     if (!response.ok) {
       const errorItem: Item = {
         id: 'error',
-        name: 'Secondary Server',
+        name: 'External Processor',
         status: HealthStatus.ERROR,
-        message: `Secondary Server returned status ${response.status}`,
+        message: `External Processorreturned status ${response.status}`,
       };
       return {
         status: HealthStatus.ERROR,
@@ -27,9 +27,9 @@ export default async function checkSecondaryServerHealth(
         details: [
           {
             id: 'error',
-            name: 'Secondary Server',
+            name: 'External Processor',
             status: HealthStatus.ERROR,
-            message: data.message || 'Secondary Server is not responding',
+            message: data.message || 'External Processor is not responding',
           },
         ],
       };
@@ -42,12 +42,12 @@ export default async function checkSecondaryServerHealth(
       details: [
         {
           id: 'error',
-          name: 'Secondary Server',
+          name: 'External Processor',
           status: HealthStatus.ERROR,
           message:
             error instanceof Error
               ? error.message
-              : 'Secondary Server is unreachable',
+              : 'External Processor is unreachable',
         },
       ],
     };

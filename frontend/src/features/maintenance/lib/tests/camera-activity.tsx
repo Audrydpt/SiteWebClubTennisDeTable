@@ -1,8 +1,16 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// camera-activity.tsx
 import { HealthStatus, HealthResult, Item } from '../utils/types';
 import { apiService } from '../utils/api';
 import sortStreamsByNumericId from '../utils/utils';
+
+function parseLogDate(logLine: string): Date | null {
+  try {
+    const dateStr = logLine.substring(0, 19);
+    const timestamp = Date.parse(dateStr);
+    return timestamp > 0 ? new Date(timestamp) : null;
+  } catch {
+    return null;
+  }
+}
 
 export default async function checkCameraActivity(
   sessionId: string
@@ -85,7 +93,22 @@ export default async function checkCameraActivity(
             return;
           }
 
-          const lastLogDate = new Date(lastLog.substring(0, 19));
+          let lastLogDate: Date | null = null;
+          for (let i = logLines.length - 1; i >= 0; i -= 1) {
+            lastLogDate = parseLogDate(logLines[i]);
+            if (lastLogDate) break;
+          }
+
+          if (!lastLogDate) {
+            outdatedStreams.push({
+              id: stream.id,
+              name: `Camera ${stream.id}`,
+              status: HealthStatus.ERROR,
+              message: 'invalid log format',
+            });
+            return;
+          }
+
           const now = new Date();
           const minutesDiff =
             (now.getTime() - lastLogDate.getTime()) / (1000 * 60);
@@ -98,7 +121,7 @@ export default async function checkCameraActivity(
               message: `is not responding (${minutesDiff.toFixed(0)} min)`,
             });
           }
-        } catch (error) {
+        } catch {
           outdatedStreams.push({
             id: stream.id,
             name: `Camera ${stream.id}`,

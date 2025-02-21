@@ -41,5 +41,5 @@ export const SERVICE_LABELS: Record<ServiceType, string> = {
   [ServiceType.CAMERA_ANOMALY]: 'Camera Configuration',
   [ServiceType.IMAGE_IN_STREAMS]: 'Snapshot Configuration',
   [ServiceType.AVERAGE_FPS]: 'Average FPS',
-  [ServiceType.SECONDARY]: 'Secondary Server',
+  [ServiceType.SECONDARY]: 'External Processor',
 };
