@@ -206,10 +206,7 @@ export default function AppSidebar() {
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <Link
-                to="/dashboard"
-                className="flex items-center gap-2 font-semibold"
-              >
+              <Link to="/" className="flex items-center gap-2 font-semibold">
                 <img className="h-10" src={logo} alt="ACIC" />
               </Link>
             </SidebarMenuItem>

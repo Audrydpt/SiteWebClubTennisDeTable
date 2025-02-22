@@ -9,6 +9,7 @@ import LoadingSpinner from './components/loading';
 import OptionalSidebarLayout from './layouts/OptionalLayout';
 import { lazyLoadFeature } from './lib/i18n';
 import Error from './pages/Error';
+import Home from './pages/Home';
 import Login from './pages/Login';
 import Theme from './pages/Theme';
 
@@ -44,11 +45,12 @@ export default function App() {
         {/* Public routes without sidebar */}
         <Route element={<NoSidebarLayout />}>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Login />} />
         </Route>
 
         {/* Routes with optional sidebar */}
         <Route element={<OptionalSidebarLayout />}>
+          <Route path="/" element={<Home />} />
+
           {/* Dashboard routes */}
           <Route path="/dashboard">
             <Route index element={<Dashboard />} />
@@ -69,10 +71,11 @@ export default function App() {
               <Route index element={<Users />} />
               <Route path="users" element={<Users />} />
             </Route>
+
+            <Route path="/theme" element={<Theme />} />
           </Route>
 
           {/* Catch-all for authenticated routes */}
-          <Route path="/theme" element={<Theme />} />
           <Route path="*" element={<Error type="404" />} />
         </Route>
       </Routes>

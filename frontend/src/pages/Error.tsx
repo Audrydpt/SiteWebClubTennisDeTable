@@ -74,7 +74,7 @@ export default function ErrorPage({ type }: ErrorPageProps) {
             <Button
               variant="default"
               size="lg"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/')}
               className="flex gap-2 w-full sm:w-auto"
             >
               <Home className="h-5 w-5" />
