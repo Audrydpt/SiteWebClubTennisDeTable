@@ -54,84 +54,80 @@ function UserContent() {
   };
 
   return (
-    <>
-      <Header title="User Management">
+    <div className="w-full">
+      <Header title="User Management" className="w-full">
         {isAdmin && (
           <FormCreateUser onSubmit={handleAdd}>
             <Button variant="default">
-              <Plus /> {t('users:addUser')}
+              <Plus /> {t('settings:addUser')}
             </Button>
           </FormCreateUser>
         )}
       </Header>
 
-      <div className="w-full">
-        <div className="flex-1 p-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>User List</CardTitle>
-              <CardDescription>View and manage user accounts</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Username</TableHead>
-                    <TableHead>Privileges</TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Object.entries(data).map(([username, userData]) => (
-                    <TableRow key={username}>
-                      <TableCell>{userData.user}</TableCell>
-                      <TableCell>{userData.privileges}</TableCell>
-                      <TableCell className="flex items-center gap-2">
-                        {isAdmin && (
-                          <>
-                            <FormUpdateUser
-                              user={userData}
-                              onSubmit={handleEdit}
-                              defaultValues={{
-                                user: userData.user,
-                                password: userData.password,
-                                privileges: userData.privileges,
-                                superuser: userData.superuser,
-                              }}
-                            >
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                aria-label="Edit"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            </FormUpdateUser>
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>User List</CardTitle>
+          <CardDescription>View and manage user accounts</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Username</TableHead>
+                <TableHead>Privileges</TableHead>
+                <TableHead className="w-[100px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Object.entries(data).map(([username, userData]) => (
+                <TableRow key={username}>
+                  <TableCell>{userData.user}</TableCell>
+                  <TableCell>{userData.privileges}</TableCell>
+                  <TableCell className="flex items-center gap-2">
+                    {isAdmin && (
+                      <>
+                        <FormUpdateUser
+                          user={userData}
+                          onSubmit={handleEdit}
+                          defaultValues={{
+                            user: userData.user,
+                            password: userData.password,
+                            privileges: userData.privileges,
+                            superuser: userData.superuser,
+                          }}
+                        >
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            aria-label="Edit"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </FormUpdateUser>
 
-                            <DeleteConfirmation
-                              onDelete={() => handleDelete(userData)}
-                              description={`This action is irreversible. ${userData.user} will be definitivly deleted.`}
-                            >
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                aria-label="Delete"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </DeleteConfirmation>
-                          </>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </>
+                        <DeleteConfirmation
+                          onDelete={() => handleDelete(userData)}
+                          description={`This action is irreversible. ${userData.user} will be definitivly deleted.`}
+                        >
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            aria-label="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </DeleteConfirmation>
+                      </>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

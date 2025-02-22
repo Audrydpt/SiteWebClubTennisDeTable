@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardFooter,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 
 type ErrorType = '404' | '403' | '500' | 'crash';
 
@@ -20,24 +21,28 @@ interface ErrorConfig {
 
 const ERROR_CONFIGS: Record<ErrorType, ErrorConfig> = {
   '404': {
-    title: '404 - Page Not Found',
-    description: "Oops! The page you're looking for doesn't exist.",
-    icon: <AlertCircle className="h-12 w-12 text-muted-foreground" />,
+    title: 'Page Not Found',
+    description:
+      "We couldn't find the page you're looking for. Please check the URL or navigate back.",
+    icon: <AlertCircle className="h-16 w-16 text-muted-foreground" />,
   },
   '403': {
-    title: '403 - Access Forbidden',
-    description: "Sorry, you don't have permission to access this page.",
-    icon: <ShieldAlert className="h-12 w-12 text-destructive" />,
+    title: 'Access Forbidden',
+    description:
+      "You don't have permission to access this page. Please contact your administrator if you believe this is a mistake.",
+    icon: <ShieldAlert className="h-16 w-16 text-destructive" />,
   },
   '500': {
-    title: '500 - Server Error',
-    description: 'Oops! Something went wrong on our server.',
-    icon: <Server className="h-12 w-12 text-destructive" />,
+    title: 'Server Error',
+    description:
+      'Our servers are experiencing issues. Please try again later or contact support if the problem persists.',
+    icon: <Server className="h-16 w-16 text-destructive" />,
   },
   crash: {
     title: 'Application Error',
-    description: 'Sorry, the application has encountered an unexpected error.',
-    icon: <Ban className="h-12 w-12 text-destructive" />,
+    description:
+      'The application encountered an unexpected error. Please refresh the page or contact support if the issue continues.',
+    icon: <Ban className="h-16 w-16 text-destructive" />,
   },
 };
 
@@ -50,27 +55,42 @@ export default function ErrorPage({ type }: ErrorPageProps) {
   const config = ERROR_CONFIGS[type];
 
   return (
-    <Card className="max-w-md mx-auto mt-20 shadow-lg">
-      <CardHeader className="text-center space-y-4">
-        <div className="flex justify-center">{config.icon}</div>
-        <CardTitle className="text-4xl font-bold">{config.title}</CardTitle>
-      </CardHeader>
-      <CardContent className="text-center">
-        <p className="text-lg text-muted-foreground">{config.description}</p>
-      </CardContent>
-      <CardFooter className="flex justify-center gap-4">
-        <Button
-          variant="default"
-          onClick={() => navigate('/dashboard')}
-          className="gap-2"
-        >
-          <Home className="h-4 w-4" />
-          Return Home
-        </Button>
-        <Button variant="outline" onClick={() => window.history.back()}>
-          Go Back
-        </Button>
-      </CardFooter>
-    </Card>
+    <div className="flex items-center justify-center">
+      <Card className="w-full max-w-lg">
+        <CardHeader className="space-y-6">
+          <div className="flex justify-center">
+            <div className="p-4 rounded-full bg-muted/10">{config.icon}</div>
+          </div>
+          <div className="space-y-2 text-center">
+            <CardTitle className="text-4xl font-bold">{config.title}</CardTitle>
+            <CardDescription className="text-lg">
+              {config.description}
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <Separator className="my-2" />
+        <CardContent className="pt-6">
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Button
+              variant="default"
+              size="lg"
+              onClick={() => navigate('/dashboard')}
+              className="flex gap-2 w-full sm:w-auto"
+            >
+              <Home className="h-5 w-5" />
+              Return Home
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => window.history.back()}
+              className="w-full sm:w-auto"
+            >
+              Go Back
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
