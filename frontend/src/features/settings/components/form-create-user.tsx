@@ -201,7 +201,7 @@ export default function FormCreateUser({
                         {detail.action}
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <InfoIcon className="h-4 w-4 ml-1 inline-block text-gray-400" />
+                            <InfoIcon className="h-4 w-4 ml-1 inline-block text-muted-foreground" />
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{detail.tooltip}</p>

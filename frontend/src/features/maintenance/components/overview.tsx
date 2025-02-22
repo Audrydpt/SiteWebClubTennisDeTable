@@ -19,11 +19,11 @@ function VersionDisplay() {
   return (
     <div className="space-y-2">
       <div className="flex flex-col">
-        <span className="text-sm text-gray-500">API Version</span>
+        <span className="text-sm text-muted-foreground">API Version</span>
         <span>{version}</span>
       </div>
       <div className="flex flex-col">
-        <span className="text-sm text-gray-500">Product Version</span>
+        <span className="text-sm text-muted-foreground">Product Version</span>
         <span>{productVersion}</span>
       </div>
     </div>
@@ -71,8 +71,10 @@ function Overview() {
         </CardHeader>
         <CardContent>
           <div>
-            <span className="text-yellow-500">7 days ago</span>
-            <p className="text-sm text-gray-500">Next scheduled: In 2 days</p>
+            <span className="text-secondary">7 days ago</span>
+            <p className="text-sm text-muted-foreground">
+              Next scheduled: In 2 days
+            </p>
           </div>
         </CardContent>
       </Card>

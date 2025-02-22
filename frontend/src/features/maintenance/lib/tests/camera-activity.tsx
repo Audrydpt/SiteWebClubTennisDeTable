@@ -17,7 +17,6 @@ export default async function checkCameraActivity(
 ): Promise<HealthResult> {
   try {
     const response = await apiService.getStreams(sessionId);
-
     if (response.error) {
       return {
         status: HealthStatus.ERROR,
@@ -33,7 +32,6 @@ export default async function checkCameraActivity(
     }
 
     const streams = response.data || [];
-
     if (streams.length === 0) {
       return {
         status: HealthStatus.ERROR,
@@ -58,10 +56,11 @@ export default async function checkCameraActivity(
             sessionId
           );
 
+          // Gestion des erreurs au niveau de l'appel log
           if (logResponse.error) {
             outdatedStreams.push({
               id: stream.id,
-              name: `Camera ${stream.id}`,
+              name: `Stream ${stream.id}`,
               status: HealthStatus.ERROR,
               message: logResponse.error.includes('404')
                 ? 'was not found'
@@ -70,53 +69,54 @@ export default async function checkCameraActivity(
             return;
           }
 
+          // Récupération et traitement des logs
           const logLines = logResponse.data?.trim().split('\n') || [];
-
           if (logLines.length === 0) {
             outdatedStreams.push({
               id: stream.id,
-              name: `Camera ${stream.id}`,
+              name: `Stream ${stream.id}`,
               status: HealthStatus.ERROR,
               message: 'is inactive (no logs)',
             });
             return;
           }
 
+          // Vérifie si le dernier log indique une erreur de connexion
           const lastLog = logLines[logLines.length - 1];
           if (lastLog.includes('Could not connect')) {
             outdatedStreams.push({
               id: stream.id,
-              name: `Camera ${stream.id}`,
+              name: `Stream ${stream.id}`,
               status: HealthStatus.ERROR,
               message: 'is not configured',
             });
             return;
           }
 
+          // Recherche de la date valide dans les logs (en partant de la fin)
           let lastLogDate: Date | null = null;
           for (let i = logLines.length - 1; i >= 0; i -= 1) {
             lastLogDate = parseLogDate(logLines[i]);
             if (lastLogDate) break;
           }
-
           if (!lastLogDate) {
             outdatedStreams.push({
               id: stream.id,
-              name: `Camera ${stream.id}`,
+              name: `Stream ${stream.id}`,
               status: HealthStatus.ERROR,
               message: 'invalid log format',
             });
             return;
           }
 
+          // Vérifie l'intervalle en minutes entre la date extraite et maintenant
           const now = new Date();
           const minutesDiff =
             (now.getTime() - lastLogDate.getTime()) / (1000 * 60);
-
           if (minutesDiff > 10) {
             outdatedStreams.push({
               id: stream.id,
-              name: `Camera ${stream.id}`,
+              name: `Stream ${stream.id}`,
               status: HealthStatus.ERROR,
               message: `is not responding (${minutesDiff.toFixed(0)} min)`,
             });
@@ -124,7 +124,7 @@ export default async function checkCameraActivity(
         } catch {
           outdatedStreams.push({
             id: stream.id,
-            name: `Camera ${stream.id}`,
+            name: `Stream ${stream.id}`,
             status: HealthStatus.ERROR,
             message: 'is unreachable',
           });

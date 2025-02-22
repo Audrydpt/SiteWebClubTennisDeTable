@@ -1,5 +1,5 @@
 import { apiService } from '../utils/api';
-import { HealthResult, HealthStatus, Item } from '../utils/types';
+import { HealthResult, HealthStatus } from '../utils/types';
 
 export default async function checkSecondaryServerHealth(
   sessionId: string
@@ -8,19 +8,21 @@ export default async function checkSecondaryServerHealth(
     const response = await apiService.checkSecondarySeverHealth(sessionId);
 
     if (!response.ok) {
-      const errorItem: Item = {
-        id: 'error',
-        name: 'External Processor',
-        status: HealthStatus.ERROR,
-        message: `External Processorreturned status ${response.status}`,
-      };
       return {
         status: HealthStatus.ERROR,
-        details: [errorItem],
+        details: [
+          {
+            id: 'error',
+            name: 'External Processor',
+            status: HealthStatus.ERROR,
+            message: `External Processor returned status ${response.status}`,
+          },
+        ],
       };
     }
 
     const data = await response.json();
+
     if (data.status === 'error') {
       return {
         status: HealthStatus.ERROR,

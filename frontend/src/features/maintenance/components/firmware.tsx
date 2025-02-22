@@ -13,10 +13,9 @@ function Firmware() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Card className="bg-gray-100 flex p-4 mb-4 h-24">
-          {' '}
+        <Card className="bg-muted flex p-4 mb-4 h-24">
           <CardContent>
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-muted-foreground">
               You need 2 specific files supplied by ACIC: firmware.mvf and
               firmware.mvk.
             </p>
@@ -24,7 +23,6 @@ function Firmware() {
         </Card>
 
         <div className="mt-2">
-          {' '}
           <Button variant="outline" className="mr-2">
             <Search className="mr-2" />
             Browse Files
