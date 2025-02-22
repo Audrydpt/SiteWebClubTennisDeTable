@@ -32,7 +32,7 @@ export default async function checkCameraAnomaly(
       id: stream.id,
       name: `Stream ${stream.id}`,
       status: HealthStatus.WARNING,
-      message: 'has no application configured',
+      message: 'has no application running',
     }));
 
     const sortedAnomalyStreams = sortStreamsByNumericId(anomalyStreams);

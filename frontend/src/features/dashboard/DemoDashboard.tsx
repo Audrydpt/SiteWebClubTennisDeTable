@@ -35,7 +35,7 @@ import { Separator } from '@/components/ui/separator';
 
 export default function DemoDashboard() {
   return (
-    <>
+    <div className="mx-auto flex max-w-6xl flex-wrap items-start gap-6 p-6 sm:p-8 w-full">
       <div className="grid w-full gap-6 sm:grid-cols-2 lg:max-w-[20rem] lg:grid-cols-1 xl:max-w-[25rem]">
         <Card className="lg:max-w-md" x-chunk="charts-01-chunk-0">
           <CardHeader className="space-y-0 pb-2">
@@ -853,6 +853,6 @@ export default function DemoDashboard() {
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   );
 }

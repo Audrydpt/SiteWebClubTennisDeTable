@@ -10,6 +10,7 @@ import OptionalSidebarLayout from './layouts/OptionalLayout';
 import { lazyLoadFeature } from './lib/i18n';
 import Error from './pages/Error';
 import Login from './pages/Login';
+import Theme from './pages/Theme';
 
 const Dashboard = lazyLoadFeature(
   'dashboard',
@@ -71,6 +72,7 @@ export default function App() {
           </Route>
 
           {/* Catch-all for authenticated routes */}
+          <Route path="/theme" element={<Theme />} />
           <Route path="*" element={<Error type="404" />} />
         </Route>
       </Routes>
