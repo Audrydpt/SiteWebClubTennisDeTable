@@ -1,12 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react/no-unstable-nested-components */
+import { Database, FileDown, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 
 import Header from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { defineStepper } from '@/components/ui/stepper';
-import ExportSource from './components/export-source';
-import { ExportSchema } from './components/form-export';
+
+import ExportStepFormat from './components/export-format';
+import ExportStepOptions from './components/export-options';
+import ExportStepSource from './components/export-source';
+import { StepperFormData } from './lib/export';
 import { AcicEvent } from './lib/props';
 
 const {
@@ -17,37 +20,27 @@ const {
   StepperControls,
   StepperPanel,
 } = defineStepper(
-  { id: 'step-1', title: 'Source' },
-  { id: 'step-2', title: 'Options' },
-  { id: 'step-3', title: 'Format' }
+  { id: 'step-1', title: 'Source', icon: <Database /> },
+  { id: 'step-2', title: 'Options', icon: <Settings2 /> },
+  { id: 'step-3', title: 'Format', icon: <FileDown /> }
 );
 
 export default function ExportDashboard() {
-  const [formData, setFormData] = useState<ExportSchema>({
-    source: {
-      startDate: '',
-      endDate: '',
-      table: {} as AcicEvent,
-      streams: [] as number[],
-    },
-    options: {
-      groupBy: '',
-      aggregation: '',
-      where: [],
-    },
-    format: '' as 'Excel' | 'PDF',
-  });
+  const [storedWidget, setStoredWidget] = useState<StepperFormData>({
+    table: AcicEvent.AcicCounting,
+  } as StepperFormData);
+  const [isStepValid, setIsStepValid] = useState(false);
 
-  const updateFormData = (newData: Partial<ExportSchema['source']>) => {
-    setFormData((prev) => ({
+  const updateStoredWidget = (newData: Partial<StepperFormData>) => {
+    setStoredWidget((prev) => ({
       ...prev,
-      source: { ...prev.source, ...newData },
+      ...newData,
     }));
   };
 
   return (
     <>
-      <Header title="Export Dashboard"> </Header>
+      <Header title="Export Dashboard" />
       <StepperProvider>
         {({ methods }) => (
           <>
@@ -56,57 +49,71 @@ export default function ExportDashboard() {
                 <StepperStep
                   key={step.id}
                   of={step.id}
-                  onClick={() => methods.goTo(step.id)}
+                  icon={step.icon}
+                  disabled={!methods.current.id.includes(step.id)}
                 >
                   <StepperTitle>{step.title}</StepperTitle>
                 </StepperStep>
               ))}
             </StepperNavigation>
-            <StepperPanel className="h-[600px] content-center rounded border bg-slate-50 p-8">
+
+            <StepperPanel className="h-[400px] content-center rounded border bg-slate-50 p-8">
               {methods.switch({
                 'step-1': () => (
-                  <>
-                    <ExportSource updateFormData={updateFormData} />
-                    {console.log('formData before step-1:', formData)}
-                  </>
+                  <ExportStepSource
+                    storedWidget={storedWidget}
+                    updateStoredWidget={updateStoredWidget}
+                    setStepValidity={setIsStepValid}
+                  />
                 ),
                 'step-2': () => (
-                  <>
-                    <div>StepOptions</div>
-                    {console.log('formData before step-2:', formData)}
-                  </>
+                  <ExportStepOptions
+                    storedWidget={storedWidget}
+                    updateStoredWidget={updateStoredWidget}
+                    setStepValidity={setIsStepValid}
+                  />
                 ),
                 'step-3': () => (
-                  <>
-                    <div>StepFormat</div>
-                    {console.log('formData before step-3:', formData)}
-                  </>
+                  <ExportStepFormat
+                    storedWidget={storedWidget}
+                    updateStoredWidget={updateStoredWidget}
+                    setStepValidity={setIsStepValid}
+                  />
                 ),
               })}
             </StepperPanel>
+
             <StepperControls className="p-8">
               <Button
                 variant="ghost"
-                onClick={methods.prev}
+                onClick={() => {
+                  setIsStepValid(true);
+                  methods.prev();
+                }}
                 disabled={methods.isFirst}
               >
-                Previous
+                Précédent
               </Button>
               <Button
                 onClick={() => {
+                  // On vérifie que la validation est passée
+                  if (!isStepValid) return;
                   if (methods.isLast) {
+                    // Par exemple ici, on peut réinitialiser le stepper ou lancer une action finale
                     methods.reset();
                   } else {
                     methods.next();
                   }
                 }}
+                disabled={!isStepValid}
               >
-                {methods.isLast ? 'Reset' : 'Next'}
+                {methods.isLast ? 'Reset' : 'Suivant'}
               </Button>
             </StepperControls>
           </>
         )}
       </StepperProvider>
+      <pre>{JSON.stringify(storedWidget)}</pre>
     </>
   );
 }

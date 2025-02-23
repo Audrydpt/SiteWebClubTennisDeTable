@@ -1,18 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
+import { CalendarIcon } from 'lucide-react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import useExportAPI from '../hooks/use-export';
+import * as z from 'zod';
 
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -20,179 +19,202 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AcicEvent } from '../lib/props';
-import { exportSchema } from './form-export';
 
-const baseSchema =
-  exportSchema instanceof z.ZodEffects
-    ? // eslint-disable-next-line no-underscore-dangle, @stylistic/indent
-      exportSchema._def.schema
-    : exportSchema;
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { ExportStep } from '../lib/export';
+import { AcicAggregation, AcicEvent } from '../lib/props';
+import { getWidgetData } from '../lib/utils';
 
-const exportSourceSchema = baseSchema.shape.source.pick({
-  table: true,
-  startDate: true,
-  endDate: true,
-  streams: true,
+const exportStepSourceSchema = z.object({
+  table: z.nativeEnum(AcicEvent),
+  range: z.object({
+    from: z.date(),
+    to: z.date(),
+  }),
+  stream: z.string().nonempty(),
 });
 
-type ExportSourceSchema = z.infer<typeof exportSourceSchema>;
+type ExportStepSourceFormValues = z.infer<typeof exportStepSourceSchema>;
 
-type ExportSourceProps = {
-  updateFormData: (data: Partial<ExportSourceSchema>) => void;
-};
-
-export default function ExportSource({ updateFormData }: ExportSourceProps) {
-  const form = useForm<ExportSourceSchema>({
-    resolver: zodResolver(exportSourceSchema),
+export default function ExportStepSource({
+  storedWidget,
+  updateStoredWidget,
+  setStepValidity,
+}: ExportStep) {
+  const form = useForm<ExportStepSourceFormValues>({
+    resolver: zodResolver(exportStepSourceSchema),
     defaultValues: {
-      table: '' as AcicEvent,
-      startDate: '',
-      endDate: '',
-      streams: [],
+      table: storedWidget.table || AcicEvent.AcicCounting,
+      range: {
+        from: storedWidget.range?.from,
+        to: storedWidget.range?.to,
+      },
+      stream: storedWidget.stream || '0',
     },
   });
 
-  const { data: exportData } = useExportAPI(
-    form.watch('table'),
-    form.watch('startDate'),
-    form.watch('endDate')
-  );
+  // récupérer tous les streamid existant d'une table
+  const { data, isSuccess } = useQuery({
+    queryKey: ['export-source', storedWidget.table],
+    queryFn: async () =>
+      getWidgetData(
+        {
+          table: storedWidget.table,
+          aggregation: AcicAggregation.LifeTime,
+          duration: AcicAggregation.LifeTime,
+        },
+        'stream_id',
+        false
+      ),
+    enabled: !!storedWidget.table,
+    select: (d: { stream_id: number }[]) =>
+      d
+        .map(({ stream_id }) => stream_id)
+        .sort((a, b) => a - b)
+        .filter((e, i, self) => i === self.indexOf(e)),
+  });
 
-  const onSubmit = (data: ExportSourceSchema) => {
-    console.log(data);
-    updateFormData(data);
-  };
+  const { isValid } = form.formState;
 
-  const handleFieldChange = async (
-    field: keyof ExportSourceSchema,
-    value: string
-  ) => {
-    form.setValue(field, value);
-    form.setValue('streams', []);
-    if (field === 'startDate' || field === 'endDate') {
-      await form.trigger(['startDate', 'endDate']);
+  useEffect(() => {
+    if (isSuccess && data.length > 0 && isValid) {
+      setStepValidity(true);
+    } else {
+      setStepValidity(false);
     }
+  }, [isSuccess, data, isValid, setStepValidity]);
+
+  const handleFormChange = async () => {
+    updateStoredWidget(form.getValues());
+    await form.trigger();
   };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormDescription>
-          Select the event type, date range, and stream IDs for your export.
-        </FormDescription>
-
-        <FormField
-          control={form.control}
-          name="table"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Event Type</FormLabel>
-              <Select
-                onValueChange={(value) => handleFieldChange('table', value)}
-                defaultValue={field.value}
-                value={field.value}
-              >
+      <form className="space-y-6" onChange={handleFormChange}>
+        <div className="flex-1">
+          <FormField
+            control={form.control}
+            name="table"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Table:</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an event type" />
-                  </SelectTrigger>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      handleFormChange();
+                    }}
+                    value={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a table" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(AcicEvent).map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </FormControl>
-                <SelectContent>
-                  {Object.values(AcicEvent).map((event) => (
-                    <SelectItem key={event} value={event}>
-                      {event}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="startDate"
-          render={({ field, fieldState }) => (
-            <FormItem>
-              <FormLabel>Start Date</FormLabel>
-              <FormControl>
-                <Input
-                  type="date"
-                  placeholder="Start Date"
-                  {...field}
-                  onChange={(e) =>
-                    handleFieldChange('startDate', e.target.value)
-                  }
-                />
-              </FormControl>
-              {fieldState.error && (
-                <FormMessage>{fieldState.error.message}</FormMessage>
-              )}
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="endDate"
-          render={({ field, fieldState }) => (
-            <FormItem>
-              <FormLabel>End Date</FormLabel>
-              <FormControl>
-                <Input
-                  type="date"
-                  placeholder="End Date"
-                  {...field}
-                  onChange={(e) => handleFieldChange('endDate', e.target.value)}
-                />
-              </FormControl>
-              {fieldState.error && (
-                <FormMessage>{fieldState.error.message}</FormMessage>
-              )}
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="streams"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Stream IDs</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value.toString()}
-                value={field.value.toString()}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a stream ID">
-                      {field.value ? field.value : 'Select a stream ID'}
-                    </SelectValue>
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {exportData && exportData[0] && exportData[0].length > 0 ? (
-                    exportData[0].map((stream: { stream_id: string }) => (
-                      <SelectItem
-                        key={stream.stream_id}
-                        value={stream.stream_id}
+          <FormField
+            control={form.control}
+            name="range"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Range:</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          'text-left font-normal',
+                          !field.value && 'text-muted-foreground'
+                        )}
                       >
-                        {stream.stream_id}
+                        {!field.value.from && !field.value.to && (
+                          <span>Select date range</span>
+                        )}
+
+                        {field.value.from && (
+                          <span>
+                            From {field.value.from.toLocaleDateString()}
+                          </span>
+                        )}
+                        {field.value.to && (
+                          <span>to {field.value.to.toLocaleDateString()}</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="range"
+                      selected={field.value}
+                      onSelect={(value) => {
+                        field.onChange(value);
+                        handleFormChange();
+                      }}
+                      disabled={(date) =>
+                        date > new Date() || date < new Date('1900-01-01')
+                      }
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="stream"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Streams:</FormLabel>
+                <FormControl>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      handleFormChange();
+                    }}
+                    value={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a stream" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem key="0" value="0">
+                        All streams
                       </SelectItem>
-                    ))
-                  ) : (
-                    <div className="text-center text-gray-500">
-                      No streams found for the selected event type.
-                    </div>
-                  )}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                      {data &&
+                        data.map((stream: number) => (
+                          <SelectItem key={stream} value={String(stream)}>
+                            Stream {stream}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
       </form>
     </Form>
   );

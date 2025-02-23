@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils';
 
 type HeaderProps = {
   title: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 } & React.ComponentProps<'div'>;
 
 export default function Header({
