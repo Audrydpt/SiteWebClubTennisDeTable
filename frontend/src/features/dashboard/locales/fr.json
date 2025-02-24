@@ -61,5 +61,27 @@
     "title": {
       "minLength": "Le titre doit contenir au moins {{count}} caractères"
     }
+  },
+  "time": {
+    "OneMinute": "1 minute",
+    "FifteenMinutes": "15 minutes",
+    "ThirtyMinutes": "30 minutes",
+    "OneHour": "1 heure",
+    "OneDay": "1 jour",
+    "OneWeek": "1 semaine",
+    "OneMonth": "1 mois",
+    "SixMonths": "6 mois",
+    "OneYear": "1 an",
+    "LifeTime": "100 ans"
+  },
+  "heatmap": {
+    "count": "Valeur: {{count}}",
+    "noData": "Pas de donnée",
+    "hourMinute": "Heure/Minute",
+    "hour15min": "Heure/15 minutes",
+    "hour30min": "Heure/30 minutes",
+    "dayHour": "Jour/Heure",
+    "monthDay": "Mois/Jour",
+    "monthWeek": "Mois/Semaine"
   }
 }

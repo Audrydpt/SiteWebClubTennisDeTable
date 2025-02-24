@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { DateTime, Duration } from 'luxon';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 import { CurveType } from 'recharts/types/shape/Curve';
 
@@ -43,6 +44,7 @@ export default function LineComponent({
   layout = 'natural',
   ...props
 }: MultiLineComponentProps & GroupByChartProps) {
+  const { i18n } = useTranslation();
   const { title, table, aggregation, duration, where } = props;
   const { groupBy } = props;
 
@@ -125,7 +127,9 @@ export default function LineComponent({
               axisLine={false}
               tickMargin={8}
               angle={-30}
-              tickFormatter={(t: string) => CustomChartTickDate(t, format)}
+              tickFormatter={(t: string) =>
+                CustomChartTickDate(i18n.language, t, format)
+              }
               interval={interval}
             />
             <YAxis

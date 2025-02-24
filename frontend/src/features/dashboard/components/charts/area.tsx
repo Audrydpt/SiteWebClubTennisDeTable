@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { DateTime, Duration } from 'luxon';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { CurveType } from 'recharts/types/shape/Curve';
 
@@ -47,6 +48,7 @@ export default function AreaComponent({
   layout = 'basis',
   ...props
 }: AreaComponentProps & StackedChartProps) {
+  const { i18n } = useTranslation();
   const { title, table, aggregation, duration, where } = props;
   const { groupBy } = props;
 
@@ -129,8 +131,8 @@ export default function AreaComponent({
               axisLine={false}
               tickMargin={8}
               angle={-30}
-              tickFormatter={(t: string) =>
-                CustomChartTickDate(t, format, aggregation)
+              tickFormatter={(v: string) =>
+                CustomChartTickDate(i18n.language, v, format, aggregation)
               }
               interval={interval}
             />

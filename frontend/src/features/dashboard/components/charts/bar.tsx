@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { DateTime, Duration } from 'luxon';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,6 +51,7 @@ export default function BarComponent({
   layout = 'horizontal',
   ...props
 }: BarComponentProps & GroupByChartProps) {
+  const { i18n } = useTranslation();
   const { title, table, aggregation, duration, where } = props;
   const { groupBy } = props;
 
@@ -147,7 +149,9 @@ export default function BarComponent({
               axisLine={false}
               tickMargin={8}
               angle={baseLayout === 'horizontal' ? -30 : 0}
-              tickFormatter={(t: string) => CustomChartTickDate(t, format)}
+              tickFormatter={(v: string) =>
+                CustomChartTickDate(i18n.language, v, format)
+              }
               interval={interval}
             />
             <Axis2
