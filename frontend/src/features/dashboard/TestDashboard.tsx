@@ -3,10 +3,8 @@ import BarComponent from './components/charts/bar';
 import GaugeComponent from './components/charts/gauge';
 import HeatmapComponent from './components/charts/heatmap';
 import LineComponent from './components/charts/line';
-import MultiBarComponent from './components/charts/multi-bar';
 import MultiGaugeComponent from './components/charts/multi-gauge';
 import PieComponent from './components/charts/pie';
-import StackedBarComponent from './components/charts/stacked-bar';
 import StackedGaugeComponent from './components/charts/stacked-gauge';
 import { AcicAggregation, AcicEvent } from './lib/props';
 
@@ -100,14 +98,14 @@ export default function TestDashboard() {
         aggregation={AcicAggregation.OneDay}
         layout="horizontal"
       />
-      <StackedBarComponent
+      <BarComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneWeek}
         aggregation={AcicAggregation.OneDay}
-        layout="horizontal"
+        layout="horizontal stacked"
         groupBy="direction"
       />
-      <MultiBarComponent
+      <BarComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneWeek}
         aggregation={AcicAggregation.OneDay}
@@ -120,14 +118,14 @@ export default function TestDashboard() {
         aggregation={AcicAggregation.OneDay}
         layout="vertical"
       />
-      <StackedBarComponent
+      <BarComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneWeek}
         aggregation={AcicAggregation.OneDay}
-        layout="vertical"
+        layout="vertical stacked"
         groupBy="direction"
       />
-      <MultiBarComponent
+      <BarComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneWeek}
         aggregation={AcicAggregation.OneDay}

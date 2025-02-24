@@ -83,7 +83,7 @@ export default function LineComponent({
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
         <CardHeader>
-          <CardTitle>{title ?? `Multi-Bar ${layout.toString()}`}</CardTitle>
+          <CardTitle>{title ?? `Line ${layout.toString()}`}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
           <ChartContainer config={{}} className="h-full w-full">

@@ -6,21 +6,21 @@
     "deleteConfirmation": "Cette action est irréversible. L'onglet sera supprimé définitivement."
   },
   "widget": {
-    "add": "Ajouter une vignette",
-    "edit": "Modifier la vignette",
-    "title": "Titre de la vignette",
-    "deleteConfirmation": "Cette action est irréversible. La vignette sera supprimée définitivement.",
+    "add": "Ajouter une tuile",
+    "edit": "Modifier la tuile",
+    "title": "Titre de la tuile",
+    "deleteConfirmation": "Cette action est irréversible. La tuile sera supprimée définitivement.",
 
     "type": {
-      "label": "Type de vignette",
+      "label": "Type de tuile",
       "placeholder": "Sélectionner un type"
     },
     "layout": {
-      "label": "Disposition de la vignette",
+      "label": "Disposition de la tuile",
       "placeholder": "Sélectionner une disposition"
     },
     "size": {
-      "label": "Taille de la vignette",
+      "label": "Taille de la tuile",
       "placeholder": "Sélectionner une taille"
     },
     "table": {
