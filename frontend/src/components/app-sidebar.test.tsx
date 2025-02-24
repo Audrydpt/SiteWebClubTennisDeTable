@@ -210,9 +210,7 @@ describe('AppSidebar', () => {
 
         fireEvent.click(expandButton);
 
-        expect(await screen.findByText('All widgets')).toBeInTheDocument();
-        expect(screen.getByText('Main dashboard')).toBeInTheDocument();
-        expect(screen.getByText('Demo dashboard')).toBeInTheDocument();
+        expect(await screen.findByText('Export data')).toBeInTheDocument();
       });
 
       it('collapses submenu when clicked again', async () => {
@@ -227,11 +225,11 @@ describe('AppSidebar', () => {
 
         // Expand
         fireEvent.click(expandButton);
-        expect(await screen.findByText('All widgets')).toBeInTheDocument();
+        expect(await screen.findByText('Export data')).toBeInTheDocument();
 
         // Collapse
         fireEvent.click(expandButton);
-        expect(screen.queryByText('All widgets')).not.toBeInTheDocument();
+        expect(screen.queryByText('Export data')).not.toBeInTheDocument();
       });
     });
 
@@ -243,7 +241,7 @@ describe('AppSidebar', () => {
         const userButton = screen.getByText('Anonymous');
         await user.click(userButton);
 
-        expect(screen.getByText('Sign out')).toBeInTheDocument();
+        expect(screen.getByText('logout.title')).toBeInTheDocument();
       });
 
       it('opens user menu for administrator', async () => {
@@ -253,7 +251,7 @@ describe('AppSidebar', () => {
         const userButton = screen.getByText('AdminUser');
         await user.click(userButton);
 
-        expect(screen.getByText('Sign out')).toBeInTheDocument();
+        expect(screen.getByText('logout.title')).toBeInTheDocument();
       });
 
       it('opens user menu for operator', async () => {
@@ -263,7 +261,7 @@ describe('AppSidebar', () => {
         const userButton = screen.getByText('OperatorUser');
         await user.click(userButton);
 
-        expect(screen.getByText('Sign out')).toBeInTheDocument();
+        expect(screen.getByText('logout.title')).toBeInTheDocument();
       });
 
       it('shows logout confirmation dialog when "Sign out" is clicked', async () => {
@@ -273,13 +271,11 @@ describe('AppSidebar', () => {
         const userButton = screen.getByText('AdminUser');
         await user.click(userButton);
 
-        const signOutButton = screen.getByText('Sign out');
+        const signOutButton = screen.getByText('logout.title');
         await user.click(signOutButton);
 
-        expect(screen.getByText('Logout confirmation')).toBeInTheDocument();
-        expect(
-          screen.getByText('Are you sure you want to sign out?')
-        ).toBeInTheDocument();
+        expect(screen.getByText('logout.description')).toBeInTheDocument();
+        expect(screen.getByText('logout.submit')).toBeInTheDocument();
       });
 
       it('calls logout function when confirmed', async () => {
@@ -289,10 +285,10 @@ describe('AppSidebar', () => {
         const userButton = screen.getByText('AdminUser');
         await user.click(userButton);
 
-        const signOutButton = screen.getByText('Sign out');
+        const signOutButton = screen.getByText('logout.title');
         await user.click(signOutButton);
 
-        const confirmButton = screen.getByText('Logout');
+        const confirmButton = screen.getByText('logout.submit');
         await user.click(confirmButton);
 
         expect(mockAuthState.logout).toHaveBeenCalled();
@@ -305,10 +301,10 @@ describe('AppSidebar', () => {
         const userButton = screen.getByText('AdminUser');
         await user.click(userButton);
 
-        const signOutButton = screen.getByText('Sign out');
+        const signOutButton = screen.getByText('logout.title');
         await user.click(signOutButton);
 
-        const cancelButton = screen.getByText('Cancel');
+        const cancelButton = screen.getByText('cancel');
         await user.click(cancelButton);
 
         expect(mockAuthState.logout).not.toHaveBeenCalled();
