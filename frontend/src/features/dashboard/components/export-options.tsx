@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { WhereClauses } from '@/components/where-clauses';
+import { WhereClausesWithSearch } from '@/components/where-clauses-with-search';
 import { ExportStep } from '../lib/export';
 import { AcicAggregation } from '../lib/props';
 import { getWidgetData, getWidgetDescription } from '../lib/utils';
@@ -57,10 +57,9 @@ export default function ExportStepSource({
     select: (data) => data[storedWidget.table],
   });
 
-  // créer le groupBy selon les préférences de l'utilisateur, ex hard-codé
   let groupByColumn = '';
   if (columnKeys && columnKeys.length > 0) {
-    groupByColumn = `${columnKeys[0]},${columnKeys[1]}`;
+    groupByColumn = columnKeys.join(',');
   }
 
   // récupérer les données de la table pour permettre à l'utilisateur de créer des filtres sur les colonnes
@@ -82,6 +81,28 @@ export default function ExportStepSource({
       ),
     enabled: groupByColumn.length > 0,
   });
+
+  console.log('data', data);
+  // definition de l'autocompletion pour toutes les where clauses
+  const whereClausesAutocompletion =
+    data?.reduce(
+      (
+        acc: Record<string, Set<string>>,
+        item: Record<string, string | number | boolean | null>
+      ) => {
+        Object.entries(item).forEach(([key, value]) => {
+          if (!acc[key]) {
+            acc[key] = new Set();
+          }
+          if (value !== null && value !== undefined) {
+            acc[key].add(String(value));
+          }
+        });
+        return acc;
+      },
+      {}
+    ) || {};
+  console.log('whereClausesAutocompletion', whereClausesAutocompletion);
 
   const { isValid } = form.formState;
 
@@ -140,8 +161,7 @@ export default function ExportStepSource({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Where</FormLabel>
-                {/* Comment passer les valeurs possibles pour guider l'utilisateur ? */}
-                <WhereClauses
+                <WhereClausesWithSearch
                   columns={columnKeys || []}
                   value={Array.isArray(field.value) ? field.value : []}
                   onValueChange={(value) => {
