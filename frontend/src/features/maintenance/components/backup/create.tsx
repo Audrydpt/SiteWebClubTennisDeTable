@@ -1,5 +1,4 @@
-'use client';
-
+/* eslint-disable no-console */
 import { useState } from 'react';
 import { Download, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,46 +14,36 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
+import useBackup from '../../hooks/use-backup';
 
-interface Stream {
-  id: string;
-  name: string;
+interface CreateBackupWizardProps {
+  sessionId: string | undefined;
 }
-
-const mockStreams: Stream[] = Array.from({ length: 150 }, (_, i) => ({
-  id: `stream-${i + 1}`,
-  name: `Stream ${i + 1}`,
-}));
 
 const getStepDescription = (step: number) => {
   switch (step) {
     case 1:
-      return 'Backup Name';
-    case 2:
       return 'Select Content';
-    case 3:
-      return 'Configure Streams';
-    case 4:
+    case 2:
       return 'Generate Backup';
     default:
       return '';
   }
 };
 
-export default function CreateBackupWizard() {
+export default function CreateBackupWizard({
+  sessionId,
+}: CreateBackupWizardProps) {
+  const { streams, isLoading, generateBackup } = useBackup(sessionId || '');
   const [step, setStep] = useState(1);
-  const [backupName, setBackupName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStreams, setSelectedStreams] = useState<Set<string>>(
     new Set()
   );
   const [includeGlobalConfig, setIncludeGlobalConfig] = useState(true);
-  const [streamRenames, setStreamRenames] = useState<Record<string, string>>(
-    {}
-  );
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const filteredStreams = mockStreams.filter((stream) =>
+  const filteredStreams = streams.filter((stream) =>
     stream.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -62,8 +51,6 @@ export default function CreateBackupWizard() {
     const newSelected = new Set(selectedStreams);
     if (newSelected.has(streamId)) {
       newSelected.delete(streamId);
-      const { [streamId]: removed, ...rest } = streamRenames;
-      setStreamRenames(rest);
     } else {
       newSelected.add(streamId);
     }
@@ -71,19 +58,27 @@ export default function CreateBackupWizard() {
   };
 
   const selectAllStreams = () => {
-    setSelectedStreams(new Set(mockStreams.map((stream) => stream.id)));
+    const streamsToSelect = searchQuery
+      ? filteredStreams.map((stream) => stream.id)
+      : streams.map((stream) => stream.id);
+    setSelectedStreams(new Set([...selectedStreams, ...streamsToSelect]));
   };
 
   const deselectAllStreams = () => {
-    setSelectedStreams(new Set());
-    setStreamRenames({});
+    if (!searchQuery) {
+      setSelectedStreams(new Set());
+      return;
+    }
+
+    const newSelected = new Set(selectedStreams);
+    filteredStreams.forEach((stream) => {
+      newSelected.delete(stream.id);
+    });
+    setSelectedStreams(newSelected);
   };
 
   const handleNext = () => {
-    if (step === 1 && !backupName.trim()) {
-      return;
-    }
-    if (step < 4) setStep(step + 1);
+    if (step < 2) setStep(step + 1);
   };
 
   const handleBack = () => {
@@ -93,59 +88,28 @@ export default function CreateBackupWizard() {
   const handleGenerateBackup = async () => {
     setIsGenerating(true);
     try {
-      const backupData = {
-        name: backupName,
-        timestamp: new Date().toISOString(),
-        includeGlobalConfig,
-        streams: Array.from(selectedStreams).map((streamId) => ({
-          originalId: streamId,
-          originalName: mockStreams.find((s) => s.id === streamId)?.name,
-          newName:
-            streamRenames[streamId] ||
-            mockStreams.find((s) => s.id === streamId)?.name,
-        })),
-      };
-
-      const blob = new Blob([JSON.stringify(backupData, null, 2)], {
-        type: 'application/json',
-      });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${backupName.replace(/\s+/g, '_')}_${new Date().toISOString()}.backup`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      await generateBackup(includeGlobalConfig, [...selectedStreams]);
+    } catch (error) {
+      console.error('Failed to generate backup:', error);
     } finally {
       setIsGenerating(false);
     }
   };
+
+  if (isLoading) {
+    return <div>Loading streams...</div>;
+  }
 
   return (
     <Card className="w-full mx-auto">
       <CardHeader>
         <CardTitle>Create Backup</CardTitle>
         <CardDescription>
-          Step {step} of 4: {getStepDescription(step)}
+          Step {step} of 2: {getStepDescription(step)}
         </CardDescription>
       </CardHeader>
       <CardContent>
         {step === 1 && (
-          <div className="space-y-4">
-            <div className="grid gap-2">
-              <Label htmlFor="backup-name">Backup Name</Label>
-              <Input
-                id="backup-name"
-                placeholder="Enter backup name..."
-                value={backupName}
-                onChange={(e) => setBackupName(e.target.value)}
-              />
-            </div>
-          </div>
-        )}
-
-        {step === 2 && (
           <div className="space-y-6">
             <div className="flex items-center space-x-4">
               <Switch
@@ -217,98 +181,10 @@ export default function CreateBackupWizard() {
           </div>
         )}
 
-        {step === 3 && (
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4 mb-4">
-                <div className="flex-grow">
-                  <Label htmlFor="global-rename">Global Stream Rename</Label>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <Input
-                      id="global-rename"
-                      placeholder="Enter name for all selected streams..."
-                      className="flex-grow"
-                    />
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => {
-                        const input = document.getElementById(
-                          'global-rename'
-                        ) as HTMLInputElement;
-                        const globalName = input.value;
-                        if (globalName.trim()) {
-                          const newRenames: Record<string, string> = {};
-                          selectedStreams.forEach((streamId) => {
-                            newRenames[streamId] = globalName;
-                          });
-                          setStreamRenames(newRenames);
-                          input.value = '';
-                        }
-                      }}
-                    >
-                      Apply to All
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <Label>Configure Individual Stream Names</Label>
-              <ScrollArea className="h-[300px] border rounded-md">
-                <div className="p-4 space-y-4">
-                  {Array.from(selectedStreams).map((streamId) => {
-                    const stream = mockStreams.find((s) => s.id === streamId);
-                    if (!stream) return null;
-
-                    return (
-                      <div key={streamId} className="grid gap-2">
-                        <Label htmlFor={`rename-${streamId}`}>
-                          {stream.name}
-                        </Label>
-                        <div className="flex items-center space-x-2">
-                          <Input
-                            id={`rename-${streamId}`}
-                            placeholder="Enter new name (optional)"
-                            value={streamRenames[streamId] || ''}
-                            onChange={(e) => {
-                              const { value } = e.target;
-                              setStreamRenames((prev) => ({
-                                ...prev,
-                                [streamId]: value,
-                              }));
-                            }}
-                          />
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="shrink-0"
-                            onClick={() => {
-                              setStreamRenames((prev) => ({
-                                ...prev,
-                                [streamId]: stream.name,
-                              }));
-                            }}
-                          >
-                            Use Original
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            </div>
-          </div>
-        )}
-
-        {step === 4 && (
+        {step === 2 && (
           <div className="space-y-6">
             <div className="rounded-lg border bg-muted/50 p-4 space-y-4">
               <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="font-medium">Backup Name:</span>
-                  <span>{backupName}</span>
-                </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Global Configuration:</span>
                   <span>
@@ -322,33 +198,19 @@ export default function CreateBackupWizard() {
               </div>
 
               {selectedStreams.size > 0 && (
-                <div className="space-y-2">
-                  <span className="font-medium">Stream Details:</span>
-                  <ScrollArea className="h-[200px] w-full rounded-md border">
-                    <div className="p-4 space-y-2">
-                      {Array.from(selectedStreams).map((streamId) => {
-                        const stream = mockStreams.find(
-                          (s) => s.id === streamId
-                        );
-                        if (!stream) return null;
-
-                        return (
-                          <div
-                            key={streamId}
-                            className="flex justify-between text-sm"
-                          >
-                            <span>{stream.name}</span>
-                            {streamRenames[streamId] && (
-                              <span className="text-muted-foreground">
-                                → {streamRenames[streamId]}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </ScrollArea>
-                </div>
+                <ScrollArea className="h-[200px] w-full rounded-md border">
+                  <div className="p-4 space-y-2">
+                    {Array.from(selectedStreams).map((streamId) => {
+                      const stream = streams.find((s) => s.id === streamId);
+                      if (!stream) return null;
+                      return (
+                        <div key={streamId} className="text-sm">
+                          {stream.name}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
               )}
             </div>
 
@@ -370,14 +232,7 @@ export default function CreateBackupWizard() {
         <Button variant="outline" onClick={handleBack} disabled={step === 1}>
           Back
         </Button>
-        {step < 4 && (
-          <Button
-            onClick={handleNext}
-            disabled={step === 1 && !backupName.trim()}
-          >
-            Next
-          </Button>
-        )}
+        {step < 2 && <Button onClick={handleNext}>Next</Button>}
       </CardFooter>
     </Card>
   );
