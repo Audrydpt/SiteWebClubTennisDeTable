@@ -177,16 +177,16 @@ describe('Chart Utils', () => {
       const testDate = '2024-01-15T12:00:00.000Z';
       const format = 'yyyy-MM-dd';
 
-      expect(CustomChartTickDate(testDate, format)).toBe(
+      expect(CustomChartTickDate('en', testDate, format)).toBe(
         DateTime.fromISO(testDate).toFormat(format)
       );
 
       expect(
-        CustomChartTickDate(testDate, format, AcicAggregation.OneHour)
+        CustomChartTickDate('en', testDate, format, AcicAggregation.OneHour)
       ).toBe(DateTime.fromISO(testDate).minus({ hours: 1 }).toFormat(format));
 
       expect(
-        CustomChartTickDate(testDate, format, AcicAggregation.OneDay)
+        CustomChartTickDate('en', testDate, format, AcicAggregation.OneDay)
       ).toBe(DateTime.fromISO(testDate).minus({ days: 1 }).toFormat(format));
     });
   });
