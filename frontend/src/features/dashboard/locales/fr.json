@@ -62,6 +62,16 @@
       "minLength": "Le titre doit contenir au moins {{count}} caractères"
     }
   },
+  "chart": {
+    "Area": "Aire",
+    "Bar": "Histogramme",
+    "Line": "Courbe",
+    "Gauge": "Jauge",
+    "Pie": "Secteur",
+    "MultiGauge": "Multi-jauge",
+    "StackedGauge": "Jauge empilée",
+    "Heatmap": "Carte de chaleur"
+  },
   "time": {
     "OneMinute": "1 minute",
     "FifteenMinutes": "15 minutes",
@@ -74,14 +84,45 @@
     "OneYear": "1 an",
     "LifeTime": "100 ans"
   },
+  "size": {
+    "tiny": "Minuscule",
+    "small": "Petit",
+    "medium": "Moyen",
+    "large": "Grand",
+    "big": "Géant",
+    "full": "Plein écran"
+  },
+  "layout": {
+    "horizontal stacked": "Empilé horizontalement",
+    "vertical stacked": "Empilé verticalement",
+    "horizontal sided": "Côte à côte horizontalement",
+    "vertical sided": "Côte à côte verticalement",
+
+    "half": "Demi gauge",
+    "full": "Gauge pleine",
+
+    "pie": "Camembert",
+    "halfpie": "Demi camembert",
+
+    "donut": "Donut",
+    "halfdonut": "Demi donut",
+
+    "monotone": "Monotone",
+    "bump": "Rebondissant",
+    "linear": "Linéaire",
+    "step": "Escalier"
+  },
   "heatmap": {
-    "count": "Valeur: {{count}}",
-    "noData": "Pas de donnée",
     "hourMinute": "Heure/Minute",
     "hour15min": "Heure/15 minutes",
     "hour30min": "Heure/30 minutes",
     "dayHour": "Jour/Heure",
     "monthDay": "Mois/Jour",
     "monthWeek": "Mois/Semaine"
+  },
+  "legend": {
+    "value": "Valeur",
+    "value_other": "Valeur: {{count}}",
+    "no_value": "Pas de données"
   }
 }

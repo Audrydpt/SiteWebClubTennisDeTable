@@ -48,7 +48,7 @@ export default function AreaComponent({
   layout = 'basis',
   ...props
 }: AreaComponentProps & StackedChartProps) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { title, table, aggregation, duration, where } = props;
   const { groupBy } = props;
 
@@ -61,13 +61,14 @@ export default function AreaComponent({
     ).as('milliseconds'),
   });
 
+  const translatedCount = t('dashboard:legend.value');
   const { dataMerged, chartConfig } = useMemo(() => {
     if (!data) return { dataMerged: {}, chartConfig: {} };
 
     return (data as DataType[]).reduce<ProcessedData>(
       (acc, item) => {
         const { timestamp, count } = item;
-        const groupValue = groupBy ? item[groupBy] : 'count';
+        const groupValue = groupBy ? item[groupBy] : translatedCount;
 
         if (!acc.dataMerged[timestamp]) {
           acc.dataMerged[timestamp] = { timestamp };
@@ -83,7 +84,7 @@ export default function AreaComponent({
       },
       { dataMerged: {}, chartConfig: {} }
     );
-  }, [data, groupBy]);
+  }, [translatedCount, data, groupBy]);
 
   if (isLoading || isError) {
     return (
@@ -127,8 +128,8 @@ export default function AreaComponent({
             <CartesianGrid vertical={false} />
             <XAxis
               dataKey="timestamp"
-              tickLine={false}
-              axisLine={false}
+              tickLine
+              axisLine
               tickMargin={8}
               angle={-30}
               tickFormatter={(v: string) =>

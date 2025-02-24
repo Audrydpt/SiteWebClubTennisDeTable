@@ -62,6 +62,16 @@
       "minLength": "Title must be at least {{count}} characters"
     }
   },
+  "chart": {
+    "Area": "Area",
+    "Bar": "Column",
+    "Line": "Line",
+    "Gauge": "Gauge",
+    "Pie": "Pie",
+    "MultiGauge": "Multi-Gauge",
+    "StackedGauge": "Stacked Gauge",
+    "Heatmap": "Heatmap"
+  },
   "time": {
     "OneMinute": "1 minute",
     "FifteenMinutes": "15 minutes",
@@ -74,14 +84,45 @@
     "OneYear": "1 year",
     "LifeTime": "100 years"
   },
+  "size": {
+    "tiny": "Tiny",
+    "small": "Small",
+    "medium": "Medium",
+    "large": "Large",
+    "big": "Big",
+    "full": "Full screen"
+  },
+  "layout": {
+    "horizontal stacked": "Horizontal stacked",
+    "vertical stacked": "Vertical stacked",
+    "horizontal sided": "Horizontal sided",
+    "vertical sided": "Vertical sided",
+
+    "half": "Half gauge",
+    "full": "Full gauge",
+
+    "pie": "Pie",
+    "halfpie": "Half pie",
+
+    "donut": "Donut",
+    "halfdonut": "Half donut",
+
+    "monotone": "Monotone",
+    "bump": "Bump",
+    "linear": "Linear",
+    "step": "Step"
+  },
   "heatmap": {
-    "count": "Count: {{count}}",
-    "noData": "No data",
     "hourMinute": "Hour/Minute",
     "hour15min": "Hour/15 minutes",
     "hour30min": "Hour/30 minutes",
     "dayHour": "Day/Hour",
     "monthDay": "Month/Day",
     "monthWeek": "Month/Week"
+  },
+  "legend": {
+    "value": "Count",
+    "value_other": "Count: {{count}}",
+    "no_value": "No data"
   }
 }

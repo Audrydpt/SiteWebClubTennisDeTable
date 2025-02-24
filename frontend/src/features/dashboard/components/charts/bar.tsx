@@ -51,7 +51,7 @@ export default function BarComponent({
   layout = 'horizontal',
   ...props
 }: BarComponentProps & GroupByChartProps) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { title, table, aggregation, duration, where } = props;
   const { groupBy } = props;
 
@@ -67,13 +67,14 @@ export default function BarComponent({
     ).as('milliseconds'),
   });
 
+  const translatedCount = t('dashboard:legend.value');
   const { dataMerged, chartConfig } = useMemo(() => {
     if (!data) return { dataMerged: {}, chartConfig: {} };
 
     return (data as DataType[]).reduce<ProcessedData>(
       (acc, item) => {
         const { timestamp, count } = item;
-        const groupValue = groupBy ? item[groupBy] : 'count';
+        const groupValue = groupBy ? item[groupBy] : translatedCount;
 
         if (!acc.dataMerged[timestamp]) {
           acc.dataMerged[timestamp] = { timestamp };
@@ -89,7 +90,7 @@ export default function BarComponent({
       },
       { dataMerged: {}, chartConfig: {} }
     );
-  }, [data, groupBy]);
+  }, [translatedCount, data, groupBy]);
 
   if (isLoading || isError) {
     return (
@@ -145,8 +146,8 @@ export default function BarComponent({
             <Axis1
               dataKey="timestamp"
               type="category"
-              tickLine={false}
-              axisLine={false}
+              tickLine
+              axisLine
               tickMargin={8}
               angle={baseLayout === 'horizontal' ? -30 : 0}
               tickFormatter={(v: string) =>

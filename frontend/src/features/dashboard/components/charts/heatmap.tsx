@@ -214,8 +214,8 @@ function HeatmapCell({ cellData, maxCount }: HeatmapCellProps) {
   const opacityClass = getOpacityClass(cellData?.count, maxCount);
   const legend =
     cellData && cellData.count !== null
-      ? t('dashboard:heatmap.count', { count: cellData.count })
-      : t('dashboard:heatmap.noData');
+      ? t('dashboard:legend.value', { count: cellData.count })
+      : t('dashboard:legend.no_value');
 
   return (
     <Tooltip>
