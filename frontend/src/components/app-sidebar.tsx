@@ -324,7 +324,7 @@ export default function AppSidebar() {
                   className="w-[--radix-popper-anchor-width]"
                 >
                   <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2" /> <span>Sign out</span>
+                    <LogOut className="mr-2" /> <span>{t('logout.title')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -338,17 +338,15 @@ export default function AppSidebar() {
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Logout confirmation</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to sign out?
-            </DialogDescription>
+            <DialogTitle>{t('logout.title')}</DialogTitle>
+            <DialogDescription>{t('logout.description')}</DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-4 mt-4">
             <Button variant="ghost" onClick={cancelLogout}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button variant="destructive" onClick={confirmLogout}>
-              Logout
+              {t('logout.submit')}
             </Button>
           </div>
         </DialogContent>
