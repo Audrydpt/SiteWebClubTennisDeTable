@@ -117,7 +117,7 @@ export default function FormUpdateUser({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Update user</DialogTitle>
           <DialogDescription>
@@ -162,10 +162,10 @@ export default function FormUpdateUser({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[180px]">Functionality</TableHead>
-                    <TableHead>Basic</TableHead>
-                    <TableHead>Advanced</TableHead>
-                    <TableHead>Admin</TableHead>
+                    <TableHead>Functionality</TableHead>
+                    <TableHead>Operator</TableHead>
+                    <TableHead>Maintainer</TableHead>
+                    <TableHead>Administrator</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -175,16 +175,16 @@ export default function FormUpdateUser({
                         {detail.action}
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <InfoIcon className="h-4 w-4 ml-1 inline-block text-gray-400" />
+                            <InfoIcon className="h-4 w-4 ml-1 inline-block text-muted-foreground" />
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{detail.tooltip}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TableCell>
-                      <TableCell>{detail.basic}</TableCell>
-                      <TableCell>{detail.advanced}</TableCell>
-                      <TableCell>{detail.admin}</TableCell>
+                      <TableCell>{detail.Operator}</TableCell>
+                      <TableCell>{detail.Maintainer}</TableCell>
+                      <TableCell>{detail.Administrator}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

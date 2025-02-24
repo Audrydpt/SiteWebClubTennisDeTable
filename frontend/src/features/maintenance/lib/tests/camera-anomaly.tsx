@@ -1,6 +1,5 @@
-// camera-anomaly.tsx
-import { HealthStatus, HealthResult, Item } from '../utils/types';
 import { apiService } from '../utils/api';
+import { HealthResult, HealthStatus, Item } from '../utils/types';
 import sortStreamsByNumericId from '../utils/utils';
 
 export default async function checkCameraAnomaly(
@@ -8,7 +7,6 @@ export default async function checkCameraAnomaly(
 ): Promise<HealthResult> {
   try {
     const response = await apiService.getStreams(sessionId);
-
     if (response.error) {
       return {
         status: HealthStatus.ERROR,
@@ -24,19 +22,23 @@ export default async function checkCameraAnomaly(
     }
 
     const streams = response.data || [];
+    // Identification des streams avec anomalie de configuration
     const nullStreams = streams.filter(
       (stream) => stream.application === 'MvNullApplication'
     );
+
+    // Création d'un item pour chaque caméra anormale
     const anomalyStreams: Item[] = nullStreams.map((stream) => ({
       id: stream.id,
-      name: `Camera ${stream.id}`,
+      name: `Stream ${stream.id}`,
       status: HealthStatus.WARNING,
-      reason: 'is not configured properly',
+      message: 'has no application running',
     }));
 
     const sortedAnomalyStreams = sortStreamsByNumericId(anomalyStreams);
-
     let status: HealthStatus;
+
+    // Définition du status global en fonction du nombre de caméras anormales
     if (nullStreams.length === 0) {
       status = HealthStatus.OK;
     } else if (nullStreams.length < streams.length) {
@@ -47,7 +49,7 @@ export default async function checkCameraAnomaly(
         id: 'all',
         name: 'All Cameras',
         status: HealthStatus.ERROR,
-        reason: 'No cameras are configured',
+        message: 'No cameras are configured',
       });
     }
 

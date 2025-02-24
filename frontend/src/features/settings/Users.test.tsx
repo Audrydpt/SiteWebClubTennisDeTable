@@ -42,13 +42,13 @@ describe('Users Component', () => {
 
   it('should open create user dialog', async () => {
     render(<Users />);
-    await userEvent.click(screen.getByText('users:addUser'));
+    await userEvent.click(screen.getByText('settings:addUser'));
     expect(screen.getByText('Create a new user')).toBeInTheDocument();
   });
 
   it('should create a new user', async () => {
     render(<Users />);
-    await userEvent.click(screen.getByText('users:addUser'));
+    await userEvent.click(screen.getByText('settings:addUser'));
     expect(screen.getByText('Create a new user')).toBeInTheDocument();
 
     await userEvent.type(screen.getByLabelText('Username'), 'newUser');

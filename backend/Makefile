@@ -18,6 +18,7 @@ deploy: build
 	# ssh root@$(SERVER) 'docker load < /tmp/newfront.tar'
 	ssh root@$(SERVER) 'rm /tmp/newfront.tar'
 	ssh root@$(SERVER) 'systemctl start acic-database.service'
+	ssh root@$(SERVER) 'podman system prune -f'
 	# ssh root@$(SERVER) 'docker run -d --restart unless-stopped --shm-size=512m --net host -v /opt/ACIC/front/database:/var/lib/postgresql/16/main:z localhost/newfront'
 	rm /tmp/newfront.tar
 

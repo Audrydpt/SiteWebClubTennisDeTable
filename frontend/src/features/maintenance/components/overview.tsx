@@ -1,6 +1,8 @@
-import { CheckCircle, Package, Clock } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { CheckCircle, Clock, Package } from 'lucide-react';
+
 import LoadingSpinner from '@/components/loading';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
 import useOverview from '../hooks/use-overview';
 
 function VersionDisplay() {
@@ -17,11 +19,11 @@ function VersionDisplay() {
   return (
     <div className="space-y-2">
       <div className="flex flex-col">
-        <span className="text-sm text-gray-500">API Version</span>
+        <span className="text-sm text-muted-foreground">API Version</span>
         <span>{version}</span>
       </div>
       <div className="flex flex-col">
-        <span className="text-sm text-gray-500">Product Version</span>
+        <span className="text-sm text-muted-foreground">Product Version</span>
         <span>{productVersion}</span>
       </div>
     </div>
@@ -40,8 +42,8 @@ function Overview() {
         </CardHeader>
         <CardContent>
           <div className="mb-2 md:mb-0 md:mr-4">
-            <span className="text-green-600 font-bold">Operational</span>
-            <p className="text-sm text-gray-500">Last checked: 5 minutes ago</p>
+            <span className="text-primary font-bold">Operational</span>
+            <p className="text-sm">Last checked: 5 minutes ago</p>
           </div>
         </CardContent>
       </Card>
@@ -69,8 +71,10 @@ function Overview() {
         </CardHeader>
         <CardContent>
           <div>
-            <span className="text-yellow-500">7 days ago</span>
-            <p className="text-sm text-gray-500">Next scheduled: In 2 days</p>
+            <span className="text-secondary">7 days ago</span>
+            <p className="text-sm text-muted-foreground">
+              Next scheduled: In 2 days
+            </p>
           </div>
         </CardContent>
       </Card>

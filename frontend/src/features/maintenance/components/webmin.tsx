@@ -1,6 +1,7 @@
-import { Settings, CircleArrowOutUpRight } from 'lucide-react';
+import { CircleArrowOutUpRight, Settings } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 function Webmin() {
   const handleOpenWebmin = () => {

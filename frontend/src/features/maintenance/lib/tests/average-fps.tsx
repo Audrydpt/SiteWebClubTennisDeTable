@@ -1,18 +1,21 @@
-import { HealthStatus, HealthResult, Item } from '../utils/types';
 import { apiService } from '../utils/api';
+import { HealthResult, HealthStatus, Item } from '../utils/types';
 import sortStreamsByNumericId from '../utils/utils';
 
-const isErrorLog = (logLine: string): boolean =>
-  logLine.includes('Could not connect') ||
-  logLine.includes('Failed to connect') ||
-  logLine.includes('Connection refused');
+function isErrorLog(logLine: string): boolean {
+  return (
+    logLine.includes('Could not connect') ||
+    logLine.includes('Failed to connect') ||
+    logLine.includes('Connection refused')
+  );
+}
 
-const extractFps = (logLine: string): number => {
+function extractFps(logLine: string): number {
   const match = logLine.match(/Frames decoded: (\d+\.\d+)\/s/);
   return match ? parseFloat(match[1]) : 0;
-};
+}
 
-const calculateAverageFps = (logLines: string[]): number | null => {
+function calculateAverageFps(logLines: string[]): number | null {
   const validLines = logLines.filter(
     (line) => !isErrorLog(line) && line.includes('Frames decoded')
   );
@@ -22,20 +25,28 @@ const calculateAverageFps = (logLines: string[]): number | null => {
   const fpsValues = lastThreeLines.map(extractFps);
   const sum = fpsValues.reduce((acc, val) => acc + val, 0);
   return sum / fpsValues.length;
-};
+}
 
-const getStatusForFps = (fps: number): HealthStatus => {
+function getStatusForFps(fps: number): HealthStatus {
   if (fps === 0 || (fps >= 0.9 && fps <= 1)) return HealthStatus.ERROR;
   if (fps <= 5) return HealthStatus.WARNING;
   return HealthStatus.OK;
-};
+}
+
+function createFpsErrorItem(streamId: string, message: string): Item {
+  return {
+    id: streamId,
+    name: `Stream ${streamId}`,
+    status: HealthStatus.ERROR,
+    message,
+  };
+}
 
 export default async function checkAverageFps(
   sessionId: string
 ): Promise<HealthResult> {
   try {
     const response = await apiService.getStreams(sessionId);
-
     if (response.error) {
       return {
         status: HealthStatus.ERROR,
@@ -64,21 +75,17 @@ export default async function checkAverageFps(
           ) {
             return;
           }
-          fpsResults.push({
-            id: stream.id,
-            name: `Camera ${stream.id}`,
-            status: HealthStatus.ERROR,
-            message: 'Failed to retrieve FPS data',
-          });
+          fpsResults.push(
+            createFpsErrorItem(stream.id, 'Failed to retrieve FPS data')
+          );
           return;
         }
 
         const logLines = logResponse.data?.trim().split('\n') || [];
         if (logLines.length === 0) return;
 
-        if (logLines.some(isErrorLog)) {
-          return;
-        }
+        // Ignore le stream si des lignes d'erreur sont détectées
+        if (logLines.some(isErrorLog)) return;
 
         const averageFps = calculateAverageFps(logLines);
         if (averageFps === null) return;
@@ -87,7 +94,7 @@ export default async function checkAverageFps(
         if (status !== HealthStatus.OK) {
           fpsResults.push({
             id: stream.id,
-            name: `Camera ${stream.id}`,
+            name: `Stream ${stream.id}`,
             status,
             message: `Average FPS: ${averageFps.toFixed(2)}/s`,
           });
@@ -112,7 +119,7 @@ export default async function checkAverageFps(
       details: [
         {
           id: 'error',
-          name: 'System Error',
+          name: 'FPS Check',
           status: HealthStatus.ERROR,
           message: error instanceof Error ? error.message : 'Unknown error',
         },

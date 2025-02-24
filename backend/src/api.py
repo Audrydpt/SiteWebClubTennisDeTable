@@ -1,16 +1,19 @@
 import os
+import cv2
+import uvicorn
 import datetime
-from fastapi.staticfiles import StaticFiles
-
+import requests
 
 from pydantic import Field, create_model
+
 from sqlalchemy import func, JSON
-import uvicorn
+from sqlalchemy.inspection import inspect
+
+from fastapi.staticfiles import StaticFiles
 from fastapi import Depends, FastAPI, HTTPException, Query, requests
 from fastapi.middleware.cors import CORSMiddleware
 
 from typing import Annotated, Literal, Optional, Type, Union, List, Dict, Any
-from sqlalchemy.inspection import inspect
 from enum import Enum
 
 from swagger import get_custom_swagger_ui_html
@@ -18,7 +21,8 @@ from event_grabber import EventGrabber
 from database import Dashboard, GenericDAL, Widget
 from database import AcicAllInOneEvent, AcicCounting, AcicEvent, AcicLicensePlate, AcicNumbering, AcicOCR, AcicOccupancy, AcicUnattendedItem
 
-import requests
+
+from vms import CameraClient
 
 class ModelName(str, Enum):
     minute = "1 minute"
@@ -66,7 +70,7 @@ class FastAPIServer:
         async def custom_swagger_ui_html():
             return get_custom_swagger_ui_html(openapi_url="openapi.json", title=self.app.title + " - Swagger UI",)
 
-        @self.app.get("/health", include_in_schema=False)
+        @self.app.get("/health", tags=["/health"], include_in_schema=False)
         async def health():
             grabbers = {}
             for grabber in self.event_grabber.get_grabbers():
@@ -78,8 +82,7 @@ class FastAPIServer:
                 "grabbers": grabbers
             }
 
-
-        @self.app.get("/health/aiServer/{ip}")
+        @self.app.get("/health/aiServer/{ip}", tags=["/health"])
         async def health_ai_server(ip: str):
             try:
                 username = "administrator"
@@ -106,15 +109,14 @@ class FastAPIServer:
 
             except requests.exceptions.RequestException as e:
                 return {"status": "error", "message": f"Request failed: {str(e)}"}
-
-
-        @self.app.get("/health/secondaryServer/{ip}")
-        async def health_secondary_server(ip: str):
+        
+        @self.app.get("/health/lprServer/{ip}", tags=["/health"])
+        async def health_ai_server(ip: str):
             try:
                 username = "administrator"
                 password = "ACIC"
 
-                ai_service_url = f"https://{ip}/api/aiService"
+                ai_service_url = f"https://{ip}/api/lprService"
                 response = requests.get(ai_service_url, auth=(username, password), headers={"Accept": "application/json"},
                                         verify=False, timeout=3)
 
@@ -123,9 +125,23 @@ class FastAPIServer:
 
                 ai_data = response.json()
                 ai_ip = ai_data["address"]
-                ai_port = "8080"
+                ai_port = ai_data["port"]
 
-                describe_url = f"http://{ai_ip}:{ai_port}/ConfigTool.html"
+                describe_url = f"http://{ai_ip}:{ai_port}/describe"
+                describe_response = requests.get(describe_url, timeout=3)
+
+                if describe_response.status_code == 200:
+                    return {"status": "ok"}
+                else:
+                    return {"status": "error", "message": "LPR service /describe endpoint not responding"}
+
+            except requests.exceptions.RequestException as e:
+                return {"status": "error", "message": f"Request failed: {str(e)}"}
+
+        @self.app.get("/health/secondaryServer/{ip}", tags=["/health"])
+        async def health_secondary_server(ip: str):
+            try:
+                describe_url = f"http://{ip}:8080/ConfigTool.html"
                 describe_response = requests.get(describe_url, timeout=3)
 
                 if describe_response.status_code == 401:
@@ -139,6 +155,33 @@ class FastAPIServer:
                 return {"status": "error", "message": "Connection error"}
             except requests.exceptions.RequestException as e:
                 return {"status": "error", "message": f"Request failed: {str(e)}"}
+
+        @self.app.get("/vms/{ip}/cameras", tags=["/vms"])
+        async def get_cameras(ip: str):
+            try:
+                with CameraClient(ip, 7778) as client:
+                    return client.get_system_info()
+            except:
+                raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
+
+        @self.app.get("/vms/{ip}/cameras/{guuid}/live", tags=["/vms"])
+        async def get_live(ip: str, guuid: str):
+            try:
+                with CameraClient(ip, 7778) as client:
+                    img = next(client.start_live(guuid))
+                    _, bytes = cv2.imencode('.jpg', img)
+                    return requests.Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
+
+            except:
+                raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
+
+        @self.app.get("/vms/{ip}/cameras/{guuid}/replay", tags=["/vms"])
+        async def get_replay(ip: str, guuid: str):
+            try:
+                with CameraClient(ip, 7778) as client:
+                    return client.start_replay(guuid)
+            except:
+                raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
 
         @self.app.get("/servers/grabbers", tags=["servers"])
         async def get_all_servers(health: Optional[bool] = False):

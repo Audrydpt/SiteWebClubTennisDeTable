@@ -1,16 +1,57 @@
 import { useState } from 'react';
+
 import checkAIService from '../lib/tests/ai-service';
-import checkCameraAnomaly from '../lib/tests/camera-anomaly';
-import checkCameraActivity from '../lib/tests/camera-activity';
-import checkImageInStreams from '../lib/tests/image-in-streams';
 import checkAverageFps from '../lib/tests/average-fps';
+import checkCameraActivity from '../lib/tests/camera-activity';
+import checkCameraAnomaly from '../lib/tests/camera-anomaly';
+import checkImageInStreams from '../lib/tests/image-in-streams';
 import checkSecondaryServerHealth from '../lib/tests/secondary-port';
 import {
-  HealthStatus,
   HealthResult,
   HealthState,
+  HealthStatus,
   ServiceType,
 } from '../lib/utils/types';
+
+const tests: Array<{
+  name: ServiceType;
+  fn: (sessionId: string) => Promise<HealthResult>;
+}> = [
+  { name: ServiceType.AI_SERVICE, fn: checkAIService },
+  { name: ServiceType.CAMERA_ANOMALY, fn: checkCameraAnomaly },
+  { name: ServiceType.CAMERA_ACTIVITY, fn: checkCameraActivity },
+  { name: ServiceType.IMAGE_IN_STREAMS, fn: checkImageInStreams },
+  { name: ServiceType.AVERAGE_FPS, fn: checkAverageFps },
+  { name: ServiceType.SECONDARY, fn: checkSecondaryServerHealth },
+];
+
+async function executeTest(
+  test: { name: ServiceType; fn: (sessionId: string) => Promise<HealthResult> },
+  sessionId: string
+): Promise<HealthResult> {
+  try {
+    const timeoutPromise = new Promise<HealthResult>((_, reject) =>
+      // eslint-disable-next-line no-promise-executor-return
+      setTimeout(() => {
+        reject(new Error('Test timed out after 10 seconds'));
+      }, 10000)
+    );
+    const result = await Promise.race([test.fn(sessionId), timeoutPromise]);
+    return result;
+  } catch (error) {
+    return {
+      status: HealthStatus.ERROR,
+      details: [
+        {
+          id: 'error',
+          name: test.name,
+          status: HealthStatus.ERROR,
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
+      ],
+    };
+  }
+}
 
 export default function useHealthCheck() {
   const [healthCheckState, setHealthCheckState] = useState<HealthState>({
@@ -19,102 +60,37 @@ export default function useHealthCheck() {
     statuses: {},
   });
 
-  const tests: Array<{
-    name: ServiceType;
-    fn: (sessionId: string) => Promise<HealthResult>;
-  }> = [
-    {
-      name: ServiceType.AI_SERVICE,
-      fn: checkAIService,
-    },
-    {
-      name: ServiceType.CAMERA_ANOMALY,
-      fn: checkCameraAnomaly,
-    },
-    {
-      name: ServiceType.CAMERA_ACTIVITY,
-      fn: checkCameraActivity,
-    },
-    {
-      name: ServiceType.IMAGE_IN_STREAMS,
-      fn: checkImageInStreams,
-    },
-    {
-      name: ServiceType.AVERAGE_FPS,
-      fn: checkAverageFps,
-    },
-    {
-      name: ServiceType.SECONDARY,
-      fn: checkSecondaryServerHealth,
-    },
-  ];
-
   async function startHealthCheck(sessionId: string) {
     if (healthCheckState.running) return;
 
     setHealthCheckState({ progress: 0, running: true, statuses: {} });
+    const totalTests = tests.length;
+    let completed = 0;
 
-    const results = await Promise.all(
-      tests.map(async (test, index) => {
-        try {
-          const timeoutPromise = new Promise<HealthResult>((_, reject) => {
-            setTimeout(() => {
-              reject(new Error('Test timed out after 10 seconds'));
-            }, 10000);
-          });
-
-          const testPromise = test.fn(sessionId);
-          const result = await Promise.race([testPromise, timeoutPromise]);
-
-          const progress = ((index + 1) / tests.length) * 100;
-
-          setHealthCheckState(
-            (prev: HealthState): HealthState => ({
-              ...prev,
-              statuses: { ...prev.statuses, [test.name]: result },
-              progress,
-            })
-          );
-
-          return { name: test.name, result };
-        } catch (error: unknown) {
-          const errorResult: HealthResult = {
-            status: HealthStatus.ERROR,
-            details: [
-              {
-                id: 'error',
-                name: test.name,
-                status: HealthStatus.ERROR,
-                message:
-                  error instanceof Error ? error.message : 'Unknown error',
-              },
-            ],
-          };
-
-          const progress = ((index + 1) / tests.length) * 100;
-
-          setHealthCheckState(
-            (prev: HealthState): HealthState => ({
-              ...prev,
-              statuses: { ...prev.statuses, [test.name]: errorResult },
-              progress,
-            })
-          );
-
-          return { name: test.name, result: errorResult };
-        }
+    // Exécute chaque test en parallèle et met à jour la progressbar dès qu'un test se termine
+    const promises = tests.map((test) =>
+      executeTest(test, sessionId).then((result) => {
+        completed += 1;
+        setHealthCheckState((prev) => ({
+          ...prev,
+          progress: Math.round((completed / totalTests) * 100),
+          statuses: { ...prev.statuses, [test.name]: result },
+        }));
+        return { name: test.name, result };
       })
     );
-    setHealthCheckState(
-      (prev: HealthState): HealthState => ({
-        ...prev,
-        running: false,
-        progress: 100,
-        statuses: Object.fromEntries(
-          results.map(({ name, result }) => [name, result])
-        ),
-      })
-    );
+
+    const results = await Promise.all(promises);
+
+    // Mise à jour finale de l'état lorsque tous les tests sont terminés
+    setHealthCheckState((prev) => ({
+      ...prev,
+      running: false,
+      progress: 100,
+      statuses: Object.fromEntries(
+        results.map(({ name, result }) => [name, result])
+      ),
+    }));
   }
 
   return { ...healthCheckState, startHealthCheck };

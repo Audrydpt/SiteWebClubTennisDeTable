@@ -1,9 +1,10 @@
-import React from 'react';
-import { FileText, Activity, CircleArrowOutUpRight } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import useDump from '../hooks/use-dump';
+import { Activity, CircleArrowOutUpRight, FileText } from 'lucide-react';
+
 import LoadingSpinner from '@/components/loading';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+import useDump from '../hooks/use-dump';
 
 function Diagnostic() {
   const { downloadDump, loading } = useDump();

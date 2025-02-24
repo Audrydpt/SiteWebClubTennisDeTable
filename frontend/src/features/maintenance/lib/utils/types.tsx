@@ -37,9 +37,9 @@ export enum ServiceType {
 
 export const SERVICE_LABELS: Record<ServiceType, string> = {
   [ServiceType.AI_SERVICE]: 'AI Service',
-  [ServiceType.CAMERA_ACTIVITY]: 'Camera Activity',
-  [ServiceType.CAMERA_ANOMALY]: 'Camera Configuration',
-  [ServiceType.IMAGE_IN_STREAMS]: 'Snapshot Configuration',
-  [ServiceType.AVERAGE_FPS]: 'Average FPS',
   [ServiceType.SECONDARY]: 'External Processor',
+  [ServiceType.IMAGE_IN_STREAMS]: 'Stream Acquisition',
+  [ServiceType.CAMERA_ACTIVITY]: 'Camera Configuration',
+  [ServiceType.CAMERA_ANOMALY]: 'Running Application',
+  [ServiceType.AVERAGE_FPS]: 'Average FPS',
 };

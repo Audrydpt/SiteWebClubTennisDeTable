@@ -1,30 +1,30 @@
-/* eslint-disable prettier/prettier */
 import {
+  AlertTriangle,
+  CheckCircle,
+  ChevronRight,
   HeartPulse,
   Play,
-  CheckCircle,
-  AlertTriangle,
   XCircle,
-  ChevronRight,
 } from 'lucide-react';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
+
+import LoadingSpinner from '@/components/loading';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import useHealthCheck from '../hooks/use-healthCheck';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import LoadingSpinner from '@/components/loading';
-import { HealthStatus, ServiceType, SERVICE_LABELS } from '../lib/utils/types';
 import { useAuth } from '@/providers/auth-context.tsx';
+
+import useHealthCheck from '../hooks/use-healthCheck';
+import { HealthStatus, SERVICE_LABELS, ServiceType } from '../lib/utils/types';
 
 interface DetailItem {
   id?: string;
   name?: string;
-  reason?: string;
   message?: string;
   application?: string;
 }
@@ -47,76 +47,73 @@ function getStatusColor(status: HealthStatus): string {
   }
 }
 
-function HealthCheck() {
+function renderDetailItem(service: ServiceType, item: DetailItem): string {
+  switch (service) {
+    case ServiceType.CAMERA_ACTIVITY:
+    case ServiceType.CAMERA_ANOMALY:
+    case ServiceType.IMAGE_IN_STREAMS:
+    case ServiceType.AVERAGE_FPS:
+      return `${item.name || item.id} ${item.message}`;
+    default:
+      return item.message || '';
+  }
+}
+
+function renderServiceStatus(
+  service: ServiceType,
+  statuses: Record<string, ServiceStatus | undefined>
+): JSX.Element {
+  const serviceData = statuses[service];
+
+  if (serviceData?.status) {
+    return (
+      <div className="flex items-center">
+        {serviceData.status === HealthStatus.OK && (
+          <CheckCircle
+            className={`${getStatusColor(serviceData.status)} mr-2`}
+          />
+        )}
+        {serviceData.status === HealthStatus.WARNING && (
+          <AlertTriangle
+            className={`${getStatusColor(serviceData.status)} mr-2`}
+          />
+        )}
+        {serviceData.status === HealthStatus.ERROR && (
+          <XCircle className={`${getStatusColor(serviceData.status)} mr-2`} />
+        )}
+        <span className={getStatusColor(serviceData.status)}>
+          {SERVICE_LABELS[service]}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center">
+      <LoadingSpinner className="w-4 h-4 mr-2" />
+      <span className="text-muted-foreground">
+        {SERVICE_LABELS[service]} checking...
+      </span>
+    </div>
+  );
+}
+
+function hasDetails(
+  service: ServiceType,
+  statuses: Record<string, ServiceStatus | undefined>
+): boolean {
+  const serviceData = statuses[service];
+  return Boolean(serviceData?.details && serviceData.details.length > 0);
+}
+
+export default function HealthCheck() {
   const { sessionId } = useAuth();
   const { progress, running, statuses, startHealthCheck } = useHealthCheck();
   const [hasStarted, setHasStarted] = useState(false);
 
   const handleStartHealthCheck = () => {
-    if (!sessionId) {
-      return;
-    }
+    if (!sessionId) return;
     setHasStarted(true);
     startHealthCheck(sessionId);
-  };
-
-  const renderDetailItem = (service: ServiceType, item: DetailItem) => {
-    if (service === ServiceType.CAMERA_ACTIVITY) {
-      return `${item.name || item.id} ${item.message}`;
-    }
-    if (service === ServiceType.CAMERA_ANOMALY) {
-      return `Stream ${item.id} ${item.reason}`;
-    }
-    if (service === ServiceType.IMAGE_IN_STREAMS) {
-      return `${item.name} ${item.reason}`;
-    }
-    if (service === ServiceType.AI_SERVICE) {
-      return item.message || '';
-    }
-    if (service === ServiceType.AVERAGE_FPS) {
-      return `Camera ${item.id} ${item.message}`;
-    }
-    if (service === ServiceType.SECONDARY) {
-      return item.message || '';
-    }
-    return item.message || '';
-  };
-
-  const renderServiceStatus = (service: ServiceType) => {
-    const serviceData = statuses[service] as ServiceStatus | undefined;
-
-    if (!running && serviceData?.status) {
-      return (
-        <div className="flex items-center">
-          {serviceData.status === HealthStatus.OK && (
-            <CheckCircle className={`${getStatusColor(serviceData.status)} mr-2`} />
-          )}
-          {serviceData.status === HealthStatus.WARNING && (
-            <AlertTriangle className={`${getStatusColor(serviceData.status)} mr-2`} />
-          )}
-          {serviceData.status === HealthStatus.ERROR && (
-            <XCircle className={`${getStatusColor(serviceData.status)} mr-2`} />
-          )}
-          <span className={getStatusColor(serviceData.status)}>
-            {SERVICE_LABELS[service]} is {serviceData.status.toUpperCase()}
-          </span>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex items-center">
-        <LoadingSpinner className="w-4 h-4 mr-2" />
-        <span className="text-gray-500">
-          {SERVICE_LABELS[service]} checking...
-        </span>
-      </div>
-    );
-  };
-
-  const hasDetails = (service: ServiceType): boolean => {
-    const serviceData = statuses[service] as ServiceStatus | undefined;
-    return Boolean(serviceData?.details && serviceData.details.length > 0);
   };
 
   return (
@@ -137,38 +134,40 @@ function HealthCheck() {
           <Play className="mr-2" />
           {running ? 'Running...' : 'Run Health Check'}
         </Button>
-        {progress > 0 && <Progress value={progress} className="mt-4" />}
+        {hasStarted && <Progress value={progress} className="mt-4" />}
         {hasStarted && (
           <div className="mt-4 space-y-2">
             {Object.values(ServiceType).map((service) => (
               <Collapsible key={service}>
                 <div className="flex items-center justify-between">
-                  <div className="flex-1">{renderServiceStatus(service)}</div>
-                  {hasDetails(service) && (
+                  <div className="flex-1">
+                    {renderServiceStatus(service, statuses)}
+                  </div>
+                  {hasDetails(service, statuses) && (
                     <CollapsibleTrigger asChild>
-                      <Button variant="ghost" size="sm" className="p-0 h-6 w-6">
-                        <ChevronRight className="h-4 w-4 transition-transform duration-200 collapsible-rotate" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-0 h-6 w-6 group"
+                      >
+                        <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-90" />
                       </Button>
                     </CollapsibleTrigger>
                   )}
                 </div>
-                <CollapsibleContent className="mt-2">
-                  {(statuses[service] as ServiceStatus)?.details && (
-                    <ul className="ml-6 text-sm text-gray-500">
-                      {(statuses[service] as ServiceStatus).details?.map((item) => (
-                        <li
-                          key={`${service}-${item.id || item.name || item.message}`}
-                          className={getStatusColor(
-                            (statuses[service] as ServiceStatus)?.status ||
-                            HealthStatus.ERROR
-                          )}
-                        >
-                          {renderDetailItem(service, item)}
-                        </li>
-                      ))}
+                {hasDetails(service, statuses) && (
+                  <CollapsibleContent className="mt-2">
+                    <ul className="ml-6 text-sm text-muted-foreground">
+                      {(statuses[service] as ServiceStatus).details?.map(
+                        (item: DetailItem) => (
+                          <li key={item.id}>
+                            {renderDetailItem(service, item)}
+                          </li>
+                        )
+                      )}
                     </ul>
-                  )}
-                </CollapsibleContent>
+                  </CollapsibleContent>
+                )}
               </Collapsible>
             ))}
           </div>
@@ -177,5 +176,3 @@ function HealthCheck() {
     </Card>
   );
 }
-
-export default HealthCheck;

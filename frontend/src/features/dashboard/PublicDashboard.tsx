@@ -44,7 +44,7 @@ export default function PublicDashboard({
 
   if (isError) {
     return (
-      <div className="text-red-500 text-center">
+      <div className="text-destructive text-center">
         ❌ An error occurred while fetching data.
       </div>
     );
