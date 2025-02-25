@@ -243,7 +243,7 @@ class FastAPIServer:
             try:
                 ret = {}
                 dal = GenericDAL()
-                query = dal.get(Dashboard, _order='order')
+                query = await dal.async_get(Dashboard, _order='order')
                 for row in query:
                     data = {}
                     for column in inspect(Dashboard).mapper.column_attrs:
@@ -261,7 +261,7 @@ class FastAPIServer:
             try:
                 dal = GenericDAL()
                 tab = Dashboard(**data.dict(exclude_unset=True))
-                guid = dal.add(tab)
+                guid = await dal.async_add(tab)
                 tab.id = guid
                 return tab
             except ValueError as e:
@@ -271,14 +271,14 @@ class FastAPIServer:
         async def update_tab(id: str, data: Model):
             try:
                 dal = GenericDAL()
-                obj = dal.get(Dashboard, id=id)
+                obj = await dal.async_get(Dashboard, id=id)
                 if obj is None or len(obj) != 1:
                     raise HTTPException(status_code=404, detail="Tab not found")
 
                 for field, value in data.dict(exclude_unset=True).items():
                     setattr(obj[0], field, value)
 
-                return dal.update(obj[0])
+                return await dal.async_update(obj[0])
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
@@ -286,10 +286,10 @@ class FastAPIServer:
         async def delete_tab(id: str):
             try:
                 dal = GenericDAL()
-                obj = dal.get(Dashboard, id=id)
+                obj = await dal.async_get(Dashboard, id=id)
                 if obj is None or len(obj) != 1:
                     raise HTTPException(status_code=404, detail="Tab not found")
-                return dal.remove(obj[0])
+                return await dal.async_remove(obj[0])
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
@@ -311,7 +311,7 @@ class FastAPIServer:
         async def get_widgets(id: str):
             try:
                 dal = GenericDAL()
-                return dal.get(Widget, dashboard_id=id, _order='order')
+                return await dal.async_get(Widget, dashboard_id=id, _order='order')
 
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
@@ -320,7 +320,7 @@ class FastAPIServer:
         async def add_widget(id: str, data: Model):
             try:
                 dal = GenericDAL()
-                dashboard = dal.get(Dashboard, id=id)
+                dashboard = await dal.async_get(Dashboard, id=id)
                 if not dashboard or len(dashboard) != 1:
                     raise HTTPException(status_code=404, detail="Dashboard tab not found")
 
@@ -328,7 +328,7 @@ class FastAPIServer:
                     dashboard_id=id,
                     **data.dict()
                 )
-                guid = dal.add(widget)
+                guid = await dal.async_add(widget)
                 widget.id = guid
                 return widget
             except ValueError as e:
@@ -339,20 +339,20 @@ class FastAPIServer:
             try:
                 dal = GenericDAL()
 
-                dashboard = dal.get(Dashboard, id=id)
+                dashboard = await dal.async_get(Dashboard, id=id)
                 if not dashboard or len(dashboard) != 1:
                     raise HTTPException(status_code=404, detail="Dashboard tab not found")
 
-                current_widgets = dal.get(Widget, dashboard_id=id)
+                current_widgets = await dal.async_get(Widget, dashboard_id=id)
                 for widget in current_widgets:
-                    dal.remove(widget)
+                    await dal.async_remove(widget)
 
                 for widget_data in data:
                     widget = Widget(
                         dashboard_id=id,
                         **widget_data.dict()
                     )
-                    dal.add(widget)
+                    await dal.async_add(widget)
 
                 return True
 
@@ -365,7 +365,7 @@ class FastAPIServer:
                 dal = GenericDAL()
 
                 # Verify dashboard exists
-                dashboard = dal.get(Dashboard, id=id)
+                dashboard = await dal.async_get(Dashboard, id=id)
                 if not dashboard or len(dashboard) != 1:
                     raise HTTPException(status_code=404, detail="Dashboard tab not found")
 
@@ -380,7 +380,7 @@ class FastAPIServer:
                     widget_id = widget_data.pop('id')  # Remove id from update data
 
                     # Get existing widget
-                    widget = dal.get(Widget, id=widget_id)
+                    widget = await dal.async_get(Widget, id=widget_id)
                     if widget is None or len(widget) != 1:
                         raise HTTPException(status_code=404, detail=f"Widget {widget_id} not found")
 
@@ -400,7 +400,7 @@ class FastAPIServer:
                     widgets_to_update.append(widget)
 
                 # All validations passed, perform updates
-                return [dal.update(widget) for widget in widgets_to_update]
+                return [await dal.async_update(widget) for widget in widgets_to_update]
 
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
@@ -410,7 +410,7 @@ class FastAPIServer:
             try:
                 dal = GenericDAL()
 
-                widget = dal.get(Widget, id=widget_id)
+                widget = await dal.async_get(Widget, id=widget_id)
                 if widget is None or len(widget) != 1:
                     raise HTTPException(status_code=404, detail="Widget not found")
 
@@ -421,7 +421,8 @@ class FastAPIServer:
                 for field, value in data.dict().items():
                     setattr(widget, field, value)
 
-                return dal.update(widget)
+                res = await dal.async_update(widget)
+                return res
 
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
@@ -430,10 +431,10 @@ class FastAPIServer:
         async def delete_widget(id: str, widget_id: str):
             try:
                 dal = GenericDAL()
-                obj = dal.get(Widget, id=widget_id)
+                obj = await dal.async_get(Widget, id=widget_id)
                 if obj is None or len(obj) != 1:
                     raise HTTPException(status_code=404, detail="Widget not found")
-                return dal.remove(obj[0])
+                return await dal.async_remove(obj[0])
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
@@ -465,8 +466,10 @@ class FastAPIServer:
 
                 aggregation = agg_func if agg_func is not None else func.count(model_class.id)
 
+                cursor = await dal.async_get_bucket(model_class, _func=aggregation, _time=time, _group=group_by, _between=between, **where)
+
                 ret = []
-                for row in dal.get_bucket(model_class, _func=aggregation, _time=time, _group=group_by, _between=between, **where):
+                for row in cursor:
                     data = {
                         "timestamp": row[0],
                         "count": row[1]

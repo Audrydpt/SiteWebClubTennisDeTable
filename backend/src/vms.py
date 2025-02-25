@@ -33,7 +33,7 @@ class CameraClient:
         )
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.settimeout(5.0)
+        self.sock.settimeout(600.0)
 
         try:
             self.sock.connect((self.host, self.port))
@@ -209,9 +209,9 @@ def main():
             client.start_replay(first_guid)
             return True
 
-            for img in client.start_live(first_guid):
-                cv2.imshow("Image", img)
-                cv2.waitKey(1)
+            #for img in client.start_live(first_guid):
+            #    cv2.imshow("Image", img)
+            #    cv2.waitKey(1)
 
     except Exception as e:
         print(f"Erreur lors de l'exécution: {e}")

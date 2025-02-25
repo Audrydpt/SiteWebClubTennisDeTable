@@ -10,6 +10,17 @@ from database import AcicEvent
 from database import GenericDAL, AcicUnattendedItem, AcicCounting, AcicNumbering, AcicOccupancy, AcicAllInOneEvent, \
     AcicLicensePlate, AcicOCR
 
+def safe_int(val):
+    try:
+        return int(val)
+    except:
+        return None
+
+def safe_float(val):
+    try:
+        return float(val)
+    except:
+        return None
 
 class EventGrabber(threading.Thread):
     def __init__(self):
@@ -77,20 +88,15 @@ class EventGrabber(threading.Thread):
 
                 q = grabber.get_queue_copy()
 
-                is_full = False
                 if q.qsize() > 80:
-                    self.logger.warning(f"Grabber {grabber.acichost}:{grabber.acichostport} event queue is full.")
-                    is_full = True
+                    self.logger.warning(f"Grabber {grabber.acichost}:{grabber.acichostport} event queue is full!")
 
                 while q.empty() is False:
                     event = q.get()
-                    if is_full:
-                        self.logger.warning(f"Got this event in the full queue: {event}")
-
                     if self.parse_event(grabber.acichost, event) is False:
                         self.logger.warning(f"Could not parse event: {event} from {grabber.acichost}:{grabber.acichostport}")
 
-            time.sleep(0.05)
+            time.sleep(0.01)
 
         self.logger.info("EventGrabber stopped.")
 
@@ -120,7 +126,7 @@ class EventGrabber(threading.Thread):
     def parse_event(self, host, event):
         try:
             event_name = event.event_name
-            stream_id = event.event_stream
+            stream_id = safe_int(event.event_stream)
             timestamp = event.event_time_datetime
             state = event.event_state
 
@@ -160,9 +166,9 @@ class EventGrabber(threading.Thread):
             if event_name == "AcicNumbering" or (event_name == "AcicCounting" and rule_type is None):
                 count = None
                 if "count" in event.event_kvdata:
-                    count = int(event.event_kvdata["count"])
+                    count = safe_int(event.event_kvdata["count"])
                 elif "numbering" in event.event_kvdata:
-                    count = int(event.event_kvdata["numbering"])
+                    count = safe_int(event.event_kvdata["numbering"])
                 else:
                     raise Exception("Missing count or numbering in event.")
 
@@ -171,14 +177,14 @@ class EventGrabber(threading.Thread):
                     host=host,
                     stream_id=stream_id,
                     timestamp=timestamp,
-                    roi_index=roi_index,
+                    roi_index=safe_int(roi_index),
                     count=count
                 ))
                 return True
 
             if event_name == "AcicOccupancy":
-                value = float(event.event_kvdata["value"])  # guess it's a percentage
-                count = float(event.event_kvdata["count"])  # guess it's the number of people
+                value = safe_float(event.event_kvdata["value"])  # guess it's a percentage
+                count = safe_float(event.event_kvdata["count"])  # guess it's the number of people
                 dal.add(AcicOccupancy(
                     host=host,
                     stream_id=stream_id,
@@ -203,7 +209,7 @@ class EventGrabber(threading.Thread):
                     host=host,
                     stream_id=stream_id,
                     timestamp=timestamp,
-                    roi_index=roi_index,
+                    roi_index=safe_int(roi_index),
                     url=url_guid,
                     person_url=person_guid
                 ))
@@ -272,7 +278,7 @@ class EventGrabber(threading.Thread):
                     host=host,
                     stream_id=stream_id,
                     timestamp=timestamp,
-                    roi_index=roi_index,
+                    roi_index=safe_int(roi_index),
                     plate=plate,
                     country=country,
                     text_color=text_color,
@@ -310,7 +316,7 @@ class EventGrabber(threading.Thread):
                     host=host,
                     stream_id=stream_id,
                     timestamp=timestamp,
-                    roi_index=roi_index,
+                    roi_index=safe_int(roi_index),
                     text=text,
                     type=type_of,
                     checksum=checksum,
