@@ -1,13 +1,20 @@
-import { useState } from 'react';
-import { fetchApi } from '../lib/utils/api';
+/* eslint-disable */
+import { useState, useEffect } from 'react';
+import { apiService } from '../lib/utils/api';
+
+interface Stream {
+  id: string;
+  name: string;
+}
 
 interface RestorePoint {
+  id: string;
   firmware: string;
   hostname: string;
   ip: string;
   date: string;
-  streams: string;
-  unit: string;
+  streams: number;
+  unit: boolean;
   streamData: Record<string, string>;
 }
 
@@ -21,21 +28,49 @@ export default function useRestore(sessionId: string) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [restorePoint, setRestorePoint] = useState<RestorePoint | null>(null);
+  const [serverStreams, setServerStreams] = useState<Stream[]>([]);
 
+  // Récupération des streams du serveur
+  useEffect(() => {
+    const fetchServerStreams = async () => {
+      try {
+        const response = await apiService.getStreams(sessionId);
+        if (response.data) {
+          const streamData = response.data.map((stream) => ({
+            id: stream.id,
+            name: stream.name || `Stream ${stream.id}`,
+          }));
+          setServerStreams(streamData);
+        } else if (response.error) {
+          setError(response.error);
+        }
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Failed to fetch server streams'
+        );
+      }
+    };
+
+    if (sessionId) {
+      fetchServerStreams();
+    }
+  }, [sessionId]);
+
+  // Étape 1: Upload du fichier et récupération du restorePoint GUID
   const uploadBackup = async (file: File): Promise<string> => {
     setIsLoading(true);
+    setError(null);
+
     try {
       if (!file.name.endsWith('.mvb')) {
         throw new Error('Le fichier doit être au format .mvb');
       }
 
       const reader = new FileReader();
-
       const base64Data = await new Promise<string>((resolve, reject) => {
         reader.onload = () => {
           const result = reader.result as string;
           const cleanBase64 = result.split(',')[1];
-          // eslint-disable-next-line @typescript-eslint/no-unused-expressions
           cleanBase64
             ? resolve(cleanBase64)
             : reject(new Error("Erreur d'encodage du fichier"));
@@ -44,24 +79,22 @@ export default function useRestore(sessionId: string) {
         reader.readAsDataURL(file);
       });
 
-      console.log('Base64 Data:', `${base64Data.substring(0, 100)}...`);
+      const response = await fetch(`${process.env.BACK_API_URL}/restorePoint`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `X-Session-Id ${sessionId}`,
+        },
+        body: JSON.stringify({ fileName: file.name, data: base64Data }),
+      });
 
-      const response = await fetchApi<{ restorePoint: string }>(
-        '/restorePoint',
-        sessionId,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName: file.name, data: base64Data }),
-        }
-      );
+      if (!response.ok) {
+        throw new Error(`Échec de l'upload : ${response.statusText}`);
+      }
 
-      if (response.error) throw new Error(response.error);
-
-      console.log('Restore Point ID:', response.data!.restorePoint);
-      return response.data!.restorePoint;
+      const data = await response.json();
+      return data.restorePoint;
     } catch (err) {
-      console.error('Erreur lors de l’envoi du fichier:', err);
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
       throw err;
     } finally {
@@ -69,82 +102,145 @@ export default function useRestore(sessionId: string) {
     }
   };
 
-  const getRestorePointInfo = async (
-    pointId: string
-  ): Promise<RestorePoint> => {
+  // Étape 2: Récupération des infos du restorePoint
+  const getRestorePointInfo = async (pointId: string): Promise<void> => {
     setIsLoading(true);
+    setError(null);
+
     try {
-      console.log('Fetching restore point info for ID:', pointId);
-      const response = await fetchApi<RestorePoint>(
-        `/restorePoint/${pointId}`,
-        sessionId
+      const response = await fetch(
+        `${process.env.BACK_API_URL}/restorePoint/${pointId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `X-Session-Id ${sessionId}`,
+          },
+        }
       );
 
-      console.log('Raw restore point response:', response);
+      if (!response.ok) {
+        throw new Error(
+          `Impossible de récupérer les infos du backup: ${response.statusText}`
+        );
+      }
 
-      if (response.error) throw new Error(response.error);
+      const data = await response.json();
 
-      const data = response.data!;
-
-      // Extract stream data from response
       const streamData = Object.entries(data)
         .filter(([key]) => key.startsWith('stream') && key.endsWith('_name'))
         .reduce(
           (acc, [key, value]) => {
-            const streamId = key.replace('_name', '');
-            acc[streamId] = value as string;
+            const streamId = key.match(/stream(\d+)_name/)?.[1];
+            if (streamId) {
+              acc[streamId] = value as string;
+            }
             return acc;
           },
           {} as Record<string, string>
         );
 
-      console.log('Processed stream data:', streamData);
-
-      // Create final restore point with stream data
-      const finalRestorePoint = {
+      setRestorePoint({
+        id: pointId, // Sauvegardez l'ID du restore point
         firmware: data.firmware,
         hostname: data.hostname,
         ip: data.ip,
         date: data.date,
-        unit: data.unit,
-        streams: data.streams,
+        streams: parseInt(data.streams, 10),
+        unit: data.unit === '1',
         streamData,
-      };
-
-      console.log('Final restore point object:', finalRestorePoint);
-      setRestorePoint(finalRestorePoint);
-      return finalRestorePoint;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const restoreBackup = async (options: RestoreOptions): Promise<void> => {
-    setIsLoading(true);
-    try {
-      const restorePointId = await uploadBackup(options.file);
-      const pointInfo = await getRestorePointInfo(restorePointId);
-
-      if (!pointInfo) {
-        console.error('Impossible de récupérer les informations du backup.');
-        return;
-      }
-
-      setRestorePoint(pointInfo);
-
-      await fetchApi('/restore', sessionId, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          restorePoint: restorePointId,
-          global: options.global,
-          streams: options.streams,
-        }),
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  return { restoreBackup, isLoading, error, restorePoint };
+  // Étape 3: Restauration
+  const restoreBackup = async (options: RestoreOptions): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      if (!restorePoint?.id) {
+        throw new Error('No restore point ID available');
+      }
+
+      const body = {
+        restorePoint: restorePoint.id,
+        global: options.global,
+        streams: options.streams,
+      };
+
+      console.log('Request body:', body);
+
+      const response = await fetch(`${process.env.BACK_API_URL}/restore`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `X-Session-Id ${sessionId}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (response.ok) {
+        // Si la reponse est 200 = ok
+        return;
+      }
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || `Error during restore: ${response.statusText}`
+        );
+      } else {
+        throw new Error(`Error during restore: ${response.statusText}`);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const reboot = async (): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${process.env.BACK_API_URL}/reboot`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `X-Session-Id ${sessionId}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Reboot failed: ${response.statusText}`);
+      }
+    } catch (err) {
+      // si l erreur est due a une perte de connexion apres le reboot
+      // on considere que c'est normal et on ne lance pas d'erreur
+      if (err instanceof Error && err.message.includes('Failed to fetch')) {
+        return;
+      }
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return {
+    uploadBackup,
+    getRestorePointInfo,
+    restoreBackup,
+    reboot,
+    isLoading,
+    error,
+    restorePoint,
+    serverStreams,
+  };
 }

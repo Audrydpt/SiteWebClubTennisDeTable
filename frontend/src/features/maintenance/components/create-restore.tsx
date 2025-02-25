@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import CreateBackupWizard from '@/features/maintenance/components/backup/create';
 import RestoreBackupWizard from '@/features/maintenance/components/backup/restore';
+import RebootStatus from '@/components/reboot-status';
 
 interface BackupRestoreDialogProps {
   open: boolean;
@@ -26,19 +27,41 @@ function BackupRestoreDialog({
   type,
   sessionId,
 }: BackupRestoreDialogProps) {
+  const [showRebootStatus, setShowRebootStatus] = useState(false);
+
+  const handleClose = () => {
+    setShowRebootStatus(false);
+    onOpenChange(false);
+  };
+
+  const getDialogTitle = () => {
+    if (showRebootStatus) return 'Server Reboot';
+    if (type === 'backup') return 'Create Backup';
+    return 'Restore Backup';
+  };
+
+  const renderContent = () => {
+    if (showRebootStatus) {
+      return <RebootStatus onRebootComplete={handleClose} />;
+    }
+    if (type === 'backup') {
+      return <CreateBackupWizard sessionId={sessionId} />;
+    }
+    return (
+      <RestoreBackupWizard
+        sessionId={sessionId}
+        onClose={() => setShowRebootStatus(true)}
+      />
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>
-            {type === 'backup' ? 'Create Backup' : 'Restore Backup'}
-          </DialogTitle>
+          <DialogTitle>{getDialogTitle()}</DialogTitle>
         </DialogHeader>
-        {type === 'backup' ? (
-          <CreateBackupWizard sessionId={sessionId} />
-        ) : (
-          <RestoreBackupWizard sessionId={sessionId} />
-        )}
+        {renderContent()}
       </DialogContent>
     </Dialog>
   );
