@@ -12,6 +12,7 @@ from sqlalchemy.inspection import inspect
 from fastapi.staticfiles import StaticFiles
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Response
 
 from typing import Annotated, Literal, Optional, Type, Union, List, Dict, Any
 from enum import Enum
@@ -170,7 +171,7 @@ class FastAPIServer:
                 with CameraClient(ip, 7778) as client:
                     img = next(client.start_live(guuid))
                     _, bytes = cv2.imencode('.jpg', img)
-                    return requests.Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
+                    return Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
 
             except:
                 raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
