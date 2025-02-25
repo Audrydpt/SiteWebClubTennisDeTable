@@ -57,7 +57,7 @@ export default function ExportDashboard() {
               ))}
             </StepperNavigation>
 
-            <StepperPanel className="h-[400px] content-center rounded border bg-slate-50 p-8">
+            <StepperPanel className="content-center rounded border bg-slate-50 p-8">
               {methods.switch({
                 'step-1': () => (
                   <ExportStepSource
@@ -100,6 +100,7 @@ export default function ExportDashboard() {
                   if (!isStepValid) return;
                   if (methods.isLast) {
                     // Par exemple ici, on peut réinitialiser le stepper ou lancer une action finale
+
                     methods.reset();
                   } else {
                     methods.next();
@@ -113,7 +114,6 @@ export default function ExportDashboard() {
           </>
         )}
       </StepperProvider>
-      <pre>{JSON.stringify(storedWidget)}</pre>
     </>
   );
 }

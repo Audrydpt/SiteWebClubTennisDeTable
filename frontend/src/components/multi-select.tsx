@@ -1,7 +1,6 @@
 import { X } from 'lucide-react';
 import * as React from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -32,10 +31,6 @@ export default function MultiSelect({
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
 
-  const handleUnselect = (item: string) => {
-    onChange(selected.filter((i) => i !== item));
-  };
-
   const handleSelect = (item: string) => {
     if (selected.includes(item)) {
       onChange(selected.filter((i) => i !== item));
@@ -53,7 +48,7 @@ export default function MultiSelect({
           aria-expanded={open}
           className="w-full justify-between"
         >
-          {selected.length > 0 ? `${selected.length} selected` : placeholder}
+          {selected.length > 0 ? selected.join(' | ') : placeholder}
           <X
             className="ml-2 h-4 w-4 shrink-0 opacity-50"
             onClick={(e) => {
@@ -82,23 +77,6 @@ export default function MultiSelect({
           </CommandList>
         </Command>
       </PopoverContent>
-      <div className="flex flex-wrap gap-1 mt-2">
-        {selected.map((item) => (
-          <Badge
-            key={item}
-            variant="secondary"
-            className="rounded-sm px-1 font-normal"
-          >
-            {item}
-            <Button
-              className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              onClick={() => handleUnselect(item)}
-            >
-              <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-            </Button>
-          </Badge>
-        ))}
-      </div>
     </Popover>
   );
 }

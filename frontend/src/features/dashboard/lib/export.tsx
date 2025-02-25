@@ -12,7 +12,6 @@ export interface StepperFormData {
     from?: Date;
     to?: Date;
   };
-  stream?: string;
 
   // Options: selection of export options
   groupBy?: string;

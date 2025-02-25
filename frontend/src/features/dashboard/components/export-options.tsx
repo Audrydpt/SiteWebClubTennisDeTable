@@ -1,9 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
+import LoadingSpinner from '@/components/loading';
+import MultiSelect from '@/components/multi-select';
 import {
   Form,
   FormControl,
@@ -11,14 +13,6 @@ import {
   FormItem,
   FormLabel,
 } from '@/components/ui/form';
-
-import ClearableSelect from '@/components/clearable-select';
-import {
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { WhereClausesWithSearch } from '@/components/where-clauses-with-search';
 import { ExportStep } from '../lib/export';
 import { AcicAggregation } from '../lib/props';
@@ -63,7 +57,7 @@ export default function ExportStepSource({
   }
 
   // récupérer les données de la table pour permettre à l'utilisateur de créer des filtres sur les colonnes
-  const { data, isSuccess } = useQuery({
+  const { data, isSuccess, isLoading } = useQuery({
     queryKey: [
       'export-options',
       storedWidget.table,
@@ -82,10 +76,11 @@ export default function ExportStepSource({
     enabled: groupByColumn.length > 0,
   });
 
-  console.log('data', data);
   // definition de l'autocompletion pour toutes les where clauses
-  const whereClausesAutocompletion =
-    data?.reduce(
+  const whereClausesAutocompletion = React.useMemo(() => {
+    if (!data) return {};
+
+    return data.reduce(
       (
         acc: Record<string, Set<string>>,
         item: Record<string, string | number | boolean | null>
@@ -101,8 +96,8 @@ export default function ExportStepSource({
         return acc;
       },
       {}
-    ) || {};
-  console.log('whereClausesAutocompletion', whereClausesAutocompletion);
+    );
+  }, [data]);
 
   const { isValid } = form.formState;
 
@@ -115,6 +110,17 @@ export default function ExportStepSource({
   }, [columnKeys, isSuccess, data, isValid, setStepValidity]);
 
   const handleFormChange = async () => {
+    // Récupérer les valeurs du formulaire
+    const formValues = form.getValues();
+
+    // Convertir le délimiteur personnalisé en virgules pour l'API si nécessaire
+    if (formValues.where) {
+      formValues.where = formValues.where.map((clause) => ({
+        ...clause,
+        value: clause.value.replace(/\|\|\|/g, ','),
+      }));
+    }
+
     updateStoredWidget(form.getValues());
     await form.trigger();
   };
@@ -123,35 +129,26 @@ export default function ExportStepSource({
     <Form {...form}>
       <form className="space-y-6" onChange={handleFormChange}>
         <div className="flex-1">
-          {/* Sans doute passer par un multi-select ou équivalent ? */}
           <FormField
             control={form.control}
             name="groupBy"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Group by</FormLabel>
-                <ClearableSelect
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    handleFormChange();
-                  }}
-                  defaultValue={field.value}
-                  value={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Group by" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {columnKeys &&
-                      columnKeys.map((item: string) => (
-                        <SelectItem key={item} value={item}>
-                          {item}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </ClearableSelect>
+                <FormControl>
+                  <MultiSelect
+                    options={columnKeys || []}
+                    selected={
+                      storedWidget.groupBy
+                        ? storedWidget.groupBy.split(',')
+                        : []
+                    }
+                    onChange={(selected) => {
+                      field.onChange(selected.join(','));
+                      handleFormChange();
+                    }}
+                  />
+                </FormControl>
               </FormItem>
             )}
           />
@@ -161,21 +158,22 @@ export default function ExportStepSource({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Where</FormLabel>
-                <WhereClausesWithSearch
-                  columns={columnKeys || []}
-                  value={Array.isArray(field.value) ? field.value : []}
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    handleFormChange();
-                  }}
-                />
+                {isLoading ? (
+                  <LoadingSpinner />
+                ) : (
+                  <WhereClausesWithSearch
+                    columns={columnKeys || []}
+                    value={Array.isArray(field.value) ? field.value : []}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      handleFormChange();
+                    }}
+                    whereClauseAutocompletion={whereClausesAutocompletion}
+                  />
+                )}
               </FormItem>
             )}
           />
-          column:
-          <pre>{JSON.stringify(columnKeys)}</pre>
-          data:
-          <pre>{JSON.stringify(data)}</pre>
         </div>
       </form>
     </Form>

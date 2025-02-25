@@ -17,12 +17,6 @@ export default function useExportAPI(
     enabled: !!table && !!startDate && !!endDate,
   });
 
-  /* const optionsQuery = useQuery({
-    queryKey: ['options', table, baseUrl],
-    queryFn: () => axios.get(baseUrl).then(({ data }) => data[table]),
-    enabled: !!table,
-  }); */
-
   const data = [];
 
   if (query.isSuccess) {

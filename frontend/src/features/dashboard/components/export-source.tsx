@@ -99,7 +99,7 @@ export default function ExportStepSource({
   return (
     <Form {...form}>
       <form className="space-y-6" onChange={handleFormChange}>
-        <div className="flex-1">
+        <div className="flex-1 space-y-3">
           <FormField
             control={form.control}
             name="table"
@@ -177,40 +177,6 @@ export default function ExportStepSource({
                     />
                   </PopoverContent>
                 </Popover>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="stream"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Streams:</FormLabel>
-                <FormControl>
-                  <Select
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      handleFormChange();
-                    }}
-                    value={field.value}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a stream" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem key="0" value="0">
-                        All streams
-                      </SelectItem>
-                      {data &&
-                        data.map((stream: number) => (
-                          <SelectItem key={stream} value={String(stream)}>
-                            Stream {stream}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
               </FormItem>
             )}
           />
