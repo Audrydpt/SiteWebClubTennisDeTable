@@ -96,11 +96,8 @@ export default function ExportDashboard() {
               </Button>
               <Button
                 onClick={() => {
-                  // On vérifie que la validation est passée
                   if (!isStepValid) return;
                   if (methods.isLast) {
-                    // Par exemple ici, on peut réinitialiser le stepper ou lancer une action finale
-
                     methods.reset();
                   } else {
                     methods.next();

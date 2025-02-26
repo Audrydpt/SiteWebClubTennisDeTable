@@ -13,13 +13,21 @@ import {
   FormItem,
   FormLabel,
 } from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { WhereClausesWithSearch } from '@/components/where-clauses-with-search';
 import { ExportStep } from '../lib/export';
 import { AcicAggregation } from '../lib/props';
 import { getWidgetData, getWidgetDescription } from '../lib/utils';
 
 const exportStepSourceSchema = z.object({
-  groupBy: z.string().optional(), // comment passer l'équivalent du groupBy=column1,column2,... ? peut-être il faut créer un field personnalisé ou zod est ptete capable de gérer ça dés qu'on passe plusieurs fois le même field ?
+  aggregation: z.nativeEnum(AcicAggregation),
+  groupBy: z.string().optional(),
   where: z
     .array(
       z.object({
@@ -40,6 +48,7 @@ export default function ExportStepSource({
   const form = useForm<ExportStepSourceFormValues>({
     resolver: zodResolver(exportStepSourceSchema),
     defaultValues: {
+      aggregation: storedWidget.aggregation || AcicAggregation.OneHour,
       groupBy: storedWidget.groupBy || '',
       where: storedWidget.where || [],
     },
@@ -76,7 +85,6 @@ export default function ExportStepSource({
     enabled: groupByColumn.length > 0,
   });
 
-  // definition de l'autocompletion pour toutes les where clauses
   const whereClausesAutocompletion = React.useMemo(() => {
     if (!data) return {};
 
@@ -110,10 +118,8 @@ export default function ExportStepSource({
   }, [columnKeys, isSuccess, data, isValid, setStepValidity]);
 
   const handleFormChange = async () => {
-    // Récupérer les valeurs du formulaire
     const formValues = form.getValues();
 
-    // Convertir le délimiteur personnalisé en virgules pour l'API si nécessaire
     if (formValues.where) {
       formValues.where = formValues.where.map((clause) => ({
         ...clause,
@@ -129,6 +135,36 @@ export default function ExportStepSource({
     <Form {...form}>
       <form className="space-y-6" onChange={handleFormChange}>
         <div className="flex-1">
+          <FormField
+            control={form.control}
+            name="aggregation"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Table:</FormLabel>
+                <FormControl>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      handleFormChange();
+                    }}
+                    value={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a table" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(AcicAggregation).map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="groupBy"

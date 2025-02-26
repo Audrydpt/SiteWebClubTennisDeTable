@@ -1,4 +1,4 @@
-import { AcicEvent } from './props';
+import { AcicAggregation, AcicEvent } from './props';
 
 export type Filter = {
   column: string;
@@ -12,8 +12,10 @@ export interface StepperFormData {
     from?: Date;
     to?: Date;
   };
+  stream?: string;
 
   // Options: selection of export options
+  aggregation?: AcicAggregation;
   groupBy?: string;
   where?: Filter[];
 
