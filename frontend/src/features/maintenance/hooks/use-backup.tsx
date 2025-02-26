@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiService } from '../lib/utils/api';
-import { Item } from '../lib/utils/types';
 
-export interface Stream extends Item {
+export interface Stream {
   id: string;
   name: string;
 }
@@ -15,7 +14,7 @@ export default function useBackup(sessionId: string) {
   const generateBackup = async (
     global: boolean,
     selectedStreams: string[]
-  ): Promise<void> => {
+  ): Promise<string> => {
     try {
       const response = await fetch(`${process.env.BACK_API_URL}/backup`, {
         method: 'POST',
@@ -39,16 +38,56 @@ export default function useBackup(sessionId: string) {
         contentDisposition?.split('filename=')[1]?.replace(/"/g, '') ||
         `backup_${new Date().toISOString()}.mvb`;
 
+      // Convert blob to base64
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          const base64 = result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
+      const uploadResponse = await fetch(
+        `${process.env.BACK_API_URL}/restorePoint`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `X-Session-Id ${sessionId}`,
+          },
+          body: JSON.stringify({
+            fileName,
+            data: base64Data,
+          }),
+        }
+      );
+
+      if (!uploadResponse.ok) {
+        throw new Error(
+          `Failed to upload backup: ${uploadResponse.statusText}`
+        );
+      }
+
+      const { restorePoint } = await uploadResponse.json();
+
+      // Correct download logic
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
-      window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // Retourne le GUID du restore point
+      return restorePoint;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      return '';
     }
   };
 

@@ -1,6 +1,6 @@
 /* eslint-disable */
-import { useState } from 'react';
-import { Upload, Loader2, AlertCircle, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Upload, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -21,7 +21,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import SearchInput from '@/components/search-input';
 import useRestore from '../../hooks/use-restore';
+import useLocalStorage from '@/hooks/use-localstorage.tsx';
 
 const getStepDescription = (step: number) => {
   switch (step) {
@@ -61,18 +63,38 @@ export default function RestoreBackupWizard({
   const [selectedBackupStreams, setSelectedBackupStreams] = useState<
     Set<string>
   >(new Set());
+  const { value: lastBackupGuid } = useLocalStorage<string | null>(
+    'lastBackupGuid',
+    null
+  );
+  const [useLastBackup, setUseLastBackup] = useState(false);
+
+  useEffect(() => {
+    if (useLastBackup && lastBackupGuid && !restorePoint) {
+      getRestorePointInfo(lastBackupGuid).catch((err) =>
+        console.error('Failed to fetch restore point info', err)
+      );
+    }
+  }, [useLastBackup, lastBackupGuid]);
+
+  useEffect(() => {
+    if (restorePoint) {
+      setSelectedBackupStreams(new Set(Object.keys(restorePoint.streamData)));
+    }
+  }, [restorePoint]);
+
   const [streamMappings, setStreamMappings] = useState<Record<string, string>>(
     {}
   );
   const [restoreDisabled, setRestoreDisabled] = useState(true);
-  const [globalParams, setGlobalParams] = useState(false);
+  const [globalParams, setGlobalParams] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
   const [rebootChoice, setRebootChoice] = useState<'now' | 'later'>('now');
 
   const filteredBackupStreams = restorePoint
     ? Object.entries(restorePoint.streamData).filter(([, name]) =>
-      name.toLowerCase().includes(searchQuery.toLowerCase())
+        name.toLowerCase().includes(searchQuery.toLowerCase())
     )
     : [];
 
@@ -132,55 +154,97 @@ export default function RestoreBackupWizard({
   };
 
   const handleRestore = async () => {
-    if (!file) return;
+    if (!restorePoint) return; // Check for restorePoint instead of file
 
     const streamMappingArray = Object.entries(streamMappings).map(
-      ([serverStreamId, backupStreamId]) => ({
-        from: backupStreamId,
-        to: serverStreamId,
-      })
+        ([serverStreamId, backupStreamId]) => ({
+          from: backupStreamId,
+          to: serverStreamId,
+        })
     );
 
     try {
       await restoreBackup({
-        file,
+        file: file!, // Use non-null assertion since we know file exists
         streams: streamMappingArray,
         global: globalParams,
       });
       setStep(4);
-    } catch {
-      console.error('Failed to restore backup');
+    } catch (error) {
+      console.error('Failed to restore backup:', error);
     }
   };
+
+  const isStep1Ready = !isLoading && (
+      (useLastBackup && restorePoint) ||
+      (!useLastBackup && file && restorePoint)
+  );
 
   const renderStepContent = () => {
     switch (step) {
       case 1:
         return (
-          <div className="border-2 border-dashed rounded-lg p-8 text-center">
-            <Upload className="w-8 h-8 mx-auto mb-4" />
-            <Input
-              id="backup-file"
-              type="file"
-              accept=".mvb"
-              className="hidden"
-              onChange={handleFileChange}
-              disabled={isLoading}
-            />
-            <Button
-              onClick={() => document.getElementById('backup-file')?.click()}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                'Select Backup File'
-              )}
-            </Button>
-            {file && (
-              <p className="mt-2 text-sm text-muted-foreground">
-                Selected file: {file.name}
-              </p>
+          <div className="space-y-6">
+            {lastBackupGuid && (
+              <div className="border rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Use Last Backup</Label>
+                    <p className="text-sm text-muted-foreground">
+                      A backup is available in your browser storage
+                    </p>
+                  </div>
+                  <Switch
+                    checked={useLastBackup}
+                    onCheckedChange={(checked) => {
+                      setUseLastBackup(checked);
+                      if (!checked) {
+                        setFile(null);
+                      }
+                    }}
+                  />
+                </div>
+                {useLastBackup && restorePoint && (
+                  <div className="mt-4">
+                    <Label>Backup Preview:</Label>
+                    <p className="text-sm">Date: {restorePoint.date}</p>
+                    <p className="text-sm">
+                      Streams: {Object.keys(restorePoint.streamData).length}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!useLastBackup && (
+              <div className="border-2 border-dashed rounded-lg p-8 text-center">
+                <Upload className="w-8 h-8 mx-auto mb-4" />
+                <Input
+                  id="backup-file"
+                  type="file"
+                  accept=".mvb"
+                  className="hidden"
+                  onChange={handleFileChange}
+                  disabled={isLoading}
+                />
+                <Button
+                  onClick={() =>
+                    document.getElementById('backup-file')?.click()
+                  }
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    'Select Backup File'
+                  )}
+                </Button>
+                {file && (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Selected file: {file.name}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         );
@@ -190,21 +254,11 @@ export default function RestoreBackupWizard({
           restorePoint && (
             <div className="space-y-4">
               <div className="flex items-center space-x-4">
-                <div className="relative flex-1">
-                  <Input
-                    placeholder="Search streams..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full"
-                  />
-                  {searchQuery && (
-                    <X
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground cursor-pointer"
-                      onClick={() => setSearchQuery('')}
-                      aria-label="Clear search"
-                    />
-                  )}
-                </div>
+                <SearchInput
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Search streams..."
+                />
                 <Button
                   variant="outline"
                   size="sm"
@@ -222,28 +276,41 @@ export default function RestoreBackupWizard({
               </div>
               <ScrollArea className="h-[400px] border rounded-md">
                 <div className="p-4 space-y-2">
-                  {filteredBackupStreams.map(([streamId, name]) => (
-                    <div
-                      key={streamId}
-                      className="flex items-center space-x-2 p-2 hover:bg-muted rounded"
-                    >
-                      <input
-                        type="checkbox"
-                        id={`stream-${streamId}`}
-                        checked={selectedBackupStreams.has(streamId)}
-                        onChange={() => toggleBackupStream(streamId)}
-                        className="h-4 w-4"
-                      />
-                      <Label htmlFor={`stream-${streamId}`}>
-                        Stream {streamId} [{name}]
-                      </Label>
-                    </div>
-                  ))}
-                  {filteredBackupStreams.length === 0 && (
-                    <div className="text-center text-muted-foreground py-4">
-                      No streams found
-                    </div>
-                  )}
+                  {(() => {
+                    const filteredEntries = Object.entries(
+                      restorePoint.streamData
+                    ).filter(
+                      ([streamId, name]) =>
+                        `Stream ${streamId}`
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase()) ||
+                        name.toLowerCase().includes(searchQuery.toLowerCase())
+                    );
+
+                    return filteredEntries.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-4">
+                        No streams found
+                      </div>
+                    ) : (
+                      filteredEntries.map(([streamId, name]) => (
+                        <div
+                          key={streamId}
+                          className="flex items-center space-x-2 p-2 hover:bg-muted rounded"
+                        >
+                          <input
+                            type="checkbox"
+                            id={`stream-${streamId}`}
+                            checked={selectedBackupStreams.has(streamId)}
+                            onChange={() => toggleBackupStream(streamId)}
+                            className="h-4 w-4"
+                          />
+                          <Label htmlFor={`stream-${streamId}`}>
+                            Stream {streamId} [{name}]
+                          </Label>
+                        </div>
+                      ))
+                    );
+                  })()}
                 </div>
               </ScrollArea>
             </div>
@@ -272,33 +339,25 @@ export default function RestoreBackupWizard({
                 </div>
               )}
               <div className="space-y-4">
-                <div className="relative">
-                  <Input
-                    placeholder="Search streams..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full"
-                  />
-                  {searchQuery && (
-                    <X
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground cursor-pointer"
-                      onClick={() => setSearchQuery('')}
-                      aria-label="Clear search"
-                    />
-                  )}
-                </div>
+                <SearchInput
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Search streams..."
+                />
                 {serverStreams
                   .filter((stream) =>
-                    stream.name.toLowerCase().includes(searchQuery.toLowerCase())
+                    stream.name
+                      .toLowerCase()
+                      .includes(searchQuery.toLowerCase())
                   )
                   .map((serverStream) => (
                     <div
                       key={serverStream.id}
                       className="flex items-center justify-between p-3 border rounded"
                     >
-                <span className="font-medium">
-                  {serverStream.name} (ID: {serverStream.id})
-                </span>
+                      <span className="font-medium">
+                        {serverStream.name} (ID: {serverStream.id})
+                      </span>
                       <Select
                         value={streamMappings[serverStream.id] || 'keep'}
                         onValueChange={(value) =>
@@ -312,13 +371,20 @@ export default function RestoreBackupWizard({
                           <SelectValue placeholder="Keep current stream" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="keep">Keep current stream</SelectItem>
-                          {Array.from(selectedBackupStreams).map((backupStreamId) => (
-                            <SelectItem key={backupStreamId} value={backupStreamId}>
-                              {restorePoint?.streamData[backupStreamId]} (ID:{' '}
-                              {backupStreamId})
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="keep">
+                            Keep current stream
+                          </SelectItem>
+                          {Array.from(selectedBackupStreams).map(
+                            (backupStreamId) => (
+                              <SelectItem
+                                key={backupStreamId}
+                                value={backupStreamId}
+                              >
+                                {restorePoint?.streamData[backupStreamId]} (ID:{' '}
+                                {backupStreamId})
+                              </SelectItem>
+                            )
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
@@ -354,11 +420,11 @@ export default function RestoreBackupWizard({
                   className="h-4 w-4"
                   value="now"
                   checked={rebootChoice === 'now'}
-                  onChange={(e) => setRebootChoice(e.target.value as 'now' | 'later')}
+                  onChange={(e) =>
+                    setRebootChoice(e.target.value as 'now' | 'later')
+                  }
                 />
-                <Label htmlFor="reboot-now">
-                  Reboot Now
-                </Label>
+                <Label htmlFor="reboot-now">Reboot Now</Label>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -369,11 +435,11 @@ export default function RestoreBackupWizard({
                   className="h-4 w-4"
                   value="later"
                   checked={rebootChoice === 'later'}
-                  onChange={(e) => setRebootChoice(e.target.value as 'now' | 'later')}
+                  onChange={(e) =>
+                    setRebootChoice(e.target.value as 'now' | 'later')
+                  }
                 />
-                <Label htmlFor="reboot-later">
-                  Reboot Manually
-                </Label>
+                <Label htmlFor="reboot-later">Reboot Manually</Label>
               </div>
             </div>
           </div>
@@ -383,7 +449,6 @@ export default function RestoreBackupWizard({
         return null;
     }
   };
-
   return (
     <Card className="w-full max-w-3xl mx-auto">
       <CardHeader>
@@ -395,7 +460,7 @@ export default function RestoreBackupWizard({
 
       <CardContent>
         {error && (
-          <div className="text-red-500 mb-4 p-2 bg-red-50 rounded flex items-center">
+          <div className="text-destructive bg-foreground rounded flex items-center">
             <AlertCircle className="w-5 h-5 mr-2" />
             {error}
           </div>
@@ -417,10 +482,9 @@ export default function RestoreBackupWizard({
               if (rebootChoice === 'now') {
                 try {
                   await reboot();
-                  // On ferme le dialogue même si on perd la connexion
                   onClose();
                 } catch (error) {
-                  // On ne fait rien car l'erreur est déjà gérée dans useRestore
+                  // Error is already handled in useRestore
                 }
               } else {
                 onClose();
@@ -441,11 +505,24 @@ export default function RestoreBackupWizard({
           <Button
             onClick={() => (step === 3 ? handleRestore() : setStep(step + 1))}
             disabled={
-              (step === 1 && !file) ||
+              (step === 1 && !isStep1Ready) ||
+              (step === 2 && selectedBackupStreams.size === 0) ||
               (step === 3 && restoreDisabled)
             }
           >
-            {step === 3 ? 'Restore' : 'Next'}
+            {/* eslint-disable-next-line no-nested-ternary */}
+            {step === 3 ? (
+              isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Restoring...
+                </>
+              ) : (
+                'Restore'
+              )
+            ) : (
+              'Next'
+            )}
           </Button>
         )}
       </CardFooter>

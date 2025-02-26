@@ -1,6 +1,6 @@
-/* eslint-disable no-console */
-import { useState } from 'react';
-import { Download, Search } from 'lucide-react';
+/* eslint-disable */
+import { useState, useEffect } from 'react';
+import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -10,10 +10,11 @@ import {
   CardDescription,
   CardFooter,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
+import SearchInput from '@/components/search-input';
+import useLocalStorage from '@/hooks/use-localstorage';
 import useBackup from '../../hooks/use-backup';
 
 interface CreateBackupWizardProps {
@@ -34,6 +35,10 @@ const getStepDescription = (step: number) => {
 export default function CreateBackupWizard({
   sessionId,
 }: CreateBackupWizardProps) {
+  const { setValue: setLastBackupGuid } = useLocalStorage<string | null>(
+    'lastBackupGuid',
+    null
+  );
   const { streams, isLoading, generateBackup } = useBackup(sessionId || '');
   const [step, setStep] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,6 +47,12 @@ export default function CreateBackupWizard({
   );
   const [includeGlobalConfig, setIncludeGlobalConfig] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    if (streams.length > 0) {
+      setSelectedStreams(new Set(streams.map((stream) => stream.id)));
+    }
+  }, [streams]);
 
   const filteredStreams = streams.filter((stream) =>
     stream.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -88,7 +99,12 @@ export default function CreateBackupWizard({
   const handleGenerateBackup = async () => {
     setIsGenerating(true);
     try {
-      await generateBackup(includeGlobalConfig, [...selectedStreams]);
+      const backupGuid = await generateBackup(includeGlobalConfig, [
+        ...selectedStreams,
+      ]);
+      if (backupGuid) {
+        setLastBackupGuid(backupGuid);
+      }
     } catch (error) {
       console.error('Failed to generate backup:', error);
     } finally {
@@ -143,15 +159,11 @@ export default function CreateBackupWizard({
                 </div>
               </div>
 
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search streams..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search streams..."
+              />
 
               <ScrollArea className="h-[300px] border rounded-md">
                 <div className="p-4 space-y-2">
