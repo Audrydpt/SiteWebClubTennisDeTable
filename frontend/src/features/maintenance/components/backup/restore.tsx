@@ -45,7 +45,7 @@ export default function RestoreBackupWizard({
   onClose,
 }: {
   sessionId: string | undefined;
-  onClose: () => void;
+  onClose: (skipRebootDialog: boolean) => void;
 }) {
   const {
     uploadBackup,
@@ -87,7 +87,7 @@ export default function RestoreBackupWizard({
     {}
   );
   const [restoreDisabled, setRestoreDisabled] = useState(true);
-  const [globalParams, setGlobalParams] = useState(true);
+  const [globalParams, setGlobalParams] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const [rebootChoice, setRebootChoice] = useState<'now' | 'later'>('now');
@@ -148,13 +148,13 @@ export default function RestoreBackupWizard({
       } else {
         newMappings[serverStreamId] = backupStreamId;
       }
-      setRestoreDisabled(Object.keys(newMappings).length === 0);
+      setRestoreDisabled(!globalParams && Object.keys(newMappings).length === 0);
       return newMappings;
     });
   };
 
   const handleRestore = async () => {
-    if (!restorePoint) return; // Check for restorePoint instead of file
+    if (!restorePoint) return;
 
     const streamMappingArray = Object.entries(streamMappings).map(
         ([serverStreamId, backupStreamId]) => ({
@@ -165,7 +165,7 @@ export default function RestoreBackupWizard({
 
     try {
       await restoreBackup({
-        file: file!, // Use non-null assertion since we know file exists
+        file: file!,
         streams: streamMappingArray,
         global: globalParams,
       });
@@ -179,6 +179,15 @@ export default function RestoreBackupWizard({
       (useLastBackup && restorePoint) ||
       (!useLastBackup && file && restorePoint)
   );
+  useEffect(() => {
+    setRestoreDisabled(!globalParams && Object.keys(streamMappings).length === 0);
+  }, [globalParams, streamMappings]);
+
+  useEffect(() => {
+    if (restorePoint && !restorePoint.unit) {
+      setGlobalParams(false);
+    }
+  }, [restorePoint]);
 
   const renderStepContent = () => {
     switch (step) {
@@ -321,23 +330,24 @@ export default function RestoreBackupWizard({
         return (
           <ScrollArea className="h-[400px] border rounded-md">
             <div className="space-y-6 p-4">
-              {restorePoint?.unit && (
-                <div className="flex items-center justify-between p-3 border rounded">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="global-params">
-                      Restore global parameters
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Apply global settings from backup
-                    </p>
-                  </div>
-                  <Switch
-                    id="global-params"
-                    checked={globalParams}
-                    onCheckedChange={setGlobalParams}
-                  />
+              <div className="flex items-center justify-between p-3 border rounded">
+                <div className="space-y-0.5">
+                  <Label htmlFor="global-params">
+                    Restore global parameters
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    {restorePoint?.unit
+                      ? "Apply global settings from backup"
+                      : "No global configuration available in backup"}
+                  </p>
                 </div>
-              )}
+                <Switch
+                  id="global-params"
+                  checked={globalParams}
+                  onCheckedChange={setGlobalParams}
+                  disabled={!restorePoint?.unit}
+                />
+              </div>
               <div className="space-y-4">
                 <SearchInput
                   value={searchQuery}
@@ -420,9 +430,10 @@ export default function RestoreBackupWizard({
                   className="h-4 w-4"
                   value="now"
                   checked={rebootChoice === 'now'}
-                  onChange={(e) =>
-                    setRebootChoice(e.target.value as 'now' | 'later')
-                  }
+                  onChange={(e) => {
+                    console.log("Radio changed to:", e.target.value);
+                    setRebootChoice(e.target.value as 'now' | 'later');
+                  }}
                 />
                 <Label htmlFor="reboot-now">Reboot Now</Label>
               </div>
@@ -435,9 +446,10 @@ export default function RestoreBackupWizard({
                   className="h-4 w-4"
                   value="later"
                   checked={rebootChoice === 'later'}
-                  onChange={(e) =>
-                    setRebootChoice(e.target.value as 'now' | 'later')
-                  }
+                  onChange={(e) => {
+                    console.log("Radio changed to:", e.target.value);
+                    setRebootChoice(e.target.value as 'now' | 'later');
+                  }}
                 />
                 <Label htmlFor="reboot-later">Reboot Manually</Label>
               </div>
@@ -478,21 +490,24 @@ export default function RestoreBackupWizard({
         </Button>
         {step === 4 ? (
           <Button
-            onClick={async () => {
+            onClick={() => {
+              console.log("Apply clicked, rebootChoice:", rebootChoice);
               if (rebootChoice === 'now') {
-                try {
-                  await reboot();
-                  onClose();
-                } catch (error) {
-                  // Error is already handled in useRestore
-                }
+                console.log("User selected 'Reboot Now'. Calling reboot()...");
+                reboot()
+                  .then(() => {
+                    onClose(false);
+                  })
+                  .catch((err) => {
+                    console.error("Error during reboot:", err);
+                  });
               } else {
-                onClose();
+                onClose(true);
               }
             }}
             disabled={isLoading}
           >
-            {isLoading ? (
+            {isLoading && rebootChoice === 'now' ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Rebooting...
@@ -510,7 +525,6 @@ export default function RestoreBackupWizard({
               (step === 3 && restoreDisabled)
             }
           >
-            {/* eslint-disable-next-line no-nested-ternary */}
             {step === 3 ? (
               isLoading ? (
                 <>

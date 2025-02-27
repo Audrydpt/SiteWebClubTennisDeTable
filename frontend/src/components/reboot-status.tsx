@@ -1,51 +1,55 @@
-import { useEffect, useState, useCallback } from 'react';
+/* eslint-disable */
+import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import useServerStatus from '@/hooks/use-server-status';
+import { useAuth } from '@/providers/auth-context';
 
-export default function RebootStatus({
-  onRebootComplete,
-}: {
+interface RebootStatusProps {
   onRebootComplete: () => void;
-}) {
-  const [timeoutCount, setTimeoutCount] = useState(30);
-  const { isOnline, startPolling } = useServerStatus();
+}
 
-  const handleTimeout = useCallback(() => {
-    if (timeoutCount <= 0) {
-      onRebootComplete();
-    }
-  }, [timeoutCount, onRebootComplete]);
+export default function RebootStatus({ onRebootComplete }: RebootStatusProps) {
+  const { sessionId } = useAuth();
+  const [timeoutCount, setTimeoutCount] = useState(20);
+  const { isOnline } = useServerStatus(sessionId ?? '');
 
   useEffect(() => {
-    const stopPolling = startPolling(onRebootComplete);
     const timer = setInterval(() => {
-      setTimeoutCount((prev) => prev - 1);
+      setTimeoutCount((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
 
-    return () => {
-      clearInterval(timer);
-      stopPolling();
-    };
-  }, [onRebootComplete, startPolling]);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
-    handleTimeout();
-  }, [handleTimeout]);
+    if (timeoutCount === 0 && !isOnline) {
+      setTimeoutCount(20);
+    }
+  }, [timeoutCount, isOnline]);
+
+  useEffect(() => {
+    if (isOnline) {
+      setTimeout(() => {
+        onRebootComplete();
+        window.location.reload();
+      }, 2000);
+    }
+  }, [isOnline, onRebootComplete]);
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardContent className="pt-6">
+    <Dialog open modal>
+      <DialogContent className="max-w-md bg-muted text-foreground">
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin" />
           <p className="text-lg font-medium">Rebooting server...</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm">
             {isOnline
-              ? 'Server is back online!'
+              ? 'Server is back online! Closing soon...'
               : `Waiting for server to come back online (${timeoutCount}s)`}
           </p>
         </div>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 }

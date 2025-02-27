@@ -1,4 +1,3 @@
-// frontend/src/features/maintenance/components/create-restore.tsx
 import { useState } from 'react';
 import { Save, FileDown, FileUp } from 'lucide-react';
 import { useAuth } from '@/providers/auth-context';
@@ -34,34 +33,34 @@ function BackupRestoreDialog({
     onOpenChange(false);
   };
 
-  const getDialogTitle = () => {
-    if (showRebootStatus) return 'Server Reboot';
-    if (type === 'backup') return 'Create Backup';
-    return 'Restore Backup';
+  const handleWizardClose = (skipRebootDialog: boolean) => {
+    if (skipRebootDialog) {
+      handleClose();
+    } else {
+      setShowRebootStatus(true);
+    }
   };
 
-  const renderContent = () => {
-    if (showRebootStatus) {
-      return <RebootStatus onRebootComplete={handleClose} />;
-    }
-    if (type === 'backup') {
-      return <CreateBackupWizard sessionId={sessionId} />;
-    }
-    return (
-      <RestoreBackupWizard
-        sessionId={sessionId}
-        onClose={() => setShowRebootStatus(true)}
-      />
-    );
-  };
+  if (showRebootStatus) {
+    return <RebootStatus onRebootComplete={handleClose} />;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{getDialogTitle()}</DialogTitle>
+          <DialogTitle>
+            {type === 'backup' ? 'Create Backup' : 'Restore Backup'}
+          </DialogTitle>
         </DialogHeader>
-        {renderContent()}
+        {type === 'backup' ? (
+          <CreateBackupWizard sessionId={sessionId} />
+        ) : (
+          <RestoreBackupWizard
+            sessionId={sessionId}
+            onClose={handleWizardClose}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

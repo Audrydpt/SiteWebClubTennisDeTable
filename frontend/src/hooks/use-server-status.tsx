@@ -1,29 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-export default function useServerStatus() {
+export default function useServerStatus(sessionId: string) {
   const [isOnline, setIsOnline] = useState(false);
 
   const checkServerStatus = async () => {
     try {
-      const response = await fetch(`${process.env.BACK_API_URL}/streams`);
+      const response = await fetch(`${process.env.BACK_API_URL}/streams`, {
+        headers: {
+          Authorization: `X-Session-Id ${sessionId}`,
+        },
+      });
       return response.ok;
     } catch {
       return false;
     }
   };
 
-  const startPolling = (callback: () => void) => {
-    const checkStatus = async () => {
+  useEffect(() => {
+    const interval = setInterval(async () => {
       const status = await checkServerStatus();
       if (status) {
         setIsOnline(true);
-        callback();
       }
-    };
+    }, 10000);
 
-    const interval = setInterval(checkStatus, 2000);
     return () => clearInterval(interval);
-  };
+  }, [sessionId]);
 
-  return { isOnline, startPolling };
+  return { isOnline };
 }
