@@ -1,14 +1,11 @@
-import { Edit3, Trash2 } from 'lucide-react';
 import { JSX, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { ReactSortable } from 'react-sortablejs';
 
-import DeleteConfirmation from '@/components/confirm-delete';
 import LoadingSpinner from '@/components/loading';
-import { Button } from '@/components/ui/button';
 import { useAuth } from '@/providers/auth-context';
 
-import { FormWidget, StoredWidget } from './components/form-widget';
+import { StoredWidget } from './components/form-widget';
+import WidgetActions from './components/widget-actions';
 import useWidgetAPI from './hooks/use-widget';
 import { ChartTypeComponents } from './lib/const';
 import { ChartSize } from './lib/props';
@@ -49,7 +46,6 @@ export default function DashboardTab({
   const { data, isLoading, isError } = query;
   const { user } = useAuth();
   const isOperator = user?.privileges === 'Operator';
-  const { t } = useTranslation();
 
   useEffect(() => {
     onAddWidget(() => add);
@@ -102,30 +98,12 @@ export default function DashboardTab({
           className={`${widthClassMap[item.widget.size]} ${heightClassMap[item.widget.size]} group relative`}
         >
           {item.content}
-          <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            {!isOperator && (
-              <FormWidget
-                onSubmit={(d) => edit({ ...item.widget, ...d })}
-                defaultValues={item.widget}
-                edition
-              >
-                <Button variant="outline" size="icon" area-label="Edit">
-                  <Edit3 className="h-4 w-4" />
-                </Button>
-              </FormWidget>
-            )}
-
-            {!isOperator && (
-              <DeleteConfirmation
-                onDelete={() => remove(item.id)}
-                description={t('dashboard:widget.deleteConfirmation')}
-              >
-                <Button variant="destructive" size="icon" aria-label="Delete">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </DeleteConfirmation>
-            )}
-          </div>
+          <WidgetActions
+            isOperator={isOperator}
+            item={item}
+            edit={edit}
+            remove={remove}
+          />
         </div>
       ))}
     </ReactSortable>

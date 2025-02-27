@@ -10,6 +10,28 @@ import { ExportStep } from '../lib/export';
 import { AcicAggregation } from '../lib/props';
 import { getWidgetDataForExport } from '../lib/utils';
 
+async function getLogoAsBase64() {
+  try {
+    const logoUrl = new URL('/src/assets/logoACIC.png', import.meta.url).href;
+    const response = await fetch(logoUrl);
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const blob = await response.blob();
+
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 type ExportFormat = 'Excel' | 'PDF';
 
 const exportData = (
@@ -31,15 +53,43 @@ const exportData = (
     }
 
     case 'PDF': {
-      const worker = new Worker(
-        new URL('../lib/pdfWorker.js', import.meta.url)
-      );
-      worker.postMessage({ data, filename });
-      worker.onmessage = function (e) {
-        if (e.data === 'done') {
+      getLogoAsBase64().then((logoBase64) => {
+        const worker = new Worker(
+          new URL('../lib/pdfWorker.js', import.meta.url)
+        );
+
+        worker.onerror = () => {
           setLoading(false);
-        }
-      };
+          worker.terminate();
+        };
+
+        worker.onmessage = (e) => {
+          if (e.data.status === 'success') {
+            if (e.data.data) {
+              const blob = new Blob([e.data.data], {
+                type: 'application/pdf',
+              });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = e.data.filename || `${filename}.pdf`;
+              document.body.appendChild(link);
+              link.click();
+
+              document.body.removeChild(link);
+              setTimeout(() => URL.revokeObjectURL(url), 100);
+            }
+          }
+          setLoading(false);
+          worker.terminate();
+        };
+
+        worker.postMessage({
+          data,
+          filename,
+          logo: logoBase64,
+        });
+      });
       break;
     }
 
@@ -83,7 +133,6 @@ export default function ExportStepFormat({
     if (!data || !isSuccess) return;
 
     const filename = `${storedWidget.table}_export_${new Date().toISOString().split('T')[0]}`;
-    console.log(`Calling exportData with format: ${format}`);
     setLoading(true);
     await exportData(data, format, filename, setLoading);
   };

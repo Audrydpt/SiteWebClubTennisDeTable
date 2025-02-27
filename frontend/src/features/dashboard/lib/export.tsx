@@ -8,6 +8,7 @@ export type Filter = {
 export interface StepperFormData {
   // Source: origin of the data
   table: AcicEvent;
+  duration?: AcicAggregation;
   range?: {
     from?: Date;
     to?: Date;
@@ -26,4 +27,5 @@ export interface ExportStep {
   storedWidget: StepperFormData;
   updateStoredWidget: (newData: Partial<StepperFormData>) => void;
   setStepValidity: (valid: boolean) => void;
+  children: React.ReactNode;
 }
