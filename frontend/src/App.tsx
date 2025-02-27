@@ -52,6 +52,9 @@ export default function App() {
         <Route element={<OptionalSidebarLayout />}>
           <Route path="/" element={<Home />} />
 
+          {/* Forensic routes */}
+          <Route path="/forensic" element={<Forensic />} />
+
           {/* Dashboard routes */}
           <Route path="/dashboard">
             <Route index element={<Dashboard />} />
@@ -62,7 +65,6 @@ export default function App() {
               <Route path="demo" element={<DemoDashboard />} />
               <Route path="test" element={<TestDashboard />} />
               <Route path="export" element={<ExportDashboard />} />
-              <Route path="forensic" element={<Forensic />} />
             </Route>
           </Route>
 

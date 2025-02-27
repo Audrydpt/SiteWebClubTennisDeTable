@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Save, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion } from '@/components/ui/accordion';
-import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import Appearances from '@/features/forensic/components/appareances';
 import Sources from '@/features/forensic/components/sources';
@@ -68,8 +67,6 @@ export default function Forensic() {
               onBottomColorsChange={setSelectedBottomColors}
             />
           </Accordion>
-
-          <Separator />
 
           <Button className="w-full" size="lg">
             <Search className="mr-2 h-4 w-4" />
