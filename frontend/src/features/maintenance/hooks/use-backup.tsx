@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../lib/utils/api';
 
 export interface Stream {
@@ -7,9 +8,24 @@ export interface Stream {
 }
 
 export default function useBackup(sessionId: string) {
-  const [streams, setStreams] = useState<Stream[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { data: streams = [], isLoading } = useQuery<Stream[]>({
+    queryKey: ['streams', sessionId],
+    queryFn: async () => {
+      const response = await apiService.getStreams(sessionId);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return (
+        response.data?.map((stream) => ({
+          ...stream,
+          name: stream.name || `Stream ${stream.id}`,
+        })) || []
+      );
+    },
+    enabled: !!sessionId,
+  });
 
   const generateBackup = async (
     global: boolean,
@@ -88,32 +104,10 @@ export default function useBackup(sessionId: string) {
     }
   };
 
-  useEffect(() => {
-    const fetchStreams = async () => {
-      try {
-        const response = await apiService.getStreams(sessionId);
-        if (response.data) {
-          const streamData = response.data.map((stream) => ({
-            ...stream,
-            name: stream.name || `Stream ${stream.id}`,
-          }));
-          setStreams(streamData);
-        } else if (response.error) {
-          setError(response.error);
-        }
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to fetch streams'
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (sessionId) {
-      fetchStreams();
-    }
-  }, [sessionId]);
-
-  return { streams, isLoading, error, generateBackup };
+  return {
+    streams,
+    isLoading,
+    error,
+    generateBackup,
+  };
 }

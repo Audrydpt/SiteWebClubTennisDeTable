@@ -1,5 +1,5 @@
-/* eslint-disable */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../lib/utils/api';
 
 interface Stream {
@@ -28,34 +28,24 @@ export default function useRestore(sessionId: string) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [restorePoint, setRestorePoint] = useState<RestorePoint | null>(null);
-  const [serverStreams, setServerStreams] = useState<Stream[]>([]);
 
-  useEffect(() => {
-    const fetchServerStreams = async () => {
-      try {
-        const response = await apiService.getStreams(sessionId);
-        if (response.data) {
-          const streamData = response.data.map((stream) => ({
-            id: stream.id,
-            name: stream.name || `Stream ${stream.id}`,
-          }));
-          setServerStreams(streamData);
-        } else if (response.error) {
-          setError(response.error);
-        }
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to fetch server streams'
-        );
+  const { data: serverStreams = [] } = useQuery<Stream[]>({
+    queryKey: ['streams', sessionId],
+    queryFn: async () => {
+      const response = await apiService.getStreams(sessionId);
+      if (response.error) {
+        throw new Error(response.error);
       }
-    };
+      return (
+        response.data?.map((stream) => ({
+          id: stream.id,
+          name: stream.name || `Stream ${stream.id}`,
+        })) || []
+      );
+    },
+    enabled: !!sessionId,
+  });
 
-    if (sessionId) {
-      fetchServerStreams();
-    }
-  }, [sessionId]);
-
-  // step 1: Upload du fichier et récupération du restorePoint GUID
   const uploadBackup = async (file: File): Promise<string> => {
     setIsLoading(true);
     setError(null);
@@ -70,9 +60,11 @@ export default function useRestore(sessionId: string) {
         reader.onload = () => {
           const result = reader.result as string;
           const cleanBase64 = result.split(',')[1];
-          cleanBase64
-            ? resolve(cleanBase64)
-            : reject(new Error("Erreur d'encodage du fichier"));
+          if (cleanBase64) {
+            resolve(cleanBase64);
+          } else {
+            reject(new Error("Erreur d'encodage du fichier"));
+          }
         };
         reader.onerror = reject;
         reader.readAsDataURL(file);
@@ -88,20 +80,19 @@ export default function useRestore(sessionId: string) {
       });
 
       if (!response.ok) {
-        throw new Error(`Échec de l'upload : ${response.statusText}`);
+        throw new Error(`Échec de l'uplaod : ${response.statusText}`);
       }
 
       const data = await response.json();
       return data.restorePoint;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      setError(err instanceof Error ? err.message : 'unknown error');
       throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // step 2: Récupération des infos du restorePoint
   const getRestorePointInfo = async (pointId: string): Promise<void> => {
     setIsLoading(true);
     setError(null);
@@ -154,7 +145,6 @@ export default function useRestore(sessionId: string) {
     }
   };
 
-  // step 3: Restauration
   const restoreBackup = async (options: RestoreOptions): Promise<void> => {
     setIsLoading(true);
     setError(null);
@@ -169,8 +159,6 @@ export default function useRestore(sessionId: string) {
         global: options.global,
         streams: options.streams,
       };
-
-      console.log('Request body:', body);
 
       const response = await fetch(`${process.env.BACK_API_URL}/restore`, {
         method: 'POST',
