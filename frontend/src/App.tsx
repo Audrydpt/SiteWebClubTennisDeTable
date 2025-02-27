@@ -12,6 +12,7 @@ import Error from './pages/Error';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Theme from './pages/Theme';
+import Forensic from '@/features/forensic/Forensic.tsx';
 
 const Dashboard = lazyLoadFeature(
   'dashboard',
@@ -61,6 +62,7 @@ export default function App() {
               <Route path="demo" element={<DemoDashboard />} />
               <Route path="test" element={<TestDashboard />} />
               <Route path="export" element={<ExportDashboard />} />
+              <Route path="forensic" element={<Forensic />} />
             </Route>
           </Route>
 
