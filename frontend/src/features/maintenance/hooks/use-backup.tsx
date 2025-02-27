@@ -38,7 +38,6 @@ export default function useBackup(sessionId: string) {
         contentDisposition?.split('filename=')[1]?.replace(/"/g, '') ||
         `backup_${new Date().toISOString()}.mvb`;
 
-      // Convert blob to base64
       const base64Data = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -73,7 +72,6 @@ export default function useBackup(sessionId: string) {
 
       const { restorePoint } = await uploadResponse.json();
 
-      // Correct download logic
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -83,7 +81,6 @@ export default function useBackup(sessionId: string) {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      // Retourne le GUID du restore point
       return restorePoint;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
@@ -96,7 +93,6 @@ export default function useBackup(sessionId: string) {
       try {
         const response = await apiService.getStreams(sessionId);
         if (response.data) {
-          // Use the stream's actual name or ID if name is not available
           const streamData = response.data.map((stream) => ({
             ...stream,
             name: stream.name || `Stream ${stream.id}`,
