@@ -24,6 +24,7 @@ import { Switch } from '@/components/ui/switch';
 import SearchInput from '@/components/search-input';
 import useRestore from '../../hooks/use-restore';
 import useLocalStorage from '@/hooks/use-localstorage.tsx';
+import { useQuery } from '@tanstack/react-query';
 
 const getStepDescription = (step: number) => {
   switch (step) {
@@ -69,17 +70,26 @@ export default function RestoreBackupWizard({
   );
   const [useLastBackup, setUseLastBackup] = useState(false);
 
-  useEffect(() => {
-    if (useLastBackup && lastBackupGuid && !restorePoint) {
-      getRestorePointInfo(lastBackupGuid).catch((err) =>
-        console.error('Failed to fetch restore point info', err)
-      );
-    }
-  }, [useLastBackup, lastBackupGuid]);
+  const lastBackupRestorePointQuery = useQuery({
+    queryKey: ['restorePointInfo', lastBackupGuid],
+    queryFn: async () => {
+      if (!lastBackupGuid) return null;
+      await getRestorePointInfo(lastBackupGuid);
+      return true;
+    },
+    enabled: useLastBackup && !!lastBackupGuid,
+  });
 
   useEffect(() => {
-    if (restorePoint) {
-      setSelectedBackupStreams(new Set(Object.keys(restorePoint.streamData)));
+    if (lastBackupRestorePointQuery.isError) {
+      console.error('Failed to fetch restore point info', lastBackupRestorePointQuery.error);
+    }
+  }, [lastBackupRestorePointQuery.isError, lastBackupRestorePointQuery.error]);
+
+  useEffect(() => {
+    if (restorePoint && Object.keys(restorePoint.streamData).length > 0) {
+      const allStreamIds = Object.keys(restorePoint.streamData);
+      setSelectedBackupStreams(new Set(allStreamIds));
     }
   }, [restorePoint]);
 
