@@ -472,7 +472,7 @@ export default function RestoreBackupWizard({
 
       <CardContent>
         {error && (
-          <div className="text-destructive bg-foreground rounded flex items-center">
+          <div className="text-destructive bg-muted rounded flex items-center">
             <AlertCircle className="w-5 h-5 mr-2" />
             {error}
           </div>

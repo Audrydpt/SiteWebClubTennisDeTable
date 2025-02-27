@@ -30,7 +30,6 @@ export default function useRestore(sessionId: string) {
   const [restorePoint, setRestorePoint] = useState<RestorePoint | null>(null);
   const [serverStreams, setServerStreams] = useState<Stream[]>([]);
 
-  // Récupération des streams du serveur
   useEffect(() => {
     const fetchServerStreams = async () => {
       try {
@@ -56,7 +55,7 @@ export default function useRestore(sessionId: string) {
     }
   }, [sessionId]);
 
-  // Étape 1: Upload du fichier et récupération du restorePoint GUID
+  // step 1: Upload du fichier et récupération du restorePoint GUID
   const uploadBackup = async (file: File): Promise<string> => {
     setIsLoading(true);
     setError(null);
@@ -102,7 +101,7 @@ export default function useRestore(sessionId: string) {
     }
   };
 
-  // Étape 2: Récupération des infos du restorePoint
+  // step 2: Récupération des infos du restorePoint
   const getRestorePointInfo = async (pointId: string): Promise<void> => {
     setIsLoading(true);
     setError(null);
@@ -141,7 +140,7 @@ export default function useRestore(sessionId: string) {
         );
 
       setRestorePoint({
-        id: pointId, // Sauvegardez l'ID du restore point
+        id: pointId,
         firmware: data.firmware,
         hostname: data.hostname,
         ip: data.ip,
@@ -155,7 +154,7 @@ export default function useRestore(sessionId: string) {
     }
   };
 
-  // Étape 3: Restauration
+  // step 3: Restauration
   const restoreBackup = async (options: RestoreOptions): Promise<void> => {
     setIsLoading(true);
     setError(null);
@@ -183,7 +182,6 @@ export default function useRestore(sessionId: string) {
       });
 
       if (response.ok) {
-        // Si la reponse est 200 = ok
         return;
       }
       const contentType = response.headers.get('content-type');
@@ -220,8 +218,6 @@ export default function useRestore(sessionId: string) {
         throw new Error(`Reboot failed: ${response.statusText}`);
       }
     } catch (err) {
-      // si l erreur est due a une perte de connexion apres le reboot
-      // on considere que c'est normal et on ne lance pas d'erreur
       if (err instanceof Error && err.message.includes('Failed to fetch')) {
         return;
       }
