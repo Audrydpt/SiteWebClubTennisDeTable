@@ -52,7 +52,7 @@ export default function useRestore(sessionId: string) {
 
     try {
       if (!file.name.endsWith('.mvb')) {
-        throw new Error('Le fichier doit être au format .mvb');
+        throw new Error('The file must be in .mvb format');
       }
 
       const reader = new FileReader();
@@ -63,7 +63,7 @@ export default function useRestore(sessionId: string) {
           if (cleanBase64) {
             resolve(cleanBase64);
           } else {
-            reject(new Error("Erreur d'encodage du fichier"));
+            reject(new Error('File encoding error'));
           }
         };
         reader.onerror = reject;
@@ -80,13 +80,13 @@ export default function useRestore(sessionId: string) {
       });
 
       if (!response.ok) {
-        throw new Error(`Échec de l'uplaod : ${response.statusText}`);
+        throw new Error(`Upload failed: ${response.statusText}`);
       }
 
       const data = await response.json();
       return data.restorePoint;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'unknown error');
+      setError(err instanceof Error ? err.message : 'Unknown error');
       throw err;
     } finally {
       setIsLoading(false);
@@ -111,7 +111,7 @@ export default function useRestore(sessionId: string) {
 
       if (!response.ok) {
         throw new Error(
-          `Impossible de récupérer les infos du backup: ${response.statusText}`
+          `Failed to retrieve backup info: ${response.statusText}`
         );
       }
 

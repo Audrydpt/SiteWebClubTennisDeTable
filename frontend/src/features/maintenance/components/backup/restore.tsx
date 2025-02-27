@@ -441,7 +441,6 @@ export default function RestoreBackupWizard({
                   value="now"
                   checked={rebootChoice === 'now'}
                   onChange={(e) => {
-                    console.log("Radio changed to:", e.target.value);
                     setRebootChoice(e.target.value as 'now' | 'later');
                   }}
                 />
@@ -457,7 +456,6 @@ export default function RestoreBackupWizard({
                   value="later"
                   checked={rebootChoice === 'later'}
                   onChange={(e) => {
-                    console.log("Radio changed to:", e.target.value);
                     setRebootChoice(e.target.value as 'now' | 'later');
                   }}
                 />
@@ -501,9 +499,7 @@ export default function RestoreBackupWizard({
         {step === 4 ? (
           <Button
             onClick={() => {
-              console.log("Apply clicked, rebootChoice:", rebootChoice);
               if (rebootChoice === 'now') {
-                console.log("User selected 'Reboot Now'. Calling reboot()...");
                 reboot()
                   .then(() => {
                     onClose(false);
