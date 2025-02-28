@@ -118,7 +118,7 @@ export default function QuickExport({
 
     timeFrom = now.minus(AggregationTypeToObject[storedWidget.duration]);
     timeTo = now.minus({ millisecond: 1 });
-    storedWidget.range = { from: timeFrom.toJSDate(), to: timeTo.toJSDate() };
+    // storedWidget.range = { from: timeFrom.toJSDate(), to: timeTo.toJSDate() };
   } else if (
     storedWidget.range &&
     storedWidget.range.from &&
@@ -223,11 +223,9 @@ export default function QuickExport({
               <CardHeader>Export Summary</CardHeader>
               <CardContent>
                 Table : {storedWidget.table} <br />
-                Range : {storedWidget.range?.from?.toLocaleDateString()} -
-                {storedWidget.range?.to?.toLocaleDateString()} <br />
+                Range : {timeFrom.toLocaleString()} -{timeTo.toLocaleString()}
+                <br />
                 Aggregation : {storedWidget.aggregation} <br />
-                timeFrom : {timeFrom?.toLocaleString()} <br />
-                timeTo : {timeTo?.toLocaleString()} <br />
                 Group By : {storedWidget.groupBy} <br />
                 Where <br />
                 {storedWidget.where?.map((filter) => (
