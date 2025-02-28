@@ -25,24 +25,31 @@ export default function Forensic() {
   const [selectedHairColors, setSelectedHairColors] = useState<string[]>([]);
 
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Sidebar fixe */}
-      <div className="w-[400px] flex-shrink-0 border-r h-screen flex flex-col">
-        <div className="p-6 space-y-6 flex flex-col h-full">
-          <div className="flex items-center justify-between flex-shrink-0">
-            <h2 className="text-lg font-semibold">Recherche vidéo</h2>
+    <div className="grid grid-cols-1 md:grid-cols-[350px_1fr] gap-4 h-full">
+      {/* Controls Panel */}
+      <Card className="h-full overflow-hidden flex flex-col">
+        <CardContent className="p-4 flex-1 flex flex-col">
+          <div className="mb-4 flex items-center justify-between">
+            <h1 className="text-lg font-semibold">Recherche vidéo</h1>
             <Button variant="outline" size="sm">
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="mr-2 h-4 w-4" />
               Sauvegarder
             </Button>
           </div>
 
-          <ScrollArea className="flex-1 -mx-6 px-6">
-            <Accordion type="single" defaultValue="sources" collapsible>
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <Accordion
+              type="single"
+              defaultValue="sources"
+              collapsible
+              className="flex-1"
+            >
               <Sources
                 cameras={cameras}
                 selectedCameras={selectedCameras}
                 onCameraChange={setSelectedCameras}
+                useScrollArea
+                maxHeight="1000px"
               />
               <Times date={date} onDateChange={setDate} />
               <Types
@@ -55,6 +62,8 @@ export default function Forensic() {
                 selectedColors={selectedColors}
                 onColorsChange={setSelectedColors}
                 vehicleTypes={vehicleTypes}
+                useScrollArea
+                maxHeight="1000px"
               />
               <Attributes
                 selectedClass={selectedClass}
@@ -67,24 +76,28 @@ export default function Forensic() {
                 onTopColorsChange={setSelectedTopColors}
                 selectedBottomColors={selectedBottomColors}
                 onBottomColorsChange={setSelectedBottomColors}
+                useScrollArea
+                maxHeight="1000px"
               />
             </Accordion>
-          </ScrollArea>
+          </div>
 
-          <Button className="w-full flex-shrink-0" size="lg">
-            <Search className="mr-2 h-4 w-4" />
-            Lancer la recherche
-          </Button>
-        </div>
-      </div>
+          <div className="mt-4">
+            <Button className="w-full" size="lg">
+              <Search className="mr-2 h-4 w-4" />
+              Lancer la recherche
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Zone principale */}
-      <ScrollArea className="flex-1">
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Results Area */}
+      <div className="h-full">
+        <ScrollArea className="h-full">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {selectedCameras.length === 0 ? (
               <Card className="col-span-full">
-                <CardContent className="flex items-center justify-center h-[50vh] text-muted-foreground">
+                <CardContent className="flex h-[50vh] items-center justify-center text-muted-foreground">
                   Sélectionnez une ou plusieurs caméras pour commencer
                 </CardContent>
               </Card>
@@ -94,7 +107,7 @@ export default function Forensic() {
                   <CardContent className="p-0">
                     <div className="aspect-video relative">
                       <video
-                        className="w-full h-full object-cover"
+                        className="h-full w-full object-cover"
                         src="/placeholder.mp4"
                         controls
                       >
@@ -106,7 +119,7 @@ export default function Forensic() {
                           default
                         />
                       </video>
-                      <div className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm px-2 py-1 rounded text-sm">
+                      <div className="absolute left-2 top-2 rounded bg-background/80 px-2 py-1 text-sm backdrop-blur-sm">
                         {cameras.find((cam) => cam.id === camId)?.name}
                       </div>
                     </div>
@@ -115,8 +128,8 @@ export default function Forensic() {
               ))
             )}
           </div>
-        </div>
-      </ScrollArea>
+        </ScrollArea>
+      </div>
     </div>
   );
 }

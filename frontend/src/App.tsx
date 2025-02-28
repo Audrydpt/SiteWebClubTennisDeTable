@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
+import useSidebarState from '@/hooks/use-sidebar-state';
 
 import ProtectedRoute from '@/components/protected-routes';
 import NoSidebarLayout from '@/layouts/NoSidebarLayout';
@@ -7,6 +8,7 @@ import { UserPrivileges } from '@/lib/authenticate';
 
 import LoadingSpinner from './components/loading';
 import OptionalSidebarLayout from './layouts/OptionalLayout';
+import CollapsedSidebarLayout from '@/layouts/CollapsedSidebarLayout';
 import { lazyLoadFeature } from './lib/i18n';
 import Error from './pages/Error';
 import Home from './pages/Home';
@@ -40,6 +42,8 @@ const Users = lazyLoadFeature(
 );
 
 export default function App() {
+  const { open, setOpen } = useSidebarState();
+
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <Routes>
@@ -48,12 +52,28 @@ export default function App() {
           <Route path="/login" element={<Login />} />
         </Route>
 
-        {/* Routes with optional sidebar */}
-        <Route element={<OptionalSidebarLayout />}>
-          <Route path="/" element={<Home />} />
-
-          {/* Forensic routes */}
+        {/* Forensic routes */}
+        <Route
+          element={
+            <CollapsedSidebarLayout
+              sidebarOpen={open}
+              onSidebarOpenChange={setOpen}
+            />
+          }
+        >
           <Route path="/forensic" element={<Forensic />} />
+        </Route>
+
+        {/* Routes with optional sidebar */}
+        <Route
+          element={
+            <OptionalSidebarLayout
+              sidebarOpen={open}
+              onSidebarOpenChange={setOpen}
+            />
+          }
+        >
+          <Route path="/" element={<Home />} />
 
           {/* Dashboard routes */}
           <Route path="/dashboard">
