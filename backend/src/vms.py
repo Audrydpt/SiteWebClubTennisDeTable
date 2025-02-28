@@ -4,6 +4,9 @@ import json
 import argparse
 import struct
 import cv2
+import av
+import io
+import datetime
 import numpy as np
 
 from typing import Optional, Dict
@@ -33,7 +36,7 @@ class CameraClient:
         )
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.settimeout(600.0)
+        self.sock.settimeout(5.0)
 
         try:
             self.sock.connect((self.host, self.port))
@@ -65,7 +68,7 @@ class CameraClient:
             # Compléter la lecture
             body = remaining
             while len(body) < total_length:
-                data = sock.recv(4096)
+                data = self.sock.recv(4096)
                 if not data:
                     break
                 body += data
@@ -98,7 +101,6 @@ class CameraClient:
 
         buffer = b""
         try:
-
             self.sock.connect((self.host, self.port))
             self.sock.sendall(http_request.encode("utf-8"))
 
@@ -126,6 +128,7 @@ class CameraClient:
 
                 body, buffer = buffer[:total_length], buffer[total_length:]
                 mime = headers.get("Content-Type", "").lower()
+                print(mime)
                 if "application/json" in mime:
                     text = body.decode("utf-8")
                     yield json.loads(text)
@@ -184,11 +187,54 @@ class CameraClient:
 
         return None
 
-    def start_replay(self, camera_guid: str) -> Optional[Dict]:
-        xml = f"""<?xml version="1.0" encoding="UTF-8"?><methodcall><requestid>1</requestid><methodname>replay</methodname><cameraid>{camera_guid}</cameraid></methodcall>"""
-        response = self._send_request(xml)
-        return response
+    def start_replay(self, camera_guid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0):
+        xml = (
+            f'<?xml version="1.0" encoding="UTF-8"?>'
+            f"<methodcall>"
+            f"<requestid>1</requestid>"
+            f"<methodname>replay</methodname>"
+            f"<cameraid>{camera_guid}</cameraid>"
+            f"<fromtime>{from_time.isoformat()}</fromtime>"
+            f"<totime>{to_time.isoformat()}</totime>"
+            f"<gap>{gap}</gap>"
+            f"</methodcall>"
+        )
+        print(xml)
+        response = self._stream_request(xml)
 
+        codec = None
+        time_frame = None
+        codec_format = None
+        pts_counter = 0
+
+        for data in response:
+            if isinstance(data, dict):
+                print(data)
+                time_frame = data.get("FrameTime")
+                codec_format = data.get("Format")
+            elif isinstance(data, bytes):
+                try:
+                    if codec is None:
+                        container = av.open(io.BytesIO(data), mode='r')
+                        video_stream = container.streams.video[0]
+                        codec = av.CodecContext.create(video_stream.codec_context.codec.name, 'r')
+                        pts_counter = 0
+
+                    packet = av.Packet(data)
+                    packet.pts = pts_counter
+                    pts_counter += 1
+                    frames = codec.decode(packet)
+
+                    for frame in frames:
+                        img = frame.to_ndarray(format='bgr24')
+                        yield img, time_frame
+
+                except Exception as e:
+                    print(f"Erreur lors du décodage: {e}")
+                    codec = None
+                    continue
+        
+        return None
 
 def main():
     parser = argparse.ArgumentParser(description="Client de contrôle des caméras")
@@ -206,12 +252,8 @@ def main():
             first_guid = next(iter(cameras))
             print("GUID de la première caméra:", first_guid)
 
-            client.start_replay(first_guid)
-            return True
-
-            #for img in client.start_live(first_guid):
-            #    cv2.imshow("Image", img)
-            #    cv2.waitKey(1)
+            for img, time in client.start_replay(first_guid, datetime.datetime(2025, 2, 28, 0, 0, 0), datetime.datetime(2025, 2, 28, 10, 0, 0), gap=5):
+                print(img.shape, time)
 
     except Exception as e:
         print(f"Erreur lors de l'exécution: {e}")

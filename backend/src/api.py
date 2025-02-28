@@ -177,10 +177,12 @@ class FastAPIServer:
                 raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
 
         @self.app.get("/vms/{ip}/cameras/{guuid}/replay", tags=["/vms"])
-        async def get_replay(ip: str, guuid: str):
+        async def get_replay(ip: str, guuid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0):
             try:
                 with CameraClient(ip, 7778) as client:
-                    return client.start_replay(guuid)
+                    img = next(client.start_replay(guuid, from_time, to_time, gap))
+                    _, bytes = cv2.imencode('.jpg', img)
+                    return Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
             except:
                 raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
 
