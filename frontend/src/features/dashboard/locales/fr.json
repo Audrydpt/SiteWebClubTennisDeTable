@@ -6,21 +6,21 @@
     "deleteConfirmation": "Cette action est irréversible. L'onglet sera supprimé définitivement."
   },
   "widget": {
-    "add": "Ajouter une vignette",
-    "edit": "Modifier la vignette",
-    "title": "Titre de la vignette",
-    "deleteConfirmation": "Cette action est irréversible. La vignette sera supprimée définitivement.",
+    "add": "Ajouter une tuile",
+    "edit": "Modifier la tuile",
+    "title": "Titre de la tuile",
+    "deleteConfirmation": "Cette action est irréversible. La tuile sera supprimée définitivement.",
 
     "type": {
-      "label": "Type de vignette",
+      "label": "Type de tuile",
       "placeholder": "Sélectionner un type"
     },
     "layout": {
-      "label": "Disposition de la vignette",
+      "label": "Disposition de la tuile",
       "placeholder": "Sélectionner une disposition"
     },
     "size": {
-      "label": "Taille de la vignette",
+      "label": "Taille de la tuile",
       "placeholder": "Sélectionner une taille"
     },
     "table": {
@@ -61,5 +61,68 @@
     "title": {
       "minLength": "Le titre doit contenir au moins {{count}} caractères"
     }
+  },
+  "chart": {
+    "Area": "Aire",
+    "Bar": "Histogramme",
+    "Line": "Courbe",
+    "Gauge": "Jauge",
+    "Pie": "Secteur",
+    "MultiGauge": "Multi-jauge",
+    "StackedGauge": "Jauge empilée",
+    "Heatmap": "Carte de chaleur"
+  },
+  "time": {
+    "OneMinute": "1 minute",
+    "FifteenMinutes": "15 minutes",
+    "ThirtyMinutes": "30 minutes",
+    "OneHour": "1 heure",
+    "OneDay": "1 jour",
+    "OneWeek": "1 semaine",
+    "OneMonth": "1 mois",
+    "SixMonths": "6 mois",
+    "OneYear": "1 an",
+    "LifeTime": "100 ans"
+  },
+  "size": {
+    "tiny": "Minuscule",
+    "small": "Petit",
+    "medium": "Moyen",
+    "large": "Grand",
+    "big": "Géant",
+    "full": "Plein écran"
+  },
+  "layout": {
+    "horizontal stacked": "Empilé horizontalement",
+    "vertical stacked": "Empilé verticalement",
+    "horizontal sided": "Côte à côte horizontalement",
+    "vertical sided": "Côte à côte verticalement",
+
+    "half": "Demi gauge",
+    "full": "Gauge pleine",
+
+    "pie": "Camembert",
+    "halfpie": "Demi camembert",
+
+    "donut": "Donut",
+    "halfdonut": "Demi donut",
+
+    "monotone": "Monotone",
+    "bump": "Rebondissant",
+    "linear": "Linéaire",
+    "step": "Escalier"
+  },
+  "heatmap": {
+    "hourMinute": "Heure/Minute",
+    "hour15min": "Heure/15 minutes",
+    "hour30min": "Heure/30 minutes",
+    "dayHour": "Jour/Heure",
+    "monthDay": "Mois/Jour",
+    "monthWeek": "Mois/Semaine"
+  },
+  "legend": {
+    "value": "Valeur",
+    "value_other": "Valeur: {{count}}",
+    "no_value": "Pas de données"
   }
 }

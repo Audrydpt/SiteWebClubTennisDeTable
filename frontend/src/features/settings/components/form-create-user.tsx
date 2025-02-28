@@ -114,7 +114,7 @@ export default function FormCreateUser({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Create a new user</DialogTitle>
           <DialogDescription>
@@ -185,13 +185,13 @@ export default function FormCreateUser({
             />
 
             <TooltipProvider>
-              <Table>
+              <Table className="hidden xl:table">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[180px]">Functionality</TableHead>
-                    <TableHead>Basic</TableHead>
-                    <TableHead>Advanced</TableHead>
-                    <TableHead>Admin</TableHead>
+                    <TableHead>Functionality</TableHead>
+                    <TableHead>Operator</TableHead>
+                    <TableHead>Maintainer</TableHead>
+                    <TableHead>Administrator</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -201,16 +201,28 @@ export default function FormCreateUser({
                         {detail.action}
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <InfoIcon className="h-4 w-4 ml-1 inline-block text-gray-400" />
+                            <InfoIcon className="h-4 w-4 ml-1 inline-block text-muted-foreground" />
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{detail.tooltip}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TableCell>
-                      <TableCell>{detail.basic}</TableCell>
-                      <TableCell>{detail.advanced}</TableCell>
-                      <TableCell>{detail.admin}</TableCell>
+                      <TableCell>
+                        <div className="flex justify-center">
+                          {detail.Operator}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-center">
+                          {detail.Maintainer}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-center">
+                          {detail.Administrator}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

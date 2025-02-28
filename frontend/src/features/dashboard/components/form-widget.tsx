@@ -278,7 +278,7 @@ export function FormWidget({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {Object.values(ChartType).map((item) => (
+                          {Object.entries(ChartType).map(([key, item]) => (
                             <SelectItem
                               key={item}
                               value={item}
@@ -287,7 +287,7 @@ export function FormWidget({
                                 process.env.NODE_ENV !== 'development'
                               }
                             >
-                              {item}
+                              {t(`dashboard:chart.${key}`)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -324,7 +324,7 @@ export function FormWidget({
                             <SelectContent>
                               {getLayoutOptions(formValues.type).map((item) => (
                                 <SelectItem key={item} value={item}>
-                                  {item}
+                                  {t(`dashboard:layout.${item}`)}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -361,7 +361,7 @@ export function FormWidget({
                             <SelectContent>
                               {Object.values(ChartSize).map((item) => (
                                 <SelectItem key={item} value={item}>
-                                  {item}
+                                  {t(`dashboard:size.${item}`)}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -494,11 +494,13 @@ export function FormWidget({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {Object.values(AcicAggregation).map((item) => (
-                                <SelectItem key={item} value={item}>
-                                  {item}
-                                </SelectItem>
-                              ))}
+                              {Object.entries(AcicAggregation).map(
+                                ([key, item]) => (
+                                  <SelectItem key={item} value={item}>
+                                    {t(`dashboard:time.${key}`)}
+                                  </SelectItem>
+                                )
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -530,11 +532,13 @@ export function FormWidget({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {Object.values(AcicAggregation).map((item) => (
-                                <SelectItem key={item} value={item}>
-                                  {item}
-                                </SelectItem>
-                              ))}
+                              {Object.entries(AcicAggregation).map(
+                                ([key, item]) => (
+                                  <SelectItem key={item} value={item}>
+                                    {t(`dashboard:time.${key}`)}
+                                  </SelectItem>
+                                )
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage />

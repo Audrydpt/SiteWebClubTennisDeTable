@@ -3,10 +3,8 @@ import BarComponent from '../components/charts/bar';
 import GaugeComponent from '../components/charts/gauge';
 import HeatmapComponent from '../components/charts/heatmap';
 import LineComponent from '../components/charts/line';
-import MultiBarComponent from '../components/charts/multi-bar';
 import MultiGaugeComponent from '../components/charts/multi-gauge';
 import PieComponent from '../components/charts/pie';
-import StackedBarComponent from '../components/charts/stacked-bar';
 import StackedGaugeComponent from '../components/charts/stacked-gauge';
 import { ChartProps, ChartType, GroupByChartProps } from './props';
 
@@ -19,9 +17,7 @@ export const ChartTypeComponents = {
   [ChartType.Line]: LineComponent,
   [ChartType.Gauge]: GaugeComponent,
   [ChartType.Pie]: PieComponent,
-  [ChartType.MultiBar]: MultiBarComponent,
   [ChartType.MultiGauge]: MultiGaugeComponent,
-  [ChartType.StackedBar]: StackedBarComponent,
   [ChartType.StackedGauge]: StackedGaugeComponent,
   [ChartType.Heatmap]: HeatmapComponent,
 } as ChartComponentsType;
@@ -32,12 +28,10 @@ type StackedOptionsType = {
 export const StackedOptions = {
   [ChartType.Area]: true,
   [ChartType.Line]: true,
-  [ChartType.Bar]: false,
+  [ChartType.Bar]: true,
   [ChartType.Gauge]: false,
   [ChartType.Pie]: true,
-  [ChartType.MultiBar]: true,
   [ChartType.MultiGauge]: true,
-  [ChartType.StackedBar]: true,
   [ChartType.StackedGauge]: true,
   [ChartType.Heatmap]: false,
 } as StackedOptionsType;
@@ -48,9 +42,7 @@ export const UniqueValuesOptions = {
   [ChartType.Bar]: false,
   [ChartType.Gauge]: true,
   [ChartType.Pie]: true,
-  [ChartType.MultiBar]: false,
   [ChartType.MultiGauge]: false,
-  [ChartType.StackedBar]: false,
   [ChartType.StackedGauge]: true,
   [ChartType.Heatmap]: false,
 } as StackedOptionsType;
@@ -61,15 +53,18 @@ export const ExperimentalChartType = {
   [ChartType.Bar]: false,
   [ChartType.Gauge]: true,
   [ChartType.Pie]: false,
-  [ChartType.MultiBar]: false,
   [ChartType.MultiGauge]: false,
-  [ChartType.StackedBar]: false,
   [ChartType.StackedGauge]: true,
   [ChartType.Heatmap]: false,
 } as StackedOptionsType;
 
 const ALLOWED_CURVE_TYPES = ['monotone', 'bump', 'linear', 'step'] as const;
-const ALLOWED_LAYOUT_TYPES = ['horizontal', 'vertical'] as const;
+const ALLOWED_LAYOUT_TYPES = [
+  'horizontal stacked',
+  'horizontal sided',
+  'vertical stacked',
+  'vertical sided',
+] as const;
 const ALLOWED_GAUGE_TYPES = ['half', 'full'] as const;
 const ALLOWED_PIE_TYPES = ['pie', 'donut', 'halfpie', 'halfdonut'] as const;
 
@@ -82,9 +77,7 @@ export const LayoutOptions = {
   [ChartType.Line]: ALLOWED_CURVE_TYPES,
   [ChartType.Gauge]: ALLOWED_GAUGE_TYPES,
   [ChartType.Pie]: ALLOWED_PIE_TYPES,
-  [ChartType.MultiBar]: ALLOWED_LAYOUT_TYPES,
   [ChartType.MultiGauge]: ALLOWED_GAUGE_TYPES,
-  [ChartType.StackedBar]: ALLOWED_LAYOUT_TYPES,
   [ChartType.StackedGauge]: ALLOWED_GAUGE_TYPES,
   [ChartType.Heatmap]: ALLOWED_LAYOUT_TYPES,
 } as LayoutOptionsType;

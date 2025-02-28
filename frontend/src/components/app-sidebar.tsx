@@ -1,14 +1,13 @@
 import {
   Calendar,
   Cctv,
-  ChevronDown,
+  ChevronRight,
   ChevronsUpDown,
   ChevronUp,
   FileOutput,
   Fingerprint,
   Gauge,
   LogOut,
-  LucideProps,
   Map,
   Server,
   Settings,
@@ -19,7 +18,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
-import { Button } from '@/components/ui/button.tsx';
+import { Button } from '@/components/ui/button';
 import {
   Collapsible,
   CollapsibleContent,
@@ -55,19 +54,16 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
+
 import { UserPrivileges, UserType } from '@/lib/authenticate';
 import { useAuth } from '@/providers/auth-context';
-
 import logo from '../assets/logo.svg';
 
 interface SidebarItem {
   title: string;
-  url: string;
-  icon: React.FC<LucideProps>;
-  children?: {
-    title: string;
-    url: string;
-  }[];
+  url?: string;
+  icon?: React.FC;
+  children?: SidebarItem[];
   disabled?: boolean;
 }
 
@@ -93,44 +89,15 @@ const analyticsItems: SidebarItem[] = [
       {
         title: 'Export data',
         url: '/dashboard/export',
+        icon: FileOutput,
       },
     ],
   },
   { title: 'Maps', url: '/maps', icon: Map },
   { title: 'Forensic', url: '/forensic', icon: Fingerprint },
-] as SidebarItem[];
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const allItems = [
-  {
-    title: 'Analytics',
-    children: [...analyticsItems],
-  },
-  {
-    title: 'Configurations',
-    children: [...settingsItems],
-  },
 ];
 
-const testChildren: SidebarItem[] = [
-  {
-    title: 'Main dashboard',
-    url: '/dashboard',
-    icon: Gauge,
-  },
-  {
-    title: 'Demo dashboard',
-    url: '/dashboard/demo',
-    icon: Gauge,
-  },
-  {
-    title: 'All widgets',
-    url: '/dashboard/test',
-    icon: Gauge,
-  },
-];
-
-const getFilteredItems = (user?: UserType) => {
+const getFilteredItems = (user?: UserType): SidebarItem[] => {
   if (!user) return [];
 
   const isAdmin = user.privileges === UserPrivileges.Administrator;
@@ -163,7 +130,7 @@ const getFilteredItems = (user?: UserType) => {
         title: 'Analytics',
         children: analyticsItems.map((item) => ({
           ...item,
-          children: item.title === 'Dashboard' ? undefined : item.children,
+          children: item.title === 'Dashboard' ? item.children : undefined,
         })),
       },
     ];
@@ -204,15 +171,26 @@ export default function AppSidebar() {
     workspaces.push('192.168.20.150');
 
     // Development only.
-    if (process.env.NODE_ENV === 'development')
-      analyticsItems[0].children = [
-        {
-          title: 'Export data',
-          url: '/dashboard/export',
-          icon: FileOutput,
-        },
-        ...testChildren,
-      ];
+    if (process.env.NODE_ENV === 'development') {
+      if (filteredItems.length <= 2) {
+        filteredItems.push({
+          title: 'Dev zone',
+          children: [
+            { title: 'Theme preview', url: '/theme', icon: FileOutput },
+            {
+              title: 'Demo dashboard',
+              url: '/dashboard/demo',
+              icon: Gauge,
+            },
+            {
+              title: 'All widgets',
+              url: '/dashboard/test',
+              icon: Gauge,
+            },
+          ],
+        });
+      }
+    }
   } else {
     workspaces.push(current);
   }
@@ -268,58 +246,59 @@ export default function AppSidebar() {
         <SidebarContent>
           {filteredItems.map((section) => (
             <SidebarGroup key={section.title}>
-              {allItems.length > 1 && (
+              {filteredItems.length > 1 && (
                 <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
               )}
               <SidebarGroupContent>
                 <SidebarMenu>
                   <Collapsible className="group/collapsible">
-                    {section.children.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild disabled={item.disabled}>
-                          <Link
-                            to={item.url}
-                            className={
-                              item.disabled
-                                ? 'text-gray-400 pointer-events-none'
-                                : ''
-                            }
-                          >
-                            <item.icon />
-                            <span>{item.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                        {item.children && (
-                          <>
-                            <CollapsibleTrigger asChild>
-                              <SidebarMenuAction>
-                                <ChevronDown />
-                              </SidebarMenuAction>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <SidebarMenuSub>
-                                {item.children.map((child) => (
-                                  <SidebarMenuSubItem key={child.title}>
-                                    <SidebarMenuSubButton asChild>
-                                      <Link
-                                        to={child.url}
-                                        className={
-                                          item.disabled
-                                            ? '!text-gray-400 pointer-events-none'
-                                            : ''
-                                        }
-                                      >
-                                        <span>{child.title}</span>
-                                      </Link>
-                                    </SidebarMenuSubButton>
-                                  </SidebarMenuSubItem>
-                                ))}
-                              </SidebarMenuSub>
-                            </CollapsibleContent>
-                          </>
-                        )}
-                      </SidebarMenuItem>
-                    ))}
+                    {section.children &&
+                      section.children.map((item) => (
+                        <SidebarMenuItem key={item.title}>
+                          <SidebarMenuButton asChild disabled={item.disabled}>
+                            <Link
+                              to={item.url || '#'}
+                              className={
+                                item.disabled
+                                  ? 'text-gray-400 pointer-events-none'
+                                  : ''
+                              }
+                            >
+                              {item.icon && <item.icon />}
+                              <span>{item.title}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                          {item.children && (
+                            <>
+                              <CollapsibleTrigger asChild>
+                                <SidebarMenuAction className="group">
+                                  <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                                </SidebarMenuAction>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <SidebarMenuSub>
+                                  {item.children.map((child) => (
+                                    <SidebarMenuSubItem key={child.title}>
+                                      <SidebarMenuSubButton asChild>
+                                        <Link
+                                          to={child.url || '#'}
+                                          className={
+                                            item.disabled
+                                              ? '!text-gray-400 pointer-events-none'
+                                              : ''
+                                          }
+                                        >
+                                          <span>{child.title}</span>
+                                        </Link>
+                                      </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                  ))}
+                                </SidebarMenuSub>
+                              </CollapsibleContent>
+                            </>
+                          )}
+                        </SidebarMenuItem>
+                      ))}
                   </Collapsible>
                 </SidebarMenu>
               </SidebarGroupContent>
@@ -329,6 +308,9 @@ export default function AppSidebar() {
 
         <SidebarFooter>
           <SidebarMenu>
+            <SidebarMenuItem />
+
+            {/* User menu stays separate */}
             <SidebarMenuItem>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -342,7 +324,7 @@ export default function AppSidebar() {
                   className="w-[--radix-popper-anchor-width]"
                 >
                   <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2" /> <span>Sign out</span>
+                    <LogOut className="mr-2" /> <span>{t('logout.title')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -356,17 +338,15 @@ export default function AppSidebar() {
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Logout confirmation</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to sign out?
-            </DialogDescription>
+            <DialogTitle>{t('logout.title')}</DialogTitle>
+            <DialogDescription>{t('logout.description')}</DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-4 mt-4">
-            <Button variant="default" onClick={cancelLogout}>
-              Cancel
+            <Button variant="ghost" onClick={cancelLogout}>
+              {t('cancel')}
             </Button>
             <Button variant="destructive" onClick={confirmLogout}>
-              Logout
+              {t('logout.submit')}
             </Button>
           </div>
         </DialogContent>

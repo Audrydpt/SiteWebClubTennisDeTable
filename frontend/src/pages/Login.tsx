@@ -1,9 +1,13 @@
+/* eslint-disable jsx-a11y/no-static-element-interactions */
+/* eslint-disable jsx-a11y/click-events-have-key-events */
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
+import LoadingSpinner from '@/components/loading';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -13,24 +17,32 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-
-import logo from '@/assets/logo.svg';
-import LoadingSpinner from '@/components/loading';
 import { useAuth } from '@/providers/auth-context';
 
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+
+import logo from '@/assets/logo.svg';
+
 const loginSchema = z.object({
-  username: z.string().nonempty('Username is required'),
-  password: z.string().nonempty('Password is required'),
+  username: z.string().nonempty(),
+  password: z.string().nonempty(),
 });
 
 type LoginSchema = z.infer<typeof loginSchema>;
 
-function Login() {
+export default function Login() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // Nouvel état pour gérer le loading
+  const [isLoading, setIsLoading] = useState(false);
 
   if (isAuthenticated) {
     navigate('/dashboard');
@@ -45,15 +57,15 @@ function Login() {
   });
 
   const handleLogin = async (data: LoginSchema) => {
-    setIsLoading(true); // Active le loading
-    setError(''); // Réinitialise les erreurs
+    setIsLoading(true);
+    setError('');
     try {
       await login(data.username, data.password);
       navigate('/dashboard');
     } catch {
-      setError('Invalid credentials');
+      setError(t('login.error'));
     } finally {
-      setIsLoading(false); // Désactive le loading après la réponse
+      setIsLoading(false);
     }
   };
 
@@ -61,69 +73,75 @@ function Login() {
     <div className="max-w-md mx-auto mt-10">
       <Card>
         <CardHeader>
-          <img
-            src={logo}
-            alt="Logo"
-            style={{ width: '100px', marginBottom: '16px' }}
-            className="mx-auto mb-4"
-          />
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>
-            Enter your username and password below to login to your account
-          </CardDescription>
+          <img src={logo} alt="Logo" className="w-[100px] mb-4 mx-auto" />
+          <CardTitle className="text-2xl">{t('login.title')}</CardTitle>
+          <CardDescription>{t('login.description')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-4">
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  {...form.register('username')}
-                  placeholder="Username"
-                  onChange={(e) => {
-                    form.setValue('username', e.target.value);
-                    setError('');
-                  }}
-                />
-                {form.formState.errors.username && (
-                  <p className="text-red-500">
-                    {form.formState.errors.username.message}
-                  </p>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(handleLogin)}
+              className="space-y-4"
+            >
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('login.username')}</FormLabel>
+                    <FormControl>
+                      <Input placeholder={t('login.username')} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  {...form.register('password')}
-                  placeholder="Password"
-                  onChange={(e) => {
-                    form.setValue('password', e.target.value);
-                    setError('');
-                  }}
-                />
-                {form.formState.errors.password && (
-                  <p className="text-red-500">
-                    {form.formState.errors.password.message}
-                  </p>
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('login.password')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder={t('login.password')}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
-              {error && <p className="text-red-500">{error}</p>}
+              />
+              {error && <p className="text-destructive">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <LoadingSpinner className="w-5 h-5 mx-auto" />
                 ) : (
-                  'Login'
+                  t('login.submit')
                 )}
               </Button>
-            </div>
-          </form>
+            </form>
+          </Form>
         </CardContent>
+        <div className="text-center mb-4 text-muted">
+          <Button
+            variant="link"
+            className={`text-muted ${i18n.language === 'en' ? 'font-semibold' : ''}`}
+            onClick={() => i18n.changeLanguage('en')}
+          >
+            English
+          </Button>
+          {' | '}
+          <Button
+            variant="link"
+            className={`text-muted ${i18n.language === 'fr' ? 'font-semibold' : ''}`}
+            onClick={() => i18n.changeLanguage('fr')}
+          >
+            Français
+          </Button>
+        </div>
       </Card>
     </div>
   );
 }
-
-export default Login;
