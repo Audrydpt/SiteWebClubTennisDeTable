@@ -121,10 +121,11 @@ export default function Theme() {
           <div className="space-y-2">
             <h3 className="text-lg font-medium">Text Colors</h3>
             <div className="space-y-2">
+              <p className="text-accent">text-accent</p>
+              <p className="text-accent-foreground">text-accent-foreground</p>
               <p className="text-foreground">text-foreground (Default text)</p>
-              <p className="text-muted-foreground">
-                text-muted-foreground (Muted text)
-              </p>
+              <p className="text-muted">text-muted</p>
+              <p className="text-muted-foreground">text-muted-foreground</p>
               <p className="text-primary">text-primary (Primary text)</p>
               <p className="text-secondary">text-secondary (Secondary text)</p>
               <p className="text-destructive">

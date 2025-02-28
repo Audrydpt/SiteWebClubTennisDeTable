@@ -58,9 +58,7 @@ export enum ChartType {
   Line = 'Line',
   Gauge = 'Gauge',
   Pie = 'Pie',
-  MultiBar = 'MultiBar',
   MultiGauge = 'MultiGauge',
-  StackedBar = 'StackedBar',
   StackedGauge = 'StackedGauge',
   Heatmap = 'Heatmap',
 }

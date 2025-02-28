@@ -59,10 +59,7 @@ export function getTimeFormattingConfig(
     case durationDays <= 1:
       return { format: 'HH:mm', interval };
     case durationDays <= 7:
-      return {
-        format: dataLength > 48 ? 'ccc HH:mm' : 'ccc dd HH:mm',
-        interval,
-      };
+      return { format: 'ccc dd', interval };
     case durationDays <= 30:
       return { format: 'dd LLL', interval };
     case durationDays <= 180:

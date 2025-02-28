@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { DateTime, Duration } from 'luxon';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 import { CurveType } from 'recharts/types/shape/Curve';
 
@@ -43,6 +44,7 @@ export default function LineComponent({
   layout = 'natural',
   ...props
 }: MultiLineComponentProps & GroupByChartProps) {
+  const { t, i18n } = useTranslation();
   const { title, table, aggregation, duration, where } = props;
   const { groupBy } = props;
 
@@ -55,13 +57,14 @@ export default function LineComponent({
     ).as('milliseconds'),
   });
 
+  const translatedCount = t('dashboard:legend.value');
   const { dataMerged, chartConfig } = useMemo(() => {
     if (!data) return { dataMerged: {}, chartConfig: {} };
 
     return (data as DataType[]).reduce<ProcessedData>(
       (acc, item) => {
         const { timestamp, count } = item;
-        const groupValue = groupBy ? item[groupBy] : 'count';
+        const groupValue = groupBy ? item[groupBy] : translatedCount;
 
         if (!acc.dataMerged[timestamp]) {
           acc.dataMerged[timestamp] = { timestamp };
@@ -77,13 +80,13 @@ export default function LineComponent({
       },
       { dataMerged: {}, chartConfig: {} }
     );
-  }, [data, groupBy]);
+  }, [translatedCount, data, groupBy]);
 
   if (isLoading || isError) {
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
         <CardHeader>
-          <CardTitle>{title ?? `Multi-Bar ${layout.toString()}`}</CardTitle>
+          <CardTitle>{title ?? `Line ${layout.toString()}`}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
           <ChartContainer config={{}} className="h-full w-full">
@@ -121,11 +124,13 @@ export default function LineComponent({
             <CartesianGrid vertical={false} />
             <XAxis
               dataKey="timestamp"
-              tickLine={false}
-              axisLine={false}
+              tickLine
+              axisLine
               tickMargin={8}
               angle={-30}
-              tickFormatter={(t: string) => CustomChartTickDate(t, format)}
+              tickFormatter={(v: string) =>
+                CustomChartTickDate(i18n.language, v, format)
+              }
               interval={interval}
             />
             <YAxis

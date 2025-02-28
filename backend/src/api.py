@@ -10,7 +10,7 @@ from sqlalchemy import func, JSON
 from sqlalchemy.inspection import inspect
 
 from fastapi.staticfiles import StaticFiles
-from fastapi import Depends, FastAPI, HTTPException, Query, requests
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from typing import Annotated, Literal, Optional, Type, Union, List, Dict, Any

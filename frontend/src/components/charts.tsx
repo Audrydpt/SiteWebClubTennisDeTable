@@ -60,11 +60,12 @@ export function CustomChartTickValue(value: string, unit: string = '') {
   return `${v.toLocaleString()} ${unit}`;
 }
 export function CustomChartTickDate(
+  locale: string,
   value: string,
   format: string,
   aggregation?: AcicAggregation
 ) {
-  const dt = DateTime.fromISO(value);
+  const dt = DateTime.fromISO(value).setLocale(locale);
   if (aggregation) {
     const dur = AggregationTypeToObject[aggregation];
     return dt.minus(dur).toFormat(format);

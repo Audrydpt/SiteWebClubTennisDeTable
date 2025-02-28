@@ -90,7 +90,7 @@ describe('getTimeFormattingConfig', () => {
       24,
       ChartSize.medium
     );
-    expect(result.format).toBe('ccc dd HH:mm');
+    expect(result.format).toBe('ccc dd');
   });
 
   it('adjusts format based on data length', () => {
@@ -99,7 +99,7 @@ describe('getTimeFormattingConfig', () => {
       72,
       ChartSize.medium
     );
-    expect(result.format).toBe('ccc HH:mm');
+    expect(result.format).toBe('ccc dd');
   });
 
   it('calculates interval correctly based on size and data length', () => {

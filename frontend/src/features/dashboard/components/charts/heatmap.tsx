@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { DateTime, Duration } from 'luxon';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartContainer } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Tooltip,
@@ -62,8 +64,12 @@ const getOpacityClass = (
   return hourClasses[index];
 };
 
-const formatTimestamp = (timestamp: string, aggregation: AcicAggregation) => {
-  const date = DateTime.fromISO(timestamp);
+const formatTimestamp = (
+  locale: string,
+  timestamp: string,
+  aggregation: AcicAggregation
+) => {
+  const date = DateTime.fromISO(timestamp).setLocale(locale);
   if (aggregation === AcicAggregation.OneMinute) {
     return {
       rowKey: date.toFormat('yyyy-MM-dd HH'),
@@ -176,20 +182,23 @@ const generateColumns = (aggregation: AcicAggregation) => {
   return [];
 };
 
-const getAggregationLabel = (aggregation: AcicAggregation) => {
+const getAggregationLabel = (
+  t: (key: string) => string,
+  aggregation: AcicAggregation
+) => {
   switch (aggregation) {
     case AcicAggregation.OneMinute:
-      return 'Hour/Minute';
+      return t('dashboard:heatmap.hourMinute');
     case AcicAggregation.FifteenMinutes:
-      return 'Hour/15min';
+      return t('dashboard:heatmap.hour15min');
     case AcicAggregation.ThirtyMinutes:
-      return 'Hour/30min';
+      return t('dashboard:heatmap.hour30min');
     case AcicAggregation.OneHour:
-      return 'Day/Hour';
+      return t('dashboard:heatmap.dayHour');
     case AcicAggregation.OneDay:
-      return 'Month/Day';
+      return t('dashboard:heatmap.monthDay');
     case AcicAggregation.OneWeek:
-      return 'Month/Week';
+      return t('dashboard:heatmap.monthWeek');
     default:
       return '';
   }
@@ -201,22 +210,20 @@ interface HeatmapCellProps {
 }
 
 function HeatmapCell({ cellData, maxCount }: HeatmapCellProps) {
+  const { t } = useTranslation();
   const opacityClass = getOpacityClass(cellData?.count, maxCount);
+  const legend =
+    cellData && cellData.count !== null
+      ? t('dashboard:legend.value', { count: cellData.count })
+      : t('dashboard:legend.no_value');
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <td
-          className={`border ${opacityClass}`}
-          aria-label={`Count: ${cellData?.count ?? 'No data'}`}
-        />
+        <td className={`border ${opacityClass}`} aria-label={legend} />
       </TooltipTrigger>
       <TooltipContent>
-        <p className="font-medium">
-          {cellData && cellData.count !== null
-            ? `Count: ${cellData.count}`
-            : 'No data'}
-        </p>
+        <p className="font-medium">{legend}</p>
       </TooltipContent>
     </Tooltip>
   );
@@ -226,6 +233,7 @@ export default function HeatmapComponent({
   layout = 'horizontal',
   ...props
 }: HeatmapProps) {
+  const { t, i18n } = useTranslation();
   const { title, table, aggregation, duration, where } = props;
 
   const { isLoading, isError, data } = useQuery({
@@ -246,7 +254,11 @@ export default function HeatmapComponent({
 
     const reduced = (data as DataItem[]).reduce<ProcessedData>(
       (acc, item) => {
-        const { rowKey } = formatTimestamp(item.timestamp, aggregation);
+        const { rowKey } = formatTimestamp(
+          i18n.language,
+          item.timestamp,
+          aggregation
+        );
 
         if (!acc.dataMerged[rowKey]) acc.dataMerged[rowKey] = [];
 
@@ -269,7 +281,7 @@ export default function HeatmapComponent({
       chartConfig: reduced.chartConfig,
       sortedRows: Object.keys(reduced.dataMerged).sort(),
     };
-  }, [data, aggregation]);
+  }, [i18n.language, data, aggregation]);
 
   const columns = useMemo(() => generateColumns(aggregation), [aggregation]);
 
@@ -280,11 +292,13 @@ export default function HeatmapComponent({
           <CardTitle>{title ?? `Heatmap ${layout.toString()}`}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
-          {isLoading ? (
-            <Skeleton className="h-full w-full bg-muted" />
-          ) : (
-            <span>Error !</span>
-          )}
+          <ChartContainer config={{}} className="h-full w-full">
+            {isLoading ? (
+              <Skeleton className="h-full w-full bg-muted" />
+            ) : (
+              <span>Error !</span>
+            )}
+          </ChartContainer>
         </CardContent>
       </Card>
     );
@@ -302,7 +316,7 @@ export default function HeatmapComponent({
               <thead>
                 <tr className="text-center">
                   <th className="p-1 font-medium">
-                    {getAggregationLabel(aggregation)}
+                    {getAggregationLabel(t, aggregation)}
                   </th>
                   {columns.map((col) => (
                     <th key={col.key} className="p-1 font-medium">
@@ -315,6 +329,7 @@ export default function HeatmapComponent({
                 {sortedRows.map((row) => {
                   const firstItem = dataMerged[row][0];
                   const { rowLabel } = formatTimestamp(
+                    i18n.language,
                     firstItem.timestamp,
                     aggregation
                   );
@@ -325,8 +340,11 @@ export default function HeatmapComponent({
                       {columns.map((col) => {
                         const cellData = dataMerged[row].find(
                           (item) =>
-                            formatTimestamp(item.timestamp, aggregation)
-                              .columnKey === col.key
+                            formatTimestamp(
+                              i18n.language,
+                              item.timestamp,
+                              aggregation
+                            ).columnKey === col.key
                         );
 
                         return (
@@ -347,11 +365,12 @@ export default function HeatmapComponent({
               <thead>
                 <tr className="text-center">
                   <th className="p-2 font-medium">
-                    {getAggregationLabel(aggregation)}
+                    {getAggregationLabel(t, aggregation)}
                   </th>
                   {sortedRows.map((row) => {
                     const firstItem = dataMerged[row][0];
                     const { rowLabel } = formatTimestamp(
+                      i18n.language,
                       firstItem.timestamp,
                       aggregation
                     );
@@ -370,8 +389,11 @@ export default function HeatmapComponent({
                     {sortedRows.map((row) => {
                       const cellData = dataMerged[row].find(
                         (item) =>
-                          formatTimestamp(item.timestamp, aggregation)
-                            .columnKey === col.key
+                          formatTimestamp(
+                            i18n.language,
+                            item.timestamp,
+                            aggregation
+                          ).columnKey === col.key
                       );
 
                       return (
