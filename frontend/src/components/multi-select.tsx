@@ -39,6 +39,14 @@ export default function MultiSelect({
     }
   };
 
+  const handleSelectAll = () => {
+    if (selected.length === options.length) {
+      onChange([]);
+    } else {
+      onChange(options);
+    }
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -60,7 +68,12 @@ export default function MultiSelect({
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
         <Command>
-          <CommandInput placeholder="Search..." />
+          <div className="flex items-center justify-between p-2">
+            <CommandInput placeholder="Search..." />
+            <Button variant="ghost" onClick={handleSelectAll}>
+              {selected.length === options.length ? 'Clear' : 'All'}
+            </Button>
+          </div>
           <CommandList>
             <CommandEmpty>No item found.</CommandEmpty>
             <CommandGroup>

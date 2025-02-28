@@ -228,12 +228,11 @@ export async function getWidgetDataForExport(
 
   if (props.where) {
     const columns = Array.isArray(props.where) ? props.where : [props.where];
-
     columns.forEach((where) => {
       const { column, value } = where;
 
       if (column && value && column !== 'any' && value.length > 0) {
-        if (value.includes(',')) {
+        if (value.includes('|||')) {
           value
             .split('|||')
             .map((v) => v.trim())
@@ -247,7 +246,6 @@ export async function getWidgetDataForExport(
       }
     });
   }
-
   return fetch(query + params).then((res) => {
     if (!res.ok) throw new Error(res.statusText);
     return res.json();

@@ -5,7 +5,14 @@ import { useState } from 'react';
 import * as XLSX from 'xlsx';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ExportStep } from '../lib/export';
@@ -115,10 +122,11 @@ export default function QuickExport({
 
   if (storedWidget.aggregation && storedWidget.duration) {
     const now = DateTime.now();
-
     timeFrom = now.minus(AggregationTypeToObject[storedWidget.duration]);
     timeTo = now.minus({ millisecond: 1 });
-    // storedWidget.range = { from: timeFrom.toJSDate(), to: timeTo.toJSDate() };
+    if (!storedWidget.range) {
+      storedWidget.range = { from: timeFrom.toJSDate(), to: timeTo.toJSDate() };
+    }
   } else if (
     storedWidget.range &&
     storedWidget.range.from &&
@@ -166,9 +174,12 @@ export default function QuickExport({
     <Dialog>
       <DialogTrigger>{children}</DialogTrigger>
       <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Export</DialogTitle>
+          <DialogDescription>Get your data quickly</DialogDescription>
+        </DialogHeader>
         <div className="space-y-6">
           <div className="space-y-4">
-            <Label>Export Format</Label>
             <RadioGroup
               value={storedWidget.format}
               onValueChange={(value: 'PDF' | 'Excel') => {
@@ -239,7 +250,8 @@ export default function QuickExport({
             </Card>
           </div>
         </div>
-        <pre>data :{JSON.stringify(data, null, 2)}</pre>
+        {/* <pre>storedWidget :{JSON.stringify(storedWidget, null, 2)}</pre> */}
+        {/* <pre>data :{JSON.stringify(data, null, 2)}</pre> */}
       </DialogContent>
     </Dialog>
   );

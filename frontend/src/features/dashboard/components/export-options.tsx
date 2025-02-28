@@ -1,10 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
+import { Loader2 } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
-import LoadingSpinner from '@/components/loading';
 import MultiSelect from '@/components/multi-select';
 import {
   Form,
@@ -195,7 +195,10 @@ export default function ExportStepSource({
               <FormItem>
                 <FormLabel>Where</FormLabel>
                 {isLoading ? (
-                  <LoadingSpinner />
+                  <div className="flex items-center justify-center space-x-2">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <span>Fetching filters...</span>
+                  </div>
                 ) : (
                   <WhereClausesWithSearch
                     columns={columnKeys || []}

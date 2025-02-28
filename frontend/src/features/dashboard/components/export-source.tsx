@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -61,7 +61,7 @@ export default function ExportStepSource({
   });
 
   // récupérer tous les streamid existant d'une table
-  const { data, isSuccess } = useQuery({
+  const { data, isSuccess, isFetching } = useQuery({
     queryKey: ['export-source', storedWidget.table],
     queryFn: async () =>
       getWidgetData(
@@ -93,6 +93,10 @@ export default function ExportStepSource({
 
   const handleFormChange = async () => {
     updateStoredWidget(form.getValues());
+    updateStoredWidget({
+      groupBy: '',
+      where: [],
+    });
     await form.trigger();
   };
 
@@ -181,6 +185,20 @@ export default function ExportStepSource({
             )}
           />
         </div>
+        {isFetching && (
+          <div className="flex items-center justify-center space-x-2">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <span>Fetching data...</span>
+          </div>
+        )}
+
+        {isSuccess && data.length === 0 ? (
+          <div className="flex items-center justify-center space-x-2">
+            <span>No data available for this selection</span>
+          </div>
+        ) : (
+          ''
+        )}
       </form>
     </Form>
   );

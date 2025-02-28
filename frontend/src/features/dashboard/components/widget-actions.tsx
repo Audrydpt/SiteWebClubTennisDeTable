@@ -1,4 +1,5 @@
 import { Edit3, Share, Trash2 } from 'lucide-react';
+import { JSX } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import DeleteConfirmation from '@/components/confirm-delete';

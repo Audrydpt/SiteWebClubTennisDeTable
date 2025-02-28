@@ -10,7 +10,7 @@ import ExportStepFormat from './components/export-format';
 import ExportStepOptions from './components/export-options';
 import ExportStepSource from './components/export-source';
 import { StepperFormData } from './lib/export';
-import { AcicEvent } from './lib/props';
+import { AcicAggregation, AcicEvent } from './lib/props';
 
 const {
   StepperProvider,
@@ -36,6 +36,17 @@ export default function ExportDashboard() {
       ...prev,
       ...newData,
     }));
+  };
+
+  const handleReset = () => {
+    storedWidget.table = AcicEvent.AcicCounting;
+    storedWidget.aggregation = AcicAggregation.OneHour;
+    storedWidget.range = undefined;
+    storedWidget.where = undefined;
+    storedWidget.groupBy = undefined;
+    storedWidget.format = undefined;
+    storedWidget.duration = undefined;
+    setStoredWidget(storedWidget);
   };
 
   return (
@@ -99,6 +110,7 @@ export default function ExportDashboard() {
                   if (!isStepValid) return;
                   if (methods.isLast) {
                     methods.reset();
+                    handleReset();
                   } else {
                     methods.next();
                   }
