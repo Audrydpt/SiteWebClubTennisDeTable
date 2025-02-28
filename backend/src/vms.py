@@ -1,5 +1,5 @@
 import xml.etree.ElementTree as ET
-import socket
+import asyncio
 import json
 import argparse
 import struct
@@ -9,23 +9,25 @@ import io
 import datetime
 import numpy as np
 
-from typing import Optional, Dict
+from typing import Optional, Dict, AsyncGenerator, Tuple, Any
 
 
 class CameraClient:
     def __init__(self, host: str, port: int):
         self.host = host
         self.port = port
-        self.sock = None
+        self.reader = None
+        self.writer = None
     
-    def __enter__(self):
+    async def __aenter__(self):
         return self
     
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.sock:
-            self.sock.close()
-
-    def _send_request(self, xml_content: str, is_json=False) -> str:
+    async def __aexit__(self, exc_type, exc, tb):
+        if self.writer:
+            self.writer.close()
+            await self.writer.wait_closed()
+    
+    async def _send_request(self, xml_content: str) -> Any:
         content_length = len(xml_content)
         http_request = (
             f"Accept: application/json\r\n"
@@ -35,17 +37,16 @@ class CameraClient:
             f"{xml_content}"
         )
 
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.settimeout(5.0)
-
         try:
-            self.sock.connect((self.host, self.port))
-            self.sock.sendall(http_request.encode("utf-8"))
+            self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
+
+            self.writer.write(http_request.encode("utf-8"))
+            await self.writer.drain()
 
             # Lecture des headers
             buffer = b""
             while b"\r\n\r\n" not in buffer:
-                chunk = self.sock.recv(4096)
+                chunk = await asyncio.wait_for(self.reader.read(4096), timeout=5.0)
                 if not chunk:
                     break
                 buffer += chunk
@@ -68,7 +69,7 @@ class CameraClient:
             # Compléter la lecture
             body = remaining
             while len(body) < total_length:
-                data = self.sock.recv(4096)
+                data = await asyncio.wait_for(self.reader.read(4096), timeout=5.0)
                 if not data:
                     break
                 body += data
@@ -84,9 +85,11 @@ class CameraClient:
             else:
                 return body
         finally:
-            self.sock.close()
+            if self.writer:
+                self.writer.close()
+                await self.writer.wait_closed()
 
-    def _stream_request(self, xml_content: str):
+    async def _stream_request(self, xml_content: str):
         content_length = len(xml_content)
         http_request = (
             f"Accept: application/json\r\n"
@@ -96,17 +99,15 @@ class CameraClient:
             f"{xml_content}"
         )
 
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.settimeout(5.0)
-
         buffer = b""
         try:
-            self.sock.connect((self.host, self.port))
-            self.sock.sendall(http_request.encode("utf-8"))
+            self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
+            self.writer.write(http_request.encode("utf-8"))
+            await self.writer.drain()
 
             while True:
                 while b"\r\n\r\n" not in buffer:
-                    chunk = self.sock.recv(4096)
+                    chunk = await asyncio.wait_for(self.reader.read(4096), timeout=5.0)
                     if not chunk:
                         return
                     buffer += chunk
@@ -121,14 +122,13 @@ class CameraClient:
                 total_length = int(headers.get("Content-Length", 0))
 
                 while len(buffer) < total_length:
-                    chunk = self.sock.recv(4096)
+                    chunk = await asyncio.wait_for(self.reader.read(4096), timeout=20.0)
                     if not chunk:
                         break
                     buffer += chunk
 
                 body, buffer = buffer[:total_length], buffer[total_length:]
                 mime = headers.get("Content-Type", "").lower()
-                print(mime)
                 if "application/json" in mime:
                     text = body.decode("utf-8")
                     yield json.loads(text)
@@ -137,18 +137,18 @@ class CameraClient:
                     yield ET.fromstring(text)
                 else:
                     yield body
-                
-                self.sock.settimeout(20.0)
 
         finally:
-            self.sock.close()
+            if self.writer:
+                self.writer.close()
+                await self.writer.wait_closed()
   
-    def get_system_info(self) -> Optional[Dict[str, str]]:
+    async def get_system_info(self) -> Optional[Dict[str, str]]:
         xml = """<?xml version="1.0" encoding="UTF-8"?><methodcall><requestid>0</requestid><methodname>systeminfo</methodname></methodcall>"""
-        response = self._send_request(xml)
+        response = await self._send_request(xml)
         return response
 
-    def start_live(self, camera_guid: str):
+    async def start_live(self, camera_guid: str) -> AsyncGenerator[np.ndarray, None]:
         def parse_data(data: bytes):
             format_str = '>HIHHHQIIIII'
             expected_size = struct.calcsize(format_str)
@@ -165,8 +165,8 @@ class CameraClient:
         )
         stream = self._stream_request(xml)
 
-        response = next(stream)
-        for data in stream:
+        _ = await anext(stream)
+        async for data in stream:
             headers, frame = parse_data(data)
 
             image_format = headers[2]
@@ -185,9 +185,7 @@ class CameraClient:
 
             yield img
 
-        return None
-
-    def start_replay(self, camera_guid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0):
+    async def start_replay(self, camera_guid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0) -> AsyncGenerator[Tuple[np.ndarray, str], None]:
         xml = (
             f'<?xml version="1.0" encoding="UTF-8"?>'
             f"<methodcall>"
@@ -199,7 +197,6 @@ class CameraClient:
             f"<gap>{gap}</gap>"
             f"</methodcall>"
         )
-        print(xml)
         response = self._stream_request(xml)
 
         codec = None
@@ -207,9 +204,8 @@ class CameraClient:
         codec_format = None
         pts_counter = 0
 
-        for data in response:
+        async for data in response:
             if isinstance(data, dict):
-                print(data)
                 time_frame = data.get("FrameTime")
                 codec_format = data.get("Format")
             elif isinstance(data, bytes):
@@ -233,10 +229,36 @@ class CameraClient:
                     print(f"Erreur lors du décodage: {e}")
                     codec = None
                     continue
-        
-        return None
 
-def main():
+
+async def process_replay_stream(client, camera_guid, from_time, to_time, gap, name):
+    async for frame, time in client.start_replay(camera_guid, from_time, to_time, gap):
+        print(name, frame.shape, time)
+
+async def test_dual_stream(host: str, port: int):   
+    client1 = CameraClient(host, port)
+    client2 = CameraClient(host, port)
+    
+    cameras = await client1.get_system_info()
+    camera_guid = next(iter(cameras))
+    
+    now = datetime.datetime.now()
+    
+    from_time1 = now.replace(hour=0, minute=0, second=0)
+    to_time1 = now.replace(hour=0, minute=5, second=0)
+    
+    from_time2 = now.replace(hour=8, minute=0, second=0)
+    to_time2 = now.replace(hour=8, minute=5, second=0)
+
+    gap = 5
+    
+    # Lancer les deux flux en parallèle
+    await asyncio.gather(
+        process_replay_stream(client1, camera_guid, from_time1, to_time1, gap, "stream1"),
+        process_replay_stream(client2, camera_guid, from_time2, to_time2, gap, "stream2")
+    )
+
+async def main():
     parser = argparse.ArgumentParser(description="Client de contrôle des caméras")
     parser.add_argument("--host", default="192.168.20.72", help="Adresse IP du serveur")
     parser.add_argument("--port", type=int, default=7778, help="Port du serveur")
@@ -245,19 +267,22 @@ def main():
 
     client = CameraClient(args.host, args.port)
     try:
-        cameras = client.get_system_info()
-        print("Informations système:", cameras)
+        if True:
+            await test_dual_stream(args.host, args.port)
+        else:
+            cameras = await client.get_system_info()
+            print("Informations système:", cameras)
 
-        if cameras:
-            first_guid = next(iter(cameras))
-            print("GUID de la première caméra:", first_guid)
+            if cameras:
+                first_guid = next(iter(cameras))
+                print("GUID de la première caméra:", first_guid)
 
-            for img, time in client.start_replay(first_guid, datetime.datetime(2025, 2, 28, 0, 0, 0), datetime.datetime(2025, 2, 28, 10, 0, 0), gap=5):
-                print(img.shape, time)
+                async for img, time in client.start_replay(first_guid, datetime.datetime(2025, 2, 28, 0, 0, 0), datetime.datetime(2025, 2, 28, 10, 0, 0), gap=5):
+                    print(img.shape, time)
 
     except Exception as e:
         print(f"Erreur lors de l'exécution: {e}")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

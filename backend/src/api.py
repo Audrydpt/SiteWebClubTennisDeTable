@@ -160,30 +160,32 @@ class FastAPIServer:
         @self.app.get("/vms/{ip}/cameras", tags=["/vms"])
         async def get_cameras(ip: str):
             try:
-                with CameraClient(ip, 7778) as client:
-                    return client.get_system_info()
+                async with CameraClient(ip, 7778) as client:
+                    return await client.get_system_info()
             except:
                 raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
 
         @self.app.get("/vms/{ip}/cameras/{guuid}/live", tags=["/vms"])
         async def get_live(ip: str, guuid: str):
             try:
-                with CameraClient(ip, 7778) as client:
-                    img = next(client.start_live(guuid))
+                async with CameraClient(ip, 7778) as client:
+                    streams = client.start_live(guuid)
+                    img = await anext(streams)
                     _, bytes = cv2.imencode('.jpg', img)
                     return Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
 
-            except:
+            except Exception as e:
                 raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
 
         @self.app.get("/vms/{ip}/cameras/{guuid}/replay", tags=["/vms"])
         async def get_replay(ip: str, guuid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0):
             try:
-                with CameraClient(ip, 7778) as client:
-                    img = next(client.start_replay(guuid, from_time, to_time, gap))
+                async with CameraClient(ip, 7778) as client:
+                    streams = client.start_replay(guuid, from_time, to_time, gap)
+                    img, _ = await anext(streams)
                     _, bytes = cv2.imencode('.jpg', img)
                     return Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
-            except:
+            except Exception as e:
                 raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
 
         @self.app.get("/servers/grabbers", tags=["servers"])
