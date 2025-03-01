@@ -148,6 +148,20 @@ export default function RestoreBackupWizard({
       return newMappings;
     });
   };
+  const assignDefaultMappings = () => {
+    const newMappings = { ...streamMappings };
+
+    streams.forEach((serverStream) => {
+      if (selectedBackupStreams.has(serverStream.id)) {
+        newMappings[serverStream.id] = serverStream.id;
+      }
+    });
+
+    setStreamMappings(newMappings);
+  };
+  const resetAllMappings = () => {
+    setStreamMappings({});
+  };
 
   // Handle file upload
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -346,11 +360,27 @@ export default function RestoreBackupWizard({
                 />
               </div>
               <div className="space-y-4">
-                <SearchInput
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="Search streams..."
-                />
+                <div className="flex items-center space-x-4">
+                  <SearchInput
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Search streams..."
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={assignDefaultMappings}
+                  >
+                    Auto-Map Same IDs
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={resetAllMappings}
+                  >
+                    Reset All
+                  </Button>
+                </div>
                 {streams
                   .filter((stream) =>
                     stream.id.toLowerCase().includes(searchQuery.toLowerCase())
