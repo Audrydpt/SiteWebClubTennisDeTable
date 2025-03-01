@@ -383,7 +383,9 @@ export default function RestoreBackupWizard({
                 </div>
                 {streams
                   .filter((stream) =>
-                    stream.id.toLowerCase().includes(searchQuery.toLowerCase())
+                    stream.name
+                      .toLowerCase()
+                      .includes(searchQuery.toLowerCase())
                   )
                   .map((serverStream) => (
                     <div
@@ -425,7 +427,7 @@ export default function RestoreBackupWizard({
                     </div>
                   ))}
                 {streams.filter((stream) =>
-                  stream.id.toLowerCase().includes(searchQuery.toLowerCase())
+                  stream.name.toLowerCase().includes(searchQuery.toLowerCase())
                 ).length === 0 && (
                   <div className="text-center text-muted-foreground py-4">
                     No streams found

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import useLocalStorage from '@/hooks/use-localstorage';
 import { useAuth } from '@/providers/auth-context';
+import { apiService } from '../lib/utils/api';
 
 export interface Stream {
   id: string;
@@ -48,12 +49,18 @@ export function useRestore() {
     refetch: refetchStreams,
   } = useQuery({
     queryKey: ['streams', sessionId],
-    queryFn: () =>
-      axios
-        .get<Stream[]>(`${process.env.BACK_API_URL}/streams`, {
-          headers: { Authorization: `X-Session-Id ${sessionId}` },
-        })
-        .then(({ data }) => data),
+    queryFn: async () => {
+      const response = await apiService.getStreams(sessionId!);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return (
+        response.data?.map((stream) => ({
+          ...stream,
+          name: stream.name || `Stream ${stream.id}`,
+        })) || []
+      );
+    },
     enabled: !!sessionId,
   });
 
