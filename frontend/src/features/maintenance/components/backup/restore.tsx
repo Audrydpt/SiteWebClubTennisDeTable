@@ -1,17 +1,18 @@
-/* eslint-disable */
-import { useState, useEffect } from 'react';
-import { Upload, Loader2, AlertCircle } from 'lucide-react';
+import { AlertCircle, Loader2, Upload } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+import SearchInput from '@/components/search-input';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
   CardDescription,
   CardFooter,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
@@ -21,10 +22,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import SearchInput from '@/components/search-input';
-import useRestore from '../../hooks/use-restore';
-import useLocalStorage from '@/hooks/use-localstorage.tsx';
-import { useQuery } from '@tanstack/react-query';
+import { useRestore } from '../../hooks/use-restore';
+
+interface RestoreBackupWizardProps {
+  onClose: (skipRebootDialog: boolean) => void;
+}
 
 const getStepDescription = (step: number) => {
   switch (step) {
@@ -42,50 +44,38 @@ const getStepDescription = (step: number) => {
 };
 
 export default function RestoreBackupWizard({
-  sessionId,
   onClose,
-}: {
-  sessionId: string | undefined;
-  onClose: (skipRebootDialog: boolean) => void;
-}) {
+}: RestoreBackupWizardProps) {
   const {
     uploadBackup,
-    getRestorePointInfo,
     restoreBackup,
     reboot,
+    streams,
     isLoading,
-    error,
     restorePoint,
-    serverStreams,
-  } = useRestore(sessionId || '');
+    error: hookError,
+    lastBackupGuid, // Now we get this from the hook
+  } = useRestore();
 
+  // Local states for wizard control
   const [step, setStep] = useState(1);
   const [file, setFile] = useState<File | null>(null);
   const [selectedBackupStreams, setSelectedBackupStreams] = useState<
     Set<string>
   >(new Set());
-  const { value: lastBackupGuid } = useLocalStorage<string | null>(
-    'lastBackupGuid',
-    null
-  );
   const [useLastBackup, setUseLastBackup] = useState(false);
 
-  const lastBackupRestorePointQuery = useQuery({
-    queryKey: ['restorePointInfo', lastBackupGuid],
-    queryFn: async () => {
-      if (!lastBackupGuid) return null;
-      await getRestorePointInfo(lastBackupGuid);
-      return true;
-    },
-    enabled: useLastBackup && !!lastBackupGuid,
-  });
+  // Configuration states
+  const [globalParams, setGlobalParams] = useState(false);
+  const [streamMappings, setStreamMappings] = useState<Record<string, string>>(
+    {}
+  );
+  const [restoreDisabled, setRestoreDisabled] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [rebootChoice, setRebootChoice] = useState<'now' | 'later'>('now');
 
-  useEffect(() => {
-    if (lastBackupRestorePointQuery.isError) {
-      console.error('Failed to fetch restore point info', lastBackupRestorePointQuery.error);
-    }
-  }, [lastBackupRestorePointQuery.isError, lastBackupRestorePointQuery.error]);
-
+  // Auto-select all streams when restorePoint is updated
   useEffect(() => {
     if (restorePoint && Object.keys(restorePoint.streamData).length > 0) {
       const allStreamIds = Object.keys(restorePoint.streamData);
@@ -93,21 +83,28 @@ export default function RestoreBackupWizard({
     }
   }, [restorePoint]);
 
-  const [streamMappings, setStreamMappings] = useState<Record<string, string>>(
-    {}
+  // Update restore button state based on selections
+  useEffect(() => {
+    setRestoreDisabled(
+      !globalParams && Object.keys(streamMappings).length === 0
+    );
+  }, [globalParams, streamMappings]);
+
+  // Disable global params if not a unit backup
+  useEffect(() => {
+    if (restorePoint && !restorePoint.unit) {
+      setGlobalParams(false);
+    }
+  }, [restorePoint]);
+
+  // Filter backup streams based on search
+  const filteredBackupStreams = Object.entries(
+    restorePoint?.streamData || {}
+  ).filter(([, name]) =>
+    name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const [restoreDisabled, setRestoreDisabled] = useState(true);
-  const [globalParams, setGlobalParams] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
-  const [rebootChoice, setRebootChoice] = useState<'now' | 'later'>('now');
-
-  const filteredBackupStreams = restorePoint
-    ? Object.entries(restorePoint.streamData).filter(([, name]) =>
-        name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    : [];
-
+  // Select all filtered streams
   const selectFilteredStreams = () => {
     const newSelected = new Set(selectedBackupStreams);
     filteredBackupStreams.forEach(([streamId]) => {
@@ -116,6 +113,7 @@ export default function RestoreBackupWizard({
     setSelectedBackupStreams(newSelected);
   };
 
+  // Clear all filtered streams
   const clearFilteredStreams = () => {
     const updatedSelected = new Set(selectedBackupStreams);
     filteredBackupStreams.forEach(([streamId]) => {
@@ -124,19 +122,7 @@ export default function RestoreBackupWizard({
     setSelectedBackupStreams(updatedSelected);
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile || !selectedFile.name.endsWith('.mvb')) return;
-
-    setFile(selectedFile);
-    try {
-      const restorePointId = await uploadBackup(selectedFile);
-      await getRestorePointInfo(restorePointId);
-    } catch {
-      console.error('Failed to upload backup');
-    }
-  };
-
+  // Toggle a single backup stream
   const toggleBackupStream = (streamId: string) => {
     const newSelected = new Set(selectedBackupStreams);
     if (newSelected.has(streamId)) {
@@ -147,6 +133,7 @@ export default function RestoreBackupWizard({
     setSelectedBackupStreams(newSelected);
   };
 
+  // Handle stream mapping change
   const handleMappingChange = (
     serverStreamId: string,
     backupStreamId: string | null
@@ -158,47 +145,52 @@ export default function RestoreBackupWizard({
       } else {
         newMappings[serverStreamId] = backupStreamId;
       }
-      setRestoreDisabled(!globalParams && Object.keys(newMappings).length === 0);
       return newMappings;
     });
   };
 
+  // Handle file upload
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile || !selectedFile.name.endsWith('.mvb')) return;
+
+    setFile(selectedFile);
+    try {
+      await uploadBackup(selectedFile);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload error');
+    }
+  };
+
+  // Handle restore process
   const handleRestore = async () => {
     if (!restorePoint) return;
 
     const streamMappingArray = Object.entries(streamMappings).map(
-        ([serverStreamId, backupStreamId]) => ({
-          from: backupStreamId,
-          to: serverStreamId,
-        })
+      ([serverStreamId, backupStreamId]) => ({
+        from: backupStreamId,
+        to: serverStreamId,
+      })
     );
 
     try {
       await restoreBackup({
-        file: file!,
+        restorePointId: restorePoint.id,
         streams: streamMappingArray,
         global: globalParams,
       });
       setStep(4);
-    } catch (error) {
-      console.error('Failed to restore backup:', error);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Restore error');
     }
   };
 
-  const isStep1Ready = !isLoading && (
-      (useLastBackup && restorePoint) ||
-      (!useLastBackup && file && restorePoint)
-  );
-  useEffect(() => {
-    setRestoreDisabled(!globalParams && Object.keys(streamMappings).length === 0);
-  }, [globalParams, streamMappings]);
+  // Check if step 1 is ready to proceed
+  const isStep1Ready =
+    (!isLoading && useLastBackup && restorePoint) ||
+    (!useLastBackup && file && restorePoint);
 
-  useEffect(() => {
-    if (restorePoint && !restorePoint.unit) {
-      setGlobalParams(false);
-    }
-  }, [restorePoint]);
-
+  // Render the content based on current step
   const renderStepContent = () => {
     switch (step) {
       case 1:
@@ -215,12 +207,7 @@ export default function RestoreBackupWizard({
                   </div>
                   <Switch
                     checked={useLastBackup}
-                    onCheckedChange={(checked) => {
-                      setUseLastBackup(checked);
-                      if (!checked) {
-                        setFile(null);
-                      }
-                    }}
+                    onCheckedChange={setUseLastBackup}
                   />
                 </div>
                 {useLastBackup && restorePoint && (
@@ -347,8 +334,8 @@ export default function RestoreBackupWizard({
                   </Label>
                   <p className="text-sm text-muted-foreground">
                     {restorePoint?.unit
-                      ? "Apply global settings from backup"
-                      : "No global configuration available in backup"}
+                      ? 'Apply global settings from backup'
+                      : 'No global configuration available in backup'}
                   </p>
                 </div>
                 <Switch
@@ -364,11 +351,9 @@ export default function RestoreBackupWizard({
                   onChange={setSearchQuery}
                   placeholder="Search streams..."
                 />
-                {serverStreams
+                {streams
                   .filter((stream) =>
-                    stream.name
-                      .toLowerCase()
-                      .includes(searchQuery.toLowerCase())
+                    stream.id.toLowerCase().includes(searchQuery.toLowerCase())
                   )
                   .map((serverStream) => (
                     <div
@@ -376,7 +361,7 @@ export default function RestoreBackupWizard({
                       className="flex items-center justify-between p-3 border rounded"
                     >
                       <span className="font-medium">
-                        {serverStream.name} (ID: {serverStream.id})
+                        Stream {serverStream.id} (ID: {serverStream.id})
                       </span>
                       <Select
                         value={streamMappings[serverStream.id] || 'keep'}
@@ -409,8 +394,8 @@ export default function RestoreBackupWizard({
                       </Select>
                     </div>
                   ))}
-                {serverStreams.filter((stream) =>
-                  stream.name.toLowerCase().includes(searchQuery.toLowerCase())
+                {streams.filter((stream) =>
+                  stream.id.toLowerCase().includes(searchQuery.toLowerCase())
                 ).length === 0 && (
                   <div className="text-center text-muted-foreground py-4">
                     No streams found
@@ -469,6 +454,7 @@ export default function RestoreBackupWizard({
         return null;
     }
   };
+
   return (
     <Card className="w-full max-w-3xl mx-auto">
       <CardHeader>
@@ -479,10 +465,10 @@ export default function RestoreBackupWizard({
       </CardHeader>
 
       <CardContent>
-        {error && (
-          <div className="text-destructive bg-muted rounded flex items-center">
+        {(error || hookError) && (
+          <div className="text-destructive bg-muted rounded flex items-center p-3 mb-4">
             <AlertCircle className="w-5 h-5 mr-2" />
-            {error}
+            {error || hookError}
           </div>
         )}
         {renderStepContent()}
@@ -505,7 +491,9 @@ export default function RestoreBackupWizard({
                     onClose(false);
                   })
                   .catch((err) => {
-                    console.error("Error during reboot:", err);
+                    setError(
+                      err instanceof Error ? err.message : 'Reboot error'
+                    );
                   });
               } else {
                 onClose(true);
@@ -528,21 +516,24 @@ export default function RestoreBackupWizard({
             disabled={
               (step === 1 && !isStep1Ready) ||
               (step === 2 && selectedBackupStreams.size === 0) ||
-              (step === 3 && restoreDisabled)
+              (step === 3 && restoreDisabled) ||
+              isLoading
             }
           >
-            {step === 3 ? (
-              isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Restoring...
-                </>
-              ) : (
-                'Restore'
-              )
-            ) : (
-              'Next'
-            )}
+            {(() => {
+              if (step === 3) {
+                if (isLoading) {
+                  return (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Restoring...
+                    </>
+                  );
+                }
+                return 'Restore';
+              }
+              return 'Next';
+            })()}
           </Button>
         )}
       </CardFooter>

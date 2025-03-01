@@ -1,25 +1,22 @@
-/* eslint-disable */
-import { useState, useEffect } from 'react';
 import { Download } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+import SearchInput from '@/components/search-input';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
   CardDescription,
   CardFooter,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import SearchInput from '@/components/search-input';
-import useLocalStorage from '@/hooks/use-localstorage';
-import useBackup from '../../hooks/use-backup';
 
-interface CreateBackupWizardProps {
-  sessionId: string | undefined;
-}
+import useLocalStorage from '@/hooks/use-localstorage';
+import { useBackup } from '../../hooks/use-backup';
 
 const getStepDescription = (step: number) => {
   switch (step) {
@@ -32,14 +29,17 @@ const getStepDescription = (step: number) => {
   }
 };
 
-export default function CreateBackupWizard({
-  sessionId,
-}: CreateBackupWizardProps) {
+export default function CreateBackupWizard() {
+  // Use local storage for last backup GUID
   const { setValue: setLastBackupGuid } = useLocalStorage<string | null>(
     'lastBackupGuid',
     null
   );
-  const { streams, isLoading, generateBackup } = useBackup(sessionId || '');
+
+  // Use backup hook - le hook récupère maintenant le sessionId depuis useAuth
+  const { streams, isLoading, error, generateBackup } = useBackup();
+
+  // State management
   const [step, setStep] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStreams, setSelectedStreams] = useState<Set<string>>(
@@ -48,26 +48,29 @@ export default function CreateBackupWizard({
   const [includeGlobalConfig, setIncludeGlobalConfig] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Initialize selected streams when streams are loaded
   useEffect(() => {
     if (streams.length > 0) {
       setSelectedStreams(new Set(streams.map((stream) => stream.id)));
     }
   }, [streams]);
 
+  // Filter streams based on search query
   const filteredStreams = streams.filter((stream) =>
     stream.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Toggle stream selection
   const toggleStream = (streamId: string) => {
-    const newSelected = new Set(selectedStreams);
-    if (newSelected.has(streamId)) {
-      newSelected.delete(streamId);
-    } else {
-      newSelected.add(streamId);
-    }
-    setSelectedStreams(newSelected);
+    setSelectedStreams((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(streamId)) newSet.delete(streamId);
+      else newSet.add(streamId);
+      return newSet;
+    });
   };
 
+  // Select all streams (filtered or all if no filter)
   const selectAllStreams = () => {
     const streamsToSelect = searchQuery
       ? filteredStreams.map((stream) => stream.id)
@@ -75,6 +78,7 @@ export default function CreateBackupWizard({
     setSelectedStreams(new Set([...selectedStreams, ...streamsToSelect]));
   };
 
+  // Deselect all streams (filtered or all if no filter)
   const deselectAllStreams = () => {
     if (!searchQuery) {
       setSelectedStreams(new Set());
@@ -88,6 +92,7 @@ export default function CreateBackupWizard({
     setSelectedStreams(newSelected);
   };
 
+  // Navigation
   const handleNext = () => {
     if (step < 2) setStep(step + 1);
   };
@@ -96,17 +101,22 @@ export default function CreateBackupWizard({
     if (step > 1) setStep(step - 1);
   };
 
+  // Generate backup - adaptation pour le nouveau hook
   const handleGenerateBackup = async () => {
-    setIsGenerating(true);
     try {
-      const backupGuid = await generateBackup(includeGlobalConfig, [
-        ...selectedStreams,
-      ]);
+      setIsGenerating(true);
+
+      // Appel à generateBackup avec le format attendu par le hook mis à jour
+      const backupGuid = await generateBackup({
+        global: includeGlobalConfig,
+        selectedStreams: Array.from(selectedStreams),
+      });
+
       if (backupGuid) {
         setLastBackupGuid(backupGuid);
       }
-    } catch (error) {
-      console.error('Failed to generate backup:', error);
+    } catch {
+      // console.error('Failed to generate backup:', error);
     } finally {
       setIsGenerating(false);
     }
@@ -114,6 +124,10 @@ export default function CreateBackupWizard({
 
   if (isLoading) {
     return <div>Loading streams...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {JSON.stringify(error)}</div>;
   }
 
   return (
@@ -230,7 +244,7 @@ export default function CreateBackupWizard({
               <Button
                 size="lg"
                 onClick={handleGenerateBackup}
-                disabled={isGenerating}
+                disabled={isGenerating || selectedStreams.size === 0}
                 className="gap-2"
               >
                 <Download className="h-4 w-4" />
@@ -244,7 +258,11 @@ export default function CreateBackupWizard({
         <Button variant="outline" onClick={handleBack} disabled={step === 1}>
           Back
         </Button>
-        {step < 2 && <Button onClick={handleNext}>Next</Button>}
+        {step < 2 && (
+          <Button onClick={handleNext} disabled={selectedStreams.size === 0}>
+            Next
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

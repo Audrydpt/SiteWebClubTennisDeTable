@@ -1,6 +1,6 @@
-/* eslint-disable */
-import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import useServerStatus from '@/hooks/use-server-status';
 import { useAuth } from '@/providers/auth-context';
