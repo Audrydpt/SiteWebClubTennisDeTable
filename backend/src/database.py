@@ -1,13 +1,18 @@
 import os
 import threading
 import uuid
+import asyncio
 from datetime import timedelta
 from dotenv import load_dotenv
+from functools import wraps
+from typing import Type, Any, List, Dict, Union, Optional, TypeVar, Generic, Callable
 
-from sqlalchemy import JSON, column, create_engine, Column, Integer, REAL, String, Text, DateTime, DDL, PrimaryKeyConstraint, cast, func, inspect, text, ForeignKey
+from sqlalchemy import JSON, column, create_engine, Column, Integer, REAL, String, Text, DateTime, DDL, PrimaryKeyConstraint, cast, func, inspect, text, literal, ForeignKey, select, delete
 from sqlalchemy.dialects.postgresql import TIMESTAMP, INTEGER, UUID
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
@@ -16,16 +21,43 @@ from alembic.operations.ops import ModifyTableOps, AlterColumnOp
 
 from cron import Cron
 
-def get_database_url(use_timescaledb=True):
+def get_database_url(use_timescaledb=True, async_driver=False):
     db_host = os.getenv("DB_HOST", "localhost")
     db_user = os.getenv("DB_USER", "postgres")
     db_pass = os.getenv("DB_PASS", "postgres")
     db_port = os.getenv("DB_PORT", "5432")
     db_name = os.getenv("DB_NAME", "postgres")
-    
+
     if use_timescaledb:
-        return f'timescaledb+psycopg2://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}'
-    return f'postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}'
+        prefix = 'timescaledb'
+    else:
+        prefix = 'postgresql'
+    
+    if async_driver:
+        driver = 'asyncpg'
+    else:
+        driver = 'psycopg2'
+    
+    return f'{prefix}+{driver}://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}'
+
+def run_async(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        if loop.is_running():
+            raise RuntimeError(
+                "Attempted to call an async function from a sync function while an event loop is running. "
+                "This can lead to deadlocks. Consider restructuring your code to use async throughout, "
+                "or use a separate thread for this operation."
+            )
+        else:
+            return loop.run_until_complete(func(*args, **kwargs))
+    return wrapper
 
 class Base:
     @declared_attr
@@ -137,8 +169,11 @@ class GenericDAL:
     lock = threading.Lock()
 
     def __init__(self):
-        self.engine = create_engine(get_database_url(use_timescaledb=True), echo=False, connect_args={'client_encoding': 'utf8'})
-        self.Session = sessionmaker(bind=self.engine)
+        self.sync_engine  = create_engine(      get_database_url(use_timescaledb=True, async_driver=False), echo=False, connect_args={'client_encoding': 'utf8'})
+        self.async_engine = create_async_engine(get_database_url(use_timescaledb=True, async_driver=True), echo=False)
+        
+        self.SyncSession = sessionmaker(       bind=self.sync_engine , expire_on_commit=False)
+        self.AsyncSession = async_sessionmaker(bind=self.async_engine, expire_on_commit=False)
         
         if not GenericDAL.initialized:
             with GenericDAL.lock:
@@ -197,19 +232,19 @@ class GenericDAL:
             else:
                 return op
 
-        with self.Session() as session:
+        with self.SyncSession() as session:
             session.execute(DDL("SET client_encoding TO 'UTF8'"))
             session.execute(DDL("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
             session.execute(DDL("CREATE EXTENSION IF NOT EXISTS timescaledb"))
             session.commit()
         
         print("Binding schema to engine...")
-        Database.metadata.reflect(self.engine)
-        Database.metadata.create_all(self.engine)
+        Database.metadata.reflect(self.sync_engine)
+        Database.metadata.create_all(self.sync_engine)
 
         print("Trying to update schema...")
         # got issue using the same engine, because of dialect timescaledb != postgresql
-        with create_engine(get_database_url(use_timescaledb=False), echo=False, connect_args={'client_encoding': 'utf8'}).connect() as conn:
+        with create_engine(get_database_url(use_timescaledb=False, async_driver=False), echo=False, connect_args={'client_encoding': 'utf8'}).connect() as conn:
             trans = conn.begin()
             try:
                 # Configure the migration context with the connection
@@ -221,7 +256,7 @@ class GenericDAL:
 
                     operations = Operations(context)
 
-                    use_batch = self.engine.name == "sqlite"
+                    use_batch = self.sync_engine.name == "sqlite"
                     stack = [migrations.upgrade_ops]
                     while stack:
                         elem = stack.pop(0)
@@ -253,7 +288,7 @@ class GenericDAL:
         print("Schema is ready")
 
     def __seed_database(self):
-        with self.Session() as session:
+        with self.SyncSession() as session:
             query = session.query(Dashboard).all()
             
             # Create a default dashboard if none exists
@@ -280,98 +315,122 @@ class GenericDAL:
         for event_class in event_classes:
             cron.add_job(lambda cls=event_class: self.clean(cls), trigger)
 
-    def add(self, obj):
-        with self.Session() as session:
+    # ----- Synchronous API methods -----
+
+    def add(self, obj) -> uuid.UUID:
+        return run_async(self.async_add)(obj)
+            
+    def get(self, cls, _func=None, _group=None, _having=None, _order=None, **filters) -> List[Any]:
+        return run_async(self.async_get)(cls, _func, _group, _having, _order, **filters)
+    
+    def get_bucket(self, cls, _func=None, _time="1 hour", _group=None, _having=None, _between=None, **filters) -> List[Any]:
+        return run_async(self.async_get_bucket)(cls, _func, _time, _group, _having, _between, **filters)
+
+    def update(self, obj) -> Any:
+        return run_async(self.async_update)(obj)
+
+    def remove(self, obj) -> bool:
+        return run_async(self.async_remove)(obj)
+    
+    def clean(self, cls, days=100) -> bool:
+        return run_async(self.async_clean)(cls, days)
+    
+    # ----- Asynchronous API methods -----
+
+    async def async_add(self, obj) -> uuid.UUID:
+        async with self.AsyncSession() as session:
             session.add(obj)
-            session.commit()
+            await session.commit()
+            await session.refresh(obj)
             return obj.id
 
-    def get(self, cls, _func=None, _group=None, _having=None, _order=None, **filters):
-        with self.Session() as session:
-            query = session.query(cls)
-            
-            # FUNCTION() TODO: Make this resiliant to function without aggregation
+    async def async_get(self, cls, _func=None, _group=None, _having=None, _order=None, **filters) -> List[Any]:
+        async with self.AsyncSession() as session:
+            # Remplacement de session.query(cls)
             if _func is not None:
-                query = query.with_entities(_func, _func.clause_expr)
+                stmt = select(_func, _func.clause_expr)
+            else:
+                stmt = select(cls)
             
-            # WHERE
+            # Conversion de filter_by en where
             if filters:
-                query = query.filter_by(**filters)
+                conditions = [getattr(cls, key) == value for key, value in filters.items()]
+                stmt = stmt.where(*conditions)
             
-            # GROUP BY
             if _group is not None:
-                query = query.add_column(_group)
-                query = query.group_by(_group)
+                stmt = stmt.add_columns(_group)
+                stmt = stmt.group_by(_group)
             
-            # HAVING
             if _having is not None:
-                query = query.having(_having)
+                stmt = stmt.having(_having)
             
-            # ORDER BY
             if _order is not None:
-                query = query.order_by(_order)
+                stmt = stmt.order_by(_order)
             
-            return query.all()
+            result = await session.execute(stmt)
+            # Si _func est utilisé, on renvoie le résultat complet (tuple), sinon les objets mappés
+            if _func is None:
+                result = result.scalars().all()
+            else:
+                result = result.all()
+            return result
     
-    def get_bucket(self, cls, _func=None, _time="1 hour", _group=None, _having=None, _between=None, **filters):
-        with self.Session() as session:
-
-            query = session.query(
-                func.time_bucket_gapfill(_time, cls.timestamp).label('_timestamp'),
-            )
-
-            # FUNCTION()
+    async def async_get_bucket(self, cls, _func=None, _time="1 hour", _group=None, _having=None, _between=None, **filters) -> List[Any]:
+        async with self.AsyncSession() as session:
+            # Remplacement de session.query(…)
+            # Somehow, text(f"'{_time}'") get converted into ModelName.hour, instead of '1 hour'
+            stmt = select(func.time_bucket_gapfill(text("'" + _time + "'"), cls.timestamp).label('_timestamp'))
+    
             if _func is not None:
-                query = query.add_column(_func)
-
-            # WHERE
+                stmt = stmt.add_columns(_func)
+    
             if filters:
                 conditions = [
                     getattr(cls, key).in_(value) if isinstance(value, list) else getattr(cls, key) == value
                     for key, value in filters.items()
                 ]
-                query = query.filter(*conditions)
-
+                stmt = stmt.where(*conditions)
+    
             if _between is not None and len(_between) == 2 and _between[0] is not None and _between[1] is not None:
-                query = query.filter(cls.timestamp >= _between[0], cls.timestamp <= _between[1])
+                stmt = stmt.where(cls.timestamp >= _between[0], cls.timestamp <= _between[1])
             
-            # GROUP BY
-            query = query.group_by('_timestamp')
+            # Pour group_by et order_by, on utilise column('_timestamp')
+            stmt = stmt.group_by(column('_timestamp'))
             if _group is not None:
                 if isinstance(_group, list):
                     for group in _group:
-                        query = query.add_column(column(group))
-                        query = query.group_by(column(group))
+                        stmt = stmt.add_columns(column(group))
+                        stmt = stmt.group_by(column(group))
                 else:
-                    query = query.add_column(column(_group))
-                    query = query.group_by(column(_group))
+                    stmt = stmt.add_columns(column(_group))
+                    stmt = stmt.group_by(column(_group))
             
-            # HAVING
             if _having is not None:
-                query = query.having(_having)
+                stmt = stmt.having(_having)
             
-            # ORDER BY
-            query = query.order_by('_timestamp')            
-            
-            return query.all()
+            stmt = stmt.order_by(column('_timestamp'))            
+          
+            result = await session.execute(stmt)
+            result = result.all()
+            return result
 
-    def update(self, obj):
-        with self.Session() as session:
-            session.merge(obj)
-            session.commit()
+    async def async_update(self, obj) -> Any:
+        async with self.AsyncSession() as session:
+            result = await session.merge(obj)
+            await session.commit()
+            return result
 
-    def remove(self, obj):
-        with self.Session() as session:
-            session.delete(obj)
-            session.commit()
+    async def async_remove(self, obj) -> bool:
+        async with self.AsyncSession() as session:
+            await session.delete(obj)
+            await session.commit()
+            return True
     
-    def clean(self, cls, days=100):
+    async def async_clean(self, cls, days=100) -> bool:
         print("Cleaning", cls)
-        with self.Session() as session:
-
-            query = session.query(cls)
-            query = query.filter(cls.timestamp < func.now() - timedelta(days=days))
-            query.delete()
-
-            session.commit()
-
+        async with self.AsyncSession() as session:
+            # Remplacement de session.query(cls).filter(...).delete() par delete(...)
+            stmt = delete(cls).where(cls.timestamp < func.now() - timedelta(days=days))
+            await session.execute(stmt)
+            await session.commit()
+            return True

@@ -1,30 +1,29 @@
+import { FileDown, FileUp, Save } from 'lucide-react';
 import { useState } from 'react';
-import { Save, FileDown, FileUp } from 'lucide-react';
-import { useAuth } from '@/providers/auth-context';
+
+import RebootStatus from '@/components/reboot-status';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import CreateBackupWizard from '@/features/maintenance/components/backup/create';
-import RestoreBackupWizard from '@/features/maintenance/components/backup/restore';
-import RebootStatus from '@/components/reboot-status';
+
+import CreateBackupWizard from './backup/create';
+import RestoreBackupWizard from './backup/restore';
 
 interface BackupRestoreDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   type: 'backup' | 'restore';
-  sessionId: string | undefined;
 }
 
 function BackupRestoreDialog({
   open,
   onOpenChange,
   type,
-  sessionId,
 }: BackupRestoreDialogProps) {
   const [showRebootStatus, setShowRebootStatus] = useState(false);
 
@@ -54,12 +53,9 @@ function BackupRestoreDialog({
           </DialogTitle>
         </DialogHeader>
         {type === 'backup' ? (
-          <CreateBackupWizard sessionId={sessionId} />
+          <CreateBackupWizard />
         ) : (
-          <RestoreBackupWizard
-            sessionId={sessionId}
-            onClose={handleWizardClose}
-          />
+          <RestoreBackupWizard onClose={handleWizardClose} />
         )}
       </DialogContent>
     </Dialog>
@@ -67,7 +63,6 @@ function BackupRestoreDialog({
 }
 
 function CreateRestoreBackup() {
-  const { sessionId } = useAuth();
   const [dialogType, setDialogType] = useState<'backup' | 'restore' | null>(
     null
   );
@@ -89,7 +84,7 @@ function CreateRestoreBackup() {
             Backup & Restore
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col space-y-2">
           <Button
             variant="default"
             className="w-full"
@@ -100,7 +95,7 @@ function CreateRestoreBackup() {
           </Button>
           <Button
             variant="outline"
-            className="w-full mt-2"
+            className="w-full"
             onClick={handleRestoreBackup}
           >
             <FileDown className="mr-2" />
@@ -113,7 +108,6 @@ function CreateRestoreBackup() {
         open={dialogType !== null}
         onOpenChange={(open) => !open && setDialogType(null)}
         type={dialogType || 'backup'}
-        sessionId={sessionId}
       />
     </>
   );
