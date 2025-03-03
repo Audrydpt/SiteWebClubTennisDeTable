@@ -1,9 +1,12 @@
-from database import GenericDAL
-from event_grabber import EventGrabber
-from api import FastAPIServer
-from acic.metadata import AcMetadataEventReceiverThread
 import socket
 import argparse
+import signal
+import sys
+
+from database import GenericDAL
+from event_grabber import EventGrabber
+from api import ThreadedFastAPIServer, FastAPIServer
+from acic.metadata import AcMetadataEventReceiverThread
 
 def getNetworkIp():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -49,11 +52,11 @@ if __name__ == "__main__":
 
     # init web server
     print("Init web server")
-    server = FastAPIServer(grabber)
+    #server = FastAPIServer(grabber)
+    server = ThreadedFastAPIServer(grabber, workers=4)
     server.start(port=args.port)
     # wait for the server to stop
 
-    
     # stop grabber
     print("Stop grabber")
     grabber.stop()

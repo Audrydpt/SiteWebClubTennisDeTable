@@ -1,8 +1,12 @@
 import os
 import cv2
+import gunicorn
 import uvicorn
 import datetime
-import requests
+import time
+import aiohttp
+import threading
+import asyncio
 
 from pydantic import Field, create_model
 
@@ -13,6 +17,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Response
+
+from gunicorn.app.base import BaseApplication
 
 from typing import Annotated, Literal, Optional, Type, Union, List, Dict, Any
 from enum import Enum
@@ -89,73 +95,134 @@ class FastAPIServer:
                 username = "administrator"
                 password = "ACIC"
 
-                ai_service_url = f"https://{ip}/api/aiService"
-                response = requests.get(ai_service_url, auth=(username, password), headers={"Accept": "application/json"},
-                                        verify=False, timeout=3)
+                async with aiohttp.ClientSession() as session:
+                    # Premier appel pour obtenir l'adresse AI
+                    ai_service_url = f"https://{ip}/api/aiService"
+                    async with session.get(
+                        ai_service_url, 
+                        auth=aiohttp.BasicAuth(username, password),
+                        headers={"Accept": "application/json"},
+                        ssl=False,
+                        timeout=aiohttp.ClientTimeout(total=3)
+                    ) as response:
+                        if response.status != 200:
+                            return {"status": "error", "message": "Impossible to get AI IP"}
+                        
+                        ai_data = await response.json()
+                        ai_ip = ai_data["address"]
+                        ai_port = ai_data["port"]
+                    
+                    # Deuxième appel pour vérifier le service AI
+                    describe_url = f"http://{ai_ip}:{ai_port}/describe"
+                    async with session.get(
+                        describe_url, 
+                        timeout=aiohttp.ClientTimeout(total=3)
+                    ) as describe_response:
+                        if describe_response.status == 200:
+                            return {"status": "ok"}
+                        else:
+                            return {"status": "error", "message": "AI service /describe endpoint not responding"}
 
-                if response.status_code != 200:
-                    return {"status": "error", "message": "Impossible to get AI IP"}
-
-                ai_data = response.json()
-                ai_ip = ai_data["address"]
-                ai_port = ai_data["port"]
-
-                describe_url = f"http://{ai_ip}:{ai_port}/describe"
-                describe_response = requests.get(describe_url, timeout=3)
-
-                if describe_response.status_code == 200:
-                    return {"status": "ok"}
-                else:
-                    return {"status": "error", "message": "AI service /describe endpoint not responding"}
-
-            except requests.exceptions.RequestException as e:
+            except aiohttp.ClientError as e:
                 return {"status": "error", "message": f"Request failed: {str(e)}"}
+            except asyncio.TimeoutError:
+                return {"status": "error", "message": "Request timed out"}
         
         @self.app.get("/health/lprServer/{ip}", tags=["/health"])
-        async def health_ai_server(ip: str):
+        async def health_lpr_server(ip: str):
             try:
                 username = "administrator"
                 password = "ACIC"
 
-                ai_service_url = f"https://{ip}/api/lprService"
-                response = requests.get(ai_service_url, auth=(username, password), headers={"Accept": "application/json"},
-                                        verify=False, timeout=3)
+                async with aiohttp.ClientSession() as session:
+                    # Premier appel pour obtenir l'adresse LPR
+                    ai_service_url = f"https://{ip}/api/lprService"
+                    async with session.get(
+                        ai_service_url, 
+                        auth=aiohttp.BasicAuth(username, password),
+                        headers={"Accept": "application/json"},
+                        ssl=False,
+                        timeout=aiohttp.ClientTimeout(total=3)
+                    ) as response:
+                        if response.status != 200:
+                            return {"status": "error", "message": "Impossible to get AI IP"}
+                        
+                        ai_data = await response.json()
+                        ai_ip = ai_data["address"]
+                        ai_port = ai_data["port"]
+                    
+                    # Deuxième appel pour vérifier le service LPR
+                    describe_url = f"http://{ai_ip}:{ai_port}/describe"
+                    async with session.get(
+                        describe_url, 
+                        timeout=aiohttp.ClientTimeout(total=3)
+                    ) as describe_response:
+                        if describe_response.status == 200:
+                            return {"status": "ok"}
+                        else:
+                            return {"status": "error", "message": "LPR service /describe endpoint not responding"}
 
-                if response.status_code != 200:
-                    return {"status": "error", "message": "Impossible to get AI IP"}
-
-                ai_data = response.json()
-                ai_ip = ai_data["address"]
-                ai_port = ai_data["port"]
-
-                describe_url = f"http://{ai_ip}:{ai_port}/describe"
-                describe_response = requests.get(describe_url, timeout=3)
-
-                if describe_response.status_code == 200:
-                    return {"status": "ok"}
-                else:
-                    return {"status": "error", "message": "LPR service /describe endpoint not responding"}
-
-            except requests.exceptions.RequestException as e:
+            except aiohttp.ClientError as e:
                 return {"status": "error", "message": f"Request failed: {str(e)}"}
+            except asyncio.TimeoutError:
+                return {"status": "error", "message": "Request timed out"}
 
         @self.app.get("/health/secondaryServer/{ip}", tags=["/health"])
         async def health_secondary_server(ip: str):
             try:
-                describe_url = f"http://{ip}:8080/ConfigTool.html"
-                describe_response = requests.get(describe_url, timeout=3)
+                async with aiohttp.ClientSession() as session:
+                    describe_url = f"http://{ip}:8080/ConfigTool.html"
+                    async with session.get(
+                        describe_url, 
+                        timeout=aiohttp.ClientTimeout(total=3)
+                    ) as describe_response:
+                        if describe_response.status == 401:
+                            return {"status": "ok", "message": "Secondary server is reachable"}
+                        else:
+                            return {"status": "error", "message": f"Unexpected response: {describe_response.status}"}
 
-                if describe_response.status_code == 401:
-                    return {"status": "ok", "message": "Secondary server is reachable"}
-                else:
-                    return {"status": "error", "message": f"Unexpected response: {describe_response.status_code}"}
-
-            except requests.exceptions.Timeout:
+            except asyncio.TimeoutError:
                 return {"status": "error", "message": "Timeout"}
-            except requests.exceptions.ConnectionError:
+            except aiohttp.ClientConnectorError:
                 return {"status": "error", "message": "Connection error"}
-            except requests.exceptions.RequestException as e:
+            except aiohttp.ClientError as e:
                 return {"status": "error", "message": f"Request failed: {str(e)}"}
+
+        @self.app.get("/health/worker", tags=["health"])
+        async def test_worker():
+            worker_pid = os.getpid()
+            thread_id = threading.get_ident()
+            
+            # Simuler un traitement qui prend du temps, mais qui n'est pas bloquant
+            start_time = time.time()
+            await asyncio.sleep(5)  # Non-bloquant
+            processing_time = time.time() - start_time
+            
+            return {
+                "worker_pid": worker_pid,
+                "thread_id": thread_id,
+                "timestamp": time.time(),
+                "processing_time": processing_time
+            }
+        
+        @self.app.get("/health/worker/blocking", tags=["health"])
+        def test_worker_blocking():            
+            # Obtenir des informations sur le processus et le thread
+            worker_pid = os.getpid()
+            thread_id = threading.get_ident()
+            
+            # Simuler un traitement bloquant
+            start_time = time.time()
+            time.sleep(5)  # Bloquant
+            processing_time = time.time() - start_time
+            
+            return {
+                "worker_pid": worker_pid,
+                "thread_id": thread_id,
+                "timestamp": time.time(),
+                "processing_time": processing_time,
+                "type": "blocking"
+            }
 
         @self.app.get("/vms/{ip}/cameras", tags=["/vms"])
         async def get_cameras(ip: str):
@@ -203,11 +270,8 @@ class FastAPIServer:
                         "streaming": grabber.acichostport
                     }
 
-
                     if health:
                         status["health"] = {
-                            "last_ping": grabber.time_last_ping,
-                            "last_event": grabber.time_last_event,
                             "is_alive": grabber.is_alive(),
                             "is_longrunning": grabber.is_long_running(),
                             "is_reachable": grabber.is_reachable(timeout=0.2),
@@ -491,3 +555,36 @@ class FastAPIServer:
 
     def start(self, host="0.0.0.0", port=5020):
         uvicorn.run(self.app, host=host, port=port, root_path="/front-api")
+
+
+class ThreadedFastAPIServer(BaseApplication):
+    def __init__(self, event_grabber, threads=1, workers=2):
+        self.api_server = FastAPIServer(event_grabber)
+        self.options = {
+            "workers": workers,
+            "worker_connections": workers*256,
+            "threads": threads,
+            "worker_class": "uvicorn.workers.UvicornWorker",
+            "preload_app": True,
+            "accesslog": "-",
+            "errorlog": "-",
+            "loglevel": "info"
+        }
+        super().__init__()
+
+    def load_config(self):
+        for key, value in self.options.items():
+            if key in self.cfg.settings and value is not None:
+                self.cfg.set(key.lower(), value)
+
+    def load(self):
+        return self.api_server.app
+    
+    def start(self, host="0.0.0.0", port=5020):
+        self.options["bind"] = f"{host}:{port}"
+        self.load_config()
+
+        if "root_path" not in self.options:
+            self.options["root_path"] = "/front-api"
+
+        self.run()

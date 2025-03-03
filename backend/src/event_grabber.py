@@ -31,6 +31,7 @@ class EventGrabber(threading.Thread):
         self.logger.setLevel(logging.INFO)
         self.logger.addHandler(logging.StreamHandler())
         self.logger.addHandler(logging.FileHandler("/tmp/eventgrabber.log"))
+        self.daemon = True
 
         self.keep_alive = 60
         self.last_keep_alive = time.time()
