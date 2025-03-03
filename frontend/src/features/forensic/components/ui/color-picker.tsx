@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { Check } from 'lucide-react';
+import { Check, Palette } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
@@ -30,9 +30,7 @@ export default function ColorPicker({
           className={cn('h-auto p-2 gap-1 flex-wrap', className)}
         >
           {selected.length === 0 ? (
-            <div className="h-6 flex items-center text-muted-foreground">
-              Sélectionner des couleurs
-            </div>
+            <Palette />
           ) : (
             selected.map((color) => (
               <div

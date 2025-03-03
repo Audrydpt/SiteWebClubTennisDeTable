@@ -9,8 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import ColorPicker from './ui/color-picker';
 import MultiSelect from '@/components/multi-select';
 import type { Color } from '../lib/types';
-// Remove the FormLabel import and use Label or create a simple component
-import { Label } from '@/components/ui/label'; // Import Label instead of FormLabel
+import { Label } from '@/components/ui/label';
 
 interface AppearancesProps {
   selectedClass: string;
@@ -146,24 +145,18 @@ export default function Appearances({
 
   const getSelectedGenders = () =>
     onGendersChange ? selectedGenders : localSelectedGenders;
-
   const getSelectedAges = () =>
     onAgesChange ? selectedAges : localSelectedAges;
-
   const getSelectedBuilds = () =>
     onBuildsChange ? selectedBuilds : localSelectedBuilds;
-
   const getSelectedHeights = () =>
     onHeightsChange ? selectedHeights : localSelectedHeights;
-
   const getSelectedVehicleCategories = () =>
     onVehicleCategoriesChange
       ? selectedVehicleCategories
       : localSelectedVehicleCategories;
-
   const getSelectedSizes = () =>
     onSizesChange ? selectedSizes : localSelectedSizes;
-
   const getSelectedTolerance = () =>
     onToleranceChange ? selectedTolerance : localSelectedTolerance;
 
@@ -174,42 +167,53 @@ export default function Appearances({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-sm font-medium">Genre</Label>
-              <MultiSelect
-                options={genderOptions}
-                selected={getSelectedGenders()}
-                onChange={handleGendersChange}
-                placeholder="Sélectionner genre"
-              />
+              <div className="h-10 max-w-full">
+                <MultiSelect
+                  options={genderOptions}
+                  selected={getSelectedGenders()}
+                  onChange={handleGendersChange}
+                  placeholder="Sélectionner genre"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label className="text-sm font-medium">Âge approximatif</Label>
-              <MultiSelect
-                options={ageOptions}
-                selected={getSelectedAges()}
-                onChange={handleAgesChange}
-                placeholder="Sélectionner âge"
-              />
+              <div className="h-10 max-w-full">
+                <MultiSelect
+                  options={ageOptions}
+                  selected={getSelectedAges()}
+                  onChange={handleAgesChange}
+                  placeholder="Sélectionner âge"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Corpulence</Label>
-            <MultiSelect
-              options={buildOptions}
-              selected={getSelectedBuilds()}
-              onChange={handleBuildsChange}
-              placeholder="Sélectionner corpulence"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Taille approximative</Label>
-            <MultiSelect
-              options={heightOptions}
-              selected={getSelectedHeights()}
-              onChange={handleHeightsChange}
-              placeholder="Sélectionner taille"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Corpulence</Label>
+              <div className="h-10 max-w-full">
+                <MultiSelect
+                  options={buildOptions}
+                  selected={getSelectedBuilds()}
+                  onChange={handleBuildsChange}
+                  placeholder="Sélectionner corpulence"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                Taille approximative
+              </Label>
+              <div className="h-10 max-w-full">
+                <MultiSelect
+                  options={heightOptions}
+                  selected={getSelectedHeights()}
+                  onChange={handleHeightsChange}
+                  placeholder="Sélectionner taille"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -227,12 +231,14 @@ export default function Appearances({
         <div className="space-y-6">
           <div className="space-y-2">
             <Label className="text-sm font-medium">Catégorie de véhicule</Label>
-            <MultiSelect
-              options={vehicleTypes}
-              selected={getSelectedVehicleCategories()}
-              onChange={handleVehicleCategoriesChange}
-              placeholder="Sélectionner type de véhicule"
-            />
+            <div className="h-10 max-w-[250px]">
+              <MultiSelect
+                options={vehicleTypes}
+                selected={getSelectedVehicleCategories()}
+                onChange={handleVehicleCategoriesChange}
+                placeholder="Sélectionner type de véhicule"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -246,23 +252,27 @@ export default function Appearances({
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">Gabarit</Label>
-            <MultiSelect
-              options={sizeOptions}
-              selected={getSelectedSizes()}
-              onChange={handleSizesChange}
-              placeholder="Sélectionner gabarit"
-            />
+            <div className="h-10 max-w-[250px]">
+              <MultiSelect
+                options={sizeOptions}
+                selected={getSelectedSizes()}
+                onChange={handleSizesChange}
+                placeholder="Sélectionner gabarit"
+              />
+            </div>
           </div>
         </div>
       )}
       <div className="space-y-2 pt-4 border-t">
         <Label className="text-sm font-medium">Tolérance visuelle</Label>
-        <MultiSelect
-          options={toleranceOptions}
-          selected={getSelectedTolerance()}
-          onChange={handleToleranceChange}
-          placeholder="Niveau de tolérance"
-        />
+        <div className="h-10 max-w-[250px]">
+          <MultiSelect
+            options={toleranceOptions}
+            selected={getSelectedTolerance()}
+            onChange={handleToleranceChange}
+            placeholder="Niveau de tolérance"
+          />
+        </div>
       </div>
     </>
   );

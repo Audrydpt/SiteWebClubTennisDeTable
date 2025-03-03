@@ -54,12 +54,14 @@ export default function MultiSelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between"
+          className="w-full justify-between h-10"
         >
-          {selected.length > 0 ? selected.join(' | ') : placeholder}
+          <span className="truncate max-w-[85%] inline-block">
+            {selected.length > 0 ? selected.join(' | ') : placeholder}
+          </span>
           {selected.length > 0 && (
             <X
-              className="ml-2 h-4 w-4 shrink-0 opacity-50 hover:opacity-100"
+              className="h-4 w-4 shrink-0 opacity-50 hover:opacity-100"
               onClick={(e) => {
                 e.stopPropagation();
                 onChange([]);

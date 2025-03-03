@@ -1,9 +1,13 @@
+/* eslint-disable */
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CalendarIcon } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
+import { DateRange } from 'react-day-picker';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -11,6 +15,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
@@ -23,6 +28,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 
 const timeSchema = z.object({
@@ -32,22 +38,34 @@ const timeSchema = z.object({
   }),
   startTime: z.string(),
   endTime: z.string(),
+}).refine((data) => {
+  // Si les deux heures sont définies, vérifier que l'heure de début est avant l'heure de fin
+  if (data.startTime && data.endTime) {
+    return data.startTime <= data.endTime;
+  }
+  return true;
+}, {
+  message: "L'heure de début doit être antérieure à l'heure de fin",
+  path: ["endTime"]
 });
 
 type TimeFormValues = z.infer<typeof timeSchema>;
 
 interface TimesProps {
-  date: Date | undefined;
-  onDateChange: (date: Date | undefined) => void;
+  date: string | undefined;
+  onDateChange: (date: string | undefined) => void;
 }
 
 export default function Times({ date, onDateChange }: TimesProps) {
+  const [timeError, setTimeError] = useState<string | null>(null);
+
   const form = useForm<TimeFormValues>({
     resolver: zodResolver(timeSchema),
     defaultValues: {
-      range: date
-        ? { from: date, to: date }
-        : { from: undefined, to: undefined },
+      range: {
+        from: date ? new Date(date) : undefined,
+        to: date ? new Date(date) : undefined,
+      },
       startTime: '00:00',
       endTime: '23:59',
     },
@@ -55,8 +73,17 @@ export default function Times({ date, onDateChange }: TimesProps) {
 
   useEffect(() => {
     const subscription = form.watch((value) => {
+      // Vérification des heures
+      if (value.startTime && value.endTime) {
+        if (value.startTime > value.endTime) {
+          setTimeError("L'heure de début doit être antérieure à l'heure de fin");
+        } else {
+          setTimeError(null);
+        }
+      }
+
       if (value.range?.from) {
-        onDateChange(value.range.from);
+        onDateChange(format(value.range.from, 'yyyy-MM-dd'));
       } else {
         onDateChange(undefined);
       }
@@ -64,16 +91,29 @@ export default function Times({ date, onDateChange }: TimesProps) {
     return () => subscription.unsubscribe();
   }, [form, onDateChange]);
 
-  const handleFormChange = () => {
-    // Form has changed, we could add additional logic here if needed
+  const handleTimeChange = (field: any, value: string) => {
+    field.onChange(value);
+
+    const currentValues = form.getValues();
+    if (currentValues.startTime && currentValues.endTime) {
+      if (currentValues.startTime > currentValues.endTime) {
+        setTimeError("L'heure de début doit être antérieure à l'heure de fin");
+      } else {
+        setTimeError(null);
+      }
+    }
   };
+
+  const isSameDay = form.watch('range')?.from && form.watch('range')?.to &&
+    format(form.watch('range')?.from as Date, 'yyyy-MM-dd') ===
+    format(form.watch('range')?.to as Date, 'yyyy-MM-dd');
 
   return (
     <AccordionItem value="time">
       <AccordionTrigger>Plage horaire</AccordionTrigger>
       <AccordionContent>
         <Form {...form}>
-          <form className="space-y-6" onChange={handleFormChange}>
+          <form className="space-y-6">
             <div className="flex-1 space-y-3">
               <FormField
                 control={form.control}
@@ -88,83 +128,48 @@ export default function Times({ date, onDateChange }: TimesProps) {
                             variant="outline"
                             className={cn(
                               'text-left font-normal',
-                              !field.value && 'text-muted-foreground'
+                              !field.value.from &&
+                              !field.value.to &&
+                              'text-muted-foreground'
                             )}
                           >
                             {!field.value.from && !field.value.to && (
                               <span>Sélectionner une plage de dates</span>
                             )}
-
                             {field.value.from && (
                               <span>
-                                Du {field.value.from.toLocaleDateString()}
+                                Du{' '}
+                                {format(field.value.from, 'dd/MM/yyyy', {
+                                  locale: fr,
+                                })}
                               </span>
                             )}
-                            {field.value.to && (
+                            {field.value.to && field.value.from && (
                               <span>
                                 {' '}
-                                au {field.value.to.toLocaleDateString()}
+                                au{' '}
+                                {format(field.value.to, 'dd/MM/yyyy', {
+                                  locale: fr,
+                                })}
                               </span>
                             )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-2" align="start">
-                        <div className="flex flex-col gap-2">
-                          <div className="flex flex-col">
-                            <FormLabel>Date début:</FormLabel>
-                            <Input
-                              type="date"
-                              value={
-                                field.value.from
-                                  ? field.value.from.toISOString().split('T')[0]
-                                  : ''
-                              }
-                              onChange={(e) => {
-                                const newDate = e.target.value
-                                  ? new Date(e.target.value)
-                                  : undefined;
-                                field.onChange({
-                                  ...field.value,
-                                  from: newDate,
-                                });
-                                handleFormChange();
-                              }}
-                              max={
-                                field.value.to
-                                  ? field.value.to.toISOString().split('T')[0]
-                                  : undefined
-                              }
-                            />
-                          </div>
-                          <div className="flex flex-col">
-                            <FormLabel>Date fin:</FormLabel>
-                            <Input
-                              type="date"
-                              value={
-                                field.value.to
-                                  ? field.value.to.toISOString().split('T')[0]
-                                  : ''
-                              }
-                              onChange={(e) => {
-                                const newDate = e.target.value
-                                  ? new Date(e.target.value)
-                                  : undefined;
-                                field.onChange({
-                                  ...field.value,
-                                  to: newDate,
-                                });
-                                handleFormChange();
-                              }}
-                              min={
-                                field.value.from
-                                  ? field.value.from.toISOString().split('T')[0]
-                                  : undefined
-                              }
-                            />
-                          </div>
-                        </div>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="range"
+                          selected={field.value as DateRange}
+                          onSelect={(value) => {
+                            field.onChange(value);
+                          }}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date('1900-01-01')
+                          }
+                          initialFocus
+                          locale={fr}
+                        />
                       </PopoverContent>
                     </Popover>
                   </FormItem>
@@ -178,7 +183,11 @@ export default function Times({ date, onDateChange }: TimesProps) {
                   <FormItem>
                     <FormLabel>Heure début</FormLabel>
                     <FormControl>
-                      <Input type="time" {...field} />
+                      <Input
+                        type="time"
+                        {...field}
+                        onChange={(e) => handleTimeChange(field, e.target.value)}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
@@ -191,19 +200,35 @@ export default function Times({ date, onDateChange }: TimesProps) {
                   <FormItem>
                     <FormLabel>Heure fin</FormLabel>
                     <FormControl>
-                      <Input type="time" {...field} />
+                      <Input
+                        type="time"
+                        {...field}
+                        onChange={(e) => handleTimeChange(field, e.target.value)}
+                      />
                     </FormControl>
+                    {timeError && <FormMessage>{timeError}</FormMessage>}
                   </FormItem>
                 )}
               />
             </div>
 
-            {form.watch('range')?.from && form.watch('range')?.to && (
-              <div className="text-sm text-muted-foreground">
-                Recherche du {form.watch('range')?.from?.toLocaleDateString()} à{' '}
-                {form.watch('startTime')} au{' '}
-                {form.watch('range')?.to?.toLocaleDateString()} à{' '}
-                {form.watch('endTime')}
+            {form.watch('range')?.from && (
+              <div className={cn(
+                "text-sm",
+                timeError && isSameDay ? "text-destructive" : "text-muted-foreground"
+              )}>
+                Recherche du{' '}
+                {form.watch('range')?.from
+                  ? format(form.watch('range')?.from as Date, 'dd/MM/yyyy')
+                  : ''}{' '}
+                à {form.watch('startTime')}
+                {form.watch('range')?.to
+                  ? ` au ${format(form.watch('range')?.to as Date, 'dd/MM/yyyy')}`
+                  : ''}{' '}
+                à {form.watch('endTime')}
+                {timeError && isSameDay && (
+                  <div className="text-destructive font-medium mt-1">{timeError}</div>
+                )}
               </div>
             )}
           </form>

@@ -1,0 +1,67 @@
+{
+  "genderOptions": ["Homme", "Femme"],
+  "ageOptions": ["Enfant", "Adulte", "Personne âgée"],
+  "buildOptions": ["Mince", "Moyenne", "Athlétique", "Forte"],
+  "heightOptions": [
+    "Petite (<1m65)",
+    "Moyenne (1m65-1m80)",
+    "Grande (>1m80)"
+  ],
+  "hairLengthOptions": ["Courts", "Mi-longs", "Longs"],
+  "hairStyleOptions": ["Lisses", "Ondulés", "Bouclés", "Chauve"],
+  "topTypeOptions": ["T-shirt", "Chemise", "Pull", "Veste", "Manteau"],
+  "bottomTypeOptions": ["Pantalon", "Short", "Jupe", "Robe"],
+  "sizeOptions": ["Petit", "Moyen", "Grand"],
+  "toleranceOptions": ["Stricte", "Normale", "Flexible"],
+  "vehicleTypes": [
+    "Voiture particulière",
+    "SUV/4x4",
+    "Utilitaire",
+    "Camion",
+    "Moto",
+    "Vélo",
+    "Scooter",
+    "Bus"
+  ],
+  "distinctiveItems": {
+    "person": [
+      { "id": "bag", "label": "Sac/Bagage" },
+      { "id": "hat", "label": "Couvre-chef" },
+      { "id": "glasses", "label": "Lunettes" },
+      { "id": "mask", "label": "Masque/Cagoule" }
+    ],
+    "vehicle": [
+      { "id": "damaged", "label": "Dommages visibles" },
+      { "id": "modified", "label": "Modifications" },
+      { "id": "tinted", "label": "Vitres teintées" },
+      { "id": "roof_rack", "label": "Galerie/Coffre" }
+    ]
+  },
+  "contextualItems": {
+    "person": [
+      { "id": "group", "label": "En groupe" },
+      { "id": "running", "label": "Course/Fuite" },
+      { "id": "vehicle", "label": "Avec véhicule" },
+      { "id": "suspicious", "label": "Comportement suspect" }
+    ],
+    "vehicle": [
+      { "id": "speeding", "label": "Vitesse excessive" },
+      { "id": "suspicious_behavior", "label": "Comportement suspect" },
+      { "id": "multiple_occupants", "label": "Plusieurs occupants" }
+    ]
+  },
+  "colors": [
+    { "name": "Marron", "value": "#8B4513" },
+    { "name": "Rouge", "value": "#FF0000" },
+    { "name": "Orange", "value": "#FFA500" },
+    { "name": "Jaune", "value": "#FFFF00" },
+    { "name": "Vert", "value": "#008000" },
+    { "name": "Turquoise", "value": "#40E0D0" },
+    { "name": "Bleu", "value": "#0000FF" },
+    { "name": "Violet", "value": "#800080" },
+    { "name": "Rose", "value": "#FFC0CB" },
+    { "name": "Blanc", "value": "#FFFFFF" },
+    { "name": "Gris", "value": "#808080" },
+    { "name": "Noir", "value": "#000000" }
+  ]
+}
