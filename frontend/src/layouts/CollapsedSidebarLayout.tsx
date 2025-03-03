@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import {
   SidebarInset,
   SidebarProvider,
@@ -6,6 +6,7 @@ import {
 } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/app-sidebar';
 import TailwindSizeIndicator from '@/components/tailwind-size';
+import { useAuth } from '@/providers/auth-context';
 
 interface CollapsedSidebarLayoutProps {
   sidebarOpen: boolean;
@@ -16,6 +17,12 @@ export default function CollapsedSidebarLayout({
   sidebarOpen,
   onSidebarOpenChange,
 }: CollapsedSidebarLayoutProps) {
+  const { isSessionExpired } = useAuth();
+
+  if (isSessionExpired) {
+    return <Navigate to="/login" />;
+  }
+
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={onSidebarOpenChange}>
       <AppSidebar />

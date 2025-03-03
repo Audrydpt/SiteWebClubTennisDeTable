@@ -17,11 +17,13 @@ const UserPrivilegesHierarchy: Record<UserPrivileges, number> = {
 export default function ProtectedRoute({
   role = UserPrivileges.Anonymous,
 }: ProtectedRouteProps) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isSessionExpired } = useAuth();
 
   if (
     !isLoading &&
-    UserPrivilegesHierarchy[user.privileges] < UserPrivilegesHierarchy[role]
+    (isSessionExpired ||
+      UserPrivilegesHierarchy[user?.privileges || 'Anonymous'] <
+        UserPrivilegesHierarchy[role])
   ) {
     return <Navigate to="/login" />;
   }
