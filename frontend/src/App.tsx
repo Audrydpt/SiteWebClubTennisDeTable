@@ -61,7 +61,9 @@ export default function App() {
             />
           }
         >
-          <Route path="/forensic" element={<Forensic />} />
+          <Route element={<ProtectedRoute role={UserPrivileges.Operator} />}>
+            <Route path="/forensic" element={<Forensic />} />
+          </Route>
         </Route>
 
         {/* Routes with optional sidebar */}

@@ -1,22 +1,40 @@
-/* eslint-disable */
-import { useState } from 'react';
-import { Calendar as CalendarIcon } from 'lucide-react';
-import { DateRange } from 'react-day-picker';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { CalendarIcon } from 'lucide-react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Input } from '@/components/ui/input';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+
+const timeSchema = z.object({
+  range: z.object({
+    from: z.date().optional(),
+    to: z.date().optional(),
+  }),
+  startTime: z.string(),
+  endTime: z.string(),
+});
+
+type TimeFormValues = z.infer<typeof timeSchema>;
 
 interface TimesProps {
   date: Date | undefined;
@@ -24,90 +42,172 @@ interface TimesProps {
 }
 
 export default function Times({ date, onDateChange }: TimesProps) {
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: date,
-    to: date,
+  const form = useForm<TimeFormValues>({
+    resolver: zodResolver(timeSchema),
+    defaultValues: {
+      range: date
+        ? { from: date, to: date }
+        : { from: undefined, to: undefined },
+      startTime: '00:00',
+      endTime: '23:59',
+    },
   });
-  const [startTime, setStartTime] = useState<string>('00:00');
-  const [endTime, setEndTime] = useState<string>('23:59');
 
-  const handleDateRangeChange = (range: DateRange | undefined) => {
-    setDateRange(range);
-    if (range?.from) {
-      onDateChange(range.from);
-    } else {
-      onDateChange(undefined);
-    }
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      if (value.range?.from) {
+        onDateChange(value.range.from);
+      } else {
+        onDateChange(undefined);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onDateChange]);
+
+  const handleFormChange = () => {
+    // Form has changed, we could add additional logic here if needed
   };
 
   return (
     <AccordionItem value="time">
       <AccordionTrigger>Plage horaire</AccordionTrigger>
       <AccordionContent>
-        <div className="space-y-4">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full justify-start text-left font-normal"
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateRange?.from ? (
-                  dateRange.to ? (
-                    <>
-                      {format(dateRange.from, 'dd/MM/yyyy', { locale: fr })} -{' '}
-                      {format(dateRange.to, 'dd/MM/yyyy', { locale: fr })}
-                    </>
-                  ) : (
-                    format(dateRange.from, 'dd/MM/yyyy', { locale: fr })
-                  )
-                ) : (
-                  'Sélectionner une période'
+        <Form {...form}>
+          <form className="space-y-6" onChange={handleFormChange}>
+            <div className="flex-1 space-y-3">
+              <FormField
+                control={form.control}
+                name="range"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Dates:</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              'text-left font-normal',
+                              !field.value && 'text-muted-foreground'
+                            )}
+                          >
+                            {!field.value.from && !field.value.to && (
+                              <span>Sélectionner une plage de dates</span>
+                            )}
+
+                            {field.value.from && (
+                              <span>
+                                Du {field.value.from.toLocaleDateString()}
+                              </span>
+                            )}
+                            {field.value.to && (
+                              <span>
+                                {' '}
+                                au {field.value.to.toLocaleDateString()}
+                              </span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-2" align="start">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex flex-col">
+                            <FormLabel>Date début:</FormLabel>
+                            <Input
+                              type="date"
+                              value={
+                                field.value.from
+                                  ? field.value.from.toISOString().split('T')[0]
+                                  : ''
+                              }
+                              onChange={(e) => {
+                                const newDate = e.target.value
+                                  ? new Date(e.target.value)
+                                  : undefined;
+                                field.onChange({
+                                  ...field.value,
+                                  from: newDate,
+                                });
+                                handleFormChange();
+                              }}
+                              max={
+                                field.value.to
+                                  ? field.value.to.toISOString().split('T')[0]
+                                  : undefined
+                              }
+                            />
+                          </div>
+                          <div className="flex flex-col">
+                            <FormLabel>Date fin:</FormLabel>
+                            <Input
+                              type="date"
+                              value={
+                                field.value.to
+                                  ? field.value.to.toISOString().split('T')[0]
+                                  : ''
+                              }
+                              onChange={(e) => {
+                                const newDate = e.target.value
+                                  ? new Date(e.target.value)
+                                  : undefined;
+                                field.onChange({
+                                  ...field.value,
+                                  to: newDate,
+                                });
+                                handleFormChange();
+                              }}
+                              min={
+                                field.value.from
+                                  ? field.value.from.toISOString().split('T')[0]
+                                  : undefined
+                              }
+                            />
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </FormItem>
                 )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="range"
-                selected={dateRange}
-                onSelect={handleDateRangeChange}
-                initialFocus
-                numberOfMonths={2}
-                locale={fr}
               />
-            </PopoverContent>
-          </Popover>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label htmlFor="start-time" className="text-sm font-medium">
-                Début
-              </label>
-              <Input
-                type="time"
-                id="start-time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
+
+              <FormField
+                control={form.control}
+                name="startTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Heure début</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="end-time" className="text-sm font-medium">
-                Fin
-              </label>
-              <Input
-                type="time"
-                id="end-time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
+
+              <FormField
+                control={form.control}
+                name="endTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Heure fin</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
               />
             </div>
-          </div>
-          {dateRange?.from && dateRange?.to && (
-            <div className="text-sm text-muted-foreground">
-              Recherche du {format(dateRange.from, 'dd/MM/yyyy')} à {startTime}{' '}
-              au {format(dateRange.to, 'dd/MM/yyyy')} à {endTime}
-            </div>
-          )}
-        </div>
+
+            {form.watch('range')?.from && form.watch('range')?.to && (
+              <div className="text-sm text-muted-foreground">
+                Recherche du {form.watch('range')?.from?.toLocaleDateString()} à{' '}
+                {form.watch('startTime')} au{' '}
+                {form.watch('range')?.to?.toLocaleDateString()} à{' '}
+                {form.watch('endTime')}
+              </div>
+            )}
+          </form>
+        </Form>
       </AccordionContent>
     </AccordionItem>
   );
