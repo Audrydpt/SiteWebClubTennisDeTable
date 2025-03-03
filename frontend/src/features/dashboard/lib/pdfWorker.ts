@@ -1,3 +1,4 @@
+/// <reference lib="webworker" />
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable new-cap */
 import { jsPDF } from 'jspdf';
@@ -67,7 +68,7 @@ self.onmessage = async (e: MessageEvent<PdfWorkerRequest>): Promise<void> => {
 
     // Ajout du logo si fourni
     try {
-      doc.addImage(logo, 'PNG', 14, 10, 30, 12);
+      doc.addImage(logo!, 'PNG', 14, 10, 30, 12);
     } catch {
       // En cas d'erreur, on continue sans logo
     }
