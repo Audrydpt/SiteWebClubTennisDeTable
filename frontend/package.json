@@ -46,8 +46,8 @@
     "date-fns": "^3.6.0",
     "i18next": "^24.2.2",
     "i18next-browser-languagedetector": "^8.0.2",
-    "jspdf": "^2.5.1",
-    "jspdf-autotable": "^3.5.28",
+    "jspdf": "^3.0.0",
+    "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.468.0",
     "luxon": "^3.5.0",
     "react": "^19.0.0",
@@ -109,7 +109,10 @@
     "vitest": "^3.0.7"
   },
   "overrides": {
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "react-day-picker": {
+      "react": "^18.0.0 || ^19.0.0"
+    }
   },
   "prettier": {
     "semi": true,
