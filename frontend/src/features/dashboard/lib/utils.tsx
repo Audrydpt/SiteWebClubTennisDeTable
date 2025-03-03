@@ -72,7 +72,11 @@ export function getTimeFormattingConfig(
 type DashboardQuery = {
   table: string;
   aggregation: AcicAggregation;
-  duration: AcicAggregation;
+  duration?: AcicAggregation;
+  range?: {
+    from?: Date;
+    to?: Date;
+  };
   where?: WhereClause[];
 };
 export async function getWidgetDescription() {
@@ -133,12 +137,24 @@ export async function getWidgetData(
   groupBy?: string,
   rounded = true
 ) {
-  const now = rounded
-    ? roundDateTime(DateTime.now(), props.aggregation)
-    : DateTime.now();
+  let timeFrom;
+  let timeTo;
 
-  const timeFrom = now.minus(AggregationTypeToObject[props.duration]);
-  const timeTo = now.minus({ millisecond: 1 });
+  if (props.aggregation && props.duration) {
+    const now = rounded
+      ? roundDateTime(DateTime.now(), props.aggregation)
+      : DateTime.now();
+
+    timeFrom = now.minus(AggregationTypeToObject[props.duration]);
+    timeTo = now.minus({ millisecond: 1 });
+  } else if (props.range && props.range.from && props.range.to) {
+    timeFrom = DateTime.fromJSDate(props.range.from);
+    timeTo = DateTime.fromJSDate(props.range.to);
+  } else {
+    throw new Error(
+      'Either aggregation and duration or range must be provided'
+    );
+  }
 
   const query = `${process.env.MAIN_API_URL}/dashboard/widgets/${props.table}`;
 
@@ -171,6 +187,65 @@ export async function getWidgetData(
     });
   }
 
+  return fetch(query + params).then((res) => {
+    if (!res.ok) throw new Error(res.statusText);
+    return res.json();
+  });
+}
+
+export async function getWidgetDataForExport(
+  props: DashboardQuery,
+  groupBy?: string,
+  rounded = true
+) {
+  let timeFrom;
+  let timeTo;
+
+  if (props.aggregation && props.duration) {
+    const now = rounded
+      ? roundDateTime(DateTime.now(), props.aggregation)
+      : DateTime.now();
+
+    timeFrom = now.minus(AggregationTypeToObject[props.duration]);
+    timeTo = now.minus({ millisecond: 1 });
+  } else if (props.range && props.range.from && props.range.to) {
+    timeFrom = DateTime.fromJSDate(props.range.from);
+    timeTo = DateTime.fromJSDate(props.range.to);
+  } else {
+    throw new Error(
+      'Either aggregation and duration or range must be provided'
+    );
+  }
+
+  const query = `${process.env.MAIN_API_URL}/dashboard/widgets/${props.table}`;
+
+  let params = '?';
+  params += `&aggregate=${props.aggregation}`;
+  params += `&time_from=${timeFrom.toISO({ includeOffset: false })}`;
+  params += `&time_to=${timeTo.toISO({ includeOffset: false })}`;
+
+  if (groupBy) params += `&group_by=${groupBy}`;
+
+  if (props.where) {
+    const columns = Array.isArray(props.where) ? props.where : [props.where];
+    columns.forEach((where) => {
+      const { column, value } = where;
+
+      if (column && value && column !== 'any' && value.length > 0) {
+        if (value.includes('|||')) {
+          value
+            .split('|||')
+            .map((v) => v.trim())
+            .filter((v) => v.length > 0)
+            .forEach((v) => {
+              params += `&${column}=${encodeURIComponent(v)}`;
+            });
+        } else {
+          params += `&${column}=${encodeURIComponent(value)}`;
+        }
+      }
+    });
+  }
   return fetch(query + params).then((res) => {
     if (!res.ok) throw new Error(res.statusText);
     return res.json();
