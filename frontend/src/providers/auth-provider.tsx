@@ -24,80 +24,27 @@ export default function AuthProvider({
   children: React.ReactNode;
 }) {
   const [sessionId, setLocalSessionId] = useState(getSessionId());
-  const [isSessionExpired, setIsSessionExpired] = useState(false);
 
-  const checkSession = useCallback(async () => {
-    try {
+  useEffect(() => {
+    const checkSession = () => {
       const currentSessionId = getSessionId();
-      if (!currentSessionId) {
-        setIsSessionExpired(true);
-        return false;
-      }
       if (currentSessionId !== sessionId) {
         setLocalSessionId(currentSessionId);
       }
-      const result = await getCurrentUser(currentSessionId).catch((error) => {
-        if (error instanceof AuthError && error.status === 401) {
-          setIsSessionExpired(true);
-          return null;
-        }
-        throw error;
-      });
+    };
 
-      if (!result) {
-        setIsSessionExpired(true);
-        return false;
-      }
-
-      setIsSessionExpired(false);
-      return true;
-    } catch (error) {
-      console.error('Session check failed:', error);
-      setIsSessionExpired(true);
-      return false;
-    }
+    const interval = setInterval(checkSession, 1000);
+    return () => clearInterval(interval);
   }, [sessionId]);
-
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      checkSession();
-    }, 30000);
-
-    return () => clearInterval(intervalId);
-  }, [checkSession]);
-
-  useEffect(() => {
-    const activityHandler = () => {
-      if (isSessionExpired) {
-        checkSession();
-      }
-    };
-
-    window.addEventListener('click', activityHandler);
-    window.addEventListener('keypress', activityHandler);
-    window.addEventListener('mousemove', activityHandler);
-    window.addEventListener('touchstart', activityHandler);
-
-    return () => {
-      window.removeEventListener('click', activityHandler);
-      window.removeEventListener('keypress', activityHandler);
-      window.removeEventListener('mousemove', activityHandler);
-      window.removeEventListener('touchstart', activityHandler);
-    };
-  }, [isSessionExpired, checkSession]);
 
   const {
     data: user = AnonymousUser,
     refetch,
     isLoading,
   } = useQuery({
-    queryKey: ['currentUser', sessionId, isSessionExpired],
-    queryFn: () => {
-      if (isSessionExpired || !sessionId) {
-        return Promise.resolve(AnonymousUser);
-      }
-      return getCurrentUser(sessionId);
-    },
+    queryKey: ['currentUser', sessionId],
+    queryFn: () =>
+      sessionId ? getCurrentUser(sessionId) : Promise.resolve(AnonymousUser),
     retry: (_count, err) => !(err instanceof AuthError && err.status === 401),
   });
 
@@ -106,7 +53,6 @@ export default function AuthProvider({
       const sid = await loginUser(username, password);
       setSessionId(sid);
       setLocalSessionId(sid);
-      setIsSessionExpired(false);
       await refetch();
     },
     [refetch]
@@ -114,8 +60,7 @@ export default function AuthProvider({
 
   const logout = useCallback(() => {
     removeSessionId();
-    setIsSessionExpired(false);
-    window.location.href = '/login';
+    window.location.href = '/front-react/login';
   }, []);
 
   const authValue = useMemo(
@@ -123,13 +68,11 @@ export default function AuthProvider({
       user,
       isAuthenticated: user.privileges !== UserPrivileges.Anonymous,
       isLoading,
-      isSessionExpired,
       login,
       logout,
       sessionId,
-      checkSession,
     }),
-    [user, isLoading, isSessionExpired, login, logout, sessionId, checkSession]
+    [user, isLoading, login, logout, sessionId]
   );
 
   return (
