@@ -57,13 +57,15 @@ export default function MultiSelect({
           className="w-full justify-between"
         >
           {selected.length > 0 ? selected.join(' | ') : placeholder}
-          <X
-            className="ml-2 h-4 w-4 shrink-0 opacity-50"
-            onClick={(e) => {
-              e.stopPropagation();
-              onChange([]);
-            }}
-          />
+          {selected.length > 0 && (
+            <X
+              className="ml-2 h-4 w-4 shrink-0 opacity-50 hover:opacity-100"
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange([]);
+              }}
+            />
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
