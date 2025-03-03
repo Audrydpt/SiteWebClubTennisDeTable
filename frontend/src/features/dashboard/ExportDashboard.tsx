@@ -75,21 +75,27 @@ export default function ExportDashboard() {
                     storedWidget={storedWidget}
                     updateStoredWidget={updateStoredWidget}
                     setStepValidity={setIsStepValid}
-                  />
+                  >
+                    {null}
+                  </ExportStepSource>
                 ),
                 'step-2': () => (
                   <ExportStepOptions
                     storedWidget={storedWidget}
                     updateStoredWidget={updateStoredWidget}
                     setStepValidity={setIsStepValid}
-                  />
+                  >
+                    {null}
+                  </ExportStepOptions>
                 ),
                 'step-3': () => (
                   <ExportStepFormat
                     storedWidget={storedWidget}
                     updateStoredWidget={updateStoredWidget}
                     setStepValidity={setIsStepValid}
-                  />
+                  >
+                    {null}
+                  </ExportStepFormat>
                 ),
               })}
             </StepperPanel>
