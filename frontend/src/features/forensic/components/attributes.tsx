@@ -10,7 +10,16 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ColorPicker from './ui/color-picker';
 import MultiSelect from '@/components/multi-select';
-import type { Color } from '../lib/types';
+import {
+  hairLengthOptions,
+  hairStyleOptions,
+  topTypeOptions,
+  bottomTypeOptions,
+  toleranceOptions,
+  distinctiveItems,
+  contextualItems,
+} from '../lib/form-config';
+import type { Color } from '../lib/form-config';
 
 interface AttributesProps {
   selectedClass: string;
@@ -57,13 +66,6 @@ export default function Attributes({
   selectedToleranceOptions = [],
   onToleranceOptionsChange,
 }: AttributesProps) {
-  // Options for different select fields
-  const hairLengthOptions = ['Courts', 'Mi-longs', 'Longs'];
-  const hairStyleOptions = ['Lisses', 'Ondulés', 'Bouclés', 'Chauve'];
-  const topTypeOptions = ['T-shirt', 'Chemise', 'Pull', 'Veste', 'Manteau'];
-  const bottomTypeOptions = ['Pantalon', 'Short', 'Jupe', 'Robe'];
-  const toleranceOptions = ['Stricte', 'Normale', 'Flexible'];
-
   // Use local state if no handler is provided
   const [localHairLength, setLocalHairLength] = useState<string[]>([]);
   const [localHairStyle, setLocalHairStyle] = useState<string[]>([]);
@@ -221,60 +223,28 @@ export default function Attributes({
           <div className="space-y-4">
             <Label className="text-sm font-medium">Éléments distinctifs</Label>
             <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="bag" />
-                <Label htmlFor="bag" className="text-sm">
-                  Sac/Bagage
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="hat" />
-                <Label htmlFor="hat" className="text-sm">
-                  Couvre-chef
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="glasses" />
-                <Label htmlFor="glasses" className="text-sm">
-                  Lunettes
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="mask" />
-                <Label htmlFor="mask" className="text-sm">
-                  Masque/Cagoule
-                </Label>
-              </div>
+              {distinctiveItems.person.map((item) => (
+                <div key={item.id} className="flex items-center space-x-2">
+                  <Checkbox id={item.id} />
+                  <Label htmlFor={item.id} className="text-sm">
+                    {item.label}
+                  </Label>
+                </div>
+              ))}
             </div>
           </div>
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">Contexte</Label>
             <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="group" />
-                <Label htmlFor="group" className="text-sm">
-                  En groupe
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="running" />
-                <Label htmlFor="running" className="text-sm">
-                  Course/Fuite
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="vehicle" />
-                <Label htmlFor="vehicle" className="text-sm">
-                  Avec véhicule
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="suspicious" />
-                <Label htmlFor="suspicious" className="text-sm">
-                  Comportement suspect
-                </Label>
-              </div>
+              {contextualItems.person.map((item) => (
+                <div key={item.id} className="flex items-center space-x-2">
+                  <Checkbox id={item.id} />
+                  <Label htmlFor={item.id} className="text-sm">
+                    {item.label}
+                  </Label>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -332,54 +302,28 @@ export default function Attributes({
           <div className="space-y-4">
             <Label className="text-sm font-medium">Éléments distinctifs</Label>
             <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="damaged" />
-                <Label htmlFor="damaged" className="text-sm">
-                  Dommages visibles
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="modified" />
-                <Label htmlFor="modified" className="text-sm">
-                  Modifications
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="tinted" />
-                <Label htmlFor="tinted" className="text-sm">
-                  Vitres teintées
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="roof_rack" />
-                <Label htmlFor="roof_rack" className="text-sm">
-                  Galerie/Coffre
-                </Label>
-              </div>
+              {distinctiveItems.vehicle.map((item) => (
+                <div key={item.id} className="flex items-center space-x-2">
+                  <Checkbox id={item.id} />
+                  <Label htmlFor={item.id} className="text-sm">
+                    {item.label}
+                  </Label>
+                </div>
+              ))}
             </div>
           </div>
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">Contexte</Label>
             <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="speeding" />
-                <Label htmlFor="speeding" className="text-sm">
-                  Vitesse excessive
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="suspicious_behavior" />
-                <Label htmlFor="suspicious_behavior" className="text-sm">
-                  Comportement suspect
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="multiple_occupants" />
-                <Label htmlFor="multiple_occupants" className="text-sm">
-                  Plusieurs occupants
-                </Label>
-              </div>
+              {contextualItems.vehicle.map((item) => (
+                <div key={item.id} className="flex items-center space-x-2">
+                  <Checkbox id={item.id} />
+                  <Label htmlFor={item.id} className="text-sm">
+                    {item.label}
+                  </Label>
+                </div>
+              ))}
             </div>
           </div>
         </div>

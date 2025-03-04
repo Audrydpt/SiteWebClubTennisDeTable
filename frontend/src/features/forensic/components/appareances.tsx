@@ -8,15 +8,23 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ColorPicker from './ui/color-picker';
 import MultiSelect from '@/components/multi-select';
-import type { Color } from '../lib/types';
 import { Label } from '@/components/ui/label';
+import {
+  genderOptions,
+  ageOptions,
+  buildOptions,
+  heightOptions,
+  sizeOptions,
+  toleranceOptions,
+  vehicleTypes,
+} from '../lib/form-config';
+import type { Color } from '../lib/form-config';
 
 interface AppearancesProps {
   selectedClass: string;
   colors: Color[];
   selectedColors: string[];
   onColorsChange: (colors: string[]) => void;
-  vehicleTypes: string[];
   useScrollArea?: boolean;
   maxHeight?: string;
   selectedGenders?: string[];
@@ -40,7 +48,6 @@ export default function Appearances({
   colors,
   selectedColors,
   onColorsChange,
-  vehicleTypes,
   useScrollArea = false,
   maxHeight = '300px',
   selectedGenders = [],
@@ -58,18 +65,6 @@ export default function Appearances({
   selectedTolerance = [],
   onToleranceChange,
 }: AppearancesProps) {
-  // Options for different select fields
-  const genderOptions = ['Homme', 'Femme'];
-  const ageOptions = ['Enfant', 'Adulte', 'Personne âgée'];
-  const buildOptions = ['Mince', 'Moyenne', 'Athlétique', 'Forte'];
-  const heightOptions = [
-    'Petite (<1m65)',
-    'Moyenne (1m65-1m80)',
-    'Grande (>1m80)',
-  ];
-  const sizeOptions = ['Petit', 'Moyen', 'Grand'];
-  const toleranceOptions = ['Stricte', 'Normale', 'Flexible'];
-
   // Use local state if no handler is provided
   const [localSelectedGenders, setLocalSelectedGenders] = useState<string[]>(
     []
