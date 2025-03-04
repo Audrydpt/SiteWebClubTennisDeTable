@@ -108,9 +108,11 @@ export default function LineComponent({
   );
 
   return (
-    <Card className="w-full h-full flex flex-col justify-center items-center">
+    <Card className="w-full h-full flex flex-col justify-center">
       <CardHeader>
-        <CardTitle>{title ?? `Line ${layout.toString()}`}</CardTitle>
+        <CardTitle className="text-left">
+          {title ?? `Line ${layout.toString()}`}
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex-grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">

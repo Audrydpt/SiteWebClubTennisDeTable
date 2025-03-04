@@ -93,9 +93,11 @@ export default function StackedGaugeComponent({
 
   if (isLoading || isError) {
     return (
-      <Card className="w-full h-full flex flex-col justify-center items-center">
+      <Card className="w-full h-full flex flex-col justify-center">
         <CardHeader>
-          <CardTitle>{title ?? `Stacked-Gauge ${layout.toString()}`}</CardTitle>
+          <CardTitle className="text-left">
+            {title ?? `Stacked-Gauge ${layout.toString()}`}
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex-grow w-full">
           <ChartContainer config={{}} className="h-full w-full">
