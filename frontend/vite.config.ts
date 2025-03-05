@@ -38,5 +38,8 @@ export default defineConfig(({ mode }) => {
         usePolling: true,
       },
     },
+    worker: {
+      format: 'es',
+    },
   };
 });

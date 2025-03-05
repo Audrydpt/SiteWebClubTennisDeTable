@@ -39,14 +39,10 @@ export default function ExportDashboard() {
   };
 
   const handleReset = () => {
-    storedWidget.table = AcicEvent.AcicCounting;
-    storedWidget.aggregation = AcicAggregation.OneHour;
-    storedWidget.range = undefined;
-    storedWidget.where = undefined;
-    storedWidget.groupBy = undefined;
-    storedWidget.format = undefined;
-    storedWidget.duration = undefined;
-    setStoredWidget(storedWidget);
+    setStoredWidget({
+      table: AcicEvent.AcicCounting,
+      aggregation: AcicAggregation.OneHour,
+    });
   };
 
   return (
@@ -75,27 +71,21 @@ export default function ExportDashboard() {
                     storedWidget={storedWidget}
                     updateStoredWidget={updateStoredWidget}
                     setStepValidity={setIsStepValid}
-                  >
-                    {null}
-                  </ExportStepSource>
+                  />
                 ),
                 'step-2': () => (
                   <ExportStepOptions
                     storedWidget={storedWidget}
                     updateStoredWidget={updateStoredWidget}
                     setStepValidity={setIsStepValid}
-                  >
-                    {null}
-                  </ExportStepOptions>
+                  />
                 ),
                 'step-3': () => (
                   <ExportStepFormat
                     storedWidget={storedWidget}
                     updateStoredWidget={updateStoredWidget}
                     setStepValidity={setIsStepValid}
-                  >
-                    {null}
-                  </ExportStepFormat>
+                  />
                 ),
               })}
             </StepperPanel>
@@ -109,7 +99,7 @@ export default function ExportDashboard() {
                 }}
                 disabled={methods.isFirst}
               >
-                Précédent
+                Previous
               </Button>
               <Button
                 onClick={() => {
@@ -123,7 +113,7 @@ export default function ExportDashboard() {
                 }}
                 disabled={!isStepValid}
               >
-                {methods.isLast ? 'Reset' : 'Suivant'}
+                {methods.isLast ? 'Reset' : 'Next'}
               </Button>
             </StepperControls>
           </>

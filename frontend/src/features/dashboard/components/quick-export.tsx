@@ -1,11 +1,8 @@
-/* eslint-disable */
 import { useQuery } from '@tanstack/react-query';
 import { FileSpreadsheet, FileType, Loader2 } from 'lucide-react';
 import { DateTime } from 'luxon';
 import { useState } from 'react';
-import * as XLSX from 'xlsx';
 
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -16,98 +13,11 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+
 import { ExportStep } from '../lib/export';
+import exportData from '../lib/exportData';
 import { AcicAggregation, AggregationTypeToObject } from '../lib/props';
 import { getWidgetDataForExport } from '../lib/utils';
-
-async function getLogoAsBase64() {
-  try {
-    const logoUrl = new URL('/src/assets/logoACIC.png', import.meta.url).href;
-    const response = await fetch(logoUrl);
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const blob = await response.blob();
-
-    return await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
-}
-
-type ExportFormat = 'Excel' | 'PDF';
-
-const exportData = (
-  data: Record<string, string | number | boolean>[],
-  format: ExportFormat,
-  filename: string,
-  setLoading: (loading: boolean) => void
-) => {
-  if (!data || data.length === 0) return;
-
-  switch (format) {
-    case 'Excel': {
-      const worksheet = XLSX.utils.json_to_sheet(data);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
-      XLSX.writeFile(workbook, `${filename}.xlsx`);
-      setLoading(false);
-      break;
-    }
-
-    case 'PDF': {
-      getLogoAsBase64().then((logoBase64) => {
-        const worker = new Worker(
-          new URL('../lib/pdfWorker.js', import.meta.url)
-        );
-
-        worker.onerror = () => {
-          setLoading(false);
-          worker.terminate();
-        };
-
-        worker.onmessage = (e) => {
-          if (e.data.status === 'success') {
-            if (e.data.data) {
-              const blob = new Blob([e.data.data], {
-                type: 'application/pdf',
-              });
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement('a');
-              link.href = url;
-              link.download = e.data.filename || `${filename}.pdf`;
-              document.body.appendChild(link);
-              link.click();
-
-              document.body.removeChild(link);
-              setTimeout(() => URL.revokeObjectURL(url), 100);
-            }
-          }
-          setLoading(false);
-          worker.terminate();
-        };
-
-        worker.postMessage({
-          data,
-          filename,
-          logo: logoBase64,
-        });
-      });
-      break;
-    }
-
-    default:
-      setLoading(false);
-      break;
-  }
-};
 
 export default function QuickExport({
   storedWidget,
@@ -126,6 +36,7 @@ export default function QuickExport({
     timeFrom = now.minus(AggregationTypeToObject[storedWidget.duration]);
     timeTo = now.minus({ millisecond: 1 });
     if (!storedWidget.range) {
+      // eslint-disable-next-line no-param-reassign
       storedWidget.range = { from: timeFrom.toJSDate(), to: timeTo.toJSDate() };
     }
   } else if (
@@ -168,7 +79,7 @@ export default function QuickExport({
 
     const filename = `${storedWidget.table}_export_${new Date().toISOString().split('T')[0]}`;
     setLoading(true);
-    await exportData(data, format, filename, setLoading);
+    exportData(data, format, filename, setLoading);
   };
 
   return (
@@ -230,29 +141,8 @@ export default function QuickExport({
                 <span>Generating file...</span>
               </div>
             )}
-
-            <Card className="p-4">
-              <CardHeader>Export Summary</CardHeader>
-              <CardContent>
-                Table : {storedWidget.table} <br />
-                Range : {timeFrom.toLocaleString()} -{timeTo.toLocaleString()}
-                <br />
-                Aggregation : {storedWidget.aggregation} <br />
-                Group By : {storedWidget.groupBy} <br />
-                Where <br />
-                {storedWidget.where?.map((filter) => (
-                  <div key={filter.column}>
-                    {filter.column.charAt(0).toUpperCase() +
-                      filter.column.slice(1)}{' '}
-                    : {filter.value.split('|||').join(' , ')}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
           </div>
         </div>
-        {/* <pre>storedWidget :{JSON.stringify(storedWidget, null, 2)}</pre> */}
-        {/* <pre>data :{JSON.stringify(data, null, 2)}</pre> */}
       </DialogContent>
     </Dialog>
   );

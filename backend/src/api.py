@@ -1,8 +1,14 @@
 import os
 import cv2
+import json
+import uuid
+import gunicorn
 import uvicorn
 import datetime
-import requests
+import time
+import aiohttp
+import threading
+import asyncio
 
 from pydantic import Field, create_model
 
@@ -12,7 +18,10 @@ from sqlalchemy.inspection import inspect
 from fastapi.staticfiles import StaticFiles
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import Response
+from fastapi import Response, BackgroundTasks, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi.responses import JSONResponse
+
+from gunicorn.app.base import BaseApplication
 
 from typing import Annotated, Literal, Optional, Type, Union, List, Dict, Any
 from enum import Enum
@@ -37,6 +46,8 @@ class ModelName(str, Enum):
     semester = "6 months"
     year = "1 year"
     lifetime = "100 years"
+
+
 
 # Please follow: https://www.belgif.be/specification/rest/api-guide/#resource-uri
 class FastAPIServer:
@@ -71,123 +82,6 @@ class FastAPIServer:
         async def custom_swagger_ui_html():
             return get_custom_swagger_ui_html(openapi_url="openapi.json", title=self.app.title + " - Swagger UI",)
 
-        @self.app.get("/health", tags=["/health"], include_in_schema=False)
-        async def health():
-            grabbers = {}
-            for grabber in self.event_grabber.get_grabbers():
-                grabbers[grabber.acichost] = "ok" if grabber.is_long_running() else "error"
-
-            return {
-                "api": "ok",
-                "database": "ok",
-                "grabbers": grabbers
-            }
-
-        @self.app.get("/health/aiServer/{ip}", tags=["/health"])
-        async def health_ai_server(ip: str):
-            try:
-                username = "administrator"
-                password = "ACIC"
-
-                ai_service_url = f"https://{ip}/api/aiService"
-                response = requests.get(ai_service_url, auth=(username, password), headers={"Accept": "application/json"},
-                                        verify=False, timeout=3)
-
-                if response.status_code != 200:
-                    return {"status": "error", "message": "Impossible to get AI IP"}
-
-                ai_data = response.json()
-                ai_ip = ai_data["address"]
-                ai_port = ai_data["port"]
-
-                describe_url = f"http://{ai_ip}:{ai_port}/describe"
-                describe_response = requests.get(describe_url, timeout=3)
-
-                if describe_response.status_code == 200:
-                    return {"status": "ok"}
-                else:
-                    return {"status": "error", "message": "AI service /describe endpoint not responding"}
-
-            except requests.exceptions.RequestException as e:
-                return {"status": "error", "message": f"Request failed: {str(e)}"}
-        
-        @self.app.get("/health/lprServer/{ip}", tags=["/health"])
-        async def health_ai_server(ip: str):
-            try:
-                username = "administrator"
-                password = "ACIC"
-
-                ai_service_url = f"https://{ip}/api/lprService"
-                response = requests.get(ai_service_url, auth=(username, password), headers={"Accept": "application/json"},
-                                        verify=False, timeout=3)
-
-                if response.status_code != 200:
-                    return {"status": "error", "message": "Impossible to get AI IP"}
-
-                ai_data = response.json()
-                ai_ip = ai_data["address"]
-                ai_port = ai_data["port"]
-
-                describe_url = f"http://{ai_ip}:{ai_port}/describe"
-                describe_response = requests.get(describe_url, timeout=3)
-
-                if describe_response.status_code == 200:
-                    return {"status": "ok"}
-                else:
-                    return {"status": "error", "message": "LPR service /describe endpoint not responding"}
-
-            except requests.exceptions.RequestException as e:
-                return {"status": "error", "message": f"Request failed: {str(e)}"}
-
-        @self.app.get("/health/secondaryServer/{ip}", tags=["/health"])
-        async def health_secondary_server(ip: str):
-            try:
-                describe_url = f"http://{ip}:8080/ConfigTool.html"
-                describe_response = requests.get(describe_url, timeout=3)
-
-                if describe_response.status_code == 401:
-                    return {"status": "ok", "message": "Secondary server is reachable"}
-                else:
-                    return {"status": "error", "message": f"Unexpected response: {describe_response.status_code}"}
-
-            except requests.exceptions.Timeout:
-                return {"status": "error", "message": "Timeout"}
-            except requests.exceptions.ConnectionError:
-                return {"status": "error", "message": "Connection error"}
-            except requests.exceptions.RequestException as e:
-                return {"status": "error", "message": f"Request failed: {str(e)}"}
-
-        @self.app.get("/vms/{ip}/cameras", tags=["/vms"])
-        async def get_cameras(ip: str):
-            try:
-                async with CameraClient(ip, 7778) as client:
-                    return await client.get_system_info()
-            except:
-                raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
-
-        @self.app.get("/vms/{ip}/cameras/{guuid}/live", tags=["/vms"])
-        async def get_live(ip: str, guuid: str):
-            try:
-                async with CameraClient(ip, 7778) as client:
-                    streams = client.start_live(guuid)
-                    img = await anext(streams)
-                    _, bytes = cv2.imencode('.jpg', img)
-                    return Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
-
-            except Exception as e:
-                raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
-
-        @self.app.get("/vms/{ip}/cameras/{guuid}/replay", tags=["/vms"])
-        async def get_replay(ip: str, guuid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0):
-            try:
-                async with CameraClient(ip, 7778) as client:
-                    streams = client.start_replay(guuid, from_time, to_time, gap)
-                    img, _ = await anext(streams)
-                    _, bytes = cv2.imencode('.jpg', img)
-                    return Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
-            except Exception as e:
-                raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
-
         @self.app.get("/servers/grabbers", tags=["servers"])
         async def get_all_servers(health: Optional[bool] = False):
             try:
@@ -203,11 +97,8 @@ class FastAPIServer:
                         "streaming": grabber.acichostport
                     }
 
-
                     if health:
                         status["health"] = {
-                            "last_ping": grabber.time_last_ping,
-                            "last_event": grabber.time_last_event,
                             "is_alive": grabber.is_alive(),
                             "is_longrunning": grabber.is_long_running(),
                             "is_reachable": grabber.is_reachable(timeout=0.2),
@@ -230,12 +121,233 @@ class FastAPIServer:
         self.__create_endpoint("AcicAllInOneEvent", AcicAllInOneEvent)
         self.__create_endpoint("AcicEvent", AcicEvent)
 
-        @self.app.get("/dashboard/widgets", tags=["/dashboard"])
+        @self.app.get("/dashboard/widgets", tags=["dashboard"])
         async def get_dashboard():
             return self.__registered_dashboard
 
         self.__create_tabs()
         self.__create_widgets()
+        self.__create_health()
+        self.__create_forensic()
+        self.__create_vms()
+
+    def __create_health(self):
+        @self.app.get("/health", tags=["health"], include_in_schema=False)
+        async def health():
+            grabbers = {}
+            for grabber in self.event_grabber.get_grabbers():
+                grabbers[grabber.acichost] = "ok" if grabber.is_long_running() else "error"
+
+            return {
+                "api": "ok",
+                "database": "ok",
+                "grabbers": grabbers
+            }
+
+        @self.app.get("/health/aiServer/{ip}", tags=["health"])
+        async def health_ai_server(ip: str):
+            try:
+                username = "administrator"
+                password = "ACIC"
+
+                async with aiohttp.ClientSession() as session:
+                    # Premier appel pour obtenir l'adresse AI
+                    ai_service_url = f"https://{ip}/api/aiService"
+                    async with session.get(
+                        ai_service_url, 
+                        auth=aiohttp.BasicAuth(username, password),
+                        headers={"Accept": "application/json"},
+                        ssl=False,
+                        timeout=aiohttp.ClientTimeout(total=3)
+                    ) as response:
+                        if response.status != 200:
+                            return {"status": "error", "message": "Impossible to get AI IP"}
+                        
+                        ai_data = await response.json()
+                        ai_ip = ai_data["address"]
+                        ai_port = ai_data["port"]
+                    
+                    # Deuxième appel pour vérifier le service AI
+                    describe_url = f"http://{ai_ip}:{ai_port}/describe"
+                    async with session.get(
+                        describe_url, 
+                        timeout=aiohttp.ClientTimeout(total=3)
+                    ) as describe_response:
+                        if describe_response.status == 200:
+                            return {"status": "ok"}
+                        else:
+                            return {"status": "error", "message": "AI service /describe endpoint not responding"}
+
+            except aiohttp.ClientError as e:
+                return {"status": "error", "message": f"Request failed: {str(e)}"}
+            except asyncio.TimeoutError:
+                return {"status": "error", "message": "Request timed out"}
+        
+        @self.app.get("/health/lprServer/{ip}", tags=["health"])
+        async def health_lpr_server(ip: str):
+            try:
+                username = "administrator"
+                password = "ACIC"
+
+                async with aiohttp.ClientSession() as session:
+                    # Premier appel pour obtenir l'adresse LPR
+                    ai_service_url = f"https://{ip}/api/lprService"
+                    async with session.get(
+                        ai_service_url, 
+                        auth=aiohttp.BasicAuth(username, password),
+                        headers={"Accept": "application/json"},
+                        ssl=False,
+                        timeout=aiohttp.ClientTimeout(total=3)
+                    ) as response:
+                        if response.status != 200:
+                            return {"status": "error", "message": "Impossible to get AI IP"}
+                        
+                        ai_data = await response.json()
+                        ai_ip = ai_data["address"]
+                        ai_port = ai_data["port"]
+                    
+                    # Deuxième appel pour vérifier le service LPR
+                    describe_url = f"http://{ai_ip}:{ai_port}/describe"
+                    async with session.get(
+                        describe_url, 
+                        timeout=aiohttp.ClientTimeout(total=3)
+                    ) as describe_response:
+                        if describe_response.status == 200:
+                            return {"status": "ok"}
+                        else:
+                            return {"status": "error", "message": "LPR service /describe endpoint not responding"}
+
+            except aiohttp.ClientError as e:
+                return {"status": "error", "message": f"Request failed: {str(e)}"}
+            except asyncio.TimeoutError:
+                return {"status": "error", "message": "Request timed out"}
+
+        @self.app.get("/health/secondaryServer/{ip}", tags=["health"])
+        async def health_secondary_server(ip: str):
+            try:
+                async with aiohttp.ClientSession() as session:
+                    describe_url = f"http://{ip}:8080/ConfigTool.html"
+                    async with session.get(
+                        describe_url, 
+                        timeout=aiohttp.ClientTimeout(total=3)
+                    ) as describe_response:
+                        if describe_response.status == 401:
+                            return {"status": "ok", "message": "Secondary server is reachable"}
+                        else:
+                            return {"status": "error", "message": f"Unexpected response: {describe_response.status}"}
+
+            except asyncio.TimeoutError:
+                return {"status": "error", "message": "Timeout"}
+            except aiohttp.ClientConnectorError:
+                return {"status": "error", "message": "Connection error"}
+            except aiohttp.ClientError as e:
+                return {"status": "error", "message": f"Request failed: {str(e)}"}
+
+        @self.app.get("/health/worker", tags=["health"])
+        async def test_worker():
+            worker_pid = os.getpid()
+            thread_id = threading.get_ident()
+            
+            # Simuler un traitement qui prend du temps, mais qui n'est pas bloquant
+            start_time = time.time()
+            await asyncio.sleep(5)  # Non-bloquant
+            processing_time = time.time() - start_time
+            
+            return {
+                "worker_pid": worker_pid,
+                "thread_id": thread_id,
+                "timestamp": time.time(),
+                "processing_time": processing_time
+            }
+        
+        @self.app.get("/health/worker/blocking", tags=["health"])
+        def test_worker_blocking():            
+            # Obtenir des informations sur le processus et le thread
+            worker_pid = os.getpid()
+            thread_id = threading.get_ident()
+            
+            # Simuler un traitement bloquant
+            start_time = time.time()
+            time.sleep(5)  # Bloquant
+            processing_time = time.time() - start_time
+            
+            return {
+                "worker_pid": worker_pid,
+                "thread_id": thread_id,
+                "timestamp": time.time(),
+                "processing_time": processing_time,
+                "type": "blocking"
+            }
+
+    def __create_forensic(self):        
+        async def mocked_task(duration):
+            for i in range(duration):
+                await asyncio.sleep(1)
+                progress = (i + 1) * 20
+                yield progress
+
+        jobs = {}
+        
+        @self.app.get("/forensics", tags=["forensics"])
+        async def get_tasks():
+            return [i for i in jobs.keys()]
+
+        @self.app.post("/forensics", tags=["forensics"])
+        async def start_task(duration: int):
+            guid = str(uuid.uuid4())
+            jobs[guid] = mocked_task(duration)
+
+            return guid
+        
+        @self.app.websocket("/forensics/{guid}")
+        async def task_updates(websocket: WebSocket, guid: str):
+            await websocket.accept()
+            job = jobs.get(guid)
+            if job is None:
+                await websocket.send_json({"error": "Job not found"})
+                return
+
+            try:
+                async for progress in job:
+                    await websocket.send_json({"progress": progress})
+                await websocket.close()
+                
+            except WebSocketDisconnect:
+                pass
+            finally:
+                self.jobs.pop(guid, None)
+    
+    def __create_vms(self):
+        @self.app.get("/vms/{ip}/cameras", tags=["vms"])
+        async def get_cameras(ip: str):
+            try:
+                async with CameraClient(ip, 7778) as client:
+                    return await client.get_system_info()
+            except:
+                raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
+
+        @self.app.get("/vms/{ip}/cameras/{guuid}/live", tags=["vms"])
+        async def get_live(ip: str, guuid: str):
+            try:
+                async with CameraClient(ip, 7778) as client:
+                    streams = client.start_live(guuid)
+                    img = await anext(streams)
+                    _, bytes = cv2.imencode('.jpg', img)
+                    return Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
+
+            except Exception as e:
+                raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
+
+        @self.app.get("/vms/{ip}/cameras/{guuid}/replay", tags=["vms"])
+        async def get_replay(ip: str, guuid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0):
+            try:
+                async with CameraClient(ip, 7778) as client:
+                    streams = client.start_replay(guuid, from_time, to_time, gap)
+                    img, _ = await anext(streams)
+                    _, bytes = cv2.imencode('.jpg', img)
+                    return Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
+            except Exception as e:
+                raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
 
     def __create_tabs(self):
         Model = create_model('TabModel',
@@ -243,7 +355,7 @@ class FastAPIServer:
             order=(Optional[int], Field(default=None, description="The order of the tab"))
         )
 
-        @self.app.get("/dashboard/tabs", tags=["/dashboard/tabs"])
+        @self.app.get("/dashboard/tabs", tags=["dashboard/tabs"])
         async def get_tabs():
             try:
                 ret = {}
@@ -261,7 +373,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.post("/dashboard/tabs", tags=["/dashboard/tabs"])
+        @self.app.post("/dashboard/tabs", tags=["dashboard/tabs"])
         async def add_tab(data: Model):
             try:
                 dal = GenericDAL()
@@ -272,7 +384,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.put("/dashboard/tabs/{id}", tags=["/dashboard/tabs"])
+        @self.app.put("/dashboard/tabs/{id}", tags=["dashboard/tabs"])
         async def update_tab(id: str, data: Model):
             try:
                 dal = GenericDAL()
@@ -287,7 +399,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.delete("/dashboard/tabs/{id}", tags=["/dashboard/tabs"])
+        @self.app.delete("/dashboard/tabs/{id}", tags=["dashboard/tabs"])
         async def delete_tab(id: str):
             try:
                 dal = GenericDAL()
@@ -312,7 +424,7 @@ class FastAPIServer:
 
         Model = create_model('WidgetModel', **fields)
 
-        @self.app.get("/dashboard/tabs/{id}/widgets", tags=["/dashboard/tabs/widgets"])
+        @self.app.get("/dashboard/tabs/{id}/widgets", tags=["dashboard/tabs/widgets"])
         async def get_widgets(id: str):
             try:
                 dal = GenericDAL()
@@ -321,7 +433,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.post("/dashboard/tabs/{id}/widgets", tags=["/dashboard/tabs/widgets"])
+        @self.app.post("/dashboard/tabs/{id}/widgets", tags=["dashboard/tabs/widgets"])
         async def add_widget(id: str, data: Model):
             try:
                 dal = GenericDAL()
@@ -339,7 +451,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.put("/dashboard/tabs/{id}/widgets", tags=["/dashboard/tabs/widgets"])
+        @self.app.put("/dashboard/tabs/{id}/widgets", tags=["dashboard/tabs/widgets"])
         async def update_all_widgets(id: str, data: list[Model]):
             try:
                 dal = GenericDAL()
@@ -364,7 +476,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.patch("/dashboard/tabs/{id}/widgets", tags=["/dashboard/tabs/widgets"])
+        @self.app.patch("/dashboard/tabs/{id}/widgets", tags=["dashboard/tabs/widgets"])
         async def patch_all_widgets(id: str, data: list[dict]):
             try:
                 dal = GenericDAL()
@@ -410,7 +522,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.put("/dashboard/tabs/{id}/widgets/{widget_id}", tags=["/dashboard/tabs/widgets"])
+        @self.app.put("/dashboard/tabs/{id}/widgets/{widget_id}", tags=["dashboard/tabs/widgets"])
         async def update_widget(id: str, widget_id: str, data: Model):
             try:
                 dal = GenericDAL()
@@ -432,7 +544,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.delete("/dashboard/tabs/{id}/widgets/{widget_id}", tags=["/dashboard/tabs/widgets"])
+        @self.app.delete("/dashboard/tabs/{id}/widgets/{widget_id}", tags=["dashboard/tabs/widgets"])
         async def delete_widget(id: str, widget_id: str):
             try:
                 dal = GenericDAL()
@@ -459,7 +571,7 @@ class FastAPIServer:
         date = (datetime.datetime, Field(default=None, description="The timestamp to filter by"))
 
         AggregateParam = create_model(f"{model_class.__name__}Aggregate", aggregate=aggregate, group_by=group, time_from=date, time_to=date, **query)
-        @self.app.get("/dashboard/widgets/" + path, tags=["/dashboard"])
+        @self.app.get("/dashboard/widgets/" + path, tags=["dashboard"])
         async def get_bucket(kwargs: Annotated[AggregateParam, Query()]):
             try:
                 time = kwargs.aggregate
@@ -491,3 +603,35 @@ class FastAPIServer:
 
     def start(self, host="0.0.0.0", port=5020):
         uvicorn.run(self.app, host=host, port=port, root_path="/front-api")
+
+class ThreadedFastAPIServer(BaseApplication):
+    def __init__(self, event_grabber, threads=1, workers=2):
+        self.api_server = FastAPIServer(event_grabber)
+        self.options = {
+            "workers": workers,
+            "worker_connections": workers*256,
+            "threads": threads,
+            "worker_class": "uvicorn.workers.UvicornWorker",
+            "preload_app": True,
+            "accesslog": "-",
+            "errorlog": "-",
+            "loglevel": "info"
+        }
+        super().__init__()
+
+    def load_config(self):
+        for key, value in self.options.items():
+            if key in self.cfg.settings and value is not None:
+                self.cfg.set(key.lower(), value)
+
+    def load(self):
+        return self.api_server.app
+    
+    def start(self, host="0.0.0.0", port=5020):
+        self.options["bind"] = f"{host}:{port}"
+        self.load_config()
+
+        if "root_path" not in self.options:
+            self.options["root_path"] = "/front-api"
+
+        self.run()

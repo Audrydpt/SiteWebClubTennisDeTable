@@ -1,4 +1,4 @@
-import { Edit3, Share, Trash2 } from 'lucide-react';
+import { Copy, Edit3, Share, Trash2 } from 'lucide-react';
 import { JSX } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -18,6 +18,7 @@ interface WidgetActionsProps {
   item: ChartTiles;
   edit: (widget: StoredWidget) => void;
   remove: (id: string) => void;
+  clone: (widget: StoredWidget) => void;
 }
 
 export default function WidgetActions({
@@ -25,11 +26,23 @@ export default function WidgetActions({
   item,
   edit,
   remove,
+  clone,
 }: WidgetActionsProps) {
   const { t } = useTranslation();
 
   return (
     <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      {!isOperator && (
+        <Button
+          variant="ghost"
+          size="icon"
+          area-label="Clone"
+          onClick={() => clone(item.widget)} // Add onClick handler for cloning
+        >
+          <Copy className="h-4 w-4" />
+        </Button>
+      )}
+
       {!isOperator && (
         <QuickExport
           storedWidget={item.widget}

@@ -42,7 +42,7 @@ export default function DashboardTab({
   dashboardKey,
   onAddWidget = () => {},
 }: DashboardTabProps) {
-  const { query, add, edit, remove, patch } = useWidgetAPI(dashboardKey);
+  const { query, add, edit, remove, patch, clone } = useWidgetAPI(dashboardKey);
   const { data, isLoading, isError } = query;
   const { user } = useAuth();
   const isOperator = user?.privileges === 'Operator';
@@ -103,6 +103,7 @@ export default function DashboardTab({
             item={item}
             edit={edit}
             remove={remove}
+            clone={clone}
           />
         </div>
       ))}

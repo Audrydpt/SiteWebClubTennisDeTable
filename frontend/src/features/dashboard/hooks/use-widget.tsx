@@ -156,5 +156,54 @@ export default function useWidgetAPI(dashboardKey: string) {
     onError: handleMutationError,
   });
 
-  return { query, add, edit, remove, patch };
+  const { mutate: clone } = useMutation({
+    mutationFn: async (widget: StoredWidget) => {
+      const temp = {
+        ...widget,
+        title: `${widget.title} (copy)`,
+        id: crypto.randomUUID(),
+        order: (widget.order ?? 0) + 1,
+      } as StoredWidget;
+
+      const { data: created } = await axios.post<StoredWidget>(baseUrl, temp);
+      return { ...temp, id: created.id };
+    },
+    onMutate: async (widget: StoredWidget) => {
+      await client.cancelQueries({ queryKey });
+
+      const previous = client.getQueryData<StoredWidget[]>(queryKey);
+
+      const temp = {
+        ...widget,
+        title: `${widget.title} (copy)`,
+        id: crypto.randomUUID(),
+        order: (widget.order ?? 0) + 1,
+      } as StoredWidget;
+
+      client.setQueryData<StoredWidget[]>(queryKey, (old) => {
+        if (!old) return [temp];
+        return [
+          ...old.slice(0, (widget.order ?? 0) + 1),
+          temp,
+          ...old.slice((widget.order ?? 0) + 1).map((w) => ({
+            ...w,
+            order: (w.order ?? 0) + 1,
+          })),
+        ];
+      });
+
+      return { previous, tempId: temp.id };
+    },
+    onSuccess: async (savedWidget: StoredWidget, _variables, context) => {
+      client.setQueryData<StoredWidget[]>(queryKey, (old) => {
+        if (!old) return [savedWidget];
+        return old.map((widget) =>
+          widget.id === context?.tempId ? savedWidget : widget
+        );
+      });
+    },
+    onError: handleMutationError,
+  });
+
+  return { query, add, edit, remove, patch, clone };
 }
