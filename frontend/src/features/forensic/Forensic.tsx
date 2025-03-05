@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { useState } from 'react';
 import { Save, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,10 @@ import Sources from '@/features/forensic/components/sources';
 import Times from '@/features/forensic/components/times';
 import Attributes from '@/features/forensic/components/attributes';
 import Types from '@/features/forensic/components/types';
-import { colors, vehicleTypes } from './lib/form-config';
+import { colors } from './lib/form-config';
+import useSearch from './hooks/use-search';
+import { Progress } from '@/components/ui/progress';
+import { useAuth } from '@/providers/auth-context.tsx';
 
 export default function Forensic() {
   // Your existing state
@@ -23,14 +27,23 @@ export default function Forensic() {
   );
   const [selectedHairColors, setSelectedHairColors] = useState<string[]>([]);
   const [searchSubmitted, setSearchSubmitted] = useState(false);
-  const handleSearch = () => {
+
+  // Get sessionId from auth context
+  const { sessionId = '' } = useAuth();
+  // Use the search hook
+  const { startSearch, initWebSocket, closeWebSocket, progress } = useSearch(sessionId);
+
+  const handleSearch = async () => {
     setSearchSubmitted(true);
-    // Here you would implement the actual search logic
+    try {
+      await startSearch(5); // Use 5 seconds for testing
+    } catch (error) {
+      console.error('Failed to start search:', error);
+    }
   };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-[350px_1fr] gap-4 h-full">
-      {/* Controls Panel - Fixed height with scrollable content */}
       <Card className="h-[calc(100vh-2rem)] overflow-hidden flex flex-col">
         <CardContent className="p-4 h-full flex flex-col">
           <div className="mb-4 flex items-center justify-between">
@@ -55,7 +68,6 @@ export default function Forensic() {
                   colors={colors}
                   selectedColors={selectedColors}
                   onColorsChange={setSelectedColors}
-                  vehicleTypes={vehicleTypes}
                 />
                 <Attributes
                   selectedClass={selectedClass}
@@ -71,11 +83,12 @@ export default function Forensic() {
             </div>
           </ScrollArea>
 
-          <div className="mt-4">
-            <Button className="w-full" size="lg" onClick={handleSearch}>
-              <Search className="mr-2 h-4 w-4" />
-              Lancer la recherche
-            </Button>
+          <div>
+            <Button onClick={() => startSearch(5)}>Lancer la recherche</Button>
+            <Button onClick={initWebSocket}>Démarrer WebSocket</Button>
+            <Button onClick={closeWebSocket}>Fermer WebSocket</Button>
+
+            {progress !== null && <p>Progression: {progress}%</p>}
           </div>
         </CardContent>
       </Card>
@@ -85,6 +98,14 @@ export default function Forensic() {
         <CardContent className="p-4 h-full">
           <div className="mb-4">
             <h2 className="text-lg font-semibold">Résultats de recherche</h2>
+            {progress !== null && progress < 100 && (
+              <div className="mt-2">
+                <Progress value={progress} className="h-2" />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Progression: {progress}%
+                </p>
+              </div>
+            )}
           </div>
 
           <ScrollArea className="h-[calc(100%-3rem)]">
@@ -93,6 +114,10 @@ export default function Forensic() {
                 {selectedCameras.length === 0
                   ? 'Sélectionnez une ou plusieurs caméras pour commencer'
                   : "Appuyez sur 'Lancer la recherche' pour afficher les résultats"}
+              </div>
+            ) : progress !== null && progress < 100 ? (
+              <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
+                Recherche en cours...
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
