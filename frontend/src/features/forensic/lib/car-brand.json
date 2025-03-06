@@ -1,0 +1,70 @@
+[
+  {
+    "brand": "Renault",
+    "models": [
+      "Clio", "Mégane", "Captur", "Kadjar", "Scénic", "Twingo", "Espace",
+      "Talisman", "Zoe", "Kangoo"
+    ]
+  },
+  {
+    "brand": "Peugeot",
+    "models": [
+      "108", "208", "308", "508", "2008", "3008", "5008", "Rifter", "Partner", "Traveller"
+    ]
+  },
+  {
+    "brand": "Citroën",
+    "models": [
+      "C1", "C3", "C4", "C5", "C3 Aircross", "C5 Aircross", "Berlingo", "SpaceTourer",
+      "DS3", "DS4", "DS5"
+    ]
+  },
+  {
+    "brand": "Volkswagen",
+    "models": [
+      "Polo", "Golf", "Passat", "T-Cross", "T-Roc", "Tiguan", "Touran", "Touareg",
+      "ID.3", "ID.4", "Arteon"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "models": [
+      "Série 1", "Série 2", "Série 3", "Série 4", "Série 5", "Série 7", "X1", "X3",
+      "X5", "X6", "i3", "i4", "iX"
+    ]
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "models": [
+      "Classe A", "Classe B", "Classe C", "Classe E", "Classe S", "GLA", "GLB", "GLC",
+      "GLE", "GLS", "EQA", "EQC"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "models": [
+      "A1", "A3", "A4", "A5", "A6", "A7", "A8", "Q2", "Q3", "Q5", "Q7", "Q8",
+      "e-tron", "TT"
+    ]
+  },
+  {
+    "brand": "Toyota",
+    "models": [
+      "Aygo", "Yaris", "Corolla", "Camry", "C-HR", "RAV4", "Highlander", "Land Cruiser",
+      "Prius", "Mirai"
+    ]
+  },
+  {
+    "brand": "Ford",
+    "models": [
+      "Fiesta", "Focus", "Mondeo", "Puma", "Kuga", "Ecosport", "Explorer", "Mustang",
+      "Ranger", "Transit"
+    ]
+  },
+  {
+    "brand": "Fiat",
+    "models": [
+      "500", "Panda", "Tipo", "500X", "500L", "Doblo", "Talento", "Ducato"
+    ]
+  }
+]

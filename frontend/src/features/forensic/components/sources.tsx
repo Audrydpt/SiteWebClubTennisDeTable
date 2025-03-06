@@ -30,16 +30,16 @@ export default function Sources({
   onSelectedCamerasChange,
 }: SourcesProps) {
   const { sessionId = '' } = useAuth();
-  const [loadingSnapshots, setLoadingSnapshots] = useState<
-    Record<string, boolean>
-  >({});
-  const [cameraSnapshots, setCameraSnapshots] = useState<
-    Record<string, string | null>
-  >({});
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
-  const { cameras, isLoading, selectedCameras, setSelectedCameras } =
-    useSources(sessionId);
+  const {
+    cameras,
+    isLoading,
+    selectedCameras,
+    setSelectedCameras,
+    snapshots,
+    snapshotsLoading,
+  } = useSources(sessionId);
 
   // Update parent component when selected cameras change
   const updateSelectedCameras = (newCameras: string[]) => {
@@ -54,64 +54,16 @@ export default function Sources({
     updateSelectedCameras(newSelected);
   };
 
-  const loadSnapshot = async (camera: { id: string; source: string }) => {
-    if (loadingSnapshots[camera.id]) {
-      return;
-    }
-
-    // Reset the snapshot if we're loading it again
-    if (openPopoverId === camera.id) {
-      setCameraSnapshots((prev) => ({
-        ...prev,
-        [camera.id]: null,
-      }));
-    }
-
-    setLoadingSnapshots((prev) => ({ ...prev, [camera.id]: true }));
-
-    try {
-      const response = await fetch(
-        `${process.env.BACK_API_URL}/snapshot/${camera.source}?width=200&height=150`,
-        {
-          headers: {
-            Authorization: `X-Session-Id ${sessionId}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const blob = await response.blob();
-        setCameraSnapshots((prev) => ({
-          ...prev,
-          [camera.id]: URL.createObjectURL(blob),
-        }));
-      } else {
-        setCameraSnapshots((prev) => ({ ...prev, [camera.id]: null }));
-      }
-    } catch (error) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const _ = error; // Acknowledge the error without using it
-      setCameraSnapshots((prev) => ({ ...prev, [camera.id]: null }));
-    } finally {
-      setLoadingSnapshots((prev) => ({ ...prev, [camera.id]: false }));
-    }
-  };
-
   const handlePopoverOpenChange = (open: boolean, cameraId: string) => {
     if (open) {
       setOpenPopoverId(cameraId);
-      // Initiate snapshot loading if not already loaded
-      const camera = cameras.find((cam) => cam.id === cameraId);
-      if (camera && !cameraSnapshots[cameraId]) {
-        loadSnapshot(camera);
-      }
     } else {
       setOpenPopoverId(null);
     }
   };
 
   const renderSnapshotContent = (cameraId: string, cameraName: string) => {
-    if (loadingSnapshots[cameraId]) {
+    if (snapshotsLoading) {
       return (
         <div className="h-[150px] w-[200px] flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -119,10 +71,10 @@ export default function Sources({
       );
     }
 
-    if (cameraSnapshots[cameraId]) {
+    if (snapshots[cameraId]) {
       return (
         <img
-          src={cameraSnapshots[cameraId] || ''}
+          src={snapshots[cameraId] || ''}
           alt={cameraName}
           className="h-auto w-[200px] object-cover"
         />
@@ -202,7 +154,7 @@ export default function Sources({
                       className="p-1 hover:bg-muted rounded-sm relative"
                       aria-label="Afficher l'aperçu"
                     >
-                      {loadingSnapshots[camera.id] ? (
+                      {snapshotsLoading ? (
                         <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
                       ) : (
                         <Eye className="h-4 w-4 text-muted-foreground" />

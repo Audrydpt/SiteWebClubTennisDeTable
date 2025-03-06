@@ -1,67 +1,68 @@
 {
-  "genderOptions": ["Homme", "Femme"],
-  "ageOptions": ["Enfant", "Adulte", "Personne âgée"],
-  "buildOptions": ["Mince", "Moyenne", "Athlétique", "Forte"],
+  "typeOptions": ["Person", "Vehicule"],
+  "genderOptions": ["Male", "Female"],
+  "ageOptions": ["Child", "Adult", "Elderly"],
+  "buildOptions": ["Slim", "Average", "Athletic", "Heavy"],
   "heightOptions": [
-    "Petite (<1m65)",
-    "Moyenne (1m65-1m80)",
-    "Grande (>1m80)"
+    "Short (<1m65)",
+    "Average (1m65-1m80)",
+    "Tall (>1m80)"
   ],
-  "hairLengthOptions": ["Courts", "Mi-longs", "Longs"],
-  "hairStyleOptions": ["Lisses", "Ondulés", "Bouclés", "Chauve"],
-  "topTypeOptions": ["T-shirt", "Chemise", "Pull", "Veste", "Manteau"],
-  "bottomTypeOptions": ["Pantalon", "Short", "Jupe", "Robe"],
-  "sizeOptions": ["Petit", "Moyen", "Grand"],
-  "toleranceOptions": ["Stricte", "Normale", "Flexible"],
+  "hairLengthOptions": ["Short", "Medium", "Long"],
+  "hairStyleOptions": ["Straight", "Wavy", "Curly", "Bald"],
+  "topTypeOptions": ["T-shirt", "Shirt", "Sweater", "Jacket", "Coat"],
+  "bottomTypeOptions": ["Pants", "Shorts", "Skirt", "Dress"],
+  "sizeOptions": ["Small", "Medium", "Large"],
+  "toleranceOptions": ["Low", "Medium", "High"],
   "vehicleTypes": [
-    "Voiture particulière",
+    "Passenger Car",
     "SUV/4x4",
-    "Utilitaire",
-    "Camion",
-    "Moto",
-    "Vélo",
+    "Van",
+    "Truck",
+    "Motorcycle",
+    "Bicycle",
     "Scooter",
     "Bus"
   ],
   "distinctiveItems": {
     "person": [
-      { "id": "bag", "label": "Sac/Bagage" },
-      { "id": "hat", "label": "Couvre-chef" },
-      { "id": "glasses", "label": "Lunettes" },
-      { "id": "mask", "label": "Masque/Cagoule" }
+      { "id": "bag", "label": "Bag/Luggage" },
+      { "id": "hat", "label": "Headwear" },
+      { "id": "glasses", "label": "Glasses" },
+      { "id": "mask", "label": "Mask/Balaclava" }
     ],
     "vehicle": [
-      { "id": "damaged", "label": "Dommages visibles" },
+      { "id": "damaged", "label": "Visible Damage" },
       { "id": "modified", "label": "Modifications" },
-      { "id": "tinted", "label": "Vitres teintées" },
-      { "id": "roof_rack", "label": "Galerie/Coffre" }
+      { "id": "tinted", "label": "Tinted Windows" },
+      { "id": "roof_rack", "label": "Roof Rack/Box" }
     ]
   },
   "contextualItems": {
     "person": [
-      { "id": "group", "label": "En groupe" },
-      { "id": "running", "label": "Course/Fuite" },
-      { "id": "vehicle", "label": "Avec véhicule" },
-      { "id": "suspicious", "label": "Comportement suspect" }
+      { "id": "group", "label": "In Group" },
+      { "id": "running", "label": "Running/Fleeing" },
+      { "id": "vehicle", "label": "With Vehicle" },
+      { "id": "suspicious", "label": "Suspicious Behavior" }
     ],
     "vehicle": [
-      { "id": "speeding", "label": "Vitesse excessive" },
-      { "id": "suspicious_behavior", "label": "Comportement suspect" },
-      { "id": "multiple_occupants", "label": "Plusieurs occupants" }
+      { "id": "speeding", "label": "Excessive Speed" },
+      { "id": "suspicious_behavior", "label": "Suspicious Behavior" },
+      { "id": "multiple_occupants", "label": "Multiple Occupants" }
     ]
   },
   "colors": [
-    { "name": "Marron", "value": "#8B4513" },
-    { "name": "Rouge", "value": "#FF0000" },
+    { "name": "Brown", "value": "#8B4513" },
+    { "name": "Red", "value": "#FF0000" },
     { "name": "Orange", "value": "#FFA500" },
-    { "name": "Jaune", "value": "#FFFF00" },
-    { "name": "Vert", "value": "#008000" },
+    { "name": "Yellow", "value": "#FFFF00" },
+    { "name": "Green", "value": "#008000" },
     { "name": "Turquoise", "value": "#40E0D0" },
-    { "name": "Bleu", "value": "#0000FF" },
-    { "name": "Violet", "value": "#800080" },
-    { "name": "Rose", "value": "#FFC0CB" },
-    { "name": "Blanc", "value": "#FFFFFF" },
-    { "name": "Gris", "value": "#808080" },
-    { "name": "Noir", "value": "#000000" }
+    { "name": "Blue", "value": "#0000FF" },
+    { "name": "Purple", "value": "#800080" },
+    { "name": "Pink", "value": "#FFC0CB" },
+    { "name": "White", "value": "#FFFFFF" },
+    { "name": "Gray", "value": "#808080" },
+    { "name": "Black", "value": "#000000" }
   ]
 }

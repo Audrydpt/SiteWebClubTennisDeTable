@@ -1,54 +1,53 @@
 /* eslint-disable */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { Camera } from '../lib/types';
 
 // Define our base API URL from environment
-const BASE_URL = process.env.BACK_API_URL;
+const BASE_URL = process.env.MAIN_API_URL || '';
+const DEFAULT_VMS_IP = '192.168.20.72'; // Default VMS IP - can be configured or fetched from settings
 
-// Helper function to get auth header
+// Helper function to get auth header if needed
 const getAuthHeader = (sessionId: string) => ({
-  Authorization: `X-Session-Id ${sessionId}`,
+  Authorization: sessionId ? `X-Session-Id ${sessionId}` : '',
 });
 
-// Extend the Camera type with the source property we need
-interface StreamCamera extends Camera {
-  source: string;
-}
-
-export default function useSources(sessionId: string) {
+export default function useSources(
+  sessionId: string,
+  vmsIp: string = DEFAULT_VMS_IP
+) {
   const [selectedCameras, setSelectedCameras] = useState<string[]>([]);
 
-  // Fetch all available streams
-  const streamsQuery = useQuery({
-    queryKey: ['streams', sessionId],
+  // Fetch all available cameras from the VMS
+  const camerasQuery = useQuery({
+    queryKey: ['vms-cameras', vmsIp, sessionId],
     queryFn: async () => {
-      const response = await fetch(`${BASE_URL}/streams`, {
+      const response = await fetch(`${BASE_URL}/vms/${vmsIp}/cameras`, {
         headers: getAuthHeader(sessionId),
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch streams: ${response.statusText}`);
+        throw new Error(`Failed to fetch cameras: ${response.statusText}`);
       }
 
       const data = await response.json();
-      return data;
+
+      // Transform the data into our Camera format
+      // VMS API returns an object with camera UUIDs as keys and names as values
+      const cameras: Camera[] = Object.entries(data).map(([id, name]) => ({
+        id,
+        name: name as string,
+      }));
+
+      return cameras;
     },
   });
 
-  // Transform streams data into cameras format
-  const cameras: StreamCamera[] = streamsQuery.data
-    ? streamsQuery.data.map((stream: Record<string, unknown>) => ({
-      id: stream.id,
-      name: stream.name || `Stream ${stream.id}`,
-      source: stream.source || stream.id,
-      status: stream.status || 'unknown',
-    }))
-    : [];
+  const cameras = camerasQuery.data || [];
 
   // Fetch snapshots for all cameras
   const snapshotsQuery = useQuery({
-    queryKey: ['snapshots', cameras],
+    queryKey: ['vms-snapshots', vmsIp, cameras],
     queryFn: async () => {
       if (!cameras || cameras.length === 0) return {};
 
@@ -58,7 +57,7 @@ export default function useSources(sessionId: string) {
         cameras.map(async (camera) => {
           try {
             const response = await fetch(
-              `${BASE_URL}/snapshot/${camera.source}?width=200&height=150`,
+              `${BASE_URL}/vms/${vmsIp}/cameras/${camera.id}/live`,
               { headers: getAuthHeader(sessionId) }
             );
 
@@ -76,18 +75,30 @@ export default function useSources(sessionId: string) {
 
       return snapshots;
     },
-    enabled: cameras.length > 0 && !streamsQuery.isLoading,
+    enabled: cameras.length > 0 && !camerasQuery.isLoading,
   });
+
+  // Clean up object URLs when component unmounts or when snapshots change
+  useEffect(
+    () => () => {
+      if (snapshotsQuery.data) {
+        Object.values(snapshotsQuery.data).forEach((url) => {
+          if (url) URL.revokeObjectURL(url);
+        });
+      }
+    },
+    [snapshotsQuery.data]
+  );
 
   return {
     cameras,
-    isLoading: streamsQuery.isLoading,
-    isError: streamsQuery.isError,
-    error: streamsQuery.error,
+    isLoading: camerasQuery.isLoading,
+    isError: camerasQuery.isError,
+    error: camerasQuery.error,
     selectedCameras,
     setSelectedCameras,
     snapshots: snapshotsQuery.data || {},
     snapshotsLoading: snapshotsQuery.isLoading,
-    refetch: streamsQuery.refetch,
+    refetch: camerasQuery.refetch,
   };
 }

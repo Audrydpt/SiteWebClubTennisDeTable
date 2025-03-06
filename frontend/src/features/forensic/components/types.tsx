@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   Select,
   SelectContent,
@@ -12,6 +13,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { typeOptions } from '../lib/form-config';
 
 interface TypesProps {
   selectedClass: string;
@@ -19,19 +21,32 @@ interface TypesProps {
 }
 
 export default function Types({ selectedClass, onClassChange }: TypesProps) {
+  // Set default value to "personne" if no type is selected
+  useEffect(() => {
+    if (!selectedClass) {
+      onClassChange('vehicle');
+    }
+  }, [selectedClass, onClassChange]);
+
   return (
     <AccordionItem value="type">
       <AccordionTrigger>Type de suspect</AccordionTrigger>
       <AccordionContent>
-        <Select value={selectedClass} onValueChange={onClassChange}>
+        <Select
+          value={selectedClass || 'vehicle'}
+          onValueChange={onClassChange}
+        >
           <SelectTrigger>
-            <SelectValue placeholder="Sélectionner le type" />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
               <SelectLabel>Type</SelectLabel>
-              <SelectItem value="person">Personne</SelectItem>
-              <SelectItem value="vehicle">Véhicule</SelectItem>
+              {typeOptions.map((type: string) => (
+                <SelectItem key={type.toLowerCase()} value={type.toLowerCase()}>
+                  {type}
+                </SelectItem>
+              ))}
             </SelectGroup>
           </SelectContent>
         </Select>

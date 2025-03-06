@@ -54,9 +54,10 @@ type TimeFormValues = z.infer<typeof timeSchema>;
 interface TimesProps {
   date: string | undefined;
   onDateChange: (date: string | undefined) => void;
+  onTimeChange?: (startTime: string, endTime: string) => void; // Add new prop
 }
 
-export default function Times({ date, onDateChange }: TimesProps) {
+export default function Times({ date, onDateChange, onTimeChange }: TimesProps) {
   const [timeError, setTimeError] = useState<string | null>(null);
 
   const form = useForm<TimeFormValues>({
@@ -87,7 +88,9 @@ export default function Times({ date, onDateChange }: TimesProps) {
       } else {
         onDateChange(undefined);
       }
-    });
+      if (value.startTime && value.endTime && onTimeChange) {
+        onTimeChange(value.startTime, value.endTime);
+      }   });
     return () => subscription.unsubscribe();
   }, [form, onDateChange]);
 

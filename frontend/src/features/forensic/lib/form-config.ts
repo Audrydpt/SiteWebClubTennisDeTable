@@ -11,6 +11,7 @@ export interface CheckboxItem {
 }
 
 export interface FormConfig {
+  typeOptions: string[];
   genderOptions: string[];
   ageOptions: string[];
   buildOptions: string[];
@@ -38,6 +39,7 @@ export const formConfig = formConfigData as FormConfig;
 
 // Export individual options for convenience
 export const {
+  typeOptions,
   genderOptions,
   ageOptions,
   buildOptions,
