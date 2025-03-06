@@ -6,7 +6,6 @@ import { useAuth } from '@/providers/auth-context';
 
 import { StoredWidget } from './components/form-widget';
 import WidgetActions from './components/widget-actions';
-import WidgetRangeNavigation from './components/widget-range-navigation';
 import useWidgetAPI from './hooks/use-widget';
 import { ChartTypeComponents } from './lib/const';
 import { ChartSize } from './lib/props';
@@ -106,7 +105,7 @@ export default function DashboardTab({
             remove={remove}
             clone={clone}
           />
-          <WidgetRangeNavigation />
+          {/* <WidgetRangeNavigation /> */}
         </div>
       ))}
     </ReactSortable>
