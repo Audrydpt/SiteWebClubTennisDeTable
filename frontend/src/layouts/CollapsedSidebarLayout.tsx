@@ -7,23 +7,23 @@ import {
 import AppSidebar from '@/components/app-sidebar';
 import TailwindSizeIndicator from '@/components/tailwind-size';
 
-interface SidebarLayoutProps {
+interface CollapsedSidebarLayoutProps {
   sidebarOpen: boolean;
   onSidebarOpenChange: (open: boolean) => void;
 }
 
-export default function SidebarLayout({
+export default function CollapsedSidebarLayout({
   sidebarOpen,
   onSidebarOpenChange,
-}: SidebarLayoutProps) {
+}: CollapsedSidebarLayoutProps) {
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={onSidebarOpenChange}>
       <AppSidebar />
       <SidebarInset className="flex-1">
-        <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b bg-muted px-4 md:hidden">
+        <header className="sticky top-0 z-50 flex h-10 items-center gap-2 border-b bg-muted px-2 md:hidden">
           <SidebarTrigger />
         </header>
-        <div className="mx-auto max-w-6xl h-full w-full gap-6 p-6 sm:p-8">
+        <div className="h-full w-full p-2 md:pl-4">
           <Outlet />
         </div>
       </SidebarInset>

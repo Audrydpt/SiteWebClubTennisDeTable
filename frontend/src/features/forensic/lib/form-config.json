@@ -1,0 +1,110 @@
+{
+  "typeOptions": [
+    { "value": "person", "label": "Person" },
+    { "value": "vehicle", "label": "Vehicle" }
+  ],
+  "genderOptions": [
+    { "value": "male", "label": "Male" },
+    { "value": "female", "label": "Female" }
+  ],
+  "ageOptions": [
+    { "value": "child", "label": "Child" },
+    { "value": "adult", "label": "Adult" },
+    { "value": "senior", "label": "Senior" }
+  ],
+  "buildOptions": [
+    { "value": "slim", "label": "Slim" },
+    { "value": "average", "label": "Average" },
+    { "value": "athletic", "label": "Athletic" },
+    { "value": "heavy", "label": "Heavy" }
+  ],
+  "heightOptions": [
+    { "value": "short", "label": "Short" },
+    { "value": "average", "label": "Average" },
+    { "value": "tall", "label": "Tall" }
+  ],
+  "hairLengthOptions": [
+    { "value": "short", "label": "Short" },
+    { "value": "medium", "label": "Medium" },
+    { "value": "long", "label": "Long" },
+    { "value": "none", "label": "None" }
+  ],
+  "hairStyleOptions": [
+    { "value": "straight", "label": "Straight" },
+    { "value": "wavy", "label": "Wavy" },
+    { "value": "curly", "label": "Curly" }
+  ],
+  "topTypeOptions": [
+    { "value": "shirt", "label": "Shirt" },
+    { "value": "sweater", "label": "Sweater" },
+    { "value": "jacket", "label": "Jacket" },
+    { "value": "coat", "label": "Coat" }
+  ],
+  "bottomTypeOptions": [
+    { "value": "pants", "label": "Pants" },
+    { "value": "shorts", "label": "Shorts" },
+    { "value": "skirt", "label": "Skirt" },
+    { "value": "dress", "label": "Dress" }
+  ],
+  "sizeOptions": [
+    { "value": "small", "label": "Small" },
+    { "value": "medium", "label": "Medium" },
+    { "value": "large", "label": "Large" }
+  ],
+  "toleranceOptions": [
+    { "value": "low", "label": "Low" },
+    { "value": "medium", "label": "Medium" },
+    { "value": "high", "label": "High" }
+  ],
+  "vehicleTypes": [
+    { "value": "passenger car", "label": "Passenger Car" },
+    { "value": "suv/4x4", "label": "SUV/4x4" },
+    { "value": "van", "label": "Van" },
+    { "value": "truck", "label": "Truck" },
+    { "value": "motorcycle", "label": "Motorcycle" },
+    { "value": "bicycle", "label": "Bicycle" },
+    { "value": "scooter", "label": "Scooter" },
+    { "value": "bus", "label": "Bus" }
+  ],
+  "distinctiveItems": {
+    "person": [
+      { "id": "bag", "label": "Bag/Luggage" },
+      { "id": "hat", "label": "Headwear" },
+      { "id": "glasses", "label": "Glasses" },
+      { "id": "mask", "label": "Mask/Balaclava" }
+    ],
+    "vehicle": [
+      { "id": "damaged", "label": "Visible Damage" },
+      { "id": "modified", "label": "Modifications" },
+      { "id": "tinted", "label": "Tinted Windows" },
+      { "id": "roof_rack", "label": "Roof Rack/Box" }
+    ]
+  },
+  "contextualItems": {
+    "person": [
+      { "id": "group", "label": "In Group" },
+      { "id": "running", "label": "Running/Fleeing" },
+      { "id": "vehicle", "label": "With Vehicle" },
+      { "id": "suspicious", "label": "Suspicious Behavior" }
+    ],
+    "vehicle": [
+      { "id": "speeding", "label": "Excessive Speed" },
+      { "id": "suspicious_behavior", "label": "Suspicious Behavior" },
+      { "id": "multiple_occupants", "label": "Multiple Occupants" }
+    ]
+  },
+  "colors": [
+    { "name": "Brown", "value": "#964B00", "label": "Brown" },
+    { "name": "Red", "value": "#FF0000", "label": "Red" },
+    { "name": "Orange", "value": "#FFA500", "label": "Orange" },
+    { "name": "Yellow", "value": "#FFFF00", "label": "Yellow" },
+    { "name": "Green", "value": "#008000", "label": "Green" },
+    { "name": "Cyan", "value": "#00FFFF", "label": "Cyan" },
+    { "name": "Blue", "value": "#0000FF", "label": "Blue" },
+    { "name": "Purple", "value": "#800080", "label": "Purple" },
+    { "name": "Pink", "value": "#FFC0CB", "label": "Pink" },
+    { "name": "White", "value": "#FFFFFF", "label": "White" },
+    { "name": "Gray", "value": "#808080", "label": "Gray" },
+    { "name": "Black", "value": "#000000", "label": "Black" }
+  ]
+}

@@ -11,6 +11,8 @@ import numpy as np
 
 from typing import Optional, Dict, AsyncGenerator, Tuple, Any
 
+import sock
+
 
 class CameraClient:
     def __init__(self, host: str, port: int):

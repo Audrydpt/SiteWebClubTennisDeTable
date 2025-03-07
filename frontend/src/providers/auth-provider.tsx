@@ -26,15 +26,28 @@ export default function AuthProvider({
   const [sessionId, setLocalSessionId] = useState(getSessionId());
 
   useEffect(() => {
-    const checkSession = () => {
+    const cookieChangeListener = () => {
       const currentSessionId = getSessionId();
       if (currentSessionId !== sessionId) {
         setLocalSessionId(currentSessionId);
+
+        if (sessionId && !currentSessionId) {
+          window.location.href = '/front-react/login';
+        }
       }
     };
 
-    const interval = setInterval(checkSession, 1000);
-    return () => clearInterval(interval);
+    window.addEventListener('storage', (event) => {
+      if (event.key === null || event.key.includes('session')) {
+        cookieChangeListener();
+      }
+    });
+
+    const interval = setInterval(cookieChangeListener, 10000);
+
+    return () => {
+      clearInterval(interval);
+    };
   }, [sessionId]);
 
   const {
@@ -60,6 +73,7 @@ export default function AuthProvider({
 
   const logout = useCallback(() => {
     removeSessionId();
+    setLocalSessionId('');
     window.location.href = '/front-react/login';
   }, []);
 
