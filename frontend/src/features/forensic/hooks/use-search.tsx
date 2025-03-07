@@ -1,6 +1,7 @@
-/* eslint-disable */
+/* eslint-disable no-console */
 import { useState } from 'react';
-import { formatQuery, FormData as CustomFormData } from '@/features/forensic/lib/format-query';
+
+import { FormData as CustomFormData, formatQuery } from '../lib/format-query';
 
 export interface ForensicResult {
   id: string;
@@ -29,7 +30,7 @@ export default function useSearch(sessionId: string) {
       console.log('Formatted query:', JSON.stringify(queryData, null, 2));
 
       const response = await fetch(
-        `https://192.168.20.145/front-api/forensics?duration=${duration}`,
+        `${process.env.MAIN_API_URL}/forensics?duration=${duration}`,
         {
           method: 'POST',
           headers: {
@@ -40,7 +41,9 @@ export default function useSearch(sessionId: string) {
           body: JSON.stringify(queryData),
         }
       );
-      const guid = await response.json();
+      const data = await response.json();
+      const { guid } = data;
+
       setJobId(guid);
       return guid;
     } catch (error) {
@@ -59,9 +62,14 @@ export default function useSearch(sessionId: string) {
       return;
     }
 
-    const newWs = new WebSocket(
-      `wss://192.168.20.145/front-api/forensics/${id}`
-    );
+    let { hostname } = window.location;
+    try {
+      hostname = new URL(process.env.MAIN_API_URL!).hostname;
+    } catch {
+      // Ignore error
+    }
+
+    const newWs = new WebSocket(`wss://${hostname}/front-api/forensics/${id}`);
     setWs(newWs);
 
     newWs.onopen = () => console.log('✅ WebSocket connecté !');
@@ -85,9 +93,8 @@ export default function useSearch(sessionId: string) {
         } catch (error) {
           console.error('❌ Error parsing WebSocket data:', error);
         }
-      }
-      // Handle binary data (JPEG)
-      else if (event.data instanceof Blob) {
+      } else if (event.data instanceof Blob) {
+        // Handle binary data (JPEG)
         const blob = event.data;
         const imageUrl = URL.createObjectURL(blob);
 

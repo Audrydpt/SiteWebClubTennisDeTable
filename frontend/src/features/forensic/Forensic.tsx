@@ -1,23 +1,25 @@
-/* eslint-disable */
-import { useState, useEffect } from 'react';
-import { Save, Search } from 'lucide-react';
-import { useForm, FormProvider } from 'react-hook-form';
+/* eslint-disable no-console */
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Save, Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Button } from '@/components/ui/button';
+
 import { Accordion } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import Appearances from '@/features/forensic/components/appareances';
-import Sources from '@/features/forensic/components/sources';
-import Times from '@/features/forensic/components/times';
-import Attributes from '@/features/forensic/components/attributes';
-import Types from '@/features/forensic/components/types';
-import { colors } from './lib/form-config';
-import useSearch, { ForensicResult } from './hooks/use-search';
 import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { useAuth } from '@/providers/auth-context.tsx';
 
+import Appearances from './components/appareances';
+import Attributes from './components/attributes';
+import Sources from './components/sources';
+import Times from './components/times';
+import Types from './components/types';
+import useSearch, { ForensicResult } from './hooks/use-search';
+import { colors } from './lib/form-config';
 
 // Define form schema using zod
 const forensicFormSchema = z.object({
@@ -98,16 +100,18 @@ export default function Forensic() {
     },
   });
 
-  // Clean up object URLs when component unmounts
+  // Cleanup image URLs when component unmounts
   useEffect(
     () => () => {
       results.forEach((result) => {
-        if (result.imageData.startsWith('blob:')) {
+        if (result.imageData) {
+          console.log('Revoking object URL for image:', result.imageData);
           URL.revokeObjectURL(result.imageData);
         }
       });
     },
-    [results]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isSearching]
   );
 
   const transformColors = (colorHexes: string[]) =>
@@ -214,8 +218,8 @@ export default function Forensic() {
                       selectedClass={methods.watch('subjectType')}
                       colors={colors}
                       selectedColors={methods.watch('appearance.generalColors')}
-                      onColorsChange={(colors) =>
-                        methods.setValue('appearance.generalColors', colors)
+                      onColorsChange={(c) =>
+                        methods.setValue('appearance.generalColors', c)
                       }
                       selectedGenders={methods.watch('appearance.gender') || []}
                       onGendersChange={(values) =>
@@ -234,23 +238,33 @@ export default function Forensic() {
                         methods.setValue('appearance.height', values)
                       }
                       // Hair properties moved from Attributes component
-                      selectedHairColors={methods.watch('attributes.hairColors') || []}
+                      selectedHairColors={
+                        methods.watch('attributes.hairColors') || []
+                      }
                       onHairColorsChange={(values) =>
                         methods.setValue('attributes.hairColors', values)
                       }
-                      selectedHairLength={methods.watch('attributes.hairLength') || []}
+                      selectedHairLength={
+                        methods.watch('attributes.hairLength') || []
+                      }
                       onHairLengthChange={(values) =>
                         methods.setValue('attributes.hairLength', values)
                       }
-                      selectedHairStyle={methods.watch('attributes.hairStyle') || []}
+                      selectedHairStyle={
+                        methods.watch('attributes.hairStyle') || []
+                      }
                       onHairStyleChange={(values) =>
                         methods.setValue('attributes.hairStyle', values)
                       }
-                      selectedVehicleCategories={methods.watch('appearance.vehicleCategory') || []}
+                      selectedVehicleCategories={
+                        methods.watch('appearance.vehicleCategory') || []
+                      }
                       onVehicleCategoriesChange={(values) =>
                         methods.setValue('appearance.vehicleCategory', values)
                       }
-                      selectedSizes={methods.watch('appearance.vehicleSize') || []}
+                      selectedSizes={
+                        methods.watch('appearance.vehicleSize') || []
+                      }
                       onSizesChange={(values) =>
                         methods.setValue('appearance.vehicleSize', values)
                       }
@@ -303,13 +317,23 @@ export default function Forensic() {
                         methods.watch('attributes.distinctiveFeatures') || {}
                       }
                       onDistinctiveFeaturesChange={(id, checked) =>
-                        methods.setValue(`attributes.distinctiveFeatures.${id}`, checked)
+                        methods.setValue(
+                          `attributes.distinctiveFeatures.${id}`,
+                          checked
+                        )
                       }
-                      contextFeatures={methods.watch('attributes.contextFeatures') || {}}
+                      contextFeatures={
+                        methods.watch('attributes.contextFeatures') || {}
+                      }
                       onContextFeaturesChange={(id, checked) =>
-                        methods.setValue(`attributes.contextFeatures.${id}`, checked)
+                        methods.setValue(
+                          `attributes.contextFeatures.${id}`,
+                          checked
+                        )
                       }
-                      selectedToleranceOptions={methods.watch('attributesTolerance')}
+                      selectedToleranceOptions={methods.watch(
+                        'attributesTolerance'
+                      )}
                       onToleranceOptionsChange={(values) =>
                         methods.setValue('attributesTolerance', values)
                       }
@@ -361,41 +385,55 @@ export default function Forensic() {
           </div>
 
           <ScrollArea className="h-[calc(100%-3rem)]">
-            {!searchSubmitted || methods.watch('cameras').length === 0 ? (
-              <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
-                {methods.watch('cameras').length === 0
-                  ? 'Sélectionnez une ou plusieurs caméras pour commencer'
-                  : "Appuyez sur 'Lancer la recherche' pour afficher les résultats"}
-              </div>
-            ) : isSearching ? (
-              <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
-                Recherche en cours...
-              </div>
-            ) : results.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {results.map((result: ForensicResult) => (
-                  <div
-                    key={result.id}
-                    className="border rounded-md overflow-hidden"
-                  >
-                    <img
-                      src={result.imageData}
-                      alt="Forensic result"
-                      className="w-full h-auto"
-                    />
-                    <div className="p-2">
-                      <p className="text-sm">
-                        Time: {new Date(result.timestamp).toLocaleString()}
-                      </p>
-                    </div>
+            {(() => {
+              if (!searchSubmitted || methods.watch('cameras').length === 0) {
+                return (
+                  <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
+                    {methods.watch('cameras').length === 0
+                      ? 'Sélectionnez une ou plusieurs caméras pour commencer'
+                      : "Appuyez sur 'Lancer la recherche' pour afficher les résultats"}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
-                Aucun résultat trouvé
-              </div>
-            )}
+                );
+              }
+
+              if (isSearching && results.length === 0) {
+                return (
+                  <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
+                    Recherche en cours...
+                  </div>
+                );
+              }
+
+              if (results.length > 0) {
+                return (
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {results.map((result: ForensicResult) => (
+                      <div
+                        key={result.id}
+                        className="border rounded-md overflow-hidden"
+                      >
+                        <img
+                          src={result.imageData}
+                          alt="Forensic result"
+                          className="w-full h-auto"
+                        />
+                        <div className="p-2">
+                          <p className="text-sm">
+                            Time: {new Date(result.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+
+              return (
+                <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
+                  Aucun résultat trouvé
+                </div>
+              );
+            })()}
           </ScrollArea>
         </CardContent>
       </Card>
