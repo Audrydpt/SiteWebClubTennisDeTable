@@ -25,6 +25,7 @@ export interface ForensicSearchQuery {
 // Also update the FormData interface to match
 export interface FormData {
   date?: string;
+  endDate?: string;
   startTime?: string;
   endTime?: string;
   cameras: string[];
@@ -61,8 +62,10 @@ export function formatQuery(formData: FormData): ForensicSearchQuery {
   // Extract date and time range
   const timerange = formData.date
     ? {
+      // Use the start date with start time
       time_from: `${formData.date}T${formData.startTime || '00:00:00'}`,
-      time_to: `${formData.date}T${formData.endTime || '23:59:59'}`
+      // Use the end date (if provided) with end time, otherwise use start date
+      time_to: `${formData.endDate || formData.date}T${formData.endTime || '23:59:59'}`
     }
     : {
       time_from: new Date().toISOString(),
@@ -75,10 +78,10 @@ export function formatQuery(formData: FormData): ForensicSearchQuery {
     timerange,
     type: formData.subjectType as 'vehicle' | 'person',
     appearances: {
-      confidence: formData.appearanceTolerance || 'medium', // Changed from 'normal' to 'medium'
+      confidence: formData.appearanceTolerance || 'medium',
     },
     attributes: {
-      confidence: formData.attributesTolerance || 'medium', // Changed from 'normal' to 'medium'
+      confidence: formData.attributesTolerance || 'medium',
     },
     context: {},
   };

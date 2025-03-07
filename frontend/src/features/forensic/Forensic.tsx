@@ -20,7 +20,7 @@ import type { FormData as CustomFormData } from './lib/format-query';
 export default function Forensic() {
   // Basic form state
   const [dateStr, setDateStr] = useState<string | undefined>(undefined);
-  const [startTime, setStartTime] = useState<string>('00:00');
+  const [endDateStr, setEndDateStr] = useState<string | undefined>(undefined);  const [startTime, setStartTime] = useState<string>('00:00');
   const [endTime, setEndTime] = useState<string>('23:59');
   const [selectedCameras, setSelectedCameras] = useState<string[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('vehicle');
@@ -110,13 +110,24 @@ export default function Forensic() {
   const handleSearch = async () => {
     setSearchSubmitted(true);
 
-    // Map appearance tolerance to expected format
+    // Map tolerance values
     const toleranceMap: { [key: string]: 'low' | 'medium' | 'high' } = {
-      faible: 'low',
-      moyenne: 'medium',
-      élevée: 'high',
+      Low: 'low',
+      Medium: 'medium',
+      High: 'high',
     };
 
+    // Convert color hex values to lowercase color names
+    const transformColors = (colorHexes: string[]) => {
+      return colorHexes.map(hex => {
+        // Find the color object with matching hex value
+        const colorObj = colors.find(c => c.value === hex);
+        // Return the lowercase name or default to the hex if not found
+        return colorObj ? colorObj.name.toLowerCase() : hex;
+      });
+    };
+
+    // Get tolerance values
     const mappedAppearanceTolerance =
       selectedAppearanceTolerance.length > 0
         ? toleranceMap[selectedAppearanceTolerance[0]] || 'medium'
@@ -127,57 +138,51 @@ export default function Forensic() {
         ? toleranceMap[selectedAttributesTolerance[0]] || 'medium'
         : 'medium';
 
-    // Base form data shared between person and vehicle
-    const baseFormData = {
+    // Build form data with all fields
+    let formData: CustomFormData = {
       date: dateStr,
+      endDate: endDateStr,
       startTime,
       endTime,
       cameras: selectedCameras,
       subjectType: selectedClass,
       appearance: {
-        generalColors: selectedColors,
+        generalColors: transformColors(selectedColors), // Transform colors here
+        gender: selectedClass === 'person' ? selectedGenders : undefined,
+        age: selectedClass === 'person' ? selectedAges : undefined,
+        build: selectedClass === 'person' ? selectedBuilds : undefined,
+        height: selectedClass === 'person' ? selectedHeights : undefined,
       },
       attributes: {
-        distinctiveFeatures: selectedDistinctiveFeatures,
+        distinctiveFeatures: distinctiveFeatures,
+        hairColors: selectedClass === 'person' ? transformColors(selectedHairColors) : undefined, // Transform colors
+        hairLength: selectedClass === 'person' ? selectedHairLength : undefined,
+        hairStyle: selectedClass === 'person' ? selectedHairStyle : undefined,
+        upperType: selectedClass === 'person' ? selectedTopType : undefined,
+        topColors: selectedClass === 'person' ? transformColors(selectedTopColors) : undefined, // Transform colors
+        lowerType: selectedClass === 'person' ? selectedBottomType : undefined,
+        bottomColors: selectedClass === 'person' ? transformColors(selectedBottomColors) : undefined, // Transform colors
       },
       appearanceTolerance: mappedAppearanceTolerance,
       attributesTolerance: mappedAttributesTolerance,
     };
 
-    // Build form data based on selected class type
-    let formData: CustomFormData;
-
+    // Add vehicle specific fields
     if (selectedClass === 'vehicle') {
-      formData = {
-        ...baseFormData,
-        vehicleCategory: selectedVehicleCategories,
-        vehicleSize: selectedSizes,
-        attributes: {
-          ...baseFormData.attributes,
-          vehicleColors: selectedColors,
-          // Note: You'd need to add brand/model mapping here if implemented
-        },
-      };
-    } else {
-      formData = {
-        ...baseFormData,
-        appearance: {
-          ...baseFormData.appearance,
-          gender: selectedGenders,
-          age: selectedAges,
-          build: selectedBuilds,
-          height: selectedHeights,
-        },
-        attributes: {
-          ...baseFormData.attributes,
-          hairColors: selectedHairColors,
-          hairLength: selectedHairLength,
-          hairStyle: selectedHairStyle,
-          upperType: selectedTopType,
-          topColors: selectedTopColors,
-          lowerType: selectedBottomType,
-          bottomColors: selectedBottomColors,
-        },
+      formData.vehicleCategory = selectedVehicleCategories;
+      formData.vehicleSize = selectedSizes;
+      formData.attributes.brands = selectedBrands.map(brand => ({
+        brand,
+        models: selectedModels
+      }));
+      formData.attributes.plate = licensePlate;
+    }
+
+    // Include context features
+    if (Object.keys(contextFeatures).length > 0) {
+      formData.attributes.distinctiveFeatures = {
+        ...formData.attributes.distinctiveFeatures,
+        ...contextFeatures
       };
     }
 
@@ -210,7 +215,10 @@ export default function Forensic() {
                 <Sources onSelectedCamerasChange={setSelectedCameras} />
                 <Times
                   date={dateStr}
-                  onDateChange={setDateStr}
+                  onDateChange={(startDate, endDate) => {
+                    setDateStr(startDate);
+                    setEndDateStr(endDate);
+                  }}
                   onTimeChange={handleTimeChange}
                 />
                 <Types

@@ -129,7 +129,6 @@ export default function Attributes({
 
   const [availableModels, setAvailableModels] = useState<string[]>([]);
 
-  // Update available models when brand changes
   useEffect(() => {
     if (selectedBrands.length > 0) {
       const models: string[] = [];
@@ -341,10 +340,7 @@ export default function Attributes({
               <Label className="text-sm font-medium">Longueur de cheveux</Label>
               <div className="h-10 max-w-full">
                 <MultiSelect
-                  options={hairLengthOptions.map((option) => ({
-                    value: option.toLowerCase(),
-                    label: option,
-                  }))}
+                  options={hairLengthOptions}
                   selected={getSelectedHairLength()}
                   onChange={handleHairLengthChange}
                   placeholder="Sélectionner longueur"
@@ -366,10 +362,7 @@ export default function Attributes({
               <Label className="text-sm font-medium">Type de haut</Label>
               <div className="h-10 max-w-full">
                 <MultiSelect
-                  options={topTypeOptions.map((option) => ({
-                    value: option.toLowerCase(),
-                    label: option,
-                  }))}
+                  options={topTypeOptions}
                   selected={getSelectedTopType()}
                   onChange={handleTopTypeChange}
                   placeholder="Sélectionner type"
@@ -391,10 +384,7 @@ export default function Attributes({
               <Label className="text-sm font-medium">Type de bas</Label>
               <div className="h-10 max-w-full">
                 <MultiSelect
-                  options={bottomTypeOptions.map((option) => ({
-                    value: option.toLowerCase(),
-                    label: option,
-                  }))}
+                  options={bottomTypeOptions}
                   selected={getSelectedBottomType()}
                   onChange={handleBottomTypeChange}
                   placeholder="Sélectionner type"
@@ -449,14 +439,12 @@ export default function Attributes({
             <Label className="text-sm font-medium">Marque</Label>
             <div className="h-10 max-w-[250px]">
               <MultiSelect
-                options={carBrands.map((brand) => ({
-                  value: brand.brand,
-                  label: brand.brand,
-                }))}
+                options={carBrands.map(brand => brand.brand)}
                 selected={getSelectedBrands()}
                 onChange={handleBrandsChange}
                 placeholder="Sélectionner marque"
               />
+
             </div>
           </div>
 
@@ -464,14 +452,7 @@ export default function Attributes({
             <Label className="text-sm font-medium">Modèle</Label>
             <div className="h-10 max-w-[250px]">
               <MultiSelect
-                options={carBrands
-                  .filter((brand) => getSelectedBrands().includes(brand.brand))
-                  .flatMap((brand) =>
-                    brand.models.map((model) => ({
-                      value: model,
-                      label: model,
-                    }))
-                  )}
+                options={availableModels} // Use the availableModels array that's already a string[]
                 selected={getSelectedModels()}
                 onChange={handleModelsChange}
                 placeholder="Sélectionner modèle"
@@ -539,10 +520,7 @@ export default function Attributes({
         <Label className="text-sm font-medium">Tolérance attributs</Label>
         <div className="h-10 max-w-[250px]">
           <MultiSelect
-            options={toleranceOptions.map((option) => ({
-              value: option.toLowerCase(),
-              label: option,
-            }))}
+            options={toleranceOptions}
             selected={getSelectedTolerance()}
             onChange={handleToleranceOptionsChange}
             placeholder="Niveau de tolérance"

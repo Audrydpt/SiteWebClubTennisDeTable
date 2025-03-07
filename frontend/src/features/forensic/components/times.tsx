@@ -53,8 +53,8 @@ type TimeFormValues = z.infer<typeof timeSchema>;
 
 interface TimesProps {
   date: string | undefined;
-  onDateChange: (date: string | undefined) => void;
-  onTimeChange?: (startTime: string, endTime: string) => void; // Add new prop
+  onDateChange: (startDate: string | undefined, endDate?: string | undefined) => void;
+  onTimeChange?: (startTime: string, endTime: string) => void;
 }
 
 export default function Times({ date, onDateChange, onTimeChange }: TimesProps) {
@@ -74,25 +74,22 @@ export default function Times({ date, onDateChange, onTimeChange }: TimesProps) 
 
   useEffect(() => {
     const subscription = form.watch((value) => {
-      // Vérification des heures
-      if (value.startTime && value.endTime) {
-        if (value.startTime > value.endTime) {
-          setTimeError("L'heure de début doit être antérieure à l'heure de fin");
-        } else {
-          setTimeError(null);
-        }
+      // Date handling
+      if (value.range?.from) {
+        onDateChange(format(value.range.from, 'yyyy-MM-dd'),
+          value.range?.to ? format(value.range.to, 'yyyy-MM-dd') : undefined);
+      } else {
+        onDateChange(undefined, undefined);
       }
 
-      if (value.range?.from) {
-        onDateChange(format(value.range.from, 'yyyy-MM-dd'));
-      } else {
-        onDateChange(undefined);
-      }
-      if (value.startTime && value.endTime && onTimeChange) {
+      // Time handling - always pass the current time values whenever they change
+      if (onTimeChange && value.startTime && value.endTime) {
         onTimeChange(value.startTime, value.endTime);
-      }   });
+      }
+    });
+
     return () => subscription.unsubscribe();
-  }, [form, onDateChange]);
+  }, [form, onDateChange, onTimeChange]);
 
   const handleTimeChange = (field: any, value: string) => {
     field.onChange(value);
@@ -103,6 +100,11 @@ export default function Times({ date, onDateChange, onTimeChange }: TimesProps) 
         setTimeError("L'heure de début doit être antérieure à l'heure de fin");
       } else {
         setTimeError(null);
+      }
+
+      // Always notify parent of time changes
+      if (onTimeChange) {
+        onTimeChange(currentValues.startTime, currentValues.endTime);
       }
     }
   };

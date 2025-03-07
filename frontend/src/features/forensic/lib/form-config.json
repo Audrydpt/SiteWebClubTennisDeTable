@@ -1,5 +1,5 @@
 {
-  "typeOptions": ["Person", "Vehicule"],
+  "typeOptions": ["Person", "Vehicle"],
   "genderOptions": ["Male", "Female"],
   "ageOptions": ["Child", "Adult", "Elderly"],
   "buildOptions": ["Slim", "Average", "Athletic", "Heavy"],
