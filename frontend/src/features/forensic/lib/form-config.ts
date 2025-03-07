@@ -3,6 +3,7 @@ import formConfigData from './form-config.json';
 export interface Color {
   name: string;
   value: string;
+  label: string;
 }
 
 export interface CheckboxItem {
@@ -10,19 +11,24 @@ export interface CheckboxItem {
   label: string;
 }
 
+export interface SelectOption {
+  value: string;
+  label: string;
+}
+
 export interface FormConfig {
-  typeOptions: string[];
-  genderOptions: string[];
-  ageOptions: string[];
-  buildOptions: string[];
-  heightOptions: string[];
-  hairLengthOptions: string[];
-  hairStyleOptions: string[];
-  topTypeOptions: string[];
-  bottomTypeOptions: string[];
-  sizeOptions: string[];
-  toleranceOptions: string[];
-  vehicleTypes: string[];
+  typeOptions: SelectOption[];
+  genderOptions: SelectOption[];
+  ageOptions: SelectOption[];
+  buildOptions: SelectOption[];
+  heightOptions: SelectOption[];
+  hairLengthOptions: SelectOption[];
+  hairStyleOptions: SelectOption[];
+  topTypeOptions: SelectOption[];
+  bottomTypeOptions: SelectOption[];
+  sizeOptions: SelectOption[];
+  toleranceOptions: SelectOption[];
+  vehicleTypes: SelectOption[];
   distinctiveItems: {
     person: CheckboxItem[];
     vehicle: CheckboxItem[];

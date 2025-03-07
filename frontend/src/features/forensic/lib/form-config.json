@@ -1,28 +1,70 @@
 {
-  "typeOptions": ["Person", "Vehicle"],
-  "genderOptions": ["Male", "Female"],
-  "ageOptions": ["Child", "Adult", "Elderly"],
-  "buildOptions": ["Slim", "Average", "Athletic", "Heavy"],
-  "heightOptions": [
-    "Short (<1m65)",
-    "Average (1m65-1m80)",
-    "Tall (>1m80)"
+  "typeOptions": [
+    { "value": "person", "label": "Person" },
+    { "value": "vehicle", "label": "Vehicle" }
   ],
-  "hairLengthOptions": ["Short", "Medium", "Long"],
-  "hairStyleOptions": ["Straight", "Wavy", "Curly", "Bald"],
-  "topTypeOptions": ["T-shirt", "Shirt", "Sweater", "Jacket", "Coat"],
-  "bottomTypeOptions": ["Pants", "Shorts", "Skirt", "Dress"],
-  "sizeOptions": ["Small", "Medium", "Large"],
-  "toleranceOptions": ["Low", "Medium", "High"],
+  "genderOptions": [
+    { "value": "male", "label": "Male" },
+    { "value": "female", "label": "Female" }
+  ],
+  "ageOptions": [
+    { "value": "child", "label": "Child" },
+    { "value": "adult", "label": "Adult" },
+    { "value": "senior", "label": "Senior" }
+  ],
+  "buildOptions": [
+    { "value": "slim", "label": "Slim" },
+    { "value": "average", "label": "Average" },
+    { "value": "athletic", "label": "Athletic" },
+    { "value": "heavy", "label": "Heavy" }
+  ],
+  "heightOptions": [
+    { "value": "short", "label": "Short" },
+    { "value": "average", "label": "Average" },
+    { "value": "tall", "label": "Tall" }
+  ],
+  "hairLengthOptions": [
+    { "value": "short", "label": "Short" },
+    { "value": "medium", "label": "Medium" },
+    { "value": "long", "label": "Long" },
+    { "value": "none", "label": "None" }
+  ],
+  "hairStyleOptions": [
+    { "value": "straight", "label": "Straight" },
+    { "value": "wavy", "label": "Wavy" },
+    { "value": "curly", "label": "Curly" }
+  ],
+  "topTypeOptions": [
+    { "value": "shirt", "label": "Shirt" },
+    { "value": "sweater", "label": "Sweater" },
+    { "value": "jacket", "label": "Jacket" },
+    { "value": "coat", "label": "Coat" }
+  ],
+  "bottomTypeOptions": [
+    { "value": "pants", "label": "Pants" },
+    { "value": "shorts", "label": "Shorts" },
+    { "value": "skirt", "label": "Skirt" },
+    { "value": "dress", "label": "Dress" }
+  ],
+  "sizeOptions": [
+    { "value": "small", "label": "Small" },
+    { "value": "medium", "label": "Medium" },
+    { "value": "large", "label": "Large" }
+  ],
+  "toleranceOptions": [
+    { "value": "low", "label": "Low" },
+    { "value": "medium", "label": "Medium" },
+    { "value": "high", "label": "High" }
+  ],
   "vehicleTypes": [
-    "Passenger Car",
-    "SUV/4x4",
-    "Van",
-    "Truck",
-    "Motorcycle",
-    "Bicycle",
-    "Scooter",
-    "Bus"
+    { "value": "passenger car", "label": "Passenger Car" },
+    { "value": "suv/4x4", "label": "SUV/4x4" },
+    { "value": "van", "label": "Van" },
+    { "value": "truck", "label": "Truck" },
+    { "value": "motorcycle", "label": "Motorcycle" },
+    { "value": "bicycle", "label": "Bicycle" },
+    { "value": "scooter", "label": "Scooter" },
+    { "value": "bus", "label": "Bus" }
   ],
   "distinctiveItems": {
     "person": [
@@ -52,17 +94,17 @@
     ]
   },
   "colors": [
-    { "name": "Brown", "value": "#8B4513" },
-    { "name": "Red", "value": "#FF0000" },
-    { "name": "Orange", "value": "#FFA500" },
-    { "name": "Yellow", "value": "#FFFF00" },
-    { "name": "Green", "value": "#008000" },
-    { "name": "Turquoise", "value": "#40E0D0" },
-    { "name": "Blue", "value": "#0000FF" },
-    { "name": "Purple", "value": "#800080" },
-    { "name": "Pink", "value": "#FFC0CB" },
-    { "name": "White", "value": "#FFFFFF" },
-    { "name": "Gray", "value": "#808080" },
-    { "name": "Black", "value": "#000000" }
+    { "name": "Brown", "value": "#964B00", "label": "Brown" },
+    { "name": "Red", "value": "#FF0000", "label": "Red" },
+    { "name": "Orange", "value": "#FFA500", "label": "Orange" },
+    { "name": "Yellow", "value": "#FFFF00", "label": "Yellow" },
+    { "name": "Green", "value": "#008000", "label": "Green" },
+    { "name": "Cyan", "value": "#00FFFF", "label": "Cyan" },
+    { "name": "Blue", "value": "#0000FF", "label": "Blue" },
+    { "name": "Purple", "value": "#800080", "label": "Purple" },
+    { "name": "Pink", "value": "#FFC0CB", "label": "Pink" },
+    { "name": "White", "value": "#FFFFFF", "label": "White" },
+    { "name": "Gray", "value": "#808080", "label": "Gray" },
+    { "name": "Black", "value": "#000000", "label": "Black" }
   ]
 }

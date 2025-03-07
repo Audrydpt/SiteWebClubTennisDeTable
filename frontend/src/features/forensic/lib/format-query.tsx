@@ -1,7 +1,6 @@
 /* eslint-disable */
 
 // Format query for forensic search API
-// Update the ForensicSearchQuery interface to match your preference
 export interface ForensicSearchQuery {
   sources: string[];
   timerange: {
@@ -22,7 +21,6 @@ export interface ForensicSearchQuery {
   };
 }
 
-// Also update the FormData interface to match
 export interface FormData {
   date?: string;
   endDate?: string;
@@ -48,7 +46,8 @@ export interface FormData {
     lowerType?: string[];
     bottomColors?: string[];
     vehicleColors?: string[];
-    brands?: Array<{ brand: string; models: string[] }>;
+    brands?: string[];
+    models?: string[];
     plate?: string;
     distinctiveFeatures?: {
       [key: string]: boolean | undefined;
@@ -58,13 +57,12 @@ export interface FormData {
   attributesTolerance?: 'low' | 'medium' | 'high';
 }
 
+
 export function formatQuery(formData: FormData): ForensicSearchQuery {
   // Extract date and time range
   const timerange = formData.date
     ? {
-      // Use the start date with start time
       time_from: `${formData.date}T${formData.startTime || '00:00:00'}`,
-      // Use the end date (if provided) with end time, otherwise use start date
       time_to: `${formData.endDate || formData.date}T${formData.endTime || '23:59:59'}`
     }
     : {
@@ -103,15 +101,15 @@ function formatVehicleQuery(
   // Set appearances
   query.appearances = {
     confidence: formData.appearanceTolerance || 'medium',
-    type: formData.vehicleCategory || [],
+    type: formData.vehicleCategory?.map(c => c.toLowerCase()) || [],
     color: formData.appearance.generalColors || [],
   };
 
-  // Format attributes according to the required structure
+  // Vehicle attributes
   query.attributes = {
-    mmr: formData.attributes.brands?.map(item => ({
-      brand: item.brand,
-      model: item.models || []
+    mmr: formData.attributes.brands?.map(brand => ({
+      brand: brand,
+      model: formData.attributes.models || []
     })) || [],
     plate: formData.attributes.plate || "",
     other: {
@@ -140,14 +138,14 @@ function formatPersonQuery(
   // Reset appearances to ensure no vehicle attributes are included
   query.appearances = {
     confidence: formData.appearanceTolerance || 'medium',
-    gender: formData.appearance.gender || undefined,
-    seenAge: formData.appearance.age || undefined,
-    build: formData.appearance.build || undefined,
-    height: formData.appearance.height || undefined,
+    gender: formData.appearance.gender || [],
+    seenAge: formData.appearance.age || [],
+    build: formData.appearance.build || [],
+    height: formData.appearance.height || [],
     hair: {
-      color: formData.attributes.hairColors || undefined,
-      length: formData.attributes.hairLength || undefined,
-      style: formData.attributes.hairStyle || undefined,
+      color: formData.attributes.hairColors?.map(c => c.toLowerCase()) || undefined,
+      length: formData.attributes.hairLength || [],
+      style: formData.attributes.hairStyle || [],
     },
   };
 
@@ -162,8 +160,8 @@ function formatPersonQuery(
     (formData.attributes.topColors && formData.attributes.topColors.length > 0)
   ) {
     query.attributes.upper = {
-      type: formData.attributes.upperType || undefined,
-      color: formData.attributes.topColors || undefined,
+      type: formData.attributes.upperType || [],
+      color: formData.attributes.topColors?.map(c => c.toLowerCase()) || undefined,
     };
   }
 
@@ -173,8 +171,8 @@ function formatPersonQuery(
     (formData.attributes.bottomColors && formData.attributes.bottomColors.length > 0)
   ) {
     query.attributes.lower = {
-      type: formData.attributes.lowerType || undefined,
-      color: formData.attributes.bottomColors || undefined,
+      type: formData.attributes.lowerType || [],
+      color: formData.attributes.bottomColors?.map(c => c.toLowerCase()) || undefined,
     };
   }
 

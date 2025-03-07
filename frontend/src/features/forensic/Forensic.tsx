@@ -1,6 +1,9 @@
 /* eslint-disable */
 import { useState, useEffect } from 'react';
 import { Save, Search } from 'lucide-react';
+import { useForm, FormProvider } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Accordion } from '@/components/ui/accordion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,58 +18,59 @@ import useSearch, { ForensicResult } from './hooks/use-search';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/providers/auth-context.tsx';
 
-import type { FormData as CustomFormData } from './lib/format-query';
+
+// Define form schema using zod
+const forensicFormSchema = z.object({
+  // Basic search parameters
+  date: z.string().optional(),
+  endDate: z.string().optional(),
+  startTime: z.string().default('00:00'),
+  endTime: z.string().default('23:59'),
+  cameras: z.array(z.string()).default([]),
+  subjectType: z.enum(['person', 'vehicle']).default('vehicle'),
+
+  // Appearance information
+  appearance: z
+    .object({
+      generalColors: z.array(z.string()).default([]),
+      gender: z.array(z.string()).optional(),
+      age: z.array(z.string()).optional(),
+      build: z.array(z.string()).optional(),
+      height: z.array(z.string()).optional(),
+      vehicleCategory: z.array(z.string()).optional(),
+      vehicleSize: z.array(z.string()).optional(),
+    })
+    .default({}),
+
+  // Attribute information
+  attributes: z
+    .object({
+      hairColors: z.array(z.string()).optional(),
+      hairLength: z.array(z.string()).optional(),
+      hairStyle: z.array(z.string()).optional(),
+      upperType: z.array(z.string()).optional(),
+      topColors: z.array(z.string()).optional(),
+      lowerType: z.array(z.string()).optional(),
+      bottomColors: z.array(z.string()).optional(),
+      brands: z.array(z.string()).optional(),
+      models: z.array(z.string()).optional(),
+      plate: z.string().optional(),
+      distinctiveFeatures: z.record(z.boolean()).default({}),
+      contextFeatures: z.record(z.boolean()).default({}),
+    })
+    .default({}),
+
+  // Tolerance settings
+  appearanceTolerance: z.array(z.string()).default([]),
+  attributesTolerance: z.array(z.string()).default([]),
+});
+
+type ForensicFormValues = z.infer<typeof forensicFormSchema>;
 
 export default function Forensic() {
-  // Basic form state
-  const [dateStr, setDateStr] = useState<string | undefined>(undefined);
-  const [endDateStr, setEndDateStr] = useState<string | undefined>(undefined);  const [startTime, setStartTime] = useState<string>('00:00');
-  const [endTime, setEndTime] = useState<string>('23:59');
-  const [selectedCameras, setSelectedCameras] = useState<string[]>([]);
-  const [selectedClass, setSelectedClass] = useState<string>('vehicle');
   const [searchSubmitted, setSearchSubmitted] = useState(false);
-
-  // Appearance fields
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [selectedGenders, setSelectedGenders] = useState<string[]>([]);
-  const [selectedAges, setSelectedAges] = useState<string[]>([]);
-  const [selectedBuilds, setSelectedBuilds] = useState<string[]>([]);
-  const [selectedHeights, setSelectedHeights] = useState<string[]>([]);
-  const [selectedVehicleCategories, setSelectedVehicleCategories] = useState<
-    string[]
-  >([]);
-  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [selectedAppearanceTolerance, setSelectedAppearanceTolerance] =
-    useState<string[]>([]);
-
-  // Attributes fields
-  const [selectedHairColors, setSelectedHairColors] = useState<string[]>([]);
-  const [selectedTopColors, setSelectedTopColors] = useState<string[]>([]);
-  const [selectedBottomColors, setSelectedBottomColors] = useState<string[]>(
-    []
-  );
-  const [selectedHairLength, setSelectedHairLength] = useState<string[]>([]);
-  const [selectedHairStyle, setSelectedHairStyle] = useState<string[]>([]);
-  const [selectedTopType, setSelectedTopType] = useState<string[]>([]);
-  const [selectedBottomType, setSelectedBottomType] = useState<string[]>([]);
-  const [selectedAttributesTolerance, setSelectedAttributesTolerance] =
-    useState<string[]>([]);
-
-  // Add these state variables at the top of the component, with the other state declarations
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [selectedModels, setSelectedModels] = useState<string[]>([]);
-  const [licensePlate, setLicensePlate] = useState<string>('');
-  const [distinctiveFeatures, setDistinctiveFeatures] = useState<{[key: string]: boolean}>({});
-  const [contextFeatures, setContextFeatures] = useState<{[key: string]: boolean}>({});
-
-  // Other state needed for the form
-  const [selectedDistinctiveFeatures, setSelectedDistinctiveFeatures] =
-    useState<{ [key: string]: boolean }>({});
-
-  // Get sessionId from auth context
   const { sessionId = '' } = useAuth();
 
-  // Use the search hook
   const {
     startSearch,
     initWebSocket,
@@ -75,6 +79,24 @@ export default function Forensic() {
     results,
     isSearching,
   } = useSearch(sessionId);
+
+  // Initialize form with React Hook Form
+  const methods = useForm<ForensicFormValues>({
+    resolver: zodResolver(forensicFormSchema),
+    defaultValues: {
+      subjectType: 'vehicle',
+      cameras: [],
+      startTime: '00:00',
+      endTime: '23:59',
+      appearance: {
+        generalColors: [],
+      },
+      attributes: {
+        distinctiveFeatures: {},
+        contextFeatures: {},
+      },
+    },
+  });
 
   // Clean up object URLs when component unmounts
   useEffect(
@@ -88,26 +110,13 @@ export default function Forensic() {
     [results]
   );
 
-  const handleTimeChange = (start: string, end: string) => {
-    setStartTime(start);
-    setEndTime(end);
-  };
+  const transformColors = (colorHexes: string[]) =>
+    colorHexes.map((hex) => {
+      const colorObj = colors.find((c) => c.value === hex);
+      return colorObj ? colorObj.name.toLowerCase() : hex;
+    });
 
-  const handleDistinctiveFeaturesChange = (featureId: string, checked: boolean) => {
-    setDistinctiveFeatures(prev => ({
-      ...prev,
-      [featureId]: checked
-    }));
-  };
-
-  const handleContextFeaturesChange = (featureId: string, checked: boolean) => {
-    setContextFeatures(prev => ({
-      ...prev,
-      [featureId]: checked
-    }));
-  };
-
-  const handleSearch = async () => {
+  const handleSearch = async (data: ForensicFormValues) => {
     setSearchSubmitted(true);
 
     // Map tolerance values
@@ -117,80 +126,39 @@ export default function Forensic() {
       High: 'high',
     };
 
-    // Convert color hex values to lowercase color names
-    const transformColors = (colorHexes: string[]) => {
-      return colorHexes.map(hex => {
-        // Find the color object with matching hex value
-        const colorObj = colors.find(c => c.value === hex);
-        // Return the lowercase name or default to the hex if not found
-        return colorObj ? colorObj.name.toLowerCase() : hex;
-      });
-    };
-
-    // Get tolerance values
-    const mappedAppearanceTolerance =
-      selectedAppearanceTolerance.length > 0
-        ? toleranceMap[selectedAppearanceTolerance[0]] || 'medium'
-        : 'medium';
-
-    const mappedAttributesTolerance =
-      selectedAttributesTolerance.length > 0
-        ? toleranceMap[selectedAttributesTolerance[0]] || 'medium'
-        : 'medium';
-
-    // Build form data with all fields
-    let formData: CustomFormData = {
-      date: dateStr,
-      endDate: endDateStr,
-      startTime,
-      endTime,
-      cameras: selectedCameras,
-      subjectType: selectedClass,
+    // Transform form data to match API expectations
+    const formattedData = {
+      ...data,
       appearance: {
-        generalColors: transformColors(selectedColors), // Transform colors here
-        gender: selectedClass === 'person' ? selectedGenders : undefined,
-        age: selectedClass === 'person' ? selectedAges : undefined,
-        build: selectedClass === 'person' ? selectedBuilds : undefined,
-        height: selectedClass === 'person' ? selectedHeights : undefined,
+        ...data.appearance,
+        generalColors: transformColors(data.appearance.generalColors),
       },
       attributes: {
-        distinctiveFeatures: distinctiveFeatures,
-        hairColors: selectedClass === 'person' ? transformColors(selectedHairColors) : undefined, // Transform colors
-        hairLength: selectedClass === 'person' ? selectedHairLength : undefined,
-        hairStyle: selectedClass === 'person' ? selectedHairStyle : undefined,
-        upperType: selectedClass === 'person' ? selectedTopType : undefined,
-        topColors: selectedClass === 'person' ? transformColors(selectedTopColors) : undefined, // Transform colors
-        lowerType: selectedClass === 'person' ? selectedBottomType : undefined,
-        bottomColors: selectedClass === 'person' ? transformColors(selectedBottomColors) : undefined, // Transform colors
+        ...data.attributes,
+        hairColors: data.attributes.hairColors
+          ? transformColors(data.attributes.hairColors)
+          : undefined,
+        topColors: data.attributes.topColors
+          ? transformColors(data.attributes.topColors)
+          : undefined,
+        bottomColors: data.attributes.bottomColors
+          ? transformColors(data.attributes.bottomColors)
+          : undefined,
       },
-      appearanceTolerance: mappedAppearanceTolerance,
-      attributesTolerance: mappedAttributesTolerance,
+      appearanceTolerance:
+        data.appearanceTolerance.length > 0
+          ? toleranceMap[data.appearanceTolerance[0]] || 'medium'
+          : 'medium',
+      attributesTolerance:
+        data.attributesTolerance.length > 0
+          ? toleranceMap[data.attributesTolerance[0]] || 'medium'
+          : 'medium',
     };
 
-    // Add vehicle specific fields
-    if (selectedClass === 'vehicle') {
-      formData.vehicleCategory = selectedVehicleCategories;
-      formData.vehicleSize = selectedSizes;
-      formData.attributes.brands = selectedBrands.map(brand => ({
-        brand,
-        models: selectedModels
-      }));
-      formData.attributes.plate = licensePlate;
-    }
-
-    // Include context features
-    if (Object.keys(contextFeatures).length > 0) {
-      formData.attributes.distinctiveFeatures = {
-        ...formData.attributes.distinctiveFeatures,
-        ...contextFeatures
-      };
-    }
-
-    // Log the search parameters
-    console.log('Search form data:', JSON.stringify(formData, null, 2));
+    console.log('Search form data:', JSON.stringify(formattedData, null, 2));
 
     try {
-      const guid = await startSearch(formData, 5);
+      const guid = await startSearch(formattedData, 5);
       initWebSocket(guid);
     } catch (error) {
       console.error('Failed to start search:', error);
@@ -209,82 +177,155 @@ export default function Forensic() {
             </Button>
           </div>
 
-          <ScrollArea className="flex-1 pr-4">
-            <div className="space-y-4">
-              <Accordion type="single" defaultValue="sources" collapsible>
-                <Sources onSelectedCamerasChange={setSelectedCameras} />
-                <Times
-                  date={dateStr}
-                  onDateChange={(startDate, endDate) => {
-                    setDateStr(startDate);
-                    setEndDateStr(endDate);
-                  }}
-                  onTimeChange={handleTimeChange}
-                />
-                <Types
-                  selectedClass={selectedClass}
-                  onClassChange={setSelectedClass}
-                />
-                <Appearances
-                  selectedClass={selectedClass}
-                  colors={colors}
-                  selectedColors={selectedColors}
-                  onColorsChange={setSelectedColors}
-                  selectedGenders={selectedGenders}
-                  onGendersChange={setSelectedGenders}
-                  selectedAges={selectedAges}
-                  onAgesChange={setSelectedAges}
-                  selectedBuilds={selectedBuilds}
-                  onBuildsChange={setSelectedBuilds}
-                  selectedHeights={selectedHeights}
-                  onHeightsChange={setSelectedHeights}
-                  selectedVehicleCategories={selectedVehicleCategories}
-                  onVehicleCategoriesChange={setSelectedVehicleCategories}
-                  selectedSizes={selectedSizes}
-                  onSizesChange={setSelectedSizes}
-                  selectedTolerance={selectedAppearanceTolerance}
-                  onToleranceChange={setSelectedAppearanceTolerance}
-                />
-                <Attributes
-                  selectedClass={selectedClass}
-                  colors={colors}
-                  selectedHairColors={selectedHairColors}
-                  onHairColorsChange={setSelectedHairColors}
-                  selectedTopColors={selectedTopColors}
-                  onTopColorsChange={setSelectedTopColors}
-                  selectedBottomColors={selectedBottomColors}
-                  onBottomColorsChange={setSelectedBottomColors}
-                  selectedHairLength={selectedHairLength}
-                  onHairLengthChange={setSelectedHairLength}
-                  selectedHairStyle={selectedHairStyle}
-                  onHairStyleChange={setSelectedHairStyle}
-                  selectedTopType={selectedTopType}
-                  onTopTypeChange={setSelectedTopType}
-                  selectedBottomType={selectedBottomType}
-                  onBottomTypeChange={setSelectedBottomType}
-                  selectedToleranceOptions={selectedAttributesTolerance}
-                  onToleranceOptionsChange={setSelectedAttributesTolerance}
-                  selectedBrands={selectedBrands}
-                  onBrandsChange={setSelectedBrands}
-                  selectedModels={selectedModels}
-                  onModelsChange={setSelectedModels}
-                  licensePlate={licensePlate}
-                  onLicensePlateChange={setLicensePlate}
-                  distinctiveFeatures={distinctiveFeatures}
-                  onDistinctiveFeaturesChange={handleDistinctiveFeaturesChange}
-                  contextFeatures={contextFeatures}
-                  onContextFeaturesChange={handleContextFeaturesChange}
-                />
-              </Accordion>
-            </div>
-          </ScrollArea>
+          <FormProvider {...methods}>
+            <form
+              onSubmit={methods.handleSubmit(handleSearch)}
+              className="flex flex-col h-full"
+            >
+              <ScrollArea className="flex-1 pr-4">
+                <div className="space-y-4">
+                  <Accordion type="single" defaultValue="sources" collapsible>
+                    <Sources
+                      onSelectedCamerasChange={(cameras) =>
+                        methods.setValue('cameras', cameras)
+                      }
+                    />
+                    <Times
+                      date={methods.watch('date')}
+                      onDateChange={(startDate, endDate) => {
+                        methods.setValue('date', startDate);
+                        methods.setValue('endDate', endDate);
+                      }}
+                      onTimeChange={(start, end) => {
+                        methods.setValue('startTime', start);
+                        methods.setValue('endTime', end);
+                      }}
+                    />
+                    <Types
+                      selectedClass={methods.watch('subjectType')}
+                      onClassChange={(value) =>
+                        methods.setValue(
+                          'subjectType',
+                          value as 'person' | 'vehicle'
+                        )
+                      }
+                    />
+                    <Appearances
+                      selectedClass={methods.watch('subjectType')}
+                      colors={colors}
+                      selectedColors={methods.watch('appearance.generalColors')}
+                      onColorsChange={(colors) =>
+                        methods.setValue('appearance.generalColors', colors)
+                      }
+                      selectedGenders={methods.watch('appearance.gender') || []}
+                      onGendersChange={(values) =>
+                        methods.setValue('appearance.gender', values)
+                      }
+                      selectedAges={methods.watch('appearance.age') || []}
+                      onAgesChange={(values) =>
+                        methods.setValue('appearance.age', values)
+                      }
+                      selectedBuilds={methods.watch('appearance.build') || []}
+                      onBuildsChange={(values) =>
+                        methods.setValue('appearance.build', values)
+                      }
+                      selectedHeights={methods.watch('appearance.height') || []}
+                      onHeightsChange={(values) =>
+                        methods.setValue('appearance.height', values)
+                      }
+                      // Hair properties moved from Attributes component
+                      selectedHairColors={methods.watch('attributes.hairColors') || []}
+                      onHairColorsChange={(values) =>
+                        methods.setValue('attributes.hairColors', values)
+                      }
+                      selectedHairLength={methods.watch('attributes.hairLength') || []}
+                      onHairLengthChange={(values) =>
+                        methods.setValue('attributes.hairLength', values)
+                      }
+                      selectedHairStyle={methods.watch('attributes.hairStyle') || []}
+                      onHairStyleChange={(values) =>
+                        methods.setValue('attributes.hairStyle', values)
+                      }
+                      selectedVehicleCategories={methods.watch('appearance.vehicleCategory') || []}
+                      onVehicleCategoriesChange={(values) =>
+                        methods.setValue('appearance.vehicleCategory', values)
+                      }
+                      selectedSizes={methods.watch('appearance.vehicleSize') || []}
+                      onSizesChange={(values) =>
+                        methods.setValue('appearance.vehicleSize', values)
+                      }
+                      selectedTolerance={methods.watch('appearanceTolerance')}
+                      onToleranceChange={(values) =>
+                        methods.setValue('appearanceTolerance', values)
+                      }
+                    />
+                    <Attributes
+                      selectedClass={methods.watch('subjectType')}
+                      colors={colors} // Add this missing prop
+                      selectedTopColors={
+                        methods.watch('attributes.topColors') || []
+                      }
+                      onTopColorsChange={(values) =>
+                        methods.setValue('attributes.topColors', values)
+                      }
+                      selectedBottomColors={
+                        methods.watch('attributes.bottomColors') || []
+                      }
+                      onBottomColorsChange={(values) =>
+                        methods.setValue('attributes.bottomColors', values)
+                      }
+                      selectedTopType={
+                        methods.watch('attributes.upperType') || []
+                      }
+                      onTopTypeChange={(values) =>
+                        methods.setValue('attributes.upperType', values)
+                      }
+                      selectedBottomType={
+                        methods.watch('attributes.lowerType') || []
+                      }
+                      onBottomTypeChange={(values) =>
+                        methods.setValue('attributes.lowerType', values)
+                      }
+                      // Remove hair-related props
+                      selectedBrands={methods.watch('attributes.brands') || []}
+                      onBrandsChange={(values) =>
+                        methods.setValue('attributes.brands', values)
+                      }
+                      selectedModels={methods.watch('attributes.models') || []}
+                      onModelsChange={(values) =>
+                        methods.setValue('attributes.models', values)
+                      }
+                      licensePlate={methods.watch('attributes.plate') || ''}
+                      onLicensePlateChange={(value) =>
+                        methods.setValue('attributes.plate', value)
+                      }
+                      distinctiveFeatures={
+                        methods.watch('attributes.distinctiveFeatures') || {}
+                      }
+                      onDistinctiveFeaturesChange={(id, checked) =>
+                        methods.setValue(`attributes.distinctiveFeatures.${id}`, checked)
+                      }
+                      contextFeatures={methods.watch('attributes.contextFeatures') || {}}
+                      onContextFeaturesChange={(id, checked) =>
+                        methods.setValue(`attributes.contextFeatures.${id}`, checked)
+                      }
+                      selectedToleranceOptions={methods.watch('attributesTolerance')}
+                      onToleranceOptionsChange={(values) =>
+                        methods.setValue('attributesTolerance', values)
+                      }
+                    />
+                  </Accordion>
+                </div>
+              </ScrollArea>
 
-          <div className="mt-4">
-            <Button onClick={handleSearch} className="w-full">
-              <Search className="mr-2 h-4 w-4" />
-              Lancer la recherche
-            </Button>
-          </div>
+              <div className="mt-4">
+                <Button type="submit" className="w-full">
+                  <Search className="mr-2 h-4 w-4" />
+                  Lancer la recherche
+                </Button>
+              </div>
+            </form>
+          </FormProvider>
 
           {isSearching && (
             <div className="mt-2">
@@ -320,9 +361,9 @@ export default function Forensic() {
           </div>
 
           <ScrollArea className="h-[calc(100%-3rem)]">
-            {!searchSubmitted || selectedCameras.length === 0 ? (
+            {!searchSubmitted || methods.watch('cameras').length === 0 ? (
               <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
-                {selectedCameras.length === 0
+                {methods.watch('cameras').length === 0
                   ? 'Sélectionnez une ou plusieurs caméras pour commencer'
                   : "Appuyez sur 'Lancer la recherche' pour afficher les résultats"}
               </div>

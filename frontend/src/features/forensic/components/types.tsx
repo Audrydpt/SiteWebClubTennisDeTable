@@ -14,6 +14,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { typeOptions } from '../lib/form-config';
+import type { SelectOption } from '../lib/form-config';
 
 interface TypesProps {
   selectedClass: string;
@@ -21,7 +22,6 @@ interface TypesProps {
 }
 
 export default function Types({ selectedClass, onClassChange }: TypesProps) {
-  // Set default value to "personne" if no type is selected
   useEffect(() => {
     if (!selectedClass) {
       onClassChange('vehicle');
@@ -42,9 +42,9 @@ export default function Types({ selectedClass, onClassChange }: TypesProps) {
           <SelectContent>
             <SelectGroup>
               <SelectLabel>Type</SelectLabel>
-              {typeOptions.map((type: string) => (
-                <SelectItem key={type.toLowerCase()} value={type.toLowerCase()}>
-                  {type}
+              {typeOptions.map((option: SelectOption) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectGroup>
