@@ -20,6 +20,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Response, BackgroundTasks, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.responses import JSONResponse
+from starlette.requests import Request
 
 from gunicorn.app.base import BaseApplication
 
@@ -31,6 +32,7 @@ from event_grabber import EventGrabber
 from database import Dashboard, GenericDAL, Widget
 from database import AcicAllInOneEvent, AcicCounting, AcicEvent, AcicLicensePlate, AcicNumbering, AcicOCR, AcicOccupancy, AcicUnattendedItem
 
+from pydantic import BaseModel, Field, Extra
 
 from vms import CameraClient
 
@@ -57,7 +59,11 @@ class FastAPIServer:
             docs_url=None, redoc_url=None,
             swagger_ui_parameters={
                 "persistAuthorization": True
-            })
+            },
+            servers=[
+                {"description": "production", "url": "/front-api"},
+                {"description": "development", "url": "/"},
+            ])
 
         self.app.add_middleware(
             CORSMiddleware,
@@ -279,12 +285,79 @@ class FastAPIServer:
                 "type": "blocking"
             }
 
-    def __create_forensic(self):        
+    def __create_forensic(self):
+        
+        class TimeRange(BaseModel):
+            time_from: datetime.datetime
+            time_to: datetime.datetime
+        
+        Confidence = Literal["low", "medium", "high"]
+        Color = Literal["brown", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "pink", "white", "gray", "black"]
+
+        class Model(BaseModel):
+            sources: List[str]
+            timerange: TimeRange
+        
+        class MMR(BaseModel):
+            brand: str
+            model: Optional[List[str]] = None
+        
+        class VehiculeApperance(BaseModel):
+            type: Optional[List[str]] = None
+            color: Optional[List[Color]] = None
+            confidence: Confidence
+        
+        class VehiculeAttributes(BaseModel):
+            mmr: Optional[List[MMR]] = None
+            plate: Optional[str] = None
+            other: Dict[str, bool]
+            confidence: Confidence
+        
+        class ModelVehicle(Model):
+            type: Literal["vehicle"]
+            appearances: VehiculeApperance
+            attributes: VehiculeAttributes
+            context: Dict[str, Any]
+        
+        class Hair(BaseModel):
+            length: Optional[List[Literal["none", "short", "medium", "long"]]] = None
+            color: Optional[List[Literal["black", "brown", "blonde", "gray", "white", "other"]]] = None
+            style: Optional[List[Literal["straight", "wavy", "curly"]]] = None
+
+        class PersonApperance(BaseModel):
+            gender: Optional[List[Literal["male", "female"]]] = None
+            seenAge: Optional[List[Literal["child", "teen", "adult", "senior"]]] = None
+            realAge: Optional[int] = None
+            build: Optional[List[Literal["slim", "average", "athletic", "heavy"]]] = None
+            height: Optional[List[Literal["short", "average", "tall"]]] = None
+            hair: Hair
+            confidence: Confidence
+        
+        class UpperPersonAttributes(BaseModel):
+            color: Optional[List[Color]] = None
+            type: Optional[List[Literal["shirt", "jacket", "coat", "sweater", "dress", "other"]]] = None
+        
+        class LowerPersonAttributes(BaseModel):
+            color: Optional[List[Color]] = None
+            type: Optional[List[Literal["pants", "shorts", "skirt", "dress", "other"]]] = None
+            
+        class PersonAttributes(BaseModel):
+            upper: UpperPersonAttributes
+            lower: LowerPersonAttributes
+            other: Dict[str, bool]
+            confidence: Confidence
+
+        class ModelPerson(Model):
+            type: Literal["person"]
+            appearances: PersonApperance
+            attributes: PersonAttributes
+            context: Dict[str, Any]
+        
         async def mocked_task(duration):
+            image = cv2.imread("/backend/assets/test.jpg")
             for i in range(duration):
                 await asyncio.sleep(1)
-                progress = (i + 1) * 20
-                yield progress
+                yield {"progress": i}, cv2.imencode('.jpg', image)[1].tobytes()
 
         jobs = {}
         
@@ -293,11 +366,10 @@ class FastAPIServer:
             return [i for i in jobs.keys()]
 
         @self.app.post("/forensics", tags=["forensics"])
-        async def start_task(duration: int):
+        async def start_task(request: Request, data: Union[ModelVehicle, ModelPerson]):
             guid = str(uuid.uuid4())
-            jobs[guid] = mocked_task(duration)
-
-            return guid
+            jobs[guid] = mocked_task(10)
+            return {"guid": guid}
         
         @self.app.websocket("/forensics/{guid}")
         async def task_updates(websocket: WebSocket, guid: str):
@@ -306,16 +378,19 @@ class FastAPIServer:
             if job is None:
                 await websocket.send_json({"error": "Job not found"})
                 return
-
+            
             try:
                 async for progress in job:
-                    await websocket.send_json({"progress": progress})
+                    data, frame = progress
+                    await websocket.send_json(data)
+                    await websocket.send_bytes(frame)
                 await websocket.close()
-                
             except WebSocketDisconnect:
                 pass
+            except Exception as e:
+                print(e)
             finally:
-                self.jobs.pop(guid, None)
+                jobs.pop(guid, None)
     
     def __create_vms(self):
         @self.app.get("/vms/{ip}/cameras", tags=["vms"])
@@ -629,9 +704,8 @@ class ThreadedFastAPIServer(BaseApplication):
     
     def start(self, host="0.0.0.0", port=5020):
         self.options["bind"] = f"{host}:{port}"
-        self.load_config()
-
         if "root_path" not in self.options:
             self.options["root_path"] = "/front-api"
 
+        self.load_config()
         self.run()
