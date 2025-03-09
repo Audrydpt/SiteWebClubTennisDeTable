@@ -3,6 +3,7 @@ import argparse
 import signal
 import sys
 
+from task_manager import SharedTaskManager
 from database import GenericDAL
 from event_grabber import EventGrabber
 from api import ThreadedFastAPIServer, FastAPIServer
@@ -49,6 +50,8 @@ if __name__ == "__main__":
                 if serv.is_reachable(timeout=0.2) and serv.is_streaming(timeout=0.2):
                     grabber.add_grabber(server_ip, 8081)
     grabber.start()
+
+    SharedTaskManager.initialize()
 
     # init web server
     print("Init web server")

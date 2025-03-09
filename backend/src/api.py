@@ -24,6 +24,9 @@ from starlette.requests import Request
 
 from gunicorn.app.base import BaseApplication
 
+
+from task_manager import CounterJob, SharedTaskManager, TaskManagerServer, WebSocketObserver
+
 from typing import Annotated, Literal, Optional, Type, Union, List, Dict, Any
 from enum import Enum
 
@@ -54,6 +57,7 @@ class ModelName(str, Enum):
 # Please follow: https://www.belgif.be/specification/rest/api-guide/#resource-uri
 class FastAPIServer:
     def __init__(self, event_grabber:EventGrabber):
+        self.task_manager = SharedTaskManager.get_manager()
         self.event_grabber = event_grabber
         self.app = FastAPI(
             docs_url=None, redoc_url=None,
@@ -352,46 +356,56 @@ class FastAPIServer:
             appearances: PersonApperance
             attributes: PersonAttributes
             context: Dict[str, Any]
-        
-        async def mocked_task(duration):
-            image = cv2.imread("/backend/assets/test.jpg")
-            for i in range(duration):
-                await asyncio.sleep(1)
-                yield {"progress": i}, cv2.imencode('.jpg', image)[1].tobytes()
-
-        jobs = {}
-        
+                
         @self.app.get("/forensics", tags=["forensics"])
         async def get_tasks():
-            return [i for i in jobs.keys()]
+            return self.task_manager.get_jobs()
 
         @self.app.post("/forensics", tags=["forensics"])
         async def start_task(request: Request, data: Union[ModelVehicle, ModelPerson]):
-            guid = str(uuid.uuid4())
-            jobs[guid] = mocked_task(10)
-            return {"guid": guid}
+            job = CounterJob(
+                duration=10,
+                target="default"
+            )
+            job_id = self.task_manager.submit_job(job)
+            return {"guid": job_id}
         
         @self.app.websocket("/forensics/{guid}")
         async def task_updates(websocket: WebSocket, guid: str):
             await websocket.accept()
-            job = jobs.get(guid)
-            if job is None:
-                await websocket.send_json({"error": "Job not found"})
-                return
             
+            task_manager = SharedTaskManager.get_manager()
+            observer = WebSocketObserver(websocket)
+            
+            if not task_manager.add_observer(guid, observer):
+                await websocket.close(code=1000, reason="Job not found")
+                return
             try:
-                async for progress in job:
-                    data, frame = progress
-                    await websocket.send_json(data)
-                    await websocket.send_bytes(frame)
-                await websocket.close()
+                while True:
+                    await websocket.receive_text()
             except WebSocketDisconnect:
-                pass
-            except Exception as e:
-                print(e)
-            finally:
-                jobs.pop(guid, None)
-    
+                task_manager.remove_observer(guid, observer)
+
+        @self.app.delete("/forensics/{guid}", tags=["forensics"])
+        async def stop_task(guid: str):
+            task_manager = SharedTaskManager.get_manager()
+            task_manager.cancel_job(guid)
+            return {"guid": guid}
+        
+        @self.app.get("/forensics/{guid}", tags=["forensics"])
+        async def get_task(guid: str):
+            task_manager = SharedTaskManager.get_manager()
+            job = task_manager.get_job(guid)
+            if job is None:
+                raise HTTPException(status_code=404, detail="Job not found")
+            
+            results = []
+            for result in job.data.results:
+                results.append({
+                    "metadata": result.metadata,
+                })
+            return results
+        
     def __create_vms(self):
         @self.app.get("/vms/{ip}/cameras", tags=["vms"])
         async def get_cameras(ip: str):
