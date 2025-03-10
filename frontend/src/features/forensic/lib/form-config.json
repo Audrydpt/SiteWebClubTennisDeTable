@@ -94,17 +94,17 @@
     ]
   },
   "colors": [
-    { "name": "Brown", "value": "#964B00", "label": "Brown" },
-    { "name": "Red", "value": "#FF0000", "label": "Red" },
-    { "name": "Orange", "value": "#FFA500", "label": "Orange" },
-    { "name": "Yellow", "value": "#FFFF00", "label": "Yellow" },
-    { "name": "Green", "value": "#008000", "label": "Green" },
-    { "name": "Cyan", "value": "#00FFFF", "label": "Cyan" },
-    { "name": "Blue", "value": "#0000FF", "label": "Blue" },
-    { "name": "Purple", "value": "#800080", "label": "Purple" },
-    { "name": "Pink", "value": "#FFC0CB", "label": "Pink" },
-    { "name": "White", "value": "#FFFFFF", "label": "White" },
-    { "name": "Gray", "value": "#808080", "label": "Gray" },
-    { "name": "Black", "value": "#000000", "label": "Black" }
+    { "name": "brown", "value": "#964B00", "label": "Brown" },
+    { "name": "red", "value": "#FF0000", "label": "Red" },
+    { "name": "orange", "value": "#FFA500", "label": "Orange" },
+    { "name": "yellow", "value": "#FFFF00", "label": "Yellow" },
+    { "name": "green", "value": "#008000", "label": "Green" },
+    { "name": "cyan", "value": "#00FFFF", "label": "Cyan" },
+    { "name": "blue", "value": "#0000FF", "label": "Blue" },
+    { "name": "purple", "value": "#800080", "label": "Purple" },
+    { "name": "pink", "value": "#FFC0CB", "label": "Pink" },
+    { "name": "white", "value": "#FFFFFF", "label": "White" },
+    { "name": "gray", "value": "#808080", "label": "Gray" },
+    { "name": "black", "value": "#000000", "label": "Black" }
   ]
 }

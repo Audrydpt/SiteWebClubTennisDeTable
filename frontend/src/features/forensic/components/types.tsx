@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import {
   Select,
   SelectContent,
@@ -13,43 +12,51 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { typeOptions } from '../lib/form-config';
-import type { SelectOption } from '../lib/form-config';
+import { FormField, FormItem, FormLabel } from '@/components/ui/form';
+import { useForensicForm } from '../lib/provider/forensic-form-context';
 
-interface TypesProps {
-  selectedClass: string;
-  onClassChange: (value: string) => void;
-}
+const typeOptions = [
+  { value: 'vehicle', label: 'Véhicule' },
+  { value: 'person', label: 'Personne' },
+];
 
-export default function Types({ selectedClass, onClassChange }: TypesProps) {
-  useEffect(() => {
-    if (!selectedClass) {
-      onClassChange('vehicle');
-    }
-  }, [selectedClass, onClassChange]);
+export default function Types() {
+  const { formMethods, subjectType, setSubjectType } = useForensicForm();
+  const { control } = formMethods;
 
   return (
     <AccordionItem value="type">
       <AccordionTrigger>Type de suspect</AccordionTrigger>
       <AccordionContent>
-        <Select
-          value={selectedClass || 'vehicle'}
-          onValueChange={onClassChange}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Type</SelectLabel>
-              {typeOptions.map((option: SelectOption) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+        <FormField
+          control={control}
+          name="type"
+          render={() => (
+            <FormItem>
+              <FormLabel>Type</FormLabel>
+              <Select
+                value={subjectType}
+                onValueChange={(value: 'vehicle' | 'person') => {
+                  setSubjectType(value);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Type</SelectLabel>
+                    {typeOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </FormItem>
+          )}
+        />
       </AccordionContent>
     </AccordionItem>
   );

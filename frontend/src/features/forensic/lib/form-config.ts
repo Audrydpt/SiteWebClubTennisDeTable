@@ -3,7 +3,6 @@ import formConfigData from './form-config.json';
 export interface Color {
   name: string;
   value: string;
-  label: string;
 }
 
 export interface CheckboxItem {
