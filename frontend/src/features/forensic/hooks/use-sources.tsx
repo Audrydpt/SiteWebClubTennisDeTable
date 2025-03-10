@@ -3,9 +3,8 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { Camera } from '../lib/types';
 
-// Define our base API URL from environment
 const BASE_URL = process.env.MAIN_API_URL || '';
-const DEFAULT_VMS_IP = '192.168.20.72'; // Default VMS IP - can be configured or fetched from settings
+const DEFAULT_VMS_IP = '192.168.20.72'; // Default VMS IP
 
 // Helper function to get auth header if needed
 const getAuthHeader = (sessionId: string) => ({
@@ -32,8 +31,6 @@ export default function useSources(
 
       const data = await response.json();
 
-      // Transform the data into our Camera format
-      // VMS API returns an object with camera UUIDs as keys and names as values
       const cameras: Camera[] = Object.entries(data).map(([id, name]) => ({
         id,
         name: name as string,

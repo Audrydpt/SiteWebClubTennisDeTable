@@ -1,259 +1,295 @@
+/* eslint-disable */
+import { useCallback } from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Label } from '@/components/ui/label';
 import ColorPicker from './ui/color-picker';
 import MultiSelect from '@/components/multi-select';
-import { Label } from '@/components/ui/label';
 import {
   genderOptions,
   ageOptions,
   buildOptions,
   heightOptions,
-  sizeOptions,
-  toleranceOptions,
-  vehicleTypes,
   hairLengthOptions,
   hairStyleOptions,
-} from '../lib/form-config';
-import type { Color } from '../lib/form-config';
-
-interface AppearancesProps {
-  selectedClass: string;
-  colors: Color[];
-  selectedColors: string[];
-  onColorsChange: (colors: string[]) => void;
-  useScrollArea?: boolean;
-  maxHeight?: string;
-  selectedGenders?: string[];
-  onGendersChange?: (genders: string[]) => void;
-  selectedAges?: string[];
-  onAgesChange?: (ages: string[]) => void;
-  selectedBuilds?: string[];
-  onBuildsChange?: (builds: string[]) => void;
-  selectedHeights?: string[];
-  onHeightsChange?: (heights: string[]) => void;
-  selectedVehicleCategories?: string[];
-  onVehicleCategoriesChange?: (categories: string[]) => void;
-  selectedSizes?: string[];
-  onSizesChange?: (sizes: string[]) => void;
-  selectedTolerance?: string[];
-  onToleranceChange?: (tolerance: string[]) => void;
-  // Hair properties moved from AttributesProps
-  selectedHairColors?: string[];
-  onHairColorsChange?: (colors: string[]) => void;
-  selectedHairLength?: string[];
-  onHairLengthChange?: (length: string[]) => void;
-  selectedHairStyle?: string[];
-  onHairStyleChange?: (style: string[]) => void;
-}
-
-export default function Appearances({
-  selectedClass,
+  vehicleTypes,
+  toleranceOptions,
   colors,
-  selectedColors,
-  onColorsChange,
-  useScrollArea = false,
-  maxHeight = '300px',
-  selectedGenders = [],
-  onGendersChange = () => {},
-  selectedAges = [],
-  onAgesChange = () => {},
-  selectedBuilds = [],
-  onBuildsChange = () => {},
-  selectedHeights = [],
-  onHeightsChange = () => {},
-  selectedVehicleCategories = [],
-  onVehicleCategoriesChange = () => {},
-  selectedSizes = [],
-  onSizesChange = () => {},
-  selectedTolerance = [],
-  onToleranceChange = () => {},
-  // Hair properties with defaults
-  selectedHairColors = [],
-  onHairColorsChange = () => {},
-  selectedHairLength = [],
-  onHairLengthChange = () => {},
-  selectedHairStyle = [],
-  onHairStyleChange = () => {},
-}: AppearancesProps) {
-  // Extract option values for MultiSelect compatibility
-  const genderValues = genderOptions.map((option) => option.value);
-  const ageValues = ageOptions.map((option) => option.value);
-  const buildValues = buildOptions.map((option) => option.value);
-  const heightValues = heightOptions.map((option) => option.value);
-  const sizeValues = sizeOptions.map((option) => option.value);
-  const toleranceValues = toleranceOptions.map((option) => option.value);
-  const vehicleTypeValues = vehicleTypes.map((option) => option.value);
-  const hairLengthValues = hairLengthOptions.map((option) => option.value);
-  const hairStyleValues = hairStyleOptions.map((option) => option.value);
+} from '../lib/form-config';
+import {
+  useForensicForm,
+  PersonForensicFormValues,
+  VehicleForensicFormValues,
+} from '../lib/provider/forensic-form-context';
 
-  const content = (
-    <>
-      {selectedClass === 'person' ? (
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Couleur générale</Label>
-            <ColorPicker
-              colors={colors}
-              selected={selectedColors}
-              onChange={onColorsChange}
-            />
-          </div>
+export default function Appearances() {
+  const { formMethods, subjectType } = useForensicForm();
+  const { watch, setValue } = formMethods;
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Genre</Label>
-              <div className="h-10 max-w-full">
-                <MultiSelect
-                  options={genderValues}
-                  selected={selectedGenders}
-                  onChange={onGendersChange}
-                  placeholder="Genre"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Age</Label>
-              <div className="h-10 max-w-full">
-                <MultiSelect
-                  options={ageValues}
-                  selected={selectedAges}
-                  onChange={onAgesChange}
-                  placeholder="Age"
-                />
-              </div>
-            </div>
-          </div>
+  // Get appearance values from the form
+  const appearances = watch('appearances') || {};
+  const tolerance = appearances.confidence || 'medium';
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Corpulence</Label>
-              <div className="h-10 max-w-full">
-                <MultiSelect
-                  options={buildValues}
-                  selected={selectedBuilds}
-                  onChange={onBuildsChange}
-                  placeholder="Corpulence"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Taille</Label>
-              <div className="h-10 max-w-full">
-                <MultiSelect
-                  options={heightValues}
-                  selected={selectedHeights}
-                  onChange={onHeightsChange}
-                  placeholder="Taille"
-                />
-              </div>
-            </div>
-          </div>
+  // Log the current appearances state for debugging
+  console.log('Current appearances state:', appearances);
 
-          {/* Hair section - moved from attributes */}
-          <div className="space-y-4 border-t pt-4">
-            <Label className="text-sm font-medium">Cheveux</Label>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Couleur de cheveux</Label>
-              <ColorPicker
-                colors={colors}
-                selected={selectedHairColors}
-                onChange={onHairColorsChange}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Longueur</Label>
-                <div className="h-10 max-w-full">
-                  <MultiSelect
-                    options={hairLengthValues}
-                    selected={selectedHairLength}
-                    onChange={onHairLengthChange}
-                    placeholder="Longueur"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Style</Label>
-                <div className="h-10 max-w-full">
-                  <MultiSelect
-                    options={hairStyleValues}
-                    selected={selectedHairStyle}
-                    onChange={onHairStyleChange}
-                    placeholder="Style"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Couleur du véhicule</Label>
-            <ColorPicker
-              colors={colors}
-              selected={selectedColors}
-              onChange={onColorsChange}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Type de véhicule</Label>
-              <div className="h-10 max-w-full">
-                <MultiSelect
-                  options={vehicleTypeValues}
-                  selected={selectedVehicleCategories}
-                  onChange={onVehicleCategoriesChange}
-                  placeholder="Type de véhicule"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Taille</Label>
-              <div className="h-10 max-w-full">
-                <MultiSelect
-                  options={sizeValues}
-                  selected={selectedSizes}
-                  onChange={onSizesChange}
-                  placeholder="Taille"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      <div className="space-y-2 pt-4 border-t">
-        <Label className="text-sm font-medium">Tolérance visuelle</Label>
-        <div className="h-10 max-w-[250px]">
-          <MultiSelect
-            options={toleranceValues}
-            selected={selectedTolerance}
-            onChange={onToleranceChange}
-            placeholder="Niveau de tolérance"
-          />
-        </div>
-      </div>
-    </>
+  // Handle selected values changes for MultiSelect components
+  const handleChange = useCallback(
+    (
+      path:
+        | 'appearances.gender'
+        | 'appearances.seenAge'
+        | 'appearances.build'
+        | 'appearances.height'
+        | 'appearances.hair.length'
+        | 'appearances.hair.style'
+        | 'appearances.hair.color'
+        | 'appearances.type',
+      values: string[]
+    ) => {
+      console.log(`Setting ${path} to:`, values);
+      setValue(path, values);
+    },
+    [setValue]
   );
 
+  // Handle tolerance level change
+  const handleToleranceChange = useCallback(
+    (selected: string[]) => {
+      if (selected.length > 0) {
+        console.log('Setting tolerance to:', selected[0]);
+        setValue(
+          'appearances.confidence',
+          selected[0] as 'low' | 'medium' | 'high'
+        );
+      }
+    },
+    [setValue]
+  );
+
+  // Create option maps for more efficient rendering
+  const optionMaps = {
+    gender: genderOptions.map((option) => option.value),
+    age: ageOptions.map((option) => option.value),
+    build: buildOptions.map((option) => option.value),
+    height: heightOptions.map((option) => option.value),
+    hairLength: hairLengthOptions.map((option) => option.value),
+    hairStyle: hairStyleOptions.map((option) => option.value),
+    vehicleTypes: vehicleTypes.map((option) => option.value),
+    tolerance: toleranceOptions.map((option) => option.value),
+  };
+
   return (
-    <AccordionItem value="appearance">
+    <AccordionItem value="appearances">
       <AccordionTrigger>Apparence générale</AccordionTrigger>
       <AccordionContent>
-        {useScrollArea ? (
-          <ScrollArea className="pr-4" style={{ maxHeight }}>
-            {content}
-          </ScrollArea>
-        ) : (
-          content
-        )}
+        <ScrollArea className="pr-4" style={{ maxHeight: '500px' }}>
+          {subjectType === 'person' ? (
+            <div className="space-y-6">
+              {/* Gender section */}
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Genre</Label>
+                <div className="h-10 max-w-[250px]">
+                  <MultiSelect
+                    options={optionMaps.gender}
+                    selected={
+                      (appearances as PersonForensicFormValues['appearances'])
+                        .gender || []
+                    }
+                    onChange={(selected) =>
+                      handleChange('appearances.gender', selected)
+                    }
+                    placeholder="Sélectionner..."
+                  />
+                </div>
+              </div>
+
+              {/* Age section */}
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Âge</Label>
+                <div className="h-10 max-w-[250px]">
+                  <MultiSelect
+                    options={optionMaps.age}
+                    selected={
+                      (appearances as PersonForensicFormValues['appearances'])
+                        .seenAge || []
+                    }
+                    onChange={(selected) =>
+                      handleChange('appearances.seenAge', selected)
+                    }
+                    placeholder="Sélectionner..."
+                  />
+                </div>
+              </div>
+
+              {/* Build section */}
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Corpulence</Label>
+                <div className="h-10 max-w-[250px]">
+                  <MultiSelect
+                    options={optionMaps.build}
+                    selected={
+                      (appearances as PersonForensicFormValues['appearances'])
+                        .build || []
+                    }
+                    onChange={(selected) =>
+                      handleChange('appearances.build', selected)
+                    }
+                    placeholder="Sélectionner..."
+                  />
+                </div>
+              </div>
+
+              {/* Height section */}
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Taille</Label>
+                <div className="h-10 max-w-[250px]">
+                  <MultiSelect
+                    options={optionMaps.height}
+                    selected={
+                      (appearances as PersonForensicFormValues['appearances'])
+                        .height || []
+                    }
+                    onChange={(selected) =>
+                      handleChange('appearances.height', selected)
+                    }
+                    placeholder="Sélectionner..."
+                  />
+                </div>
+              </div>
+
+              {/* Hair section */}
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Cheveux</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Hair Length */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">
+                      Longueur
+                    </Label>
+                    <div className="h-10">
+                      <MultiSelect
+                        options={optionMaps.hairLength}
+                        selected={
+                          (
+                            appearances as PersonForensicFormValues['appearances']
+                          ).hair?.length || []
+                        }
+                        onChange={(selected) =>
+                          handleChange('appearances.hair.length', selected)
+                        }
+                        placeholder="Sélectionner..."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Hair Style */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">
+                      Style
+                    </Label>
+                    <div className="h-10">
+                      <MultiSelect
+                        options={optionMaps.hairStyle}
+                        selected={
+                          (
+                            appearances as PersonForensicFormValues['appearances']
+                          ).hair?.style || []
+                        }
+                        onChange={(selected) =>
+                          handleChange('appearances.hair.style', selected)
+                        }
+                        placeholder="Sélectionner..."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Hair Color */}
+                  {/* Hair Color */}
+                  <div className="space-y-2 col-span-2">
+                    <Label className="text-xs text-muted-foreground">
+                      Couleur
+                    </Label>
+                    <ColorPicker
+                      colors={colors}
+                      name="appearances.hair.color"
+                      control={formMethods.control}
+                      className="w-full"
+                      useColorNames={true}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Vehicle type */}
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Type de véhicule</Label>
+                <div className="h-10 max-w-[250px]">
+                  <MultiSelect
+                    options={optionMaps.vehicleTypes}
+                    selected={
+                      (appearances as VehicleForensicFormValues['appearances'])
+                        .type || []
+                    }
+                    onChange={(selected) =>
+                      handleChange('appearances.type', selected)
+                    }
+                    placeholder="Sélectionner..."
+                  />
+                </div>
+              </div>
+
+              {/* Vehicle color */}
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Couleur</Label>
+                <div>
+                  <ColorPicker
+                    colors={colors}
+                    name="appearances.color"
+                    control={formMethods.control}
+                    className="w-full max-w-[250px]"
+                    useColorNames={true}
+                  />
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Couleurs sélectionnées:{' '}
+                  {(appearances as VehicleForensicFormValues['appearances'])
+                    .color &&
+                  Array.isArray(
+                    (appearances as VehicleForensicFormValues['appearances'])
+                      .color
+                  )
+                    ? (
+                      appearances as VehicleForensicFormValues['appearances']
+                    ).color.join(', ')
+                    : 'Aucune'}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tolerance section - common for both types */}
+          <div className="space-y-4 pt-4 border-t">
+            <Label className="text-sm font-medium">Tolérance apparence</Label>
+            <div className="h-10 max-w-[250px]">
+              <MultiSelect
+                options={optionMaps.tolerance}
+                selected={tolerance ? [tolerance] : []}
+                onChange={handleToleranceChange}
+                placeholder="Niveau de tolérance"
+              />
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Définit la précision de recherche des attributs d'apparence
+            </div>
+          </div>
+        </ScrollArea>
       </AccordionContent>
     </AccordionItem>
   );

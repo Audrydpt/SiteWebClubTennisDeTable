@@ -1,243 +1,290 @@
-/* eslint-disable */
-import { zodResolver } from '@hookform/resolvers/zod';
-import { CalendarIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
-
-import { DateRange } from 'react-day-picker';
+import * as React from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { CalendarIcon, Clock } from 'lucide-react';
+
+import { cn } from '@/lib/utils';
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { FormField, FormItem, FormLabel } from '@/components/ui/form';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useForensicForm } from '../lib/provider/forensic-form-context';
 
-const timeSchema = z.object({
-  range: z.object({
-    from: z.date().optional(),
-    to: z.date().optional(),
-  }),
-  startTime: z.string(),
-  endTime: z.string(),
-}).refine((data) => {
-  // Si les deux heures sont définies, vérifier que l'heure de début est avant l'heure de fin
-  if (data.startTime && data.endTime) {
-    return data.startTime <= data.endTime;
-  }
-  return true;
-}, {
-  message: "L'heure de début doit être antérieure à l'heure de fin",
-  path: ["endTime"]
-});
+// Extracted component to fix nested component ESLint error
+function DateTimePicker({
+  isStart,
+  selectedDate,
+  hours,
+  minutes,
+  isOpen,
+  setIsOpen,
+  handleSelect,
+  updateTimeValue,
+  timeOptions,
+  timeFrom,
+}: {
+  isStart: boolean;
+  selectedDate?: Date;
+  hours: string;
+  minutes: string;
+  isOpen: boolean;
+  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  handleSelect: (date: Date | undefined) => void;
+  updateTimeValue: (hoursValue: string, minutesValue: string) => void;
+  timeOptions: { hours: string[]; minutes: string[] };
+  timeFrom?: Date;
+}) {
+  const label = isStart ? 'Date de début' : 'Date de fin';
 
-type TimeFormValues = z.infer<typeof timeSchema>;
+  return (
+    <FormItem className="grid gap-2">
+      <FormLabel>{label}</FormLabel>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                'justify-start text-left font-normal',
+                !selectedDate && 'text-muted-foreground'
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {selectedDate
+                ? format(selectedDate, 'dd/MM/yyyy', { locale: fr })
+                : 'Sélectionner une date'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={handleSelect}
+              disabled={(date) =>
+                date > new Date() ||
+                date < new Date('1900-01-01') ||
+                (!isStart && timeFrom ? date < timeFrom : false)
+              }
+              initialFocus
+              locale={fr}
+            />
+          </PopoverContent>
+        </Popover>
 
-interface TimesProps {
-  date: string | undefined;
-  onDateChange: (startDate: string | undefined, endDate?: string | undefined) => void;
-  onTimeChange?: (startTime: string, endTime: string) => void;
+        <div className="flex items-center gap-1">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          <Select
+            value={hours}
+            onValueChange={(value) => updateTimeValue(value, minutes)}
+            disabled={!selectedDate}
+          >
+            <SelectTrigger className="w-[60px]">
+              <SelectValue placeholder="H" />
+            </SelectTrigger>
+            <SelectContent>
+              {timeOptions.hours.map((hour) => (
+                <SelectItem
+                  key={`${isStart ? 'start' : 'end'}-hour-${hour}`}
+                  value={hour}
+                >
+                  {hour}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span>:</span>
+          <Select
+            value={minutes}
+            onValueChange={(value) => updateTimeValue(hours, value)}
+            disabled={!selectedDate}
+          >
+            <SelectTrigger className="w-[60px]">
+              <SelectValue placeholder="Min" />
+            </SelectTrigger>
+            <SelectContent>
+              {timeOptions.minutes.map((minute) => (
+                <SelectItem
+                  key={`${isStart ? 'start' : 'end'}-minute-${minute}`}
+                  value={minute}
+                >
+                  {minute}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </FormItem>
+  );
 }
 
-export default function Times({ date, onDateChange, onTimeChange }: TimesProps) {
-  const [timeError, setTimeError] = useState<string | null>(null);
+export default function Times() {
+  const { formMethods } = useForensicForm();
+  const { control, watch, setValue } = formMethods;
 
-  const form = useForm<TimeFormValues>({
-    resolver: zodResolver(timeSchema),
-    defaultValues: {
-      range: {
-        from: date ? new Date(date) : undefined,
-        to: date ? new Date(date) : undefined,
-      },
-      startTime: '00:00',
-      endTime: '23:59',
-    },
-  });
+  const timerange = watch('timerange');
+  const timeFrom = timerange?.time_from
+    ? new Date(timerange.time_from)
+    : undefined;
+  const timeTo = timerange?.time_to ? new Date(timerange.time_to) : undefined;
 
-  useEffect(() => {
-    const subscription = form.watch((value) => {
-      // Date handling
-      if (value.range?.from) {
-        onDateChange(format(value.range.from, 'yyyy-MM-dd'),
-          value.range?.to ? format(value.range.to, 'yyyy-MM-dd') : undefined);
-      } else {
-        onDateChange(undefined, undefined);
-      }
+  const [startOpen, setStartOpen] = React.useState(false);
+  const [endOpen, setEndOpen] = React.useState(false);
 
-      // Time handling - always pass the current time values whenever they change
-      if (onTimeChange && value.startTime && value.endTime) {
-        onTimeChange(value.startTime, value.endTime);
-      }
-    });
+  const isSameDay =
+    timeFrom &&
+    timeTo &&
+    format(timeFrom, 'yyyy-MM-dd') === format(timeTo, 'yyyy-MM-dd');
 
-    return () => subscription.unsubscribe();
-  }, [form, onDateChange, onTimeChange]);
+  const hasTimeError = isSameDay && timeFrom && timeTo && timeFrom > timeTo;
 
-  const handleTimeChange = (field: any, value: string) => {
-    field.onChange(value);
-
-    const currentValues = form.getValues();
-    if (currentValues.startTime && currentValues.endTime) {
-      if (currentValues.startTime > currentValues.endTime) {
-        setTimeError("L'heure de début doit être antérieure à l'heure de fin");
-      } else {
-        setTimeError(null);
-      }
-
-      // Always notify parent of time changes
-      if (onTimeChange) {
-        onTimeChange(currentValues.startTime, currentValues.endTime);
-      }
-    }
+  // Time options and current values
+  const timeOptions = {
+    hours: Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')),
+    minutes: Array.from({ length: 60 }, (_, i) =>
+      i.toString().padStart(2, '0')
+    ),
   };
 
-  const isSameDay = form.watch('range')?.from && form.watch('range')?.to &&
-    format(form.watch('range')?.from as Date, 'yyyy-MM-dd') ===
-    format(form.watch('range')?.to as Date, 'yyyy-MM-dd');
+  const startHours = timeFrom ? format(timeFrom, 'HH') : '00';
+  const startMinutes = timeFrom ? format(timeFrom, 'mm') : '00';
+  const endHours = timeTo ? format(timeTo, 'HH') : '23';
+  const endMinutes = timeTo ? format(timeTo, 'mm') : '59';
+
+  // Date handlers
+  const handleStartDateSelect = (date: Date | undefined) => {
+    if (!date) return;
+    const newDate = new Date(date);
+    newDate.setHours(
+      timeFrom?.getHours() || 0,
+      timeFrom?.getMinutes() || 0,
+      0,
+      0
+    );
+    setValue('timerange.time_from', newDate.toISOString());
+
+    if (timeTo && newDate > timeTo) {
+      const newEndDate = new Date(newDate);
+      newEndDate.setHours(23, 59, 59, 999);
+      setValue('timerange.time_to', newEndDate.toISOString());
+    }
+    setStartOpen(false);
+  };
+
+  const handleEndDateSelect = (date: Date | undefined) => {
+    if (!date) return;
+    const newDate = new Date(date);
+    newDate.setHours(
+      timeTo?.getHours() || 23,
+      timeTo?.getMinutes() || 59,
+      59,
+      999
+    );
+    setValue('timerange.time_to', newDate.toISOString());
+    setEndOpen(false);
+  };
+
+  // Time handlers
+  const updateStartTime = (hoursValue: string, minutesValue: string) => {
+    if (!timeFrom) return;
+    const newDate = new Date(timeFrom);
+    newDate.setHours(
+      parseInt(hoursValue, 10),
+      parseInt(minutesValue, 10),
+      0,
+      0
+    );
+    if (isSameDay && timeTo && newDate > timeTo) return;
+    setValue('timerange.time_from', newDate.toISOString());
+  };
+
+  const updateEndTime = (hoursValue: string, minutesValue: string) => {
+    if (!timeTo) return;
+    const newDate = new Date(timeTo);
+    newDate.setHours(
+      parseInt(hoursValue, 10),
+      parseInt(minutesValue, 10),
+      59,
+      999
+    );
+    if (isSameDay && timeFrom && timeFrom > newDate) return;
+    setValue('timerange.time_to', newDate.toISOString());
+  };
 
   return (
     <AccordionItem value="time">
-      <AccordionTrigger>Plage horaire</AccordionTrigger>
+      <AccordionTrigger>Plage temporelle</AccordionTrigger>
       <AccordionContent>
-        <Form {...form}>
-          <form className="space-y-6">
-            <div className="flex-1 space-y-3">
-              <FormField
-                control={form.control}
-                name="range"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Dates:</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              'text-left font-normal',
-                              !field.value.from &&
-                              !field.value.to &&
-                              'text-muted-foreground'
-                            )}
-                          >
-                            {!field.value.from && !field.value.to && (
-                              <span>Sélectionner une plage de dates</span>
-                            )}
-                            {field.value.from && (
-                              <span>
-                                Du{' '}
-                                {format(field.value.from, 'dd/MM/yyyy', {
-                                  locale: fr,
-                                })}
-                              </span>
-                            )}
-                            {field.value.to && field.value.from && (
-                              <span>
-                                {' '}
-                                au{' '}
-                                {format(field.value.to, 'dd/MM/yyyy', {
-                                  locale: fr,
-                                })}
-                              </span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="range"
-                          selected={field.value as DateRange}
-                          onSelect={(value) => {
-                            field.onChange(value);
-                          }}
-                          disabled={(date) =>
-                            date > new Date() || date < new Date('1900-01-01')
-                          }
-                          initialFocus
-                          locale={fr}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </FormItem>
-                )}
+        <FormField
+          control={control}
+          name="timerange"
+          render={() => (
+            <div className="grid gap-4">
+              <DateTimePicker
+                isStart
+                selectedDate={timeFrom}
+                hours={startHours}
+                minutes={startMinutes}
+                isOpen={startOpen}
+                setIsOpen={setStartOpen}
+                handleSelect={handleStartDateSelect}
+                updateTimeValue={updateStartTime}
+                timeOptions={timeOptions}
+                timeFrom={timeFrom}
+              />
+              <DateTimePicker
+                isStart={false}
+                selectedDate={timeTo}
+                hours={endHours}
+                minutes={endMinutes}
+                isOpen={endOpen}
+                setIsOpen={setEndOpen}
+                handleSelect={handleEndDateSelect}
+                updateTimeValue={updateEndTime}
+                timeOptions={timeOptions}
+                timeFrom={timeFrom}
               />
 
-              <FormField
-                control={form.control}
-                name="startTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Heure début</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="time"
-                        {...field}
-                        onChange={(e) => handleTimeChange(field, e.target.value)}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="endTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Heure fin</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="time"
-                        {...field}
-                        onChange={(e) => handleTimeChange(field, e.target.value)}
-                      />
-                    </FormControl>
-                    {timeError && <FormMessage>{timeError}</FormMessage>}
-                  </FormItem>
-                )}
-              />
+              {timeFrom && timeTo && (
+                <div
+                  className={cn(
+                    'text-sm',
+                    hasTimeError ? 'text-destructive' : 'text-muted-foreground'
+                  )}
+                >
+                  {`Recherche du ${format(timeFrom, 'dd/MM/yyyy', { locale: fr })} à ${format(timeFrom, 'HH:mm')}`}
+                  {format(timeFrom, 'yyyy-MM-dd') !==
+                  format(timeTo, 'yyyy-MM-dd')
+                    ? ` au ${format(timeTo, 'dd/MM/yyyy', { locale: fr })}`
+                    : ''}{' '}
+                  à {format(timeTo, 'HH:mm')}
+                  {hasTimeError && (
+                    <div className="text-destructive font-medium mt-1">
+                      L&apos;heure de début doit être antérieure à l&apos;heure
+                      de fin
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-
-            {form.watch('range')?.from && (
-              <div className={cn(
-                "text-sm",
-                timeError && isSameDay ? "text-destructive" : "text-muted-foreground"
-              )}>
-                Recherche du{' '}
-                {form.watch('range')?.from
-                  ? format(form.watch('range')?.from as Date, 'dd/MM/yyyy')
-                  : ''}{' '}
-                à {form.watch('startTime')}
-                {form.watch('range')?.to
-                  ? ` au ${format(form.watch('range')?.to as Date, 'dd/MM/yyyy')}`
-                  : ''}{' '}
-                à {form.watch('endTime')}
-                {timeError && isSameDay && (
-                  <div className="text-destructive font-medium mt-1">{timeError}</div>
-                )}
-              </div>
-            )}
-          </form>
-        </Form>
+          )}
+        />
       </AccordionContent>
     </AccordionItem>
   );
