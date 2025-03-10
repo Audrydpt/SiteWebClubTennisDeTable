@@ -1,4 +1,5 @@
 import asyncio
+from queue import Empty
 import threading
 import numpy as np
 import uuid
@@ -47,6 +48,9 @@ class PriorityResultsObserver(JobObserver):
         else:
             if result.metadata.get('confidence', 0) > self.results[0].metadata.get('confidence', 0):
                 heapq.heappushpop(self.results, result)
+    
+    def get_results(self) -> List[JobResult]:
+        return sorted(self.results, reverse=True)
 
 class WebSocketObserver(JobObserver):    
     def __init__(self, websocket):
@@ -58,6 +62,31 @@ class WebSocketObserver(JobObserver):
             await self.websocket.send_bytes(result.frame)
         except Exception as e:
             print(f"Erreur d'envoi WebSocket: {e}")
+
+class SharedQueueObserver(JobObserver):
+    _manager = None
+    
+    @classmethod
+    def get_manager(cls):
+        if cls._manager is None:
+            cls._manager = multiprocessing.Manager()
+        return cls._manager
+    
+    def __init__(self):
+        self.queue = self.get_manager().Queue(maxsize=100)
+        
+    async def on_job_update(self, result: JobResult) -> None:
+        try:
+            self.queue.put(result)
+        except Exception as e:
+            print(f"Error adding to queue: {e}")
+    
+    async def get(self, timeout=0.1):
+        try:
+            print("Tentative de dépilage de la file partagée")
+            return self.queue.get(timeout=timeout)
+        except Empty:
+            return None
 
 class Job:   
     """

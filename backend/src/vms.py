@@ -11,9 +11,6 @@ import numpy as np
 
 from typing import Optional, Dict, AsyncGenerator, Tuple, Any
 
-import sock
-
-
 class CameraClient:
     def __init__(self, host: str, port: int):
         self.host = host
@@ -208,7 +205,11 @@ class CameraClient:
 
         async for data in response:
             if isinstance(data, dict):
-                time_frame = data.get("FrameTime")
+                time_str = data.get("FrameTime")
+                time_frame = (
+                    datetime.datetime.fromisoformat(time_str).astimezone(datetime.timezone.utc)
+                    if time_str else None
+                )
                 codec_format = data.get("Format")
             elif isinstance(data, bytes):
                 try:

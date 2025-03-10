@@ -25,7 +25,8 @@ from starlette.requests import Request
 from gunicorn.app.base import BaseApplication
 
 
-from task_manager import CounterJob, SharedTaskManager, TaskManagerServer, WebSocketObserver
+from forensic import VehicleReplayJob
+from task_manager import CounterJob, SharedQueueObserver, SharedTaskManager, TaskManagerServer, WebSocketObserver
 
 from typing import Annotated, Literal, Optional, Type, Union, List, Dict, Any
 from enum import Enum
@@ -363,11 +364,21 @@ class FastAPIServer:
 
         @self.app.post("/forensics", tags=["forensics"])
         async def start_task(request: Request, data: Union[ModelVehicle, ModelPerson]):
-            job = CounterJob(
-                duration=10,
-                target="default"
-            )
+
+            job = None
+            if data.type == "vehicle":
+                job = VehicleReplayJob(data.model_dump())
+            elif data.type == "person": # Placeholder pour le traitement des personnes
+                job = CounterJob(
+                    duration=10,
+                    target=data.type
+                )
+            else:
+                raise HTTPException(status_code=400, detail="Invalid type")
+                
+            # Soumettre le job au gestionnaire de tâches
             job_id = self.task_manager.submit_job(job)
+            
             return {"guid": job_id}
         
         @self.app.websocket("/forensics/{guid}")
@@ -375,15 +386,30 @@ class FastAPIServer:
             await websocket.accept()
             
             task_manager = SharedTaskManager.get_manager()
-            observer = WebSocketObserver(websocket)
+            observer = SharedQueueObserver()
             
             if not task_manager.add_observer(guid, observer):
                 await websocket.close(code=1000, reason="Job not found")
                 return
             try:
                 while True:
-                    await websocket.receive_text()
-            except WebSocketDisconnect:
+                    print("Waiting for result")
+                    result = await observer.get(0.1)
+                    if result is None:
+                        await asyncio.sleep(0.1)
+                        continue
+                    
+                    print("Sending result...", result.metadata)
+                    await websocket.send_json(result.metadata)
+                    print("Sending byte... ", len(result.frame))
+                    await websocket.send_bytes(result.frame)
+                    print("Done")
+
+                    if result.final is True:
+                        break
+            except Exception as e:
+                print("Error", e)
+            finally:
                 task_manager.remove_observer(guid, observer)
 
         @self.app.delete("/forensics/{guid}", tags=["forensics"])
@@ -400,7 +426,7 @@ class FastAPIServer:
                 raise HTTPException(status_code=404, detail="Job not found")
             
             results = []
-            for result in job.data.results:
+            for result in job.results.get_results():
                 results.append({
                     "metadata": result.metadata,
                 })
@@ -417,6 +443,7 @@ class FastAPIServer:
 
         @self.app.get("/vms/{ip}/cameras/{guuid}/live", tags=["vms"])
         async def get_live(ip: str, guuid: str):
+            return Response(content=b"", status_code=200, headers={"Content-Type": "image/jpeg"})
             try:
                 async with CameraClient(ip, 7778) as client:
                     streams = client.start_live(guuid)
