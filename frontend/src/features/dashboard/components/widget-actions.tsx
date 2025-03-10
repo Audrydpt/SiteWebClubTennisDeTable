@@ -16,6 +16,7 @@ type ChartTiles = {
 interface WidgetActionsProps {
   isOperator: boolean;
   item: ChartTiles;
+  chartRef: HTMLDivElement | undefined;
   edit: (widget: StoredWidget) => void;
   remove: (id: string) => void;
   clone: (widget: StoredWidget) => void;
@@ -24,6 +25,7 @@ interface WidgetActionsProps {
 export default function WidgetActions({
   isOperator,
   item,
+  chartRef,
   edit,
   remove,
   clone,
@@ -37,7 +39,7 @@ export default function WidgetActions({
           variant="ghost"
           size="icon"
           area-label="Clone"
-          onClick={() => clone(item.widget)} // Add onClick handler for cloning
+          onClick={() => clone(item.widget)}
         >
           <Copy className="h-4 w-4" />
         </Button>
@@ -46,6 +48,8 @@ export default function WidgetActions({
       {!isOperator && (
         <QuickExport
           storedWidget={item.widget}
+          chartContent={item.content}
+          chartRef={chartRef}
           updateStoredWidget={(newData) => edit({ ...item.widget, ...newData })}
           setStepValidity={() => {}}
         >

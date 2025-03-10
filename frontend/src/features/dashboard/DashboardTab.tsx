@@ -1,4 +1,4 @@
-import { JSX, useEffect } from 'react';
+import { JSX, useEffect, useRef } from 'react';
 import { ReactSortable } from 'react-sortablejs';
 
 import LoadingSpinner from '@/components/loading';
@@ -46,6 +46,8 @@ export default function DashboardTab({
   const { data, isLoading, isError } = query;
   const { user } = useAuth();
   const isOperator = user?.privileges === 'Operator';
+
+  const chartRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
     onAddWidget(() => add);
@@ -96,11 +98,19 @@ export default function DashboardTab({
           key={item.id}
           data-id={item.id}
           className={`${widthClassMap[item.widget.size]} ${heightClassMap[item.widget.size]} group relative`}
+          ref={(el) => {
+            if (el) {
+              chartRefsMap.current.set(item.id, el);
+            } else {
+              chartRefsMap.current.delete(item.id);
+            }
+          }}
         >
           {item.content}
           <WidgetActions
             isOperator={isOperator}
             item={item}
+            chartRef={chartRefsMap.current.get(item.id)}
             edit={edit}
             remove={remove}
             clone={clone}

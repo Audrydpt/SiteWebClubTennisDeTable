@@ -1,14 +1,16 @@
+import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
 import { PdfWorkerRequest, PdfWorkerResponse } from './pdfWorker';
 import WebWorker from './pdfWorker?worker&inline';
 
-type ExportFormat = 'Excel' | 'PDF';
+type ExportFormat = 'Excel' | 'PDF' | 'JPEG';
 
 const exportData = (
   data: Record<string, string | number | boolean>[],
   format: ExportFormat,
   filename: string,
-  setLoading: (loading: boolean) => void
+  setLoading: (loading: boolean) => void,
+  chartRef?: HTMLDivElement | undefined
 ) => {
   if (!data || data.length === 0) return;
 
@@ -56,6 +58,34 @@ const exportData = (
         filename,
       } as PdfWorkerRequest);
 
+      break;
+    }
+
+    case 'JPEG': {
+      if (chartRef) {
+        html2canvas(chartRef, {
+          backgroundColor: 'white',
+          scale: 2,
+          logging: false,
+          allowTaint: true,
+          useCORS: true,
+        })
+          .then((canvas) => {
+            const dataUrl = canvas.toDataURL('image/jpeg', 1);
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = `${filename}.jpeg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setLoading(false);
+          })
+          .catch(() => {
+            setLoading(false);
+          });
+      } else {
+        setLoading(false);
+      }
       break;
     }
 

@@ -17,6 +17,7 @@ export default function WidgetRangeNavigator({
   updateWidgetData,
 }: WidgetRangeNavigatorProps) {
   const [currentRange, setCurrentRange] = useState();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const queryClient = useQueryClient();
 
   if (widget.duration) {
