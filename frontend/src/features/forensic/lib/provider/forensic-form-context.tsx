@@ -1,8 +1,8 @@
 /* eslint-disable */
-import { createContext, useContext, ReactNode, useEffect } from 'react';
-import { z } from 'zod';
-import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { createContext, ReactNode, useContext, useEffect } from 'react';
+import { useForm, UseFormReturn } from 'react-hook-form';
+import { z } from 'zod';
 
 // Définition des schémas Zod
 // Structure commune de base
@@ -187,7 +187,7 @@ export const getDefaultValues = (
   type: 'vehicle' | 'person'
 ): ForensicFormValues => {
   const now = new Date();
-  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const oneDayAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
 
   const baseValues = {
     sources: [] as string[], // Explicitly type as string[] to avoid never[]

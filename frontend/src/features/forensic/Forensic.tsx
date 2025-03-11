@@ -1,24 +1,25 @@
 import { Search } from 'lucide-react';
-import { Form } from '@/components/ui/form';
+
+import { Accordion } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Form } from '@/components/ui/form';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Accordion } from '@/components/ui/accordion';
 
-import {
-  ForensicFormProvider,
-  ForensicFormValues,
-  useForensicForm,
-} from '@/features/forensic/lib/provider/forensic-form-context';
 import Appearances from '@/features/forensic/components/appareances';
 import Attributes from '@/features/forensic/components/attributes';
 import Sources from '@/features/forensic/components/sources';
 import Times from '@/features/forensic/components/times';
 import Types from '@/features/forensic/components/types';
+import {
+  ForensicFormProvider,
+  ForensicFormValues,
+  useForensicForm,
+} from '@/features/forensic/lib/provider/forensic-form-context';
 
-import useSearch, { ForensicResult } from './hooks/use-search';
 import { useAuth } from '@/providers/auth-context';
+import useSearch, { ForensicResult } from './hooks/use-search';
 import { createSearchFormData } from './lib/format-query';
 
 function ForensicFormContent({
@@ -128,7 +129,7 @@ export default function Forensic() {
               <div className="mt-2">
                 <Progress value={progress} className="h-2" />
                 <p className="text-sm text-muted-foreground mt-1">
-                  Progression: {progress}%
+                  Progression: {progress.toFixed(1)}%
                 </p>
               </div>
             )}
