@@ -15,12 +15,12 @@ from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 
 
-class JobStatus(Enum):
-    PENDING = auto()
-    RUNNING = auto()
-    COMPLETED = auto()
-    FAILED = auto()
-    CANCELLED = auto()
+class JobStatus(str, Enum):
+    PENDING = "Pending"
+    RUNNING = "Running"
+    COMPLETED = "Completed"
+    FAILED = "Failed"
+    CANCELLED = "Cancelled"
 
 @dataclass
 class JobResult:
@@ -83,7 +83,6 @@ class SharedQueueObserver(JobObserver):
     
     async def get(self, timeout=0.1):
         try:
-            print("Tentative de dépilage de la file partagée")
             return self.queue.get(timeout=timeout)
         except Empty:
             return None

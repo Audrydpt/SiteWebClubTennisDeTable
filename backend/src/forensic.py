@@ -1,10 +1,13 @@
+import logging
 import asyncio
 import datetime
 from typing import List, Optional, Dict, Any, Union, AsyncGenerator, Tuple
 
 import numpy as np
 import cv2
+import traceback
 
+from service_ai import ServiceAI
 from task_manager import Job, PriorityResultsObserver
 from vms import CameraClient
 
@@ -15,7 +18,13 @@ class VehicleReplayJob(Job):
     """
     def __init__(self, data: Dict[str, Any]):
         super().__init__()
-        print("Starting job:", data)
+
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
+        self.logger.addHandler(logging.StreamHandler())
+        self.logger.addHandler(logging.FileHandler("/tmp/forensic.log"))
+
+        self.logger.info(f"Starting job with data: {data}")
         self.data = data
         self.sources = data.get("sources", [])
         self.timerange = data.get("timerange", {})
@@ -48,69 +57,95 @@ class VehicleReplayJob(Job):
         progress = min(100.0, max(0.0, (elapsed / total_duration) * 100.0))
         return progress
     
+
+    def _filter(self):
+        self._filter_detections()
+        self._filter_classification()
+    
+    def _filter_detections(self):
+        pass
+
+    def _filter_classification(self):
+        pass
+
     async def _execute(self) -> AsyncGenerator[Tuple[dict, bytes], None]:
         
-        print("Processing Forensic")
-        print("Sources:", self.sources)
-        print("Time range:", self.time_from, self.time_to)
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
+        self.logger.addHandler(logging.StreamHandler())
+        self.logger.addHandler(logging.FileHandler("/tmp/forensic.log"))
+        self.logger.info(f"Processing Forensic")
+        self.logger.info(f"Sources: {self.sources}")
+        self.logger.info(f"Time range: {self.time_from} - {self.time_to}")
         if not self.sources:
             yield {"error": "Aucune source spécifiée"}, b""
             return
             
         # Traiter uniquement la première source pour l'instant
         source_guid = self.sources[0]
+        self.logger.info(f"Starting query for source: {source_guid}")
         
         try:
+            self.logger.info(f"Connecting to Camera")
             async with CameraClient("192.168.20.72", 7778) as client:
                 # Vérifier si la caméra existe
+                self.logger.info(f"Getting system info")
                 system_info = await client.get_system_info()
                 if source_guid not in system_info:
-                    print(f"GUID de caméra non trouvé: {source_guid}")
+                    self.logger.info(f"GUID de caméra non trouvé: {source_guid}")
                     yield {"error": f"GUID de caméra non trouvé: {source_guid}"}, b""
                     return
                 
-                # Récupérer le flux vidéo
-                print("Starting replay")
-                frame_count = 0
-                async for img, time in client.start_replay(
-                    source_guid, 
-                    self.time_from, 
-                    self.time_to
-                ):
-                    if self.cancel_event.is_set():
-                        break
-                    
-                    # Calculer la progression
-                    progress = self._calculate_progress(time, self.time_from, self.time_to)
-                    
-                    # Créer les métadonnées
-                    metadata = {
-                        "progress": progress,
-                        "target": "vehicle",
-                        "confidence": 50 + (frame_count % 50),
-                        "timestamp": time.isoformat(),
-                        "frame_number": frame_count
-                    }
-                    
-                    # Encoder l'image en JPEG
-                    _, encoded_image = cv2.imencode('.jpg', img)
-                    frame = encoded_image.tobytes()
-                    
-                    frame_count += 1
-                    yield metadata, frame
+                self.logger.info(f"Connecting to AI Service")
+                async with ServiceAI() as forensic:
+                    await forensic.get_version()
                 
-                # Si aucune image n'a été traitée
-                if frame_count == 0:
-                    yield {
-                        "warning": "Aucune image disponible pour la période spécifiée",
-                        "progress": 100,
-                        "source": source_guid,
-                        "from": self.time_from.isoformat(),
-                        "to": self.time_to.isoformat()
-                    }, b""
-                
+                    self.logger.info(f"Starting replay")
+                    frame_count = 0
+                    async for img, time in client.start_replay(
+                        source_guid, 
+                        self.time_from, 
+                        self.time_to
+                    ):
+                        if self.cancel_event.is_set():
+                            break
+                        
+                        self.logger.info(f"got a frame")
+                        # Calculer la progression
+                        progress = self._calculate_progress(time, self.time_from, self.time_to)
+                        frame_count += 1
+
+                        detections = await forensic.detect(img)
+                        self.logger.info(f"Detections: {detections}")
+
+                        for detection in detections:
+                            self.logger.info(f"Detection: {detection}")
+                            probabilities = detection["bbox"]["probabilities"]
+                            top_class = max(probabilities, key=probabilities.get)
+                            self.logger.info(f"Detection: {top_class} ({probabilities[top_class]})")
+
+                            thumbnail = forensic.get_thumbnail(img, detection)
+
+                            # Créer les métadonnées
+                            metadata = {
+                                "progress": progress,
+                                "target": top_class,
+                                "confidence": probabilities[top_class],
+                                "probabilities": probabilities,
+                                "timestamp": time.isoformat(),
+                            }
+                            
+                            # Encoder l'image en JPEG
+                            _, encoded_image = cv2.imencode('.jpg', thumbnail)
+                            frame = encoded_image.tobytes()
+                            yield metadata, frame
+                    
+                    # Si aucune image n'a été traitée
+                    if frame_count == 0:
+                        raise "No frames available"
         except Exception as e:
-            error_message = f"Erreur lors du traitement du flux vidéo: {str(e)}"
-            print(error_message)
-            yield {"error": error_message, "progress": 0}, b""
-            raise
+            error_message = f"Erreur lors du traitement du flux vidéo: {type(e).__name__}"
+            stacktrace = traceback.format_exc()
+            self.logger.info(stacktrace)
+            yield {"error": error_message, "progress": 0, "stacktrace": stacktrace}, b""
+            raise e

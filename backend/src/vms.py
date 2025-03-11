@@ -1,3 +1,4 @@
+import logging
 import xml.etree.ElementTree as ET
 import asyncio
 import json
@@ -17,6 +18,11 @@ class CameraClient:
         self.port = port
         self.reader = None
         self.writer = None
+
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
+        self.logger.addHandler(logging.StreamHandler())
+        self.logger.addHandler(logging.FileHandler("/tmp/vms.log"))
     
     async def __aenter__(self):
         return self
@@ -45,7 +51,7 @@ class CameraClient:
             # Lecture des headers
             buffer = b""
             while b"\r\n\r\n" not in buffer:
-                chunk = await asyncio.wait_for(self.reader.read(4096), timeout=5.0)
+                chunk = await asyncio.wait_for(self.reader.read(4096), timeout=20.0)
                 if not chunk:
                     break
                 buffer += chunk
@@ -68,7 +74,7 @@ class CameraClient:
             # Compléter la lecture
             body = remaining
             while len(body) < total_length:
-                data = await asyncio.wait_for(self.reader.read(4096), timeout=5.0)
+                data = await asyncio.wait_for(self.reader.read(4096), timeout=20.0)
                 if not data:
                     break
                 body += data
@@ -106,7 +112,7 @@ class CameraClient:
 
             while True:
                 while b"\r\n\r\n" not in buffer:
-                    chunk = await asyncio.wait_for(self.reader.read(4096), timeout=5.0)
+                    chunk = await asyncio.wait_for(self.reader.read(4096), timeout=20.0)
                     if not chunk:
                         return
                     buffer += chunk
@@ -130,9 +136,11 @@ class CameraClient:
                 mime = headers.get("Content-Type", "").lower()
                 if "application/json" in mime:
                     text = body.decode("utf-8")
+                    self.logger.info(text)
                     yield json.loads(text)
                 elif "application/xml" in mime:
                     text = body.decode("utf-8")
+                    self.logger.info(text)
                     yield ET.fromstring(text)
                 else:
                     yield body
@@ -229,7 +237,7 @@ class CameraClient:
                         yield img, time_frame
 
                 except Exception as e:
-                    print(f"Erreur lors du décodage: {e}")
+                    self.logger.error(f"Erreur lors du décodage: {e}")
                     codec = None
                     continue
 

@@ -360,7 +360,12 @@ class FastAPIServer:
                 
         @self.app.get("/forensics", tags=["forensics"])
         async def get_tasks():
-            return self.task_manager.get_jobs()
+            ret = {}
+            for job in self.task_manager.get_jobs():
+                ret[job] = {
+                    "status": self.task_manager.get_job_status(job)
+                }
+            return ret
 
         @self.app.post("/forensics", tags=["forensics"])
         async def start_task(request: Request, data: Union[ModelVehicle, ModelPerson]):
@@ -393,7 +398,6 @@ class FastAPIServer:
                 return
             try:
                 while True:
-                    print("Waiting for result")
                     result = await observer.get(0.1)
                     if result is None:
                         await asyncio.sleep(0.1)

@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import cv2
 import json
@@ -5,13 +6,24 @@ import aiohttp
 import asyncio
 
 class ServiceAI:
-    def __init__(self, server, guid, *args, **kwargs):
-        self.server = server
-        self.guid = guid
+    def __init__(self, *args, **kwargs):
         self.analytic = "192.168.20.212:53211"
         self.describe = None
         self.ws = None
         self.seq = 1
+
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
+        self.logger.addHandler(logging.StreamHandler())
+        self.logger.addHandler(logging.FileHandler("/tmp/service_ai.log"))
+    
+    async def __aenter__(self):
+        return self
+    
+    async def __aexit__(self, exc_type, exc, tb):
+        if self.ws is not None:
+            self.logger.info(f"Closing websocket")
+            await self.ws.close()
 
     async def __describe(self):
         if self.describe is None:
@@ -88,14 +100,57 @@ class ServiceAI:
 
         await self.__detect_object(modelWidth, modelHeight, jpeg=image_jpeg)
 
+    async def detect(self, frame):
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
+        self.logger.addHandler(logging.StreamHandler())
+        self.logger.addHandler(logging.FileHandler("/tmp/service_ai.log"))
+
+        version = await self.get_version()
+        self.logger.info(f"Version: {version}")
+        if version[0] <= 1 or version[0] == 2 and version[1] < 2:
+            raise Exception("Incompatible version")
+        
+        models = await self.get_models()
+        self.logger.info(f"Models: {models}")
+        model = list(models.keys())[0]
+        modelWidth = models[model]["networkWidth"]
+        modelHeight = models[model]["networkHeight"]
+
+        await self.__init_ws(model)
+        image_jpeg = cv2.imencode(".jpg", frame)[1]
+
+        detections = await self.__detect_object(modelWidth, modelHeight, jpeg=image_jpeg)
+        self.logger.info(f"Detections: {detections}")
+        return detections
+
     async def __heartbeat(self):
         await self.ws.ping()
     
     async def __init_ws(self, model):
         if self.ws is None:
             self.ws = await aiohttp.ClientSession().ws_connect(f"ws://{self.analytic}{model}/requestsQueue")
-            #self.ws.use_mask = False
         return self.ws
+
+    def get_thumbnail(self, frame, detection):
+        def getCoord(x, y, w, h):
+            return (
+            int(w * (0.5 + x / (8.0/3))),
+            int(h * (0.5 * (1.0 - y)))
+            )
+            
+        # coord is ACIC format, which is trigonometric circle. 0,0 is the center of the frame.
+        height, width, _ = frame.shape
+        left, bottom = getCoord(detection["bbox"]["min"]["x"], detection["bbox"]["min"]["y"], width, height)
+        right, top = getCoord(detection["bbox"]["max"]["x"], detection["bbox"]["max"]["y"], width, height)
+
+        # Clamp coordinates within image boundaries
+        left = max(0, min(left, width))
+        right = max(0, min(right, width))
+        top = max(0, min(top, height))
+        bottom = max(0, min(bottom, height))
+
+        return frame[top:bottom, left:right]
 
     async def __detect_object(self, width, height, raw=None, jpeg=None):
         ctx = {
@@ -103,6 +158,7 @@ class ServiceAI:
             "overlapThreshold": 0.3,
             "bbox": True,
         }
+        self.logger.info(f"Sending context: {ctx}")
         await self.ws.send_json(ctx)
         
         if raw is not None:
@@ -129,23 +185,35 @@ class ServiceAI:
                   "id": self.seq,
               }
           }
+          self.logger.info(f"Sending request: {req}")
           await self.ws.send_json(req)
           await self.ws.send_bytes(jpeg.tobytes())
         else:
           raise Exception("No image provided")
-            
+                    
         async for msg in self.ws:
             if msg.type == aiohttp.WSMsgType.TEXT:
                 data = json.loads(msg.data)
+                self.logger.info(f"Received: {data}")
                 if data["msg"] == "response":
-                    print(data["detections"])
+                    return data["detections"]
                 else:
-                  print(data)
+                    self.logger.debug(data)
         
 
-if __name__ == "__main__":
-    forensic = ServiceAI("192.168.20.72", "00000001-0000-babe-0000-00408cec7f31")
-    asyncio.run(forensic.get_version())
-    asyncio.run(forensic.process())
-    print("Done")
+async def main():
+    async with ServiceAI() as forensic:
+        await forensic.get_version()
+        print("Done")
 
+        test = cv2.imread("test.jpg")
+        async for detection in forensic.detect(test):
+            forensic.get_thumbnail(test, detection)
+            bbox = detection["bbox"]
+            probabilities = bbox["probabilities"]
+            print(f"Detection: {bbox}, {probabilities}")
+        print("closing")
+    print("completed")
+
+if __name__ == "__main__":
+    asyncio.run(main())
