@@ -25,6 +25,7 @@ import {
   PersonForensicFormValues,
   VehicleForensicFormValues,
 } from '../lib/provider/forensic-form-context';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
 
 export default function Appearances() {
   const { formMethods, subjectType } = useForensicForm();
@@ -87,7 +88,7 @@ export default function Appearances() {
     <AccordionItem value="appearances">
       <AccordionTrigger>Apparence générale</AccordionTrigger>
       <AccordionContent>
-        <ScrollArea className="pr-4" style={{ maxHeight: '500px' }}>
+        <ScrollArea className="pr-4" style={{ maxHeight: '1000px' }}>
           {subjectType === 'person' ? (
             <div className="space-y-6">
               {/* Gender section */}
@@ -209,7 +210,6 @@ export default function Appearances() {
                   </div>
 
                   {/* Hair Color */}
-                  {/* Hair Color */}
                   <div className="space-y-2 col-span-2">
                     <Label className="text-xs text-muted-foreground">
                       Couleur
@@ -257,36 +257,37 @@ export default function Appearances() {
                     useColorNames={true}
                   />
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  Couleurs sélectionnées:{' '}
-                  {(appearances as VehicleForensicFormValues['appearances'])
-                    .color &&
-                  Array.isArray(
-                    (appearances as VehicleForensicFormValues['appearances'])
-                      .color
-                  )
-                    ? (
-                      appearances as VehicleForensicFormValues['appearances']
-                    ).color.join(', ')
-                    : 'Aucune'}
-                </div>
               </div>
             </div>
           )}
 
-          {/* Tolerance section - common for both types */}
           <div className="space-y-4 pt-4 border-t">
-            <Label className="text-sm font-medium">Tolérance apparence</Label>
+            <Label className="text-sm font-medium">Tolérance</Label>
             <div className="h-10 max-w-[250px]">
-              <MultiSelect
-                options={optionMaps.tolerance}
-                selected={tolerance ? [tolerance] : []}
-                onChange={handleToleranceChange}
-                placeholder="Niveau de tolérance"
-              />
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Définit la précision de recherche des attributs d'apparence
+              <Select
+                value={tolerance}
+                onValueChange={(value) =>
+                  setValue(
+                    'appearances.confidence',
+                    value as 'low' | 'medium' | 'high'
+                  )
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Niveau de tolérance" />
+                </SelectTrigger>
+                <SelectContent>
+                  {optionMaps.tolerance.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option === 'low'
+                        ? 'Basse'
+                        : option === 'medium'
+                          ? 'Moyenne'
+                          : 'Haute'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </ScrollArea>
