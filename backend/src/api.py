@@ -1,4 +1,5 @@
 import os
+import traceback
 import cv2
 import json
 import uuid
@@ -9,6 +10,7 @@ import time
 import aiohttp
 import threading
 import asyncio
+import logging
 
 from pydantic import Field, create_model
 
@@ -39,6 +41,11 @@ from database import AcicAllInOneEvent, AcicCounting, AcicEvent, AcicLicensePlat
 from pydantic import BaseModel, Field, Extra
 
 from vms import CameraClient
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
+logger.addHandler(logging.FileHandler(f"/tmp/{__name__}.log"))
 
 class ModelName(str, Enum):
     minute = "1 minute"
@@ -393,15 +400,16 @@ class FastAPIServer:
         
         @self.app.websocket("/forensics/{guid}")
         async def task_updates(websocket: WebSocket, guid: str):
-            await websocket.accept()
-            
-            task_manager = SharedTaskManager.get_manager()
-            observer = SharedQueueObserver()
-            
-            if not task_manager.add_observer(guid, observer):
-                await websocket.close(code=1000, reason="Job not found")
-                return
             try:
+                await websocket.accept()
+                
+                task_manager = SharedTaskManager.get_manager()
+                observer = SharedQueueObserver()
+                
+                if not task_manager.add_observer(guid, observer):
+                    await websocket.close(code=1000, reason="Job not found")
+                    return
+
                 while True:
                     result = await observer.get(0.1)
                     if result is None:
@@ -409,20 +417,33 @@ class FastAPIServer:
                         continue
                     
                     if result.metadata is not None:
-                        print("Sending result...", result.metadata)
+                        logger.info(f"Sending result... {result.metadata}")
                         await websocket.send_json(result.metadata)
+                    
                     if result.frame is not None:
-                        print("Sending byte... ", len(result.frame))
                         await websocket.send_bytes(result.frame)
-                    print("Done")
 
                     if result.final is True:
+                        logger.info("Final result")
                         break
+            except WebSocketDisconnect:
+                logger.error("Client disconnected")
+
             except Exception as e:
-                print("Error", e)
+                logger.error("Error", e)
+                logger.error(traceback.format_exc())
+
             finally:
+                logger.info("Closing websocket")
                 task_manager.remove_observer(guid, observer)
 
+        @self.app.delete("/forensics", tags=["forensics"])
+        async def stop_all_task():
+            self.task_manager.stop()
+            self.task_manager.start()
+
+            return {"status": "ok"}
+        
         @self.app.delete("/forensics/{guid}", tags=["forensics"])
         async def stop_task(guid: str):
             task_manager = SharedTaskManager.get_manager()
@@ -454,7 +475,6 @@ class FastAPIServer:
 
         @self.app.get("/vms/{ip}/cameras/{guuid}/live", tags=["vms"])
         async def get_live(ip: str, guuid: str):
-            return Response(content=b"", status_code=200, headers={"Content-Type": "image/jpeg"})
             try:
                 async with CameraClient(ip, 7778) as client:
                     streams = client.start_live(guuid)
@@ -729,7 +749,7 @@ class FastAPIServer:
                 raise HTTPException(status_code=500, detail=str(e))
 
     def start(self, host="0.0.0.0", port=5020):
-        uvicorn.run(self.app, host=host, port=port, root_path="/front-api")
+        uvicorn.run(self.app, host=host, port=port, root_path="/front-api", ws_ping_interval=30, ws_ping_timeout=30)
 
 class ThreadedFastAPIServer(BaseApplication):
     def __init__(self, event_grabber, threads=1, workers=2):
@@ -742,7 +762,11 @@ class ThreadedFastAPIServer(BaseApplication):
             "preload_app": True,
             "accesslog": "-",
             "errorlog": "-",
-            "loglevel": "info"
+            "loglevel": "info",
+            "worker_options": {
+                "ws_ping_interval": 30,
+                "ws_ping_timeout": 30
+            }
         }
         super().__init__()
 

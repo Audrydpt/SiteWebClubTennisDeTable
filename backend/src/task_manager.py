@@ -1,3 +1,4 @@
+import logging
 import traceback
 import asyncio
 from queue import Empty
@@ -15,6 +16,10 @@ from enum import Enum, auto
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
+logger.addHandler(logging.FileHandler(f"/tmp/{__name__}.log"))
 
 class JobStatus(str, Enum):
     PENDING = "Pending"
@@ -54,6 +59,9 @@ class PriorityResultsObserver(JobObserver):
     def get_results(self) -> List[JobResult]:
         return sorted(self.results, reverse=True)
 
+    def clear(self):
+        self.results = []
+
 class WebSocketObserver(JobObserver):    
     def __init__(self, websocket):
         self.websocket = websocket
@@ -82,11 +90,15 @@ class SharedQueueObserver(JobObserver):
     async def on_job_update(self, result: JobResult) -> None:
         try:
             self.queue.put(result)
+            logger.info(f"Résultat ajouté à la file partagée: {result.metadata}")
         except Exception as e:
+            logger.error(f"Erreur d'ajout à la file partagée: {e}")
+            logger.error(traceback.format_exc())
             print(f"Error adding to queue: {e}")
     
     async def get(self, timeout=0.1):
         try:
+            logger.info("Attente de résultat dans la file partagée")
             return self.queue.get(timeout=timeout)
         except Empty:
             return None
@@ -106,6 +118,7 @@ class Job:
         self.stacktrace = None
         self.observers: Set[JobObserver] = set()
         self.cancel_event = asyncio.Event()
+        self.task = None
         
     def add_observer(self, observer: JobObserver) -> None:
         self.observers.add(observer)
@@ -133,6 +146,7 @@ class Job:
             async for metadata, frame in self._execute():
                 if self.cancel_event.is_set():
                     self.status = JobStatus.CANCELLED
+                    logger.info(f"Job {self.job_id} annulé")
                     await self.notify_observers(
                         {"type": "progress", "progress": 1, "message": "Job annulé"}, 
                         None, 
@@ -143,6 +157,7 @@ class Job:
                 await self.notify_observers(metadata, frame)
                 
             self.status = JobStatus.COMPLETED
+            logger.info(f"Job {self.job_id} terminé")
             await self.notify_observers(
                 {"type": "progress", "progress": 1, "message": "Job terminé"}, 
                 None, 
@@ -151,6 +166,7 @@ class Job:
             
         except Exception as e:
             self.status = JobStatus.FAILED
+            logger.error(f"Job {self.job_id} échoué: {e}")
             self.error = str(e)
             self.stacktrace = traceback.format_exc()
             await self.notify_observers(
@@ -198,8 +214,9 @@ class TaskManager:
             self._async_worker.start()
             
     def stop(self) -> None:
-        for job in list(self.jobs.values()):
-            job.cancel()
+        for job_id in list(self.jobs.keys()):
+            self.cancel_job(job_id)
+        
         self._async_worker.stop()
     
     def submit_job(self, job: Job) -> str:
@@ -209,16 +226,24 @@ class TaskManager:
         self.jobs[job.job_id] = job
         
         if self._async_worker.loop:
-            asyncio.run_coroutine_threadsafe(
+            task = asyncio.run_coroutine_threadsafe(
                 job.run(), 
                 self._async_worker.loop
             )
+            job.task = task
         
         return job.job_id
     
     def cancel_job(self, job_id: str) -> bool:
         if job_id in self.jobs:
+
             self.jobs[job_id].cancel()
+            
+            if self.jobs[job_id].task and not self.jobs[job_id].task.done():
+                self.jobs[job_id].task.cancel()
+                self.jobs[job_id].status = JobStatus.CANCELLED
+                logger.info(f"Task for job {job_id} cancelled in the event loop")
+            
             return True
         return False
         
@@ -276,7 +301,7 @@ class AsyncWorker(threading.Thread):
     def stop(self):
         if self.loop and self._running:
             self.loop.call_soon_threadsafe(self.loop.stop)
-            self.join(timeout=5)
+            self.join(timeout=1)
 
 class TaskManagerServer(multiprocessing.managers.BaseManager):
     pass

@@ -1,4 +1,5 @@
 import logging
+import traceback
 import xml.etree.ElementTree as ET
 import asyncio
 import json
@@ -12,17 +13,17 @@ import numpy as np
 
 from typing import Optional, Dict, AsyncGenerator, Tuple, Any
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
+logger.addHandler(logging.FileHandler(f"/tmp/{__name__}.log"))
+
 class CameraClient:
     def __init__(self, host: str, port: int):
         self.host = host
         self.port = port
         self.reader = None
         self.writer = None
-
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.INFO)
-        self.logger.addHandler(logging.StreamHandler())
-        self.logger.addHandler(logging.FileHandler("/tmp/vms.log"))
     
     async def __aenter__(self):
         return self
@@ -43,15 +44,17 @@ class CameraClient:
         )
 
         try:
+            logger.info(f"Connexion à {self.host}:{self.port}")
             self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
 
+            logger.info(f"Envoi de la requête: {xml_content}")
             self.writer.write(http_request.encode("utf-8"))
             await self.writer.drain()
 
             # Lecture des headers
             buffer = b""
             while b"\r\n\r\n" not in buffer:
-                chunk = await asyncio.wait_for(self.reader.read(4096), timeout=20.0)
+                chunk = await asyncio.wait_for(self.reader.read(4096), timeout=2.0)
                 if not chunk:
                     break
                 buffer += chunk
@@ -68,13 +71,16 @@ class CameraClient:
                     continue
                 headers[key] = value
 
+            logger.info(f"Headers: {headers}")
+
             # Récupération du Content-Length indiqué par le serveur
             total_length = int(headers.get("Content-Length", 0))
+            logger.info(f"Longueur du contenu: {total_length}")
 
             # Compléter la lecture
             body = remaining
             while len(body) < total_length:
-                data = await asyncio.wait_for(self.reader.read(4096), timeout=20.0)
+                data = await asyncio.wait_for(self.reader.read(4096), timeout=2.0)
                 if not data:
                     break
                 body += data
@@ -83,12 +89,18 @@ class CameraClient:
             mime = headers.get("Content-Type", "").lower()
             if "application/json" in mime:
                 text = body.decode("utf-8")
+                logger.info(text)
                 return json.loads(text)
             elif "application/xml" in mime:
                 text = body.decode("utf-8")
+                logger.info(text)
                 return ET.fromstring(text)
             else:
                 return body
+        except Exception as e:
+            logger.error(f"Erreur lors de la requête: {e}")
+            logger.error(traceback.format_exc())
+            raise e
         finally:
             if self.writer:
                 self.writer.close()
@@ -136,15 +148,18 @@ class CameraClient:
                 mime = headers.get("Content-Type", "").lower()
                 if "application/json" in mime:
                     text = body.decode("utf-8")
-                    self.logger.info(text)
+                    logger.info(text)
                     yield json.loads(text)
                 elif "application/xml" in mime:
                     text = body.decode("utf-8")
-                    self.logger.info(text)
+                    logger.info(text)
                     yield ET.fromstring(text)
                 else:
                     yield body
-
+        except Exception as e:
+            logger.error(f"Erreur lors de la requête: {e}")
+            logger.error(traceback.format_exc())
+            raise e
         finally:
             if self.writer:
                 self.writer.close()
@@ -237,7 +252,7 @@ class CameraClient:
                         yield img, time_frame
 
                 except Exception as e:
-                    self.logger.error(f"Erreur lors du décodage: {e}")
+                    logger.error(f"Erreur lors du décodage: {e}")
                     codec = None
                     continue
 

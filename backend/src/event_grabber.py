@@ -22,15 +22,16 @@ def safe_float(val):
     except:
         return None
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
+logger.addHandler(logging.FileHandler(f"/tmp/{__name__}.log"))
+
 class EventGrabber(threading.Thread):
     def __init__(self):
         super().__init__()
         self.grabbers = []
         self.running = False
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.INFO)
-        self.logger.addHandler(logging.StreamHandler())
-        self.logger.addHandler(logging.FileHandler("/tmp/eventgrabber.log"))
         self.daemon = True
 
         self.keep_alive = 60
@@ -40,8 +41,8 @@ class EventGrabber(threading.Thread):
         self.stop()
 
     def add_grabber(self, host, port):
-        self.logger.info(f"Adding grabber {host}:{port}")
-        grabber = AcMetadataEventReceiverThread(acichost=host, acichostport=port) # , logger=self.logger)
+        logger.info(f"Adding grabber {host}:{port}")
+        grabber = AcMetadataEventReceiverThread(acichost=host, acichostport=port) # , logger=logger)
         self.grabbers.append(grabber)
         return grabber
 
@@ -64,7 +65,7 @@ class EventGrabber(threading.Thread):
                 grabber.stop()
 
     def run(self):
-        self.logger.info("EventGrabber started.")
+        logger.info("EventGrabber started.")
 
         while self.running:
 
@@ -77,7 +78,7 @@ class EventGrabber(threading.Thread):
 
                 if keep_alive_check:
                     if grabber.is_alive() is False or grabber.is_reachable(timeout=1.0) is False:
-                        self.logger.warning(
+                        logger.warning(
                             f"Grabber {grabber.acichost}:{grabber.acichostport} is not alive or not reachable. Restarting...")
 
                         grabber.stop()
@@ -90,16 +91,16 @@ class EventGrabber(threading.Thread):
                 q = grabber.get_queue_copy()
 
                 if q.qsize() > 80:
-                    self.logger.warning(f"Grabber {grabber.acichost}:{grabber.acichostport} event queue is full!")
+                    logger.warning(f"Grabber {grabber.acichost}:{grabber.acichostport} event queue is full!")
 
                 while q.empty() is False:
                     event = q.get()
                     if self.parse_event(grabber.acichost, event) is False:
-                        self.logger.warning(f"Could not parse event: {event} from {grabber.acichost}:{grabber.acichostport}")
+                        logger.warning(f"Could not parse event: {event} from {grabber.acichost}:{grabber.acichostport}")
 
             time.sleep(0.01)
 
-        self.logger.info("EventGrabber stopped.")
+        logger.info("EventGrabber stopped.")
 
     def __download_thumbnail(self, url, subdir="temp"):
         
@@ -117,12 +118,12 @@ class EventGrabber(threading.Thread):
             if os.getenv('ACIC_HTTP_PORT') is not None:
                 link = url.replace("/stream", ":" + os.getenv('ACIC_HTTP_PORT') + "/stream")
 
-            # self.logger.debug("Trying to download " + link + " to " + output)
+            # logger.debug("Trying to download " + link + " to " + output)
             #with open(output, "wb") as f:
             #    f.write(requests.get(link).content)
 
         except Exception as e:
-            self.logger.warning("Error while downloading image:", e)
+            logger.warning("Error while downloading image:", e)
 
     def parse_event(self, host, event):
         try:
@@ -354,7 +355,7 @@ class EventGrabber(threading.Thread):
             #return False
 
         except Exception as e:
-            self.logger.error(f"Error parsing event: {event}:")
-            self.logger.error(e)
+            logger.error(f"Error parsing event: {event}:")
+            logger.error(e)
 
         return False

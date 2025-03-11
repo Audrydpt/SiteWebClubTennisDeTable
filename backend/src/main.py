@@ -55,8 +55,8 @@ if __name__ == "__main__":
 
     # init web server
     print("Init web server")
-    #server = FastAPIServer(grabber)
-    server = ThreadedFastAPIServer(grabber, workers=4)
+    server = FastAPIServer(grabber)
+    #server = ThreadedFastAPIServer(grabber, workers=4)
     server.start(port=args.port)
     # wait for the server to stop
 
