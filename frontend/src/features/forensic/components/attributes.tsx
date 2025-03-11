@@ -36,6 +36,12 @@ export default function Attributes() {
   const { formMethods, subjectType } = useForensicForm();
   const { watch, setValue } = formMethods;
 
+  const toleranceLabels: Record<string, string> = {
+    low: 'Basse',
+    medium: 'Moyenne',
+    high: 'Haute',
+  };
+
   // Get attribute values from the form
   const attributes = watch('attributes') || {};
   const tolerance = attributes.confidence || 'medium';
@@ -389,11 +395,7 @@ export default function Attributes() {
                 <SelectContent>
                   {optionMaps.tolerance.map((option) => (
                     <SelectItem key={option} value={option}>
-                      {option === 'low'
-                        ? 'Basse'
-                        : option === 'medium'
-                          ? 'Moyenne'
-                          : 'Haute'}
+                      {toleranceLabels[option] || option}
                     </SelectItem>
                   ))}
                 </SelectContent>
