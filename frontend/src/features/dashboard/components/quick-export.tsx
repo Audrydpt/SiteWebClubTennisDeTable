@@ -22,7 +22,7 @@ import { getWidgetDataForExport } from '../lib/utils';
 export default function QuickExport({
   storedWidget,
   chartContent,
-  chartRef,
+  getChartRef,
   updateStoredWidget,
   setStepValidity,
   children,
@@ -104,10 +104,8 @@ export default function QuickExport({
     setLoading(true);
 
     if (format === 'JPEG') {
-      setTimeout(() => {
-        console.log('Trying JPEG export with chartRef:', chartRef);
-        exportData(data, format, filename, setLoading, chartRef);
-      }, 100);
+      const chartRef = getChartRef();
+      exportData(data, format, filename, setLoading, chartRef);
     } else {
       exportData(data, format, filename, setLoading);
     }

@@ -49,7 +49,7 @@ export default function WidgetActions({
         <QuickExport
           storedWidget={item.widget}
           chartContent={item.content}
-          chartRef={chartRef}
+          getChartRef={() => chartRef}
           updateStoredWidget={(newData) => edit({ ...item.widget, ...newData })}
           setStepValidity={() => {}}
         >

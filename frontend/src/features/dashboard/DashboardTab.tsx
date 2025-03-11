@@ -46,7 +46,6 @@ export default function DashboardTab({
   const { data, isLoading, isError } = query;
   const { user } = useAuth();
   const isOperator = user?.privileges === 'Operator';
-
   const chartRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
