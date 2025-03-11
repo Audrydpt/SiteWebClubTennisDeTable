@@ -176,7 +176,10 @@ export default function Attributes() {
     <AccordionItem value="attributes">
       <AccordionTrigger>Attributs spécifiques</AccordionTrigger>
       <AccordionContent>
-        <ScrollArea className="pr-4" style={{ maxHeight: '2000px' }}>
+        <ScrollArea
+          className="pr-4 rounded-sm"
+          style={{ maxHeight: '240px', overflow: 'auto' }}
+        >
           {subjectType === 'person' ? (
             <div className="space-y-6">
               {/* Upper clothing section */}

@@ -47,7 +47,7 @@ export default function Appearances() {
   };
 
   // Log the current appearances state for debugging
-  console.log('Current appearances state:', appearances);
+  // console.log('Current appearances state:', appearances);
 
   // Handle selected values changes for MultiSelect components
   const handleChange = useCallback(
@@ -85,7 +85,10 @@ export default function Appearances() {
     <AccordionItem value="appearances">
       <AccordionTrigger>Apparence générale</AccordionTrigger>
       <AccordionContent>
-        <ScrollArea className="pr-4" style={{ maxHeight: '1000px' }}>
+        <ScrollArea
+          className="pr-4 rounded-sm"
+          style={{ maxHeight: '240px', overflowY: 'auto' }}
+        >
           {subjectType === 'person' ? (
             <div className="space-y-6">
               {/* Gender section */}
