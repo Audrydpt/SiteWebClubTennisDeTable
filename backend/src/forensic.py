@@ -31,6 +31,8 @@ class VehicleReplayJob(Job):
 
         self.time_from = self.timerange.get("time_from").astimezone(datetime.timezone.utc)
         self.time_to = self.timerange.get("time_to").astimezone(datetime.timezone.utc)
+
+        self.type = data.get("type", None)
         
         # Vérification des paramètres requis
         if not self.sources:
@@ -58,27 +60,62 @@ class VehicleReplayJob(Job):
         return progress
     
 
-    def _filter(self):
-        self._filter_detections()
-        self._filter_classification()
+    def _filter(self, bbox, probabilities: Dict[str, float]):
+        size = self._filter_size()
+        detector = self._filter_detections(probabilities)
+        classifier = self._filter_classification()
+        return size * detector * classifier
     
-    def _filter_detections(self):
-        pass
+    def _filter_size(self):
+        return 1.0
+    
+    def _filter_detections(self, probabilities: Dict[str, float]):
+        allowed_classes = set()
+        
+        if self.type == "vehicle":
+            coco = {"car", "truck", "bus", "motorcycle"}
+            voc = {"car", "bus", "motorbike"}
+            obj365 = {"car", "sports car", "suv", "van", "truck", "pickup truck", "heavy truck", "bus", "fire truck", "ambulance", "machinery vehicle", "motorcycle"}
+            miotcd = {"car", "pickup truck", "single unit truck", "articulated truck", "work van", "bus", "motorcycle", "motorized vehicle"}
+
+            allowed_classes = coco | voc | obj365 | miotcd
+        elif self.type == "mobility":
+            coco = {"bicycle", "skateboard", "surfboard", "skis", "snowboard"}
+            voc = {"bicycle"}
+            obj365 = {"bicycle", "scooter", "tricycle", "rickshaw", "carriage", "hoverboard", "skateboard"}
+            miotcd = {"bicycle", "non-motorized vehicle"}
+            openimages = {"bicycle", "skateboard", "scooter", "snowboard", "skis"}
+
+            allowed_classes = coco | voc | obj365 | miotcd | openimages
+        elif self.type == "person":
+            coco = {"person"}
+            voc = {"person"}
+            obj365 = {"person"}
+            miotcd = {"pedestrian"}
+            openimages = {"person", "man", "woman", "boy", "girl"}
+            visual_genome = {"person", "man", "young man", "old man", "woman", "young woman", "old woman", "child", "boy", "girl"}
+                
+            allowed_classes = coco | voc | obj365 | miotcd | openimages | visual_genome
+        else:
+            raise ValueError(f"Unknown type: {self.type}")
+        
+        # keep only allowed classes in the probabilities
+        for key in list(probabilities.keys()):
+            if key not in allowed_classes:
+                del probabilities[key]
+        
+        return max(probabilities.values()) if probabilities else 0
+
 
     def _filter_classification(self):
-        pass
+        return 1.0
 
     async def _execute(self) -> AsyncGenerator[Tuple[dict, bytes], None]:
-        
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.INFO)
-        self.logger.addHandler(logging.StreamHandler())
-        self.logger.addHandler(logging.FileHandler("/tmp/forensic.log"))
         self.logger.info(f"Processing Forensic")
         self.logger.info(f"Sources: {self.sources}")
         self.logger.info(f"Time range: {self.time_from} - {self.time_to}")
         if not self.sources:
-            yield {"error": "Aucune source spécifiée"}, b""
+            yield {"type": "error", "message": "Aucune source spécifiée"}, None
             return
             
         # Traiter uniquement la première source pour l'instant
@@ -86,19 +123,22 @@ class VehicleReplayJob(Job):
         self.logger.info(f"Starting query for source: {source_guid}")
         
         try:
-            self.logger.info(f"Connecting to Camera")
-            async with CameraClient("192.168.20.72", 7778) as client:
-                # Vérifier si la caméra existe
-                self.logger.info(f"Getting system info")
-                system_info = await client.get_system_info()
-                if source_guid not in system_info:
-                    self.logger.info(f"GUID de caméra non trouvé: {source_guid}")
-                    yield {"error": f"GUID de caméra non trouvé: {source_guid}"}, b""
-                    return
+            self.logger.info(f"Connecting to AI Service")
+            async with ServiceAI() as forensic:
+                self.logger.info(f"Connected to AI Service")
+
+                self.logger.info(f"Connecting to VMS")
+                async with CameraClient("192.168.20.72", 7778) as client:
+                    self.logger.info(f"Connected to VMS")
+
+                    # Vérifier si la caméra existe
+                    self.logger.info(f"Getting system info")
+                    system_info = await client.get_system_info()
+                    if source_guid not in system_info:
+                        self.logger.info(f"GUID de caméra non trouvé: {source_guid}")
+                        yield {"type": "error", "message": f"GUID de caméra non trouvé: {source_guid}"}, None
+                        return
                 
-                self.logger.info(f"Connecting to AI Service")
-                async with ServiceAI() as forensic:
-                    await forensic.get_version()
                 
                     self.logger.info(f"Starting replay")
                     frame_count = 0
@@ -114,30 +154,32 @@ class VehicleReplayJob(Job):
                         # Calculer la progression
                         progress = self._calculate_progress(time, self.time_from, self.time_to)
                         frame_count += 1
+                        yield {"type": "progress", "progress": progress}, None
 
                         detections = await forensic.detect(img)
                         self.logger.info(f"Detections: {detections}")
 
                         for detection in detections:
                             self.logger.info(f"Detection: {detection}")
+                            bbox = detection["bbox"]
                             probabilities = detection["bbox"]["probabilities"]
-                            top_class = max(probabilities, key=probabilities.get)
-                            self.logger.info(f"Detection: {top_class} ({probabilities[top_class]})")
 
-                            thumbnail = forensic.get_thumbnail(img, detection)
+                            score = self._filter(bbox, probabilities)
+                            if score <= 0.0:
+                                continue
 
                             # Créer les métadonnées
                             metadata = {
                                 "progress": progress,
-                                "target": top_class,
-                                "confidence": probabilities[top_class],
-                                "probabilities": probabilities,
+                                "score": score,
                                 "timestamp": time.isoformat(),
                             }
                             
                             # Encoder l'image en JPEG
+                            thumbnail = forensic.get_thumbnail(img, detection)
                             _, encoded_image = cv2.imencode('.jpg', thumbnail)
                             frame = encoded_image.tobytes()
+
                             yield metadata, frame
                     
                     # Si aucune image n'a été traitée
@@ -147,5 +189,5 @@ class VehicleReplayJob(Job):
             error_message = f"Erreur lors du traitement du flux vidéo: {type(e).__name__}"
             stacktrace = traceback.format_exc()
             self.logger.info(stacktrace)
-            yield {"error": error_message, "progress": 0, "stacktrace": stacktrace}, b""
+            yield {"type": "error", "message": error_message, "stacktrace": stacktrace}, None
             raise e

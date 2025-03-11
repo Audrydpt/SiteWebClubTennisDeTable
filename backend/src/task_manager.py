@@ -1,3 +1,4 @@
+import traceback
 import asyncio
 from queue import Empty
 import threading
@@ -46,8 +47,9 @@ class PriorityResultsObserver(JobObserver):
         if len(self.results) < self.max_results:
             heapq.heappush(self.results, result)
         else:
-            if result.metadata.get('confidence', 0) > self.results[0].metadata.get('confidence', 0):
-                heapq.heappushpop(self.results, result)
+            if result.metadata is not None:
+                if result.metadata.get('confidence', 0) > self.results[0].metadata.get('confidence', 0):
+                    heapq.heappushpop(self.results, result)
     
     def get_results(self) -> List[JobResult]:
         return sorted(self.results, reverse=True)
@@ -58,8 +60,10 @@ class WebSocketObserver(JobObserver):
         
     async def on_job_update(self, result: JobResult) -> None:
         try:
-            await self.websocket.send_json(result.metadata)
-            await self.websocket.send_bytes(result.frame)
+            if result.metadata is not None:
+                await self.websocket.send_json(result.metadata)
+            if result.frame is not None:
+                await self.websocket.send_bytes(result.frame)
         except Exception as e:
             print(f"Erreur d'envoi WebSocket: {e}")
 
@@ -98,6 +102,8 @@ class Job:
     def __init__(self):
         self.job_id = str(uuid.uuid4())
         self.status = JobStatus.PENDING
+        self.error = None
+        self.stacktrace = None
         self.observers: Set[JobObserver] = set()
         self.cancel_event = asyncio.Event()
         
@@ -128,8 +134,8 @@ class Job:
                 if self.cancel_event.is_set():
                     self.status = JobStatus.CANCELLED
                     await self.notify_observers(
-                        {"message": "Job annulé", "confidence": 0}, 
-                        b"", 
+                        {"type": "progress", "progress": 1, "message": "Job annulé"}, 
+                        None, 
                         final=True
                     )
                     return
@@ -138,16 +144,18 @@ class Job:
                 
             self.status = JobStatus.COMPLETED
             await self.notify_observers(
-                {"message": "Job terminé", "confidence": 100}, 
-                b"", 
+                {"type": "progress", "progress": 1, "message": "Job terminé"}, 
+                None, 
                 final=True
             )
             
         except Exception as e:
             self.status = JobStatus.FAILED
+            self.error = str(e)
+            self.stacktrace = traceback.format_exc()
             await self.notify_observers(
-                {"error": str(e), "confidence": 0}, 
-                b"", 
+                {"type": "progress", "progress": 1, "message": f"Job échoué: {e}"}, 
+                None, 
                 final=True
             )
     
@@ -218,6 +226,11 @@ class TaskManager:
         if job_id in self.jobs:
             return self.jobs[job_id].status
         return None
+    
+    def get_job_error(self, job_id: str) -> Optional[str]:
+        if job_id in self.jobs:
+            return self.jobs[job_id].error, self.jobs[job_id].stacktrace
+        return None, None
     
     def get_jobs(self) -> List[str]:
         return list(self.jobs.keys())

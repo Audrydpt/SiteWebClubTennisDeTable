@@ -26,7 +26,7 @@ from gunicorn.app.base import BaseApplication
 
 
 from forensic import VehicleReplayJob
-from task_manager import CounterJob, SharedQueueObserver, SharedTaskManager, TaskManagerServer, WebSocketObserver
+from task_manager import CounterJob, JobStatus, SharedQueueObserver, SharedTaskManager, TaskManagerServer, WebSocketObserver
 
 from typing import Annotated, Literal, Optional, Type, Union, List, Dict, Any
 from enum import Enum
@@ -362,9 +362,14 @@ class FastAPIServer:
         async def get_tasks():
             ret = {}
             for job in self.task_manager.get_jobs():
+                status = self.task_manager.get_job_status(job)
                 ret[job] = {
-                    "status": self.task_manager.get_job_status(job)
+                    "status": status
                 }
+                if status == JobStatus.FAILED:
+                    ret[job]["error"], ret[job]["stacktrace"] = self.task_manager.get_job_error(job)
+
+                
             return ret
 
         @self.app.post("/forensics", tags=["forensics"])
@@ -403,10 +408,12 @@ class FastAPIServer:
                         await asyncio.sleep(0.1)
                         continue
                     
-                    print("Sending result...", result.metadata)
-                    await websocket.send_json(result.metadata)
-                    print("Sending byte... ", len(result.frame))
-                    await websocket.send_bytes(result.frame)
+                    if result.metadata is not None:
+                        print("Sending result...", result.metadata)
+                        await websocket.send_json(result.metadata)
+                    if result.frame is not None:
+                        print("Sending byte... ", len(result.frame))
+                        await websocket.send_bytes(result.frame)
                     print("Done")
 
                     if result.final is True:

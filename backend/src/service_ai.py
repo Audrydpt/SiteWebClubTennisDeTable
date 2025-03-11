@@ -101,11 +101,6 @@ class ServiceAI:
         await self.__detect_object(modelWidth, modelHeight, jpeg=image_jpeg)
 
     async def detect(self, frame):
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.INFO)
-        self.logger.addHandler(logging.StreamHandler())
-        self.logger.addHandler(logging.FileHandler("/tmp/service_ai.log"))
-
         version = await self.get_version()
         self.logger.info(f"Version: {version}")
         if version[0] <= 1 or version[0] == 2 and version[1] < 2:
