@@ -7,6 +7,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import ColorPicker from './ui/color-picker';
 import MultiSelect from '@/components/multi-select';
@@ -32,7 +39,6 @@ export default function Attributes() {
   // Get attribute values from the form
   const attributes = watch('attributes') || {};
   const tolerance = attributes.confidence || 'medium';
-
   // Create option maps for more efficient rendering
   const optionMaps = {
     topType: topTypeOptions.map((option) => option.value),
@@ -114,19 +120,6 @@ export default function Attributes() {
     [setValue]
   );
 
-  // Handle tolerance change (single selection)
-  const handleToleranceChange = useCallback(
-    (selected: string[]) => {
-      if (selected.length > 0) {
-        setValue(
-          'attributes.confidence',
-          selected[0] as 'low' | 'medium' | 'high'
-        );
-      }
-    },
-    [setValue]
-  );
-
   // Handle brands change - requires special handling for related models
   const handleBrandsChange = useCallback(
     (selected: string[]) => {
@@ -177,7 +170,7 @@ export default function Attributes() {
     <AccordionItem value="attributes">
       <AccordionTrigger>Attributs spécifiques</AccordionTrigger>
       <AccordionContent>
-        <ScrollArea className="pr-4" style={{ maxHeight: '500px' }}>
+        <ScrollArea className="pr-4" style={{ maxHeight: '2000px' }}>
           {subjectType === 'person' ? (
             <div className="space-y-6">
               {/* Upper clothing section */}
@@ -378,17 +371,33 @@ export default function Attributes() {
               </div>
             </div>
           )}
-
-          {/* Tolerance section - common for both types */}
           <div className="space-y-4 pt-4 border-t">
             <Label className="text-sm font-medium">Tolérance attributs</Label>
             <div className="h-10 max-w-[250px]">
-              <MultiSelect
-                options={optionMaps.tolerance}
-                selected={tolerance ? [tolerance] : []}
-                onChange={handleToleranceChange}
-                placeholder="Niveau de tolérance"
-              />
+              <Select
+                value={tolerance}
+                onValueChange={(value) =>
+                  setValue(
+                    'attributes.confidence',
+                    value as 'low' | 'medium' | 'high'
+                  )
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Niveau de tolérance" />
+                </SelectTrigger>
+                <SelectContent>
+                  {optionMaps.tolerance.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option === 'low'
+                        ? 'Basse'
+                        : option === 'medium'
+                          ? 'Moyenne'
+                          : 'Haute'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </ScrollArea>
