@@ -1,5 +1,4 @@
-/* eslint-disable */
-import { useState } from 'react';
+import { Search } from 'lucide-react';
 import { Form } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,9 +21,63 @@ import useSearch, { ForensicResult } from './hooks/use-search';
 import { useAuth } from '@/providers/auth-context';
 import { createSearchFormData } from './lib/format-query';
 
+function ForensicFormContent({
+  onSubmit,
+  isSearching,
+  progress,
+  closeWebSocket,
+}: {
+  onSubmit: (data: ForensicFormValues) => void;
+  isSearching: boolean;
+  progress: number | null;
+  closeWebSocket: () => void;
+}) {
+  const { formMethods } = useForensicForm();
+
+  return (
+    <Form {...formMethods}>
+      <form
+        onSubmit={formMethods.handleSubmit(onSubmit)}
+        className="flex flex-col h-full relative"
+      >
+        <ScrollArea className="flex-1 pr-4 pb-28">
+          <div className="space-y-4">
+            <Accordion type="single" defaultValue="sources" collapsible>
+              <Sources />
+              <Times />
+              <Types />
+              <Appearances />
+              <Attributes />
+            </Accordion>
+          </div>
+        </ScrollArea>
+
+        {/* Fixed position buttons section with z-index to ensure visibility */}
+        <div className="absolute bottom-0 left-0 right-0 pt-4 bg-card z-10">
+          <Button type="submit" className="w-full">
+            <Search className="mr-2" size={16} /> Lancer la recherche
+          </Button>
+
+          <Button
+            onClick={closeWebSocket}
+            variant="outline"
+            size="sm"
+            className="w-full mt-2"
+            disabled={!isSearching}
+          >
+            Annuler la recherche
+          </Button>
+
+          {isSearching && progress !== null && (
+            <Progress value={progress} className="h-2 mt-2" />
+          )}
+        </div>
+      </form>
+    </Form>
+  );
+}
+
 export default function Forensic() {
-  const [formData, setFormData] = useState<ForensicFormValues | null>(null);
-  const [searchSubmitted, setSearchSubmitted] = useState(false);
   const { sessionId = '' } = useAuth();
 
   const {
@@ -36,11 +89,8 @@ export default function Forensic() {
     isSearching,
   } = useSearch(sessionId);
 
-  // Modify handleSearch in Forensic.tsx
+  // Modified handleSearch in Forensic.tsx
   const handleSearch = async (data: ForensicFormValues) => {
-    setSearchSubmitted(true);
-    setFormData(data);
-
     try {
       const searchFormData = createSearchFormData(data);
       const guid = await startSearch(searchFormData, 5);
@@ -114,66 +164,5 @@ export default function Forensic() {
         </CardContent>
       </Card>
     </div>
-  );
-}
-
-// Composant séparé pour le contenu du formulaire afin d'utiliser useForensicForm
-function ForensicFormContent({
-  onSubmit,
-  isSearching,
-  progress,
-  closeWebSocket,
-}: {
-  onSubmit: (data: ForensicFormValues) => void;
-  isSearching: boolean;
-  progress: number | null;
-  closeWebSocket: () => void;
-}) {
-  const { formMethods } = useForensicForm();
-
-  return (
-    <Form {...formMethods}>
-      <form
-        onSubmit={formMethods.handleSubmit(onSubmit)}
-        className="flex flex-col h-full"
-      >
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-4">
-            <Accordion
-              type="multiple"
-              defaultValue={['sources', 'times', 'type']}
-            >
-              <Sources />
-              <Times />
-              <Types />
-              <Appearances />
-              <Attributes />
-            </Accordion>
-          </div>
-        </ScrollArea>
-
-        <div className="mt-4">
-          <Button type="submit" className="w-full">
-            Lancer la recherche
-          </Button>
-        </div>
-
-        {isSearching && (
-          <div className="mt-2">
-            <Button
-              onClick={closeWebSocket}
-              variant="outline"
-              size="sm"
-              className="w-full"
-            >
-              Annuler la recherche
-            </Button>
-            {progress !== null && (
-              <Progress value={progress} className="h-2 mt-2" />
-            )}
-          </div>
-        )}
-      </form>
-    </Form>
   );
 }
