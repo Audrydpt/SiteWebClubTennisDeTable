@@ -119,11 +119,11 @@ export default function Forensic() {
 
 // Composant séparé pour le contenu du formulaire afin d'utiliser useForensicForm
 function ForensicFormContent({
-                               onSubmit,
-                               isSearching,
-                               progress,
-                               closeWebSocket,
-                             }: {
+  onSubmit,
+  isSearching,
+  progress,
+  closeWebSocket,
+}: {
   onSubmit: (data: ForensicFormValues) => void;
   isSearching: boolean;
   progress: number | null;
@@ -139,7 +139,10 @@ function ForensicFormContent({
       >
         <ScrollArea className="flex-1 pr-4">
           <div className="space-y-4">
-            <Accordion type="multiple" defaultValue={["sources", "times", "type"]}>
+            <Accordion
+              type="multiple"
+              defaultValue={['sources', 'times', 'type']}
+            >
               <Sources />
               <Times />
               <Types />

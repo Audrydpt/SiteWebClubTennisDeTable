@@ -10,7 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 const baseForensicSchema = z.object({
   // Change this to use a min validation instead of nonempty
   sources: z.array(z.string()).min(1, {
-    message: "Veuillez sélectionner au moins une source vidéo"
+    message: 'Veuillez sélectionner au moins une source vidéo',
   }),
   timerange: z
     .object({
@@ -129,7 +129,9 @@ export const personForensicSchema = baseForensicSchema.extend({
           )
           .default([]),
         type: z
-          .array(z.enum(['shirt', 'jacket', 'coat', 'sweater', 'dress', 'other']))
+          .array(
+            z.enum(['shirt', 'jacket', 'coat', 'sweater', 'dress', 'other'])
+          )
           .default([]),
       })
       .default({
@@ -297,7 +299,6 @@ export function ForensicFormProvider({ children }: ForensicFormProviderProps) {
 
     return () => subscription.unsubscribe();
   }, [formMethods]);
-
 
   return (
     <ForensicFormContext.Provider

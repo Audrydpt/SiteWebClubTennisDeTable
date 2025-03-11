@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -25,7 +24,13 @@ import {
   PersonForensicFormValues,
   VehicleForensicFormValues,
 } from '../lib/provider/forensic-form-context';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select.tsx';
 
 export default function Appearances() {
   const { formMethods, subjectType } = useForensicForm();
@@ -34,6 +39,12 @@ export default function Appearances() {
   // Get appearance values from the form
   const appearances = watch('appearances') || {};
   const tolerance = appearances.confidence || 'medium';
+
+  const toleranceLabels: Record<string, string> = {
+    low: 'Basse',
+    medium: 'Moyenne',
+    high: 'Haute',
+  };
 
   // Log the current appearances state for debugging
   console.log('Current appearances state:', appearances);
@@ -54,20 +65,6 @@ export default function Appearances() {
     ) => {
       console.log(`Setting ${path} to:`, values);
       setValue(path, values);
-    },
-    [setValue]
-  );
-
-  // Handle tolerance level change
-  const handleToleranceChange = useCallback(
-    (selected: string[]) => {
-      if (selected.length > 0) {
-        console.log('Setting tolerance to:', selected[0]);
-        setValue(
-          'appearances.confidence',
-          selected[0] as 'low' | 'medium' | 'high'
-        );
-      }
     },
     [setValue]
   );
@@ -219,7 +216,7 @@ export default function Appearances() {
                       name="appearances.hair.color"
                       control={formMethods.control}
                       className="w-full"
-                      useColorNames={true}
+                      useColorNames
                     />
                   </div>
                 </div>
@@ -254,7 +251,7 @@ export default function Appearances() {
                     name="appearances.color"
                     control={formMethods.control}
                     className="w-full max-w-[250px]"
-                    useColorNames={true}
+                    useColorNames
                   />
                 </div>
               </div>
@@ -279,11 +276,7 @@ export default function Appearances() {
                 <SelectContent>
                   {optionMaps.tolerance.map((option) => (
                     <SelectItem key={option} value={option}>
-                      {option === 'low'
-                        ? 'Basse'
-                        : option === 'medium'
-                          ? 'Moyenne'
-                          : 'Haute'}
+                      {toleranceLabels[option] || option}
                     </SelectItem>
                   ))}
                 </SelectContent>

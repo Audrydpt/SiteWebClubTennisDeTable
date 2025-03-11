@@ -28,10 +28,10 @@ interface SourcesProps {
 }
 
 export default function Sources({
-                                  useScrollArea = false,
-                                  maxHeight = '300px',
-                                  onSelectedCamerasChange,
-                                }: SourcesProps) {
+  useScrollArea = false,
+  maxHeight = '300px',
+  onSelectedCamerasChange,
+}: SourcesProps) {
   const { sessionId = '' } = useAuth();
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
@@ -53,7 +53,7 @@ export default function Sources({
     setSelectedCameras(newCameras);
     // Update form context with the selected cameras
     formContext.setValue('sources', newCameras, {
-      shouldValidate: true
+      shouldValidate: true,
     });
 
     if (onSelectedCamerasChange) {
@@ -119,71 +119,73 @@ export default function Sources({
           ? Array(4)
             .fill(0)
             .map((_, i) => (
-              <div
-                key={`loading-skeleton-${i}`}
-                className="flex items-center space-x-2"
-              >
-                <Skeleton className="h-4 w-4" />
-                <Skeleton className="h-5 w-32" />
-              </div>
+                <div
+                  key={`loading-skeleton-${i}`}
+                  className="flex items-center space-x-2"
+                >
+                  <Skeleton className="h-4 w-4" />
+                  <Skeleton className="h-5 w-32" />
+                </div>
             ))
           : cameras.map((camera) => (
-            <div
-              key={camera.id}
-              className="flex items-center justify-between"
-            >
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id={`camera-${camera.id}`}
-                  checked={selectedCameras.includes(camera.id)}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      updateSelectedCameras([...selectedCameras, camera.id]);
-                    } else {
-                      updateSelectedCameras(
-                        selectedCameras.filter((id) => id !== camera.id)
-                      );
-                    }
-                  }}
-                />
-                <Label
-                  htmlFor={`camera-${camera.id}`}
-                  className="text-sm font-medium"
-                >
-                  {camera.name}
-                </Label>
-              </div>
-
-              <Popover
-                open={openPopoverId === camera.id}
-                onOpenChange={(open) =>
-                  handlePopoverOpenChange(open, camera.id)
-                }
+              <div
+                key={camera.id}
+                className="flex items-center justify-between"
               >
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="p-1 hover:bg-muted rounded-sm relative"
-                    aria-label="Afficher l'aperçu"
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`camera-${camera.id}`}
+                    checked={selectedCameras.includes(camera.id)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        updateSelectedCameras([...selectedCameras, camera.id]);
+                      } else {
+                        updateSelectedCameras(
+                          selectedCameras.filter((id) => id !== camera.id)
+                        );
+                      }
+                    }}
+                  />
+                  <Label
+                    htmlFor={`camera-${camera.id}`}
+                    className="text-sm font-medium"
                   >
-                    {snapshotsLoading ? (
-                      <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  {renderSnapshotContent(camera.id, camera.name)}
-                </PopoverContent>
-              </Popover>
-            </div>
+                    {camera.name}
+                  </Label>
+                </div>
+
+                <Popover
+                  open={openPopoverId === camera.id}
+                  onOpenChange={(open) =>
+                    handlePopoverOpenChange(open, camera.id)
+                  }
+                >
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="p-1 hover:bg-muted rounded-sm relative"
+                      aria-label="Afficher l'aperçu"
+                    >
+                      {snapshotsLoading ? (
+                        <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    {renderSnapshotContent(camera.id, camera.name)}
+                  </PopoverContent>
+                </Popover>
+              </div>
           ))}
       </div>
 
       {sourcesError && (
         <FormMessage className="mt-2">
-          {typeof sourcesError === 'string' ? sourcesError : 'Veuillez sélectionner au moins une source vidéo'}
+          {typeof sourcesError === 'string'
+            ? sourcesError
+            : 'Veuillez sélectionner au moins une source vidéo'}
         </FormMessage>
       )}
     </div>
