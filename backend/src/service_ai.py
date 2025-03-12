@@ -16,16 +16,23 @@ class ServiceAI:
         self.analytic = analytic
         #self.analytic = "10.211.0.2:53211"
         self.describe = None
-        self.ws = None
+        self.ws = {}
         self.seq = 1
         
     async def __aenter__(self):
         return self
     
     async def __aexit__(self, exc_type, exc, tb):
-        if self.ws is not None:
+        """ if self.ws is not None:
             logger.info(f"Closing websocket")
-            await self.ws.close()
+            await self.ws.close() """
+        
+        logger.info(f"Closing websockets")
+        for model in self.ws:
+            if self.ws[model] is not None:
+                
+                await self.ws[model][0].close()
+                await self.ws[model][1].close()
 
     async def __describe(self):
         if self.describe is None:
@@ -54,32 +61,65 @@ class ServiceAI:
             raise Exception("Incompatible version")
         
         models = await self.get_models()
-        model = list(models.keys())[1]
-        print(model)
-        modelWidth = models[model]["networkWidth"]
-        modelHeight = models[model]["networkHeight"]
+        models_list = list(models.keys())
+        
+        obj_model = [model for model in models_list if "/object" in model.lower()][0]
+        color_model = [model for model in models_list if "/color" in model.lower()][0]
+        type_model = [model for model in models_list if "/type" in model.lower()][0]
+        classif_models = [color_model, type_model]
 
-        await self.__init_ws(model)
+        obj_modelWidth = models[obj_model]["networkWidth"]
+        obj_modelHeight = models[obj_model]["networkHeight"]
 
-        image = cv2.resize(image, (modelWidth, modelHeight)) # What if the image is not the ratio of the model?
-        image_raw = cv2.cvtColor(image, cv2.COLOR_BGR2YUV_I420).astype("uint8").flatten().astype("uint8")
-        _, image_jpeg = cv2.imencode(".jpg", image)
+        image_ar = image.shape[1] / image.shape[0]
 
-        # crop top to extract Y
-        Y = image_raw[:modelHeight, :modelWidth]
-        UV = image_raw[modelHeight:, :]
+        await self.__init_ws(obj_model)
 
-        U = UV[:UV.shape[0]//2, :].reshape(modelHeight//2, modelWidth//2)
-        V = UV[UV.shape[0]//2:, :].reshape(modelHeight//2, modelWidth//2)
+        if image.shape[0] < obj_modelHeight:
+            #add black padding at the bottom
+            image = cv2.resize(image, (obj_modelWidth, int(obj_modelWidth / image_ar))) # What if the image is not the ratio of the model?
+            padding = np.zeros((obj_modelHeight - image.shape[0], image.shape[1], 3), dtype=np.uint8)
+            image = np.concatenate([image, padding], axis=0)
 
-        YUV420P = np.concatenate([Y.flatten(), U.flatten(), V.flatten()]).astype("uint8")
+        elif image.shape[0] > obj_modelHeight:
+            #add black padding on the right
+            image = cv2.resize(image, (int(obj_modelHeight * image_ar), obj_modelHeight))
+            padding = np.zeros((image.shape[0], obj_modelWidth - image.shape[1], 3), dtype=np.uint8)
+            image = np.concatenate([image, padding], axis=1)
 
-        print("Image size: ", image.shape)
-        print("Image raw size SZ: ", YUV420P.shape)
-        print("Image raw size CV2: ", image_raw.shape, image_raw.flatten().shape)
-        print("Image attended size: ", modelWidth * modelHeight * 3 // 2)
 
-        await self.__detect_object(modelWidth, modelHeight, raw=image_raw)
+        image_raw = cv2.cvtColor(image, cv2.COLOR_BGR2YUV_I420).astype("uint8")#.flatten().astype("uint8")
+
+        obj_response = await self.__detect_object(width=obj_modelWidth, height=obj_modelHeight, raw=image_raw, object_detection=True,model=obj_model)
+        filtered_obj_response = [obj for obj in obj_response if "car" in obj["bbox"]["probabilities"].keys()]
+
+        print(f"{len(filtered_obj_response)} detection(s): ", filtered_obj_response)
+
+        all_classif_response = []
+        for model in classif_models:
+            classif_response = []
+            class_modelWidth = models[model]["networkWidth"]
+            class_modelHeight = models[model]["networkHeight"]
+            await self.__init_ws(model)
+            i=0
+            for res in filtered_obj_response:
+                
+                image_class = self.get_thumbnail(image,res,0.5)
+                image_class = cv2.resize(image_class, (class_modelWidth, class_modelHeight))
+                image_raw_class = cv2.cvtColor(image_class, cv2.COLOR_BGR2YUV_I420).astype("uint8")
+                
+                #save on disk
+                #cv2.imwrite(f"test_save_class_{i}.jpg", cv2.cvtColor(image_raw_class, cv2.COLOR_YUV2BGR_I420))
+                i+=1
+                classif_response.append(await self.__detect_object(width=class_modelWidth, height=class_modelHeight, raw=image_raw_class, classification=True,model=model))
+            
+            print(f"{len(classif_response)} Classification detection(s) for model {model}: ", classif_response)
+
+            all_classif_response.append(classif_response)
+
+        
+        
+
 
     async def detect(self, frame):
         version = await self.get_version()
@@ -97,17 +137,20 @@ class ServiceAI:
         await self.__init_ws(model)
         image_jpeg = cv2.imencode(".jpg", frame)[1]
 
-        detections = await self.__detect_object(modelWidth, modelHeight, jpeg=image_jpeg)
+        detections = await self.__detect_object(width=modelWidth, height=modelHeight, jpeg=image_jpeg)
         logger.info(f"Detections: {detections}")
         return detections
 
     async def __heartbeat(self):
-        await self.ws.ping()
+        for model in self.ws:
+            await model[0].ping()
     
     async def __init_ws(self, model):
-        if self.ws is None:
-            self.ws = await aiohttp.ClientSession().ws_connect(f"ws://{self.analytic}{model}/requestsQueue")
-        return self.ws
+        if model not in self.ws:
+            service_session = aiohttp.ClientSession()
+            connection = await service_session.ws_connect(f"ws://{self.analytic}{model}/requestsQueue")
+            self.ws[model] = (connection, service_session)
+        #return self.ws[model]
 
     def get_pixel_bbox(self, frame, detection):
         def getCoord(x, y, w, h):
@@ -144,14 +187,15 @@ class ServiceAI:
 
         return frame[top:bottom, left:right]
 
-    async def __detect_object(self, object_detection=False, classification=False, width=0, height=0, raw=None, jpeg=None):
+    async def __detect_object(self, object_detection=False, classification=False, width=0, height=0, raw=None, jpeg=None,model=None):
         ctx = {
             "confidenceThreshold": 0.5,
             "overlapThreshold": 0.0001,
-            "bbox": True,
+            "bbox": True if object_detection else False,
+            "classifier": True if classification else False
         }
-        logger.info(f"Sending context: {ctx}")
-        await self.ws.send_json(ctx)
+        #logger.info(f"Sending context: {ctx}")
+        await self.ws[model][0].send_json(ctx)
         
         if raw is not None:
           req = {
@@ -166,9 +210,9 @@ class ServiceAI:
                   "id": self.seq,
               }
           }
-          logger.info(f"Sending request: {req}")
-          await self.ws.send_json(req)
-          await self.ws.send_bytes(raw.tobytes())
+          #logger.info(f"Sending request: {req}")
+          await self.ws[model][0].send_json(req)
+          await self.ws[model][0].send_bytes(raw.tobytes())
         elif jpeg is not None:
           req = {
               "image": {
@@ -178,21 +222,21 @@ class ServiceAI:
                   "id": self.seq,
               }
           }
-          logger.info(f"Sending request: {req}")
-          await self.ws.send_json(req)
-          await self.ws.send_bytes(jpeg.tobytes())
+          #logger.info(f"Sending request: {req}")
+          await self.ws[model][0].send_json(req)
+          await self.ws[model][0].send_bytes(jpeg.tobytes())
         else:
           logger.error("No image provided")
           raise Exception("No image provided")
                     
-        async for msg in self.ws:
+        async for msg in self.ws[model][0]:
             if msg.type == aiohttp.WSMsgType.TEXT:
                 data = json.loads(msg.data)
-                logger.info(f"Received: {data}")
+                #logger.info(f"Received: {data}")
                 if data["msg"] == "response":
 
                     # classifier has higher priority than obj detector
-                    if "classifiers" in data and len(data["classifiers"]) > 0:
+                    if "classifiers" in data :
                         return data["classifiers"]
                     
                     return data["detections"]
@@ -201,7 +245,7 @@ class ServiceAI:
         
 
 async def main():
-    async with ServiceAI("10.211.0.2:53211") as forensic:
+    async with ServiceAI("192.168.20.220:53211") as forensic:
         print("Starting")
         await forensic.get_version()
         print("Done")
