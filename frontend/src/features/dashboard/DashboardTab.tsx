@@ -1,4 +1,4 @@
-import { JSX, useEffect, useRef } from 'react';
+import { JSX, useEffect, useRef, useState } from 'react';
 import { ReactSortable } from 'react-sortablejs';
 
 import LoadingSpinner from '@/components/loading';
@@ -47,10 +47,23 @@ export default function DashboardTab({
   const { user } = useAuth();
   const isOperator = user?.privileges === 'Operator';
   const chartRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
+  const [refsUpdated, setRefsUpdated] = useState(false);
 
   useEffect(() => {
     onAddWidget(() => add);
   }, [onAddWidget, add]);
+
+  // Force un re-render après que les refs sont mises à jour
+  // eslint-disable-next-line consistent-return
+  useEffect(() => {
+    if (data && !refsUpdated) {
+      // Donner un peu de temps au DOM pour se mettre à jour
+      const timer = setTimeout(() => {
+        setRefsUpdated(true);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [data, refsUpdated]);
 
   const handleSort = (newWidgets: ChartTiles[]) => {
     if (data) {
@@ -58,7 +71,6 @@ export default function DashboardTab({
         .map((widget: ChartTiles, index: number) => {
           const storedWidget = data.find((stored) => stored.id === widget.id);
           if (!storedWidget) return null;
-
           return {
             ...storedWidget,
             order: index,
