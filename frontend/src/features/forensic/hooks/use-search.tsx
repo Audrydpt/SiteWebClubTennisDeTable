@@ -170,7 +170,7 @@ export default function useSearch(sessionId: string) {
         // Reconnecter systématiquement si nous avons un jobId
         if (id && event.code !== 1000 && event.code !== 1001) {
           console.log('🔄 Reconnexion automatique après fermeture...');
-          setTimeout(() => initWebSocket(id), 1000);
+          if (id === jobId) setTimeout(() => initWebSocket(id), 1000);
         } else {
           setIsSearching(false);
         }

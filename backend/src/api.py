@@ -3,6 +3,7 @@ import traceback
 import cv2
 import json
 import uuid
+from fastapi.websockets import WebSocketState
 import gunicorn
 import uvicorn
 import datetime
@@ -405,14 +406,33 @@ class FastAPIServer:
                 
                 task_manager = SharedTaskManager.get_manager()
                 observer = SharedQueueObserver()
+                start_time = time.time()
+                max_duration = 120
                 
                 if not task_manager.add_observer(guid, observer):
                     await websocket.close(code=1000, reason="Job not found")
                     return
 
                 while True:
-                    result = await observer.get(0.1)
+                    # Vérification du timeout
+                    current_time = time.time()
+                    if current_time - start_time > max_duration:
+                        logger.warning(f"Job {guid} a dépassé la durée maximale de 5 minutes")
+                        await websocket.send_json({
+                            "type": "timeout",
+                            "message": "Le WS a dépassé la durée maximale de 5 minutes"
+                        })
+                        await websocket.close(code=1006, reason="Timeout exceeded")
+                        return
+                    
+                    # Attente de résultats avec un court timeout
+                    result = await observer.get(timeout=1.0)
                     if result is None:
+                        status = task_manager.get_job_status(guid)
+                        if status in [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED]:
+                            await websocket.close(code=1000, reason="Job finished")
+                            return
+
                         await asyncio.sleep(0.1)
                         continue
                     
@@ -425,16 +445,22 @@ class FastAPIServer:
 
                     if result.final is True:
                         logger.info("Final result")
-                        break
+                        await websocket.close(code=1000, reason="Job finished")
+                        return
+            
             except WebSocketDisconnect:
                 logger.error("Client disconnected")
 
             except Exception as e:
                 logger.error("Error", e)
                 logger.error(traceback.format_exc())
+                await websocket.close(code=1006, reason="Job errored")
 
             finally:
-                logger.info("Closing websocket")
+                if websocket.client_state != WebSocketState.DISCONNECTED:
+                    logger.info("Closing websocket")
+                    await websocket.close(code=1000, reason="Job finished")
+                
                 task_manager.remove_observer(guid, observer)
 
         @self.app.delete("/forensics", tags=["forensics"])

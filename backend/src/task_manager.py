@@ -118,7 +118,7 @@ class Job:
         self.stacktrace = None
         self.observers: Set[JobObserver] = set()
         self.cancel_event = asyncio.Event()
-        self.task = None
+        self.future = None  # The concurrent.futures.Future in the main thread
         
     def add_observer(self, observer: JobObserver) -> None:
         self.observers.add(observer)
@@ -138,17 +138,18 @@ class Job:
             try:
                 await observer.on_job_update(last_result)
             except Exception as e:
-                print(f"Erreur de notification: {e}")
+                logger.error(f"Error notifying observer: {e}")
     
     async def run(self) -> None:
         try:
             self.status = JobStatus.RUNNING
             async for metadata, frame in self._execute():
+                # Check here for cancellation
                 if self.cancel_event.is_set():
                     self.status = JobStatus.CANCELLED
-                    logger.info(f"Job {self.job_id} annulé")
+                    logger.info(f"Job {self.job_id} cancelled during execution")
                     await self.notify_observers(
-                        {"type": "progress", "progress": 1, "message": "Job annulé"}, 
+                        {"type": "cancelled", "progress": 100, "message": "Job cancelled"}, 
                         None, 
                         final=True
                     )
@@ -156,21 +157,36 @@ class Job:
                 
                 await self.notify_observers(metadata, frame)
                 
-            self.status = JobStatus.COMPLETED
-            logger.info(f"Job {self.job_id} terminé")
+            # Check again after all execution is done
+            if self.cancel_event.is_set():
+                self.status = JobStatus.CANCELLED
+            else:
+                self.status = JobStatus.COMPLETED
+                
+            logger.info(f"Job {self.job_id} completed with status {self.status}")
             await self.notify_observers(
-                {"type": "progress", "progress": 1, "message": "Job terminé"}, 
+                {"type": "progress", "progress": 100, "message": f"Job {self.status.lower()}"}, 
                 None, 
                 final=True
             )
             
+        except asyncio.CancelledError:
+            # This exception is raised when the task is cancelled
+            self.status = JobStatus.CANCELLED
+            logger.info(f"Job {self.job_id} cancelled via CancelledError")
+            await self.notify_observers(
+                {"type": "cancelled", "progress": 100, "message": "Job cancelled"}, 
+                None, 
+                final=True
+            )
         except Exception as e:
             self.status = JobStatus.FAILED
-            logger.error(f"Job {self.job_id} échoué: {e}")
+            logger.error(f"Job {self.job_id} failed: {e}")
             self.error = str(e)
             self.stacktrace = traceback.format_exc()
+            logger.error(self.stacktrace)
             await self.notify_observers(
-                {"type": "progress", "progress": 1, "message": f"Job échoué: {e}"}, 
+                {"type": "error", "progress": 100, "message": f"Job failed: {e}"}, 
                 None, 
                 final=True
             )
@@ -183,6 +199,8 @@ class Job:
         raise NotImplementedError("Les sous-classes doivent implémenter cette méthode")
     
     def cancel(self) -> None:
+        """Set the cancel event to signal the job to stop."""
+        logger.info(f"Setting cancel event for job {self.job_id}")
         self.cancel_event.set()
 
 class TaskManager:
@@ -206,18 +224,23 @@ class TaskManager:
         TaskManager._initialized = True
         
         self.jobs: Dict[str, Job] = {}
-        self._async_worker = AsyncWorker(self)
-        self._tasks: List[asyncio.Task] = []
+        self._async_worker = None
         
     def start(self) -> None:
+        if self._async_worker is None:
+            self._async_worker = AsyncWorker(self)
+        
         if not self._async_worker.is_alive():
             self._async_worker.start()
             
     def stop(self) -> None:
+        # Cancel all running jobs first
         for job_id in list(self.jobs.keys()):
             self.cancel_job(job_id)
         
+        # Then stop the worker
         self._async_worker.stop()
+        self._async_worker = None
     
     def submit_job(self, job: Job) -> str:
         if not self._async_worker.is_alive():
@@ -225,28 +248,66 @@ class TaskManager:
             
         self.jobs[job.job_id] = job
         
+        # Use the improved submit_coroutine method
         if self._async_worker.loop:
-            task = asyncio.run_coroutine_threadsafe(
+            future = self._async_worker.submit_coroutine(
                 job.run(), 
-                self._async_worker.loop
+                job.job_id
             )
-            job.task = task
+            job.future = future  # Store the future for reference
         
         return job.job_id
     
     def cancel_job(self, job_id: str) -> bool:
-        if job_id in self.jobs:
-
-            self.jobs[job_id].cancel()
-            
-            if self.jobs[job_id].task and not self.jobs[job_id].task.done():
-                self.jobs[job_id].task.cancel()
-                self.jobs[job_id].status = JobStatus.CANCELLED
-                logger.info(f"Task for job {job_id} cancelled in the event loop")
-            
-            return True
-        return False
+        """
+        Cancel a job with the given ID.
+        Returns True if the job was found and cancellation was initiated,
+        False otherwise.
+        """
+        logger.info(f"Attempting to cancel job {job_id}")
         
+        if job_id not in self.jobs:
+            logger.warning(f"Attempted to cancel nonexistent job: {job_id}")
+            return False
+        
+        job = self.jobs[job_id]
+        
+        # Set the cancel event to signal all parts of the job to stop
+        logger.info(f"Setting cancel event for job {job_id}")
+        job.cancel()
+        
+        # Use the worker's cancel_task method to cancel the task in the worker loop
+        if self._async_worker.is_alive():
+            logger.info(f"Requesting task cancellation in worker for job {job_id}")
+            result = self._async_worker.cancel_task(job_id)
+            logger.info(f"Cancellation request result: {result}")
+        
+        # Update job status
+        job.status = JobStatus.CANCELLED
+        
+        # Notify observers of cancellation
+        if self._async_worker.loop:
+            asyncio.run_coroutine_threadsafe(
+                self._notify_cancellation(job_id),
+                self._async_worker.loop
+            )
+        
+        return True
+    
+    async def _notify_cancellation(self, job_id: str) -> None:
+        """Helper to notify job observers about cancellation"""
+        if job_id in self.jobs:
+            job = self.jobs[job_id]
+            
+            try:
+                await job.notify_observers(
+                    {"type": "cancelled", "message": "Job cancelled by user request"}, 
+                    None, 
+                    final=True
+                )
+            except Exception as e:
+                logger.error(f"Error notifying observers of cancellation: {e}")
+    
     def get_job_status(self, job_id: str) -> Optional[JobStatus]:
         if job_id in self.jobs:
             return self.jobs[job_id].status
@@ -286,6 +347,7 @@ class AsyncWorker(threading.Thread):
         self.task_manager = task_manager
         self.loop = None
         self._running = False
+        self._task_map = {}  # Maps future_id -> actual asyncio Task
         
     def run(self):
         self.loop = asyncio.new_event_loop()
@@ -295,13 +357,79 @@ class AsyncWorker(threading.Thread):
         try:
             self.loop.run_forever()
         finally:
+            # Cancel all pending tasks when loop is stopped
+            pending = asyncio.all_tasks(self.loop)
+            for task in pending:
+                task.cancel()
+            
+            # Run loop until all tasks are cancelled
+            if pending:
+                self.loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                
             self.loop.close()
             self._running = False
             
     def stop(self):
         if self.loop and self._running:
+            # Cancel all tasks before stopping loop
+            def cancel_all():
+                for task_id, task in list(self._task_map.items()):
+                    logger.info(f"Cancelling task {task_id} during worker shutdown")
+                    if not task.done():
+                        task.cancel()
+            
+            self.loop.call_soon_threadsafe(cancel_all)
             self.loop.call_soon_threadsafe(self.loop.stop)
-            self.join(timeout=1)
+            self.join(timeout=2)
+    
+    def submit_coroutine(self, coro, job_id):
+        """
+        Submit a coroutine to be executed in this worker's event loop,
+        and return a Future that will eventually contain the result.
+        """
+        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
+        
+        # We need to create a proper Task in the worker loop and track it
+        def create_task_and_link():
+            task = asyncio.create_task(coro)
+            self._task_map[job_id] = task
+            
+            # When the task completes, remove it from the map
+            def on_task_done(t):
+                if job_id in self._task_map:
+                    del self._task_map[job_id]
+            
+            task.add_done_callback(on_task_done)
+            
+            # Cancel the Future if the Task is cancelled
+            def on_task_cancelled(t):
+                if not future.done():
+                    future.cancel()
+            
+            task.add_done_callback(on_task_cancelled)
+            return task
+        
+        # We can't directly return the task because it's in a different thread/loop,
+        # but we need it to properly cancel the task
+        self.loop.call_soon_threadsafe(create_task_and_link)
+        return future
+    
+    def cancel_task(self, job_id):
+        """
+        Cancel a task that's running in this worker's event loop.
+        """
+        def do_cancel():
+            if job_id in self._task_map:
+                task = self._task_map[job_id]
+                if not task.done():
+                    logger.info(f"Cancelling task {job_id} in worker loop")
+                    task.cancel()
+                    return True
+            return False
+        
+        if self.loop and self._running:
+            return self.loop.call_soon_threadsafe(do_cancel)
+        return False
 
 class TaskManagerServer(multiprocessing.managers.BaseManager):
     pass
