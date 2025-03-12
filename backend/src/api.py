@@ -1,7 +1,9 @@
 import os
+import traceback
 import cv2
 import json
 import uuid
+from fastapi.websockets import WebSocketState
 import gunicorn
 import uvicorn
 import datetime
@@ -9,6 +11,7 @@ import time
 import aiohttp
 import threading
 import asyncio
+import logging
 
 from pydantic import Field, create_model
 
@@ -24,6 +27,10 @@ from starlette.requests import Request
 
 from gunicorn.app.base import BaseApplication
 
+
+from forensic import VehicleReplayJob
+from task_manager import CounterJob, JobStatus, SharedQueueObserver, SharedTaskManager, TaskManagerServer, WebSocketObserver
+
 from typing import Annotated, Literal, Optional, Type, Union, List, Dict, Any
 from enum import Enum
 
@@ -35,6 +42,11 @@ from database import AcicAllInOneEvent, AcicCounting, AcicEvent, AcicLicensePlat
 from pydantic import BaseModel, Field, Extra
 
 from vms import CameraClient
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
+logger.addHandler(logging.FileHandler(f"/tmp/{__name__}.log"))
 
 class ModelName(str, Enum):
     minute = "1 minute"
@@ -54,6 +66,7 @@ class ModelName(str, Enum):
 # Please follow: https://www.belgif.be/specification/rest/api-guide/#resource-uri
 class FastAPIServer:
     def __init__(self, event_grabber:EventGrabber):
+        self.task_manager = SharedTaskManager.get_manager()
         self.event_grabber = event_grabber
         self.app = FastAPI(
             docs_url=None, redoc_url=None,
@@ -352,46 +365,131 @@ class FastAPIServer:
             appearances: PersonApperance
             attributes: PersonAttributes
             context: Dict[str, Any]
-        
-        async def mocked_task(duration):
-            image = cv2.imread("/backend/assets/test.jpg")
-            for i in range(duration):
-                await asyncio.sleep(1)
-                yield {"progress": i}, cv2.imencode('.jpg', image)[1].tobytes()
-
-        jobs = {}
-        
+                
         @self.app.get("/forensics", tags=["forensics"])
         async def get_tasks():
-            return [i for i in jobs.keys()]
+            ret = {}
+            for job in self.task_manager.get_jobs():
+                status = self.task_manager.get_job_status(job)
+                ret[job] = {
+                    "status": status
+                }
+                if status == JobStatus.FAILED:
+                    ret[job]["error"], ret[job]["stacktrace"] = self.task_manager.get_job_error(job)
+
+                
+            return ret
 
         @self.app.post("/forensics", tags=["forensics"])
         async def start_task(request: Request, data: Union[ModelVehicle, ModelPerson]):
-            guid = str(uuid.uuid4())
-            jobs[guid] = mocked_task(10)
-            return {"guid": guid}
+
+            job = None
+            if data.type == "vehicle":
+                job = VehicleReplayJob(data.model_dump())
+            elif data.type == "person": # Placeholder pour le traitement des personnes
+                job = CounterJob(
+                    duration=10,
+                    target=data.type
+                )
+            else:
+                raise HTTPException(status_code=400, detail="Invalid type")
+                
+            # Soumettre le job au gestionnaire de tâches
+            job_id = self.task_manager.submit_job(job)
+            
+            return {"guid": job_id}
         
         @self.app.websocket("/forensics/{guid}")
         async def task_updates(websocket: WebSocket, guid: str):
-            await websocket.accept()
-            job = jobs.get(guid)
-            if job is None:
-                await websocket.send_json({"error": "Job not found"})
-                return
-            
             try:
-                async for progress in job:
-                    data, frame = progress
-                    await websocket.send_json(data)
-                    await websocket.send_bytes(frame)
-                await websocket.close()
+                await websocket.accept()
+                
+                task_manager = SharedTaskManager.get_manager()
+                observer = SharedQueueObserver()
+                start_time = time.time()
+                max_duration = 120
+                
+                if not task_manager.add_observer(guid, observer):
+                    await websocket.close(code=1000, reason="Job not found")
+                    return
+
+                while True:
+                    # Vérification du timeout
+                    current_time = time.time()
+                    if current_time - start_time > max_duration:
+                        logger.warning(f"Job {guid} a dépassé la durée maximale de 5 minutes")
+                        await websocket.send_json({
+                            "type": "timeout",
+                            "message": "Le WS a dépassé la durée maximale de 5 minutes"
+                        })
+                        await websocket.close(code=1006, reason="Timeout exceeded")
+                        return
+                    
+                    # Attente de résultats avec un court timeout
+                    result = await observer.get(timeout=1.0)
+                    if result is None:
+                        status = task_manager.get_job_status(guid)
+                        if status in [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED]:
+                            await websocket.close(code=1000, reason="Job finished")
+                            return
+
+                        await asyncio.sleep(0.1)
+                        continue
+                    
+                    if result.metadata is not None:
+                        logger.info(f"Sending result... {result.metadata}")
+                        await websocket.send_json(result.metadata)
+                    
+                    if result.frame is not None:
+                        await websocket.send_bytes(result.frame)
+
+                    if result.final is True:
+                        logger.info("Final result")
+                        await websocket.close(code=1000, reason="Job finished")
+                        return
+            
             except WebSocketDisconnect:
-                pass
+                logger.error("Client disconnected")
+
             except Exception as e:
-                print(e)
+                logger.error("Error", e)
+                logger.error(traceback.format_exc())
+                await websocket.close(code=1006, reason="Job errored")
+
             finally:
-                jobs.pop(guid, None)
-    
+                if websocket.client_state != WebSocketState.DISCONNECTED:
+                    logger.info("Closing websocket")
+                    await websocket.close(code=1000, reason="Job finished")
+                
+                task_manager.remove_observer(guid, observer)
+
+        @self.app.delete("/forensics", tags=["forensics"])
+        async def stop_all_task():
+            self.task_manager.stop()
+            self.task_manager.start()
+
+            return {"status": "ok"}
+        
+        @self.app.delete("/forensics/{guid}", tags=["forensics"])
+        async def stop_task(guid: str):
+            task_manager = SharedTaskManager.get_manager()
+            task_manager.cancel_job(guid)
+            return {"guid": guid}
+        
+        @self.app.get("/forensics/{guid}", tags=["forensics"])
+        async def get_task(guid: str):
+            task_manager = SharedTaskManager.get_manager()
+            job = task_manager.get_job(guid)
+            if job is None:
+                raise HTTPException(status_code=404, detail="Job not found")
+            
+            results = []
+            for result in job.results.get_results():
+                results.append({
+                    "metadata": result.metadata,
+                })
+            return results
+        
     def __create_vms(self):
         @self.app.get("/vms/{ip}/cameras", tags=["vms"])
         async def get_cameras(ip: str):
@@ -677,7 +775,7 @@ class FastAPIServer:
                 raise HTTPException(status_code=500, detail=str(e))
 
     def start(self, host="0.0.0.0", port=5020):
-        uvicorn.run(self.app, host=host, port=port, root_path="/front-api")
+        uvicorn.run(self.app, host=host, port=port, root_path="/front-api", ws_ping_interval=30, ws_ping_timeout=30)
 
 class ThreadedFastAPIServer(BaseApplication):
     def __init__(self, event_grabber, threads=1, workers=2):
@@ -690,7 +788,11 @@ class ThreadedFastAPIServer(BaseApplication):
             "preload_app": True,
             "accesslog": "-",
             "errorlog": "-",
-            "loglevel": "info"
+            "loglevel": "info",
+            "worker_options": {
+                "ws_ping_interval": 30,
+                "ws_ping_timeout": 30
+            }
         }
         super().__init__()
 
