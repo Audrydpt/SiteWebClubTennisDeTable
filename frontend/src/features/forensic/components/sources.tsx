@@ -29,7 +29,6 @@ interface SourcesProps {
 
 export default function Sources({
   useScrollArea = false,
-  maxHeight = '300px',
   onSelectedCamerasChange,
 }: SourcesProps) {
   const { sessionId = '' } = useAuth();
@@ -196,7 +195,10 @@ export default function Sources({
       <AccordionTrigger>Sources vidéo</AccordionTrigger>
       <AccordionContent>
         {useScrollArea ? (
-          <ScrollArea className="pr-4" style={{ maxHeight }}>
+          <ScrollArea
+            className="pr-4 rounded-sm"
+            style={{ maxHeight: '400px', overflowY: 'auto' }}
+          >
             {content}
           </ScrollArea>
         ) : (

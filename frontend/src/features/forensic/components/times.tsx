@@ -26,7 +26,6 @@ import {
 } from '@/components/ui/select';
 import { useForensicForm } from '../lib/provider/forensic-form-context';
 
-// Extracted component to fix nested component ESLint error
 function DateTimePicker({
   isStart,
   selectedDate,
@@ -152,9 +151,9 @@ export default function Times() {
     timeTo &&
     format(timeFrom, 'yyyy-MM-dd') === format(timeTo, 'yyyy-MM-dd');
 
-  const hasTimeError = isSameDay && timeFrom && timeTo && timeFrom > timeTo;
+  const hasTimeError =
+    isSameDay && timeFrom && timeTo && timeFrom.getTime() > timeTo.getTime(); // 🔥 Vérification simple avec getTime()
 
-  // Time options and current values
   const timeOptions = {
     hours: Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')),
     minutes: Array.from({ length: 60 }, (_, i) =>
@@ -216,6 +215,7 @@ export default function Times() {
 
   const updateEndTime = (hoursValue: string, minutesValue: string) => {
     if (!timeTo) return;
+
     const newDate = new Date(timeTo);
     newDate.setHours(
       parseInt(hoursValue, 10),
@@ -223,7 +223,8 @@ export default function Times() {
       59,
       999
     );
-    if (isSameDay && timeFrom && timeFrom > newDate) return;
+
+    // 🔥 Suppression de la restriction qui bloquait la modification de endTime
     setValue('timerange.time_to', newDate.toISOString());
   };
 

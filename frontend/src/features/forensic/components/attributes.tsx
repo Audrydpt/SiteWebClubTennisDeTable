@@ -178,7 +178,7 @@ export default function Attributes() {
       <AccordionContent>
         <ScrollArea
           className="pr-4 rounded-sm"
-          style={{ maxHeight: '240px', overflow: 'auto' }}
+          style={{ maxHeight: '400px', overflow: 'auto' }}
         >
           {subjectType === 'person' ? (
             <div className="space-y-6">

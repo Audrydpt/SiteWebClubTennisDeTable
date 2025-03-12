@@ -1,6 +1,4 @@
-/* eslint-disable no-console */
 import { useCallback, useEffect, useRef, useState } from 'react';
-
 import { FormData as CustomFormData, formatQuery } from '../lib/format-query';
 
 export interface ForensicResult {
@@ -16,6 +14,7 @@ export default function useSearch(sessionId: string) {
   const [jobId, setJobId] = useState<string | null>(null);
   const [results, setResults] = useState<ForensicResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [manualClose, setManualClose] = useState(false);
 
   // WebSocket connection
   const wsRef = useRef<WebSocket | null>(null);
@@ -37,16 +36,7 @@ export default function useSearch(sessionId: string) {
         // Reset states
         setResults([]);
         setIsSearching(true);
-
-        // Cancel previous search if any
-        await fetch(`${process.env.MAIN_API_URL}/forensics`, {
-          method: 'DELETE',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            Authorization: `X-Session-Id ${sessionId}`,
-          },
-        });
+        setManualClose(false);
 
         // Format query and make API call
         const queryData = formatQuery(formData);
@@ -88,6 +78,14 @@ export default function useSearch(sessionId: string) {
         return;
       }
 
+      // Don't initialize if manual close was requested
+      if (manualClose) {
+        console.log(
+          '🚫 WebSocket initialization skipped - manual close active'
+        );
+        return;
+      }
+
       // Fermer la connexion existante si présente
       if (wsRef.current) {
         wsRef.current.close();
@@ -113,13 +111,20 @@ export default function useSearch(sessionId: string) {
       };
 
       ws.onmessage = (event) => {
+        // Skip processing if manual close was requested
+        if (manualClose) {
+          console.log('🚫 WebSocket message ignored - manual close active');
+          return;
+        }
+
         if (typeof event.data === 'string') {
           try {
             const data = JSON.parse(event.data);
 
             if (data.timestamp) {
-              console.log('🕒 Timestamp:', data.timestamp);
-              lastDate.setTime(data.timestamp);
+              // Parse ISO8601 timestamp properly
+              lastDate.setTime(Date.parse(data.timestamp));
+              console.log('🕒 Timestamp parsed:', lastDate.toISOString());
             }
             if (data.score) {
               lastConfidence = data.score;
@@ -147,7 +152,7 @@ export default function useSearch(sessionId: string) {
           const newResult: ForensicResult = {
             id: crypto.randomUUID(),
             imageData: imageUrl,
-            timestamp: lastDate.toLocaleTimeString(),
+            timestamp: lastDate.toISOString(),
             confidence: lastConfidence,
             cameraId: 'unknown',
           };
@@ -167,8 +172,8 @@ export default function useSearch(sessionId: string) {
           event
         );
 
-        // Reconnecter systématiquement si nous avons un jobId
-        if (id && event.code !== 1000 && event.code !== 1001) {
+        // Reconnecter seulement si ce n'était pas une fermeture manuelle
+        if (id && !manualClose && event.code !== 1000 && event.code !== 1001) {
           console.log('🔄 Reconnexion automatique après fermeture...');
           if (id === jobId) setTimeout(() => initWebSocket(id), 1000);
         } else {
@@ -176,15 +181,60 @@ export default function useSearch(sessionId: string) {
         }
       };
     },
-    [jobId]
+    [jobId, manualClose]
   );
 
   const closeWebSocket = useCallback(() => {
+    // Set manual close flag immediately to prevent reconnection
+    setManualClose(true);
+
+    // First close the WebSocket connection to stop receiving updates
     if (wsRef.current) {
-      wsRef.current.close();
+      console.log('🔒 Closing WebSocket connection before cancellation...');
+      wsRef.current.close(1000, 'Client closed connection');
       wsRef.current = null;
     }
-  }, []);
+
+    // Reset states immediately
+    setIsSearching(false);
+    setProgress(null);
+
+    // Then cancel the search via API
+    console.log('🛑 Sending cancel request to API...');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+    return fetch(`${process.env.MAIN_API_URL}/forensics?duration=5`, {
+      method: 'DELETE',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: `X-Session-Id ${sessionId}`,
+      },
+      signal: controller.signal,
+    })
+      .then((response) => {
+        clearTimeout(timeoutId);
+        if (response.ok) {
+          console.log('✅ Search cancelled successfully');
+        } else {
+          console.error(`❌ Failed to cancel search: ${response.status}`);
+          // Even if the API call fails, we want to ensure the UI is reset
+        }
+      })
+      .catch((error) => {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          console.warn('⚠️ Cancel request timed out but UI reset completed');
+        } else {
+          console.error('❌ Error cancelling search:', error);
+        }
+      })
+      .finally(() => {
+        // Reset job ID after the API call completes or fails
+        setJobId(null);
+      });
+  }, [sessionId]);
 
   return {
     startSearch,

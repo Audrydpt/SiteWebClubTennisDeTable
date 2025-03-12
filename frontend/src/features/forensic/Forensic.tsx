@@ -52,10 +52,18 @@ function ForensicFormContent({
           </div>
         </ScrollArea>
 
-        {/* Fixed position buttons section with z-index to ensure visibility */}
         <div className="absolute bottom-0 left-0 right-0 pt-4 bg-card z-10">
-          <Button type="submit" className="w-full">
-            <Search className="mr-2" size={16} /> Lancer la recherche
+          <Button type="submit" className="w-full" disabled={isSearching}>
+            {isSearching ? (
+              <>
+                <span className="animate-spin mr-2">◌</span> Recherche en
+                cours...
+              </>
+            ) : (
+              <>
+                <Search className="mr-2" size={16} /> Lancer la recherche
+              </>
+            )}
           </Button>
 
           <Button
@@ -68,8 +76,15 @@ function ForensicFormContent({
             Annuler la recherche
           </Button>
 
-          {isSearching && progress !== null && (
-            <Progress value={progress} className="h-2 mt-2" />
+          {isSearching && (
+            <>
+              <Progress value={progress ?? 0} className="h-2 mt-2" />
+              <p className="text-xs text-muted-foreground mt-1 text-center">
+                {progress !== null
+                  ? `${progress}% terminé`
+                  : 'Initialisation de la recherche...'}
+              </p>
+            </>
           )}
         </div>
       </form>
@@ -91,6 +106,9 @@ export default function Forensic() {
 
   // Modified handleSearch in Forensic.tsx
   const handleSearch = async (data: ForensicFormValues) => {
+    // If already searching, don't start a new search
+    if (isSearching) return;
+
     try {
       const searchFormData = createSearchFormData(data);
       const guid = await startSearch(searchFormData, 5);
