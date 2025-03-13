@@ -1,5 +1,4 @@
 /* eslint-disable */
-// format-query.tsx
 import { ForensicFormValues } from './provider/forensic-form-context';
 
 // Format query for forensic search API

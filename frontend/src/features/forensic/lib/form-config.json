@@ -57,14 +57,18 @@
     { "value": "high", "label": "High" }
   ],
   "vehicleTypes": [
-    { "value": "passenger car", "label": "Passenger Car" },
-    { "value": "suv/4x4", "label": "SUV/4x4" },
+    { "value": "car", "label": "Car" },
+    { "value": "bus", "label": "Bus" },
+    { "value": "heavy truck", "label": "Heavy Truck" },
+    { "value": "light truck", "label": "Light Truck" },
+    { "value": "motorbike", "label": "Motorbike" },
     { "value": "van", "label": "Van" },
-    { "value": "truck", "label": "Truck" },
-    { "value": "motorcycle", "label": "Motorcycle" },
-    { "value": "bicycle", "label": "Bicycle" },
-    { "value": "scooter", "label": "Scooter" },
-    { "value": "bus", "label": "Bus" }
+    { "value": "pickup", "label": "Pickup" },
+    { "value": "caravan", "label": "Caravan" },
+    { "value": "trailer", "label": "Trailer" },
+    { "value": "industrial", "label": "Industrial" },
+    { "value": "military", "label": "Military" },
+    { "value": "bike", "label": "Bike" }
   ],
   "distinctiveItems": {
     "person": [
@@ -94,17 +98,17 @@
     ]
   },
   "colors": [
-    { "name": "brown", "value": "#964B00", "label": "Brown" },
+    { "name": "gray", "value": "#808080", "label": "Gray" },
+    { "name": "black", "value": "#000000", "label": "Black" },
+    { "name": "white", "value": "#FFFFFF", "label": "White" },
     { "name": "red", "value": "#FF0000", "label": "Red" },
-    { "name": "orange", "value": "#FFA500", "label": "Orange" },
-    { "name": "yellow", "value": "#FFFF00", "label": "Yellow" },
+    { "name": "blue", "value": "#0000FF", "label": "Blue" },
     { "name": "green", "value": "#008000", "label": "Green" },
     { "name": "cyan", "value": "#00FFFF", "label": "Cyan" },
-    { "name": "blue", "value": "#0000FF", "label": "Blue" },
-    { "name": "purple", "value": "#800080", "label": "Purple" },
-    { "name": "pink", "value": "#FFC0CB", "label": "Pink" },
-    { "name": "white", "value": "#FFFFFF", "label": "White" },
-    { "name": "gray", "value": "#808080", "label": "Gray" },
-    { "name": "black", "value": "#000000", "label": "Black" }
+    { "name": "orange", "value": "#FFA500", "label": "Orange" },
+    { "name": "violet", "value": "#8F00FF", "label": "Violet" },
+    { "name": "yellow", "value": "#FFFF00", "label": "Yellow" },
+    { "name": "brown", "value": "#964B00", "label": "Brown" },
+    { "name": "pink", "value": "#FFC0CB", "label": "Pink" }
   ]
 }
