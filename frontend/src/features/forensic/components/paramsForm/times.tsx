@@ -3,30 +3,29 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CalendarIcon, Clock } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils.ts';
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { FormField, FormItem, FormLabel } from '@/components/ui/form';
+} from '@/components/ui/accordion.tsx';
+import { Button } from '@/components/ui/button.tsx';
+import { Calendar } from '@/components/ui/calendar.tsx';
+import { FormField, FormItem, FormLabel } from '@/components/ui/form.tsx';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
+} from '@/components/ui/popover.tsx';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useForensicForm } from '../lib/provider/forensic-form-context';
+} from '@/components/ui/select.tsx';
+import { useForensicForm } from '../../lib/provider/forensic-form-context.tsx';
 
-// Extracted component to fix nested component ESLint error
 function DateTimePicker({
   isStart,
   selectedDate,
@@ -79,7 +78,9 @@ function DateTimePicker({
               disabled={(date) =>
                 date > new Date() ||
                 date < new Date('1900-01-01') ||
-                (!isStart && timeFrom ? date < timeFrom : false)
+                (!isStart &&
+                  timeFrom !== undefined &&
+                  date < new Date(timeFrom.getTime() - 86400000))
               }
               initialFocus
               locale={fr}
@@ -152,9 +153,9 @@ export default function Times() {
     timeTo &&
     format(timeFrom, 'yyyy-MM-dd') === format(timeTo, 'yyyy-MM-dd');
 
-  const hasTimeError = isSameDay && timeFrom && timeTo && timeFrom > timeTo;
+  const hasTimeError =
+    isSameDay && timeFrom && timeTo && timeFrom.getTime() > timeTo.getTime();
 
-  // Time options and current values
   const timeOptions = {
     hours: Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')),
     minutes: Array.from({ length: 60 }, (_, i) =>
@@ -179,6 +180,7 @@ export default function Times() {
     );
     setValue('timerange.time_from', newDate.toISOString());
 
+    // Mise à jour de la date de fin si nécessaire
     if (timeTo && newDate > timeTo) {
       const newEndDate = new Date(newDate);
       newEndDate.setHours(23, 59, 59, 999);
@@ -210,12 +212,13 @@ export default function Times() {
       0,
       0
     );
-    if (isSameDay && timeTo && newDate > timeTo) return;
+
     setValue('timerange.time_from', newDate.toISOString());
   };
 
   const updateEndTime = (hoursValue: string, minutesValue: string) => {
     if (!timeTo) return;
+
     const newDate = new Date(timeTo);
     newDate.setHours(
       parseInt(hoursValue, 10),
@@ -223,7 +226,8 @@ export default function Times() {
       59,
       999
     );
-    if (isSameDay && timeFrom && timeFrom > newDate) return;
+
+    // Permettre de définir n'importe quelle heure de fin, même si elle est antérieure à l'heure de début
     setValue('timerange.time_to', newDate.toISOString());
   };
 

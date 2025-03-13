@@ -1,22 +1,22 @@
 import { useCallback } from 'react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Checkbox } from '@/components/ui/checkbox.tsx';
+import { Input } from '@/components/ui/input.tsx';
+import { ScrollArea } from '@/components/ui/scroll-area.tsx';
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
+} from '@/components/ui/accordion.tsx';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import ColorPicker from './ui/color-picker';
-import MultiSelect from '@/components/multi-select';
+} from '@/components/ui/select.tsx';
+import { Label } from '@/components/ui/label.tsx';
+import ColorPicker from '../ui/color-picker.tsx';
+import MultiSelect from '@/components/multi-select.tsx';
 import {
   topTypeOptions,
   bottomTypeOptions,
@@ -24,13 +24,13 @@ import {
   distinctiveItems,
   contextualItems,
   colors,
-} from '../lib/form-config';
-import carBrands from '../lib/car-brand.json';
+} from '../../lib/form-config.ts';
+import carBrands from '../../lib/car-brand.json';
 import {
   useForensicForm,
   PersonForensicFormValues,
   VehicleForensicFormValues,
-} from '../lib/provider/forensic-form-context';
+} from '../../lib/provider/forensic-form-context.tsx';
 
 export default function Attributes() {
   const { formMethods, subjectType } = useForensicForm();
@@ -176,10 +176,7 @@ export default function Attributes() {
     <AccordionItem value="attributes">
       <AccordionTrigger>Attributs spécifiques</AccordionTrigger>
       <AccordionContent>
-        <ScrollArea
-          className="pr-4 rounded-sm"
-          style={{ maxHeight: '240px', overflow: 'auto' }}
-        >
+        <ScrollArea className="pr-4 rounded-sm pb-5">
           {subjectType === 'person' ? (
             <div className="space-y-6">
               {/* Upper clothing section */}
@@ -363,7 +360,7 @@ export default function Attributes() {
               {/* Vehicle contextual items */}
               <div className="space-y-4">
                 <Label className="text-sm font-medium">Contexte</Label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 pb-2">
                   {contextualItems.vehicle.map((item) => (
                     <div key={item.id} className="flex items-center space-x-2">
                       <Checkbox

@@ -6,14 +6,14 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/ui/select.tsx';
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
-import { FormField, FormItem, FormLabel } from '@/components/ui/form';
-import { useForensicForm } from '../lib/provider/forensic-form-context';
+} from '@/components/ui/accordion.tsx';
+import { FormField, FormItem, FormLabel } from '@/components/ui/form.tsx';
+import { useForensicForm } from '../../lib/provider/forensic-form-context.tsx';
 
 const typeOptions = [
   { value: 'vehicle', label: 'Véhicule' },
