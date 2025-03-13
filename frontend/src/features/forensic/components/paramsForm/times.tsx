@@ -1,31 +1,31 @@
-/* eslint-disable arrow-body-style */
+/* eslint-disable */
 import * as React from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CalendarIcon, Clock } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils.ts';
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { FormField, FormItem, FormLabel } from '@/components/ui/form';
+} from '@/components/ui/accordion.tsx';
+import { Button } from '@/components/ui/button.tsx';
+import { Calendar } from '@/components/ui/calendar.tsx';
+import { FormField, FormItem, FormLabel } from '@/components/ui/form.tsx';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
+} from '@/components/ui/popover.tsx';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useForensicForm } from '../lib/provider/forensic-form-context';
+} from '@/components/ui/select.tsx';
+import { useForensicForm } from '../../lib/provider/forensic-form-context.tsx';
 
 function DateTimePicker({
   isStart,

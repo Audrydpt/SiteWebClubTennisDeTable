@@ -1,13 +1,13 @@
 import { useCallback } from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea } from '@/components/ui/scroll-area.tsx';
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
-import { Label } from '@/components/ui/label';
-import ColorPicker from './ui/color-picker';
-import MultiSelect from '@/components/multi-select';
+} from '@/components/ui/accordion.tsx';
+import { Label } from '@/components/ui/label.tsx';
+import ColorPicker from '../ui/color-picker.tsx';
+import MultiSelect from '@/components/multi-select.tsx';
 import {
   genderOptions,
   ageOptions,
@@ -18,12 +18,12 @@ import {
   vehicleTypes,
   toleranceOptions,
   colors,
-} from '../lib/form-config';
+} from '../../lib/form-config.ts';
 import {
   useForensicForm,
   PersonForensicFormValues,
   VehicleForensicFormValues,
-} from '../lib/provider/forensic-form-context';
+} from '../../lib/provider/forensic-form-context.tsx';
 import {
   Select,
   SelectContent,

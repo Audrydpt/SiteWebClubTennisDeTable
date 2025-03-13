@@ -3,27 +3,26 @@ import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 import { Eye, Loader2 } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Checkbox } from '@/components/ui/checkbox.tsx';
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import useSources from '../hooks/use-sources';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/providers/auth-context';
+} from '@/components/ui/accordion.tsx';
+import { ScrollArea } from '@/components/ui/scroll-area.tsx';
+import useSources from '../../hooks/use-sources.tsx';
+import { Skeleton } from '@/components/ui/skeleton.tsx';
+import { useAuth } from '@/providers/auth-context.tsx';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { Label } from '@/components/ui/label';
-import { FormMessage } from '@/components/ui/form';
+} from '@/components/ui/popover.tsx';
+import { Label } from '@/components/ui/label.tsx';
+import { FormMessage } from '@/components/ui/form.tsx';
 
 interface SourcesProps {
   useScrollArea?: boolean;
-  maxHeight?: string;
   onSelectedCamerasChange?: (selectedCameras: string[]) => void;
 }
 
@@ -44,7 +43,7 @@ export default function Sources({
     selectedCameras,
     setSelectedCameras,
     snapshots,
-    snapshotsLoading,
+    snapshotLoadingStates,
   } = useSources(sessionId);
 
   // Update both local state and form context
@@ -73,8 +72,17 @@ export default function Sources({
     }
   };
 
+  const renderCameraIcon = (cameraId: string) => {
+    const isLoadingThisCamera = snapshotLoadingStates[cameraId];
+
+    if (isLoadingThisCamera) {
+      return <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />;
+    }
+    return <Eye className="h-4 w-4 text-muted-foreground" />;
+  };
+
   const renderSnapshotContent = (cameraId: string, cameraName: string) => {
-    if (snapshotsLoading) {
+    if (snapshotLoadingStates[cameraId]) {
       return (
         <div className="h-[150px] w-[200px] flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -165,11 +173,7 @@ export default function Sources({
                       className="p-1 hover:bg-muted rounded-sm relative"
                       aria-label="Afficher l'aperçu"
                     >
-                      {snapshotsLoading ? (
-                        <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                      )}
+                      {renderCameraIcon(camera.id)}
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="end">

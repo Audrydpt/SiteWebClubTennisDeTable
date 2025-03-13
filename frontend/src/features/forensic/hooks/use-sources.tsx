@@ -1,4 +1,4 @@
-/* eslint-disable */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { Camera } from '../lib/types';
@@ -16,6 +16,9 @@ export default function useSources(
   vmsIp: string = DEFAULT_VMS_IP
 ) {
   const [selectedCameras, setSelectedCameras] = useState<string[]>([]);
+  const [snapshotLoadingStates, setSnapshotLoadingStates] = useState<
+    Record<string, boolean>
+  >({});
 
   // Fetch all available cameras from the VMS
   const camerasQuery = useQuery({
@@ -50,6 +53,16 @@ export default function useSources(
 
       const snapshots: Record<string, string | null> = {};
 
+      const initialLoadingStates = cameras.reduce(
+        (acc, camera) => {
+          acc[camera.id] = true;
+          return acc;
+        },
+        {} as Record<string, boolean>
+      );
+
+      setSnapshotLoadingStates(initialLoadingStates);
+
       await Promise.all(
         cameras.map(async (camera) => {
           try {
@@ -66,6 +79,11 @@ export default function useSources(
             }
           } catch (_error) {
             snapshots[camera.id] = null;
+          } finally {
+            setSnapshotLoadingStates((current) => ({
+              ...current,
+              [camera.id]: false,
+            }));
           }
         })
       );
@@ -96,6 +114,7 @@ export default function useSources(
     setSelectedCameras,
     snapshots: snapshotsQuery.data || {},
     snapshotsLoading: snapshotsQuery.isLoading,
+    snapshotLoadingStates,
     refetch: camerasQuery.refetch,
   };
 }
