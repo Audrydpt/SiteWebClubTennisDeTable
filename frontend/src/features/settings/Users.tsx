@@ -1,8 +1,7 @@
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Trash2, Users2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import DeleteConfirmation from '@/components/confirm-delete.tsx';
-import Header from '@/components/header.tsx';
 import LoadingSpinner from '@/components/loading.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import {
@@ -55,20 +54,22 @@ function UserContent() {
 
   return (
     <div className="w-full">
-      <Header title="User Management" className="w-full">
-        {isAdmin && (
-          <FormCreateUser onSubmit={handleAdd}>
-            <Button variant="default">
-              <Plus /> {t('settings:addUser')}
-            </Button>
-          </FormCreateUser>
-        )}
-      </Header>
-
       <Card className="w-full">
-        <CardHeader>
-          <CardTitle>User List</CardTitle>
-          <CardDescription>View and manage user accounts</CardDescription>
+        <CardHeader className="w-full flex flex-row items-start justify-between">
+          <div className="flex flex-col">
+            <CardTitle className="flex items-center">
+              <Users2 className="mr-2" size={20} />
+              User List
+            </CardTitle>
+            <CardDescription>View and manage user accounts</CardDescription>
+          </div>
+          {isAdmin && (
+            <FormCreateUser onSubmit={handleAdd}>
+              <Button variant="default">
+                <Plus className="mr-2" /> {t('settings:addUser')}
+              </Button>
+            </FormCreateUser>
+          )}
         </CardHeader>
         <CardContent>
           <Table>

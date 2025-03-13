@@ -6,6 +6,7 @@ import NoSidebarLayout from '@/layouts/NoSidebarLayout';
 import { UserPrivileges } from '@/lib/authenticate';
 
 import LoadingSpinner from './components/loading';
+import Settings from './features/settings/Settings';
 import OptionalSidebarLayout from './layouts/OptionalLayout';
 import { lazyLoadFeature } from './lib/i18n';
 import Error from './pages/Error';
@@ -36,6 +37,10 @@ const Maintenance = lazyLoadFeature(
 const Users = lazyLoadFeature(
   'settings',
   () => import('./features/settings/Users')
+);
+const Retention = lazyLoadFeature(
+  'settings',
+  () => import('./features/settings/Retention')
 );
 
 export default function App() {
@@ -68,8 +73,9 @@ export default function App() {
           <Route element={<ProtectedRoute role={UserPrivileges.Maintainer} />}>
             <Route path="/maintenance" element={<Maintenance />} />
             <Route path="/settings">
-              <Route index element={<Users />} />
+              <Route index element={<Settings />} />
               <Route path="users" element={<Users />} />
+              <Route path="retention" element={<Retention />} />
             </Route>
 
             <Route path="/theme" element={<Theme />} />

@@ -106,11 +106,9 @@ export default function QuickExport({
     if (format === 'JPEG') {
       const chartRef = getChartRef();
       if (chartRef) {
-        console.log('chartRef :', chartRef);
         exportData(data, format, filename, setLoading, chartRef);
       } else {
         setLoading(false);
-        console.log('chartRef :', chartRef);
       }
     } else {
       exportData(data, format, filename, setLoading);

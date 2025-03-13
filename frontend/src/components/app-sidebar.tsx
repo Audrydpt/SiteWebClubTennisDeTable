@@ -76,7 +76,10 @@ const settingsItems: SidebarItem[] = [
     title: 'Settings',
     url: '/settings',
     icon: Settings,
-    children: [{ title: 'Users', url: '/settings/users' }],
+    children: [
+      { title: 'Users', url: '/settings/users' },
+      { title: 'Retention', url: '/settings/retention' },
+    ],
   },
 ];
 
