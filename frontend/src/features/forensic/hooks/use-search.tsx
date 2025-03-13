@@ -3,7 +3,7 @@ import { FormData as CustomFormData, formatQuery } from '../lib/format-query';
 
 export interface ForensicResult {
   id: string;
-  imageData: string; // URL or Base64 encoded image
+  imageData: string;
   timestamp: string;
   confidence: number;
   cameraId: string;

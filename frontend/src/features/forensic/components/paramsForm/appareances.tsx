@@ -46,7 +46,6 @@ export default function Appearances() {
     high: 'Haute',
   };
 
-  // Log the current appearances state for debugging
   // console.log('Current appearances state:', appearances);
 
   // Handle selected values changes for MultiSelect components

@@ -1,4 +1,3 @@
-/* eslint-disable */
 import * as React from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -76,15 +75,13 @@ function DateTimePicker({
               mode="single"
               selected={selectedDate}
               onSelect={handleSelect}
-              disabled={(date) => {
-                return (
-                  date > new Date() ||
-                  date < new Date('1900-01-01') ||
-                  (!isStart &&
-                    timeFrom !== undefined &&
-                    date < new Date(timeFrom.getTime() - 86400000))
-                );
-              }}
+              disabled={(date) =>
+                date > new Date() ||
+                date < new Date('1900-01-01') ||
+                (!isStart &&
+                  timeFrom !== undefined &&
+                  date < new Date(timeFrom.getTime() - 86400000))
+              }
               initialFocus
               locale={fr}
             />
