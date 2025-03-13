@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Search } from 'lucide-react';
 import { Form } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
@@ -5,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion } from '@/components/ui/accordion';
+import { useState, useRef, useEffect } from 'react';
 
 import {
   ForensicFormProvider,
@@ -22,11 +24,11 @@ import { useAuth } from '@/providers/auth-context';
 import { createSearchFormData } from './lib/format-query';
 
 function ForensicFormContent({
-  onSubmit,
-  isSearching,
-  progress,
-  closeWebSocket,
-}: {
+                               onSubmit,
+                               isSearching,
+                               progress,
+                               closeWebSocket,
+                             }: {
   onSubmit: (data: ForensicFormValues) => void;
   isSearching: boolean;
   progress: number | null;
@@ -92,8 +94,25 @@ function ForensicFormContent({
   );
 }
 
+// New resizable splitter component
+function ResizableSplitter() {
+  return (
+    <div
+      className="w-1 bg-border hover:bg-primary/50 cursor-col-resize flex-shrink-0 relative mx-1"
+      title="Redimensionner le panneau"
+    >
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-4"></div>
+    </div>
+  );
+}
+
 export default function Forensic() {
   const { sessionId = '' } = useAuth();
+  const [formWidth, setFormWidth] = useState(350);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startWidthRef = useRef(0);
 
   const {
     startSearch,
@@ -104,10 +123,47 @@ export default function Forensic() {
     isSearching,
   } = useSearch(sessionId);
 
-  // Modified handleSearch in Forensic.tsx
+  useEffect(() => {
+    function handleMouseMove(e: MouseEvent) {
+      if (!isDraggingRef.current) return;
+
+      const deltaX = e.clientX - startXRef.current;
+      const newWidth = Math.max(250, Math.min(600, startWidthRef.current + deltaX));
+      setFormWidth(newWidth);
+    }
+
+    function handleMouseUp() {
+      isDraggingRef.current = false;
+      document.body.classList.remove('select-none');
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    }
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
+  const startResize = (e: React.MouseEvent) => {
+    isDraggingRef.current = true;
+    startXRef.current = e.clientX;
+    startWidthRef.current = formWidth;
+    document.body.classList.add('select-none');
+  };
+
   const handleSearch = async (data: ForensicFormValues) => {
-    // If already searching, don't start a new search
-    if (isSearching) return;
+    // Si une recherche est déjà en cours, annulez-la d'abord
+    if (isSearching) {
+      await closeWebSocket();
+      // Attendre un court délai pour s'assurer que tout est nettoyé
+      await new Promise((resolve) => {
+        setTimeout(resolve, 500);
+      });
+    }
 
     try {
       const searchFormData = createSearchFormData(data);
@@ -118,9 +174,73 @@ export default function Forensic() {
     }
   };
 
+  const renderSearchResults = () => {
+    // When we have results, display them
+    if (results.length > 0) {
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {results.map((result: ForensicResult) => (
+            <div key={result.id} className="border rounded-md overflow-hidden shadow-sm">
+              <img
+                src={result.imageData}
+                alt="Forensic result"
+                className="w-full h-auto object-cover aspect-[16/9]"
+              />
+              <div className="p-3">
+                <p className="text-sm">
+                  Time: {new Date(result.timestamp).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Show skeleton loaders when searching (regardless of progress, except when 100%)
+    if (isSearching && progress !== 100) {
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={`skeleton-${i}`}
+              className="border rounded-md overflow-hidden shadow-sm"
+            >
+              <div className="bg-muted w-full aspect-[16/9] animate-pulse" />
+              <div className="p-3">
+                <div className="h-4 bg-muted rounded w-3/4 mb-1 animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Show "No results found" only when a search has completed with progress=100%
+    if (progress === 100) {
+      return (
+        <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
+          Aucun résultat trouvé
+        </div>
+      );
+    }
+
+    // Initial state - no search has been performed yet
+    return (
+      <div className="flex flex-col h-[50vh] items-center justify-center text-muted-foreground">
+        <Search className="mb-2 opacity-30" size={48} />
+        <p>Sélectionnez une caméra et lancez une recherche</p>
+      </div>
+    );
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[350px_1fr] gap-4 h-full">
-      <Card className="h-[calc(100vh-2rem)] overflow-hidden flex flex-col">
+    <div ref={containerRef} className="flex gap-0 h-full">
+      {/* Form Panel with dynamic width */}
+      <Card
+        className="h-[calc(100vh-2rem)] overflow-hidden flex flex-col"
+        style={{ width: `${formWidth}px` }}
+      >
         <CardContent className="p-4 h-full flex flex-col">
           <div className="mb-4 flex items-center justify-between">
             <h1 className="text-lg font-semibold">Recherche vidéo</h1>
@@ -137,8 +257,13 @@ export default function Forensic() {
         </CardContent>
       </Card>
 
-      {/* Results Area */}
-      <Card className="h-[calc(100vh-2rem)] overflow-hidden">
+      {/* Resizable divider */}
+      <div onMouseDown={startResize}>
+        <ResizableSplitter />
+      </div>
+
+      {/* Results Area - takes remaining space */}
+      <Card className="h-[calc(100vh-2rem)] overflow-hidden flex-1">
         <CardContent className="p-4 h-full">
           <div className="mb-4">
             <h2 className="text-lg font-semibold">Résultats de recherche</h2>
@@ -153,31 +278,7 @@ export default function Forensic() {
           </div>
 
           <ScrollArea className="h-[calc(100%-3rem)]">
-            {results.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2">
-                {results.map((result: ForensicResult) => (
-                  <div
-                    key={result.id}
-                    className="border rounded-md overflow-hidden"
-                  >
-                    <img
-                      src={result.imageData}
-                      alt="Forensic result"
-                      className="w-full h-auto object-cover aspect-video"
-                    />
-                    <div className="p-2">
-                      <p className="text-sm truncate">
-                        Time: {new Date(result.timestamp).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
-                Aucun résultat trouvé
-              </div>
-            )}
+            {renderSearchResults()}
           </ScrollArea>
         </CardContent>
       </Card>

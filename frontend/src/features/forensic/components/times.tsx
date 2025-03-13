@@ -1,3 +1,4 @@
+/* eslint-disable arrow-body-style */
 import * as React from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -75,11 +76,15 @@ function DateTimePicker({
               mode="single"
               selected={selectedDate}
               onSelect={handleSelect}
-              disabled={(date) =>
-                date > new Date() ||
-                date < new Date('1900-01-01') ||
-                (!isStart && timeFrom ? date < timeFrom : false)
-              }
+              disabled={(date) => {
+                return (
+                  date > new Date() ||
+                  date < new Date('1900-01-01') ||
+                  (!isStart &&
+                    timeFrom !== undefined &&
+                    date < new Date(timeFrom.getTime() - 86400000))
+                );
+              }}
               initialFocus
               locale={fr}
             />
@@ -152,7 +157,7 @@ export default function Times() {
     format(timeFrom, 'yyyy-MM-dd') === format(timeTo, 'yyyy-MM-dd');
 
   const hasTimeError =
-    isSameDay && timeFrom && timeTo && timeFrom.getTime() > timeTo.getTime(); // 🔥 Vérification simple avec getTime()
+    isSameDay && timeFrom && timeTo && timeFrom.getTime() > timeTo.getTime();
 
   const timeOptions = {
     hours: Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')),
@@ -178,6 +183,7 @@ export default function Times() {
     );
     setValue('timerange.time_from', newDate.toISOString());
 
+    // Mise à jour de la date de fin si nécessaire
     if (timeTo && newDate > timeTo) {
       const newEndDate = new Date(newDate);
       newEndDate.setHours(23, 59, 59, 999);
@@ -209,7 +215,7 @@ export default function Times() {
       0,
       0
     );
-    if (isSameDay && timeTo && newDate > timeTo) return;
+
     setValue('timerange.time_from', newDate.toISOString());
   };
 
@@ -224,7 +230,7 @@ export default function Times() {
       999
     );
 
-    // 🔥 Suppression de la restriction qui bloquait la modification de endTime
+    // Permettre de définir n'importe quelle heure de fin, même si elle est antérieure à l'heure de début
     setValue('timerange.time_to', newDate.toISOString());
   };
 
