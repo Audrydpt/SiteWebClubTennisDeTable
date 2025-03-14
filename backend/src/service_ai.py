@@ -14,25 +14,20 @@ class ServiceAI:
     def __init__(self, analytic="192.168.20.212:53211", *args, **kwargs):
         self.analytic = "192.168.20.212:53211"
         self.analytic = analytic
-        #self.analytic = "10.211.0.2:53211"
         self.describe = None
         self.ws = {}
+        self.session = {}
         self.seq = 1
         
     async def __aenter__(self):
         return self
     
     async def __aexit__(self, exc_type, exc, tb):
-        """ if self.ws is not None:
-            logger.info(f"Closing websocket")
-            await self.ws.close() """
-        
         logger.info(f"Closing websockets")
-        for model in self.ws:
-            if self.ws[model] is not None:
-                
-                await self.ws[model][0].close()
-                await self.ws[model][1].close()
+        for ws in self.ws:
+            await asyncio.wait_for(ws.close(), timeout=5)
+        for sess in self.session:
+            await asyncio.wait_for(sess.close(), timeout=5)
 
     async def __describe(self):
         if self.describe is None:
@@ -42,11 +37,11 @@ class ServiceAI:
         return self.describe
         
     async def get_version(self):
-        await self.__describe()
+        await asyncio.wait_for(self.__describe(), timeout=5)
         return [int(v) for v in self.describe["version"].split(".")]
     
     async def get_models(self):
-        await self.__describe()
+        await asyncio.wait_for(self.__describe(), timeout=5)
         copy = self.describe.copy()
         del copy["version"]
         del copy["msg"]
@@ -93,7 +88,7 @@ class ServiceAI:
 
         image_ar = image.shape[1] / image.shape[0]
 
-        await self.__init_ws(obj_model)
+        await asyncio.wait_for(self.__init_ws(obj_model), timeout=5)
 
         if image.shape[0] < obj_modelHeight:
             #add black padding at the bottom
@@ -120,7 +115,7 @@ class ServiceAI:
             classif_response = []
             class_modelWidth = models[model]["networkWidth"]
             class_modelHeight = models[model]["networkHeight"]
-            await self.__init_ws(model)
+            await asyncio.wait_for(self.__init_ws(model), timeout=5)
             i=0
             for res in filtered_obj_response:
                 
@@ -160,22 +155,21 @@ class ServiceAI:
         modelWidth = models[model]["networkWidth"]
         modelHeight = models[model]["networkHeight"]
 
-        await self.__init_ws(model)
+        await asyncio.wait_for(self.__init_ws(model), timeout=5)
         image_jpeg = cv2.imencode(".jpg", frame)[1]
 
-        detections = await self.__detect_object(width=modelWidth, height=modelHeight, jpeg=image_jpeg)
+        detections = await asyncio.wait_for(self.__detect_object(width=modelWidth, height=modelHeight, jpeg=image_jpeg), timeout=5)
         logger.info(f"Detections: {detections}")
         return detections
 
     async def __heartbeat(self):
-        for model in self.ws:
-            await model[0].ping()
+        for ws in self.ws:
+            await asyncio.wait_for(ws.ping(), timeout=5)
     
     async def __init_ws(self, model):
         if model not in self.ws:
-            service_session = aiohttp.ClientSession()
-            connection = await service_session.ws_connect(f"ws://{self.analytic}{model}/requestsQueue")
-            self.ws[model] = (connection, service_session)
+            self.session[model] = aiohttp.ClientSession()
+            self.ws[model] = await self.session[model].ws_connect(f"ws://{self.analytic}{model}/requestsQueue")
 
     def get_pixel_bbox(self, frame, detection):
         def getCoord(x, y, w, h):
@@ -197,7 +191,7 @@ class ServiceAI:
 
         return top, bottom, left, right
 
-    def get_thumbnail(self, frame, detection, scale=1.0):
+    def get_thumbnail(self, frame, detection, scale=0.0):
         top, bottom, left, right = self.get_pixel_bbox(frame, detection)
         
         # scale the bounding box
@@ -220,7 +214,7 @@ class ServiceAI:
             "classifier": True if classification else False
         }
         #logger.info(f"Sending context: {ctx}")
-        await self.ws[model][0].send_json(ctx)
+        await self.ws[model].send_json(ctx)
         
         if raw is not None:
           req = {
@@ -236,8 +230,9 @@ class ServiceAI:
               }
           }
           #logger.info(f"Sending request: {req}")
-          await self.ws[model][0].send_json(req)
-          await self.ws[model][0].send_bytes(raw.tobytes())
+          await self.ws[model].send_json(req)
+          await self.ws[model].send_bytes(raw.tobytes())
+          await asyncio.wait_for(self.ws[model].drain(), timeout=5)
         elif jpeg is not None:
           req = {
               "image": {
@@ -248,14 +243,15 @@ class ServiceAI:
               }
           }
           #logger.info(f"Sending request: {req}")
-          await self.ws[model][0].send_json(req)
-          await self.ws[model][0].send_bytes(jpeg.tobytes())
+          await self.ws[model].send_json(req)
+          await self.ws[model].send_bytes(jpeg.tobytes())
+          await asyncio.wait_for(self.ws[model].drain(), timeout=5)
         else:
           logger.error("No image provided")
           raise Exception("No image provided")
         
         try:
-            msg = await asyncio.wait_for(self.ws[model][0].receive(), timeout=1)
+            msg = await asyncio.wait_for(self.ws[model].receive(), timeout=1)
             if msg.type == aiohttp.WSMsgType.TEXT:
                 data = json.loads(msg.data)
                 #logger.info(f"Received: {data}")
