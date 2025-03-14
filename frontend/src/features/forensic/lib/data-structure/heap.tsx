@@ -1,21 +1,21 @@
-/* eslint-disable */
-import { MaxHeap } from '@datastructures-js/heap';
+import { MinHeap } from '@datastructures-js/heap';
 import { ForensicResult } from '../types';
 
 // Number of maximum results to keep
 const MAX_RESULTS = 50;
 
 /**
- * Class to manage the best forensic results using a heap
+ * Class to manage the best forensic results using a min heap
+ * for efficient replacement of lowest scoring items
  */
 class ForensicResultsHeap {
-  private heap: MaxHeap<ForensicResult>;
+  private minHeap: MinHeap<ForensicResult>;
 
   private resultMap: Map<string, boolean>;
 
   constructor() {
-    // Initialize MaxHeap that sorts by score (higher = better)
-    this.heap = new MaxHeap<ForensicResult>((result) => result.score);
+    // Use MinHeap instead - so the lowest scoring result is always at the root
+    this.minHeap = new MinHeap<ForensicResult>((result) => result.score);
     this.resultMap = new Map<string, boolean>();
   }
 
@@ -26,67 +26,51 @@ class ForensicResultsHeap {
     }
 
     // If we haven't reached capacity yet, simply add the new result
-    if (this.heap.size() < MAX_RESULTS) {
-      this.heap.insert(result);
+    if (this.minHeap.size() < MAX_RESULTS) {
+      this.minHeap.insert(result);
       this.resultMap.set(result.id, true);
       return true;
     }
 
-    // We're at capacity - need to check if new result is better than our worst one
-    // Extract all results and find the lowest score
-    const allResults: ForensicResult[] = [];
-    const tempHeap = this.heap.clone();
+    // We're at capacity - the root of min heap is always the lowest scoring result
+    const lowestResult = this.minHeap.root();
 
-    while (!tempHeap.isEmpty()) {
-      const root = tempHeap.extractRoot();
-      if (root) {
-        allResults.push(root);
-      }
-    }
-
-    // If there are no results (this shouldn't happen but to be safe)
-    if (allResults.length === 0) {
-      this.heap.insert(result);
-      this.resultMap.set(result.id, true);
-      return true;
-    }
-
-    // Now allResults is sorted by score in descending order (highest first)
-    // So the last element has the lowest score
-    const lowestResult = allResults[allResults.length - 1];
-
+    // If the new result doesn't beat our lowest score, reject it
     if (!lowestResult || result.score <= lowestResult.score) {
-      return false; // New result isn't better than our worst one, don't add it
+      return false;
     }
 
     // Remove the lowest scoring result from tracking
     this.resultMap.delete(lowestResult.id);
 
-    // Clear heap and rebuild it with the better items plus new one
-    this.heap.clear();
-
-    // Add all items except the lowest one back to the heap
-    for (let i = 0; i < allResults.length - 1; i++) {
-      const item = allResults[i];
-      if (item) {
-        this.heap.insert(item);
-      }
-    }
+    // Extract root (removes lowest scoring result)
+    this.minHeap.extractRoot();
 
     // Add the new result
-    this.heap.insert(result);
+    this.minHeap.insert(result);
     this.resultMap.set(result.id, true);
 
     return true;
   }
 
   getBestResults(): ForensicResult[] {
-    // Return results sorted by score (highest first)
-    return this.heap.clone().sort();
+    // Convert to array and sort by score in descending order
+    const results: ForensicResult[] = [];
+    const tempHeap = this.minHeap.clone();
+
+    while (!tempHeap.isEmpty()) {
+      const item = tempHeap.extractRoot();
+      if (item) {
+        results.push(item);
+      }
+    }
+
+    // Sort in descending order (highest score first)
+    return results.sort((a, b) => b.score - a.score);
   }
 
   clear(): void {
-    this.heap.clear();
+    this.minHeap.clear();
     this.resultMap.clear();
   }
 }
