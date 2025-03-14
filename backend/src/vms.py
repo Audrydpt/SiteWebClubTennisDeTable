@@ -11,6 +11,7 @@ import io
 import datetime
 import numpy as np
 
+from dateutil import parser
 from typing import Optional, Dict, AsyncGenerator, Tuple, Any
 
 logger = logging.getLogger(__name__)
@@ -113,42 +114,44 @@ class CameraClient:
             self.writer.write(http_request.encode("utf-8"))
             await asyncio.wait_for(self.writer.drain(), timeout=5.0)
 
-            headers = {}
             while True:
-                line = await asyncio.wait_for(self.reader.readline(), timeout=5.0)
-                if not line or line == b"\r\n":
-                    break
-                try:
-                    key, value = line.decode("utf-8").strip().split(": ", 1)
-                    headers[key] = value
-                except ValueError as e:
-                    logger.error(f"Header invalide: {line} | Exception: {e}")
-                    continue
+ 
+                headers = {}
+                while True:
+                    line = await asyncio.wait_for(self.reader.readline(), timeout=5.0)
+                    if not line or line == b"\r\n":
+                        break
+                    try:
+                        key, value = line.decode("utf-8").strip().split(": ", 1)
+                        headers[key] = value
+                    except ValueError as e:
+                        logger.error(f"Header invalide: {line} | Exception: {e}")
+                        continue
 
-            logger.info(f"Headers: {headers}")
-            total_length = int(headers.get("Content-Length", 0))
-            logger.info(f"Longueur du contenu: {total_length}")
+                logger.info(f"Headers: {headers}")
+                total_length = int(headers.get("Content-Length", 0))
+                logger.info(f"Longueur du contenu: {total_length}")
 
-            if total_length > 0:
-                body = await asyncio.wait_for(self.reader.readexactly(total_length), timeout=10.0)
-            else:
-                body = b""
-
-            mime = headers.get("Content-Type", "").lower()
-            try:
-                if "application/json" in mime:
-                    text = body.decode("utf-8")
-                    logger.info(text)
-                    yield json.loads(text)
-                elif "application/xml" in mime:
-                    text = body.decode("utf-8")
-                    logger.info(text)
-                    yield ET.fromstring(text)
+                if total_length > 0:
+                    body = await asyncio.wait_for(self.reader.readexactly(total_length), timeout=10.0)
                 else:
-                    yield body
-            except Exception as e:
-                logger.error(f"Erreur lors du traitement de la réponse (mimetype: {mime}): {e}")
-                raise e
+                    body = b""
+
+                mime = headers.get("Content-Type", "").lower()
+                try:
+                    if "application/json" in mime:
+                        text = body.decode("utf-8")
+                        logger.info(text)
+                        yield json.loads(text)
+                    elif "application/xml" in mime:
+                        text = body.decode("utf-8")
+                        logger.info(text)
+                        yield ET.fromstring(text)
+                    else:
+                        yield body
+                except Exception as e:
+                    logger.error(f"Erreur lors du traitement de la réponse (mimetype: {mime}): {e}")
+                    raise e
         except Exception as e:
             logger.error(f"Erreur lors de la requête: {e}")
             logger.error(traceback.format_exc())
@@ -224,7 +227,7 @@ class CameraClient:
             if isinstance(data, dict):
                 time_str = data.get("FrameTime")
                 time_frame = (
-                    datetime.datetime.fromisoformat(time_str).astimezone(datetime.timezone.utc)
+                    parser.isoparse(time_str).astimezone(datetime.timezone.utc)
                     if time_str else None
                 )
                 codec_format = data.get("Format")
@@ -269,8 +272,8 @@ async def test_dual_stream(host: str, port: int):
     
     now = datetime.datetime.now()
     
-    from_time1 = now.replace(hour=0, minute=0, second=0)
-    to_time1 = now.replace(hour=0, minute=5, second=0)
+    from_time1 = now.replace(hour=7, minute=0, second=0)
+    to_time1 = now.replace(hour=7, minute=5, second=0)
     
     from_time2 = now.replace(hour=8, minute=0, second=0)
     to_time2 = now.replace(hour=8, minute=5, second=0)
