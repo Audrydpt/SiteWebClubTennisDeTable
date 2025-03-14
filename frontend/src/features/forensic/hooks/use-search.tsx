@@ -1,4 +1,8 @@
+/* eslint-disable no-console */
 import { useCallback, useEffect, useRef, useState } from 'react';
+
+import useLatest from '@/hooks/use-latest';
+
 import { FormData as CustomFormData, formatQuery } from '../lib/format-query';
 
 export interface ForensicResult {
@@ -11,13 +15,16 @@ export interface ForensicResult {
 
 export default function useSearch(sessionId: string) {
   const [progress, setProgress] = useState<number | null>(null);
-  const [jobId, setJobId] = useState<string | null>(null);
   const [results, setResults] = useState<ForensicResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [manualClose, setManualClose] = useState(false);
 
-  // Ajout d'un état pour suivre les requêtes d'annulation en cours
+  const [jobId, setJobId] = useState<string | null>(null);
+  const latestJobId = useLatest(jobId);
+
+  const [isSearching, setIsSearching] = useState(false);
+  const latestIsSearching = useLatest(isSearching);
+
   const [isCancelling, setIsCancelling] = useState(false);
+  const latestIsCancelling = useLatest(isCancelling);
 
   // Références pour WebSocket et AbortController
   const wsRef = useRef<WebSocket | null>(null);
@@ -42,7 +49,7 @@ export default function useSearch(sessionId: string) {
     () => () => {
       cleanupResources();
     },
-    []
+    [cleanupResources]
   );
 
   const startSearch = useCallback(
@@ -54,7 +61,6 @@ export default function useSearch(sessionId: string) {
         // Reset states
         setResults([]);
         setIsSearching(true);
-        setManualClose(false);
         setIsCancelling(false);
 
         // Créer un nouvel AbortController pour cette requête
@@ -103,58 +109,56 @@ export default function useSearch(sessionId: string) {
   );
 
   const initWebSocket = useCallback(
-    (jobIdParam?: string) => {
-      const id = jobIdParam || jobId;
+    (id: string) => {
       if (!id) {
         console.error(
-          '⚠️ Pas de jobId disponible pour initialiser le WebSocket'
+          '⚠️ Aucun jobId disponible pour initialiser le WebSocket'
         );
         return;
       }
-
-      // Don't initialize if manual close was requested or if cancellation is in progress
-      if (manualClose || isCancelling) {
+      // On ne crée pas la connexion si une fermeture manuelle ou une annulation est en cours.
+      if (latestIsCancelling.current) {
         console.log(
-          '🚫 WebSocket initialization skipped - closing or cancelling'
+          '🚫 Initialisation du WebSocket ignorée – fermeture ou annulation en cours'
         );
         return;
       }
 
-      // Fermer la connexion existante si présente
+      // Si une connexion existe déjà, on la ferme proprement avant d’en créer une nouvelle.
       if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
-        wsRef.current.close(1000, 'New connection requested');
+        wsRef.current.close(1000, 'Nouvelle connexion demandée');
       }
 
-      // Déterminer le hostname
+      // Déterminer le hostname en privilégiant la variable d'environnement si possible
       let { hostname } = window.location;
       try {
-        hostname = new URL(process.env.MAIN_API_URL!).hostname;
+        hostname = new URL(process.env.MAIN_API_URL || '').hostname || hostname;
       } catch {
-        // Ignorer l'erreur
+        // En cas d'erreur, on garde le hostname par défaut
       }
 
-      // Créer une nouvelle connexion WebSocket
       try {
         const ws = new WebSocket(`wss://${hostname}/front-api/forensics/${id}`);
         wsRef.current = ws;
+
         const lastDate = new Date();
         let lastConfidence = 0;
 
-        // Gestionnaires d'événements WebSocket
         ws.onopen = () => {
-          console.log('✅ WebSocket connecté pour job', id);
+          console.log('✅ WebSocket connecté pour le job', id);
         };
 
         ws.onmessage = (event) => {
-          // Skip processing if manual close was requested
-          if (manualClose || isCancelling) {
+          if (latestIsCancelling.current) {
+            console.log(
+              '🚫 Réception de données WebSocket ignorée – fermeture ou annulation en cours'
+            );
             return;
           }
 
           if (typeof event.data === 'string') {
             try {
               const data = JSON.parse(event.data);
-
               if (data.timestamp) {
                 lastDate.setTime(Date.parse(data.timestamp));
               }
@@ -164,28 +168,26 @@ export default function useSearch(sessionId: string) {
 
               if (data.progress !== undefined) {
                 setProgress(data.progress);
-
                 if (data.progress === 100) {
                   setIsSearching(false);
-                  // Fermeture propre après avoir atteint 100%
                   setTimeout(() => {
                     if (
                       wsRef.current &&
                       wsRef.current.readyState === WebSocket.OPEN
                     ) {
-                      wsRef.current.close(1000, 'Search completed');
+                      wsRef.current.close(1000, 'Recherche terminée');
                     }
                   }, 500);
                 }
               }
 
               if (data.error) {
-                console.error('⚠️ WebSocket erreur:', data.error);
+                console.error('⚠️ Erreur reçue via WebSocket:', data.error);
                 setIsSearching(false);
               }
             } catch (error) {
               console.error(
-                '❌ Erreur de parsing des données WebSocket:',
+                '❌ Erreur lors du parsing des données du WebSocket:',
                 error
               );
             }
@@ -206,28 +208,24 @@ export default function useSearch(sessionId: string) {
         };
 
         ws.onerror = (event) => {
-          console.error('❌ Erreur WebSocket', event);
+          console.error('❌ Erreur sur le WebSocket', event);
         };
 
         ws.onclose = (event) => {
           console.log(
-            `🔴 WebSocket fermé, code: ${event.code}, raison: ${event.reason || 'Non spécifiée'}`
+            `🔴 WebSocket fermé – Code: ${event.code}, Raison: ${event.reason || 'Non spécifiée'}`
           );
 
-          // Reconnecter seulement si ce n'était pas une fermeture manuelle ou une annulation
+          // On reconnexte le WS seulement en cas de fermeture anormale
           if (
-            id &&
-            !manualClose &&
-            !isCancelling &&
+            latestJobId.current === id &&
+            !latestIsCancelling.current &&
+            latestIsSearching.current &&
             event.code !== 1000 &&
-            event.code !== 1001 &&
-            isSearching
+            event.code !== 1001
           ) {
-            console.log('🔄 Reconnexion automatique après fermeture...');
-            // Délai plus long pour éviter les reconnexions trop rapides
-            setTimeout(() => initWebSocket(id), 2000);
+            setTimeout(() => initWebSocket(id), 1000);
           } else {
-            // Si la fermeture était intentionnelle ou si le code est normal, on arrête la recherche
             setIsSearching(false);
           }
         };
@@ -236,7 +234,7 @@ export default function useSearch(sessionId: string) {
         setIsSearching(false);
       }
     },
-    [jobId, manualClose, isCancelling, isSearching]
+    [latestIsCancelling, latestIsSearching, latestJobId]
   );
 
   const closeWebSocket = useCallback(() => {
@@ -248,7 +246,6 @@ export default function useSearch(sessionId: string) {
 
     // Marquer comme en cours d'annulation pour éviter les doubles appels
     setIsCancelling(true);
-    setManualClose(true);
 
     console.log("🔒 Démarrage de la procédure d'annulation de recherche");
 

@@ -26,7 +26,18 @@ def bgr_to_yuv420p(bgr_image):
     u = cv2.resize(yuv_image[:, :, 1], (width // 2, height // 2), interpolation=cv2.INTER_AREA)
     v = cv2.resize(yuv_image[:, :, 2], (width // 2, height // 2), interpolation=cv2.INTER_AREA)
         
-    return y , u ,v
+    return y, u, v
+
+def bgr_to_yuv420p_v2(bgr_image):
+    yuv = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2YUV).reshape(-1)
+    H, W = bgr_image.shape[:2]
+    nY = H * W
+
+    Y = yuv[:nY].reshape(H, W)
+    U = yuv[nY : nY + nY//4].reshape(H//2, W//2)
+    V = yuv[nY + nY//4 :].reshape(H//2, W//2)
+    return Y, U, V
+   
 
 class ServiceAI:
     def __init__(self, analytic="192.168.20.212:53211", *args, **kwargs):
@@ -322,6 +333,7 @@ class ServiceAI:
               }
           }
           logger.info(f"Sending request: {req}")
+          self.seq += 1
           await self.ws[model].send_json(req)
           await self.ws[model].send_bytes(raw[0].tobytes())
           await self.ws[model].send_bytes(raw[1].tobytes())
@@ -336,6 +348,7 @@ class ServiceAI:
               }
           }
           logger.info(f"Sending request: {req}")
+          self.seq += 1
           await self.ws[model].send_json(req)
           await self.ws[model].send_bytes(jpeg.tobytes())
         else:
@@ -351,18 +364,18 @@ class ServiceAI:
                     if data["msg"] == "response":
                         
                         if object_detection:
-                            logger.info(f"Detection response {data["detections"]}")
+                            logger.info(f"Detection response {data['detections']}")
                             return data["detections"]
 
                         if classification:
-                            logger.info(f"Classifier response {data["classifiers"]}")
+                            logger.info(f"Classifier response {data['classifiers']}")
                             return data["classifiers"]
                         
                         logger.error(f"Unknown response {msg.data}")
                         raise Exception("Unknown response")
 
                     elif data["msg"] == "error":
-                        logger.error(f"Error message: {data["error"]}")
+                        logger.error(f"Error message: {data['error']}")
 
                     else:
                         logger.error(f"Unknown message {msg.data}")

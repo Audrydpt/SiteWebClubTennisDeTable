@@ -166,6 +166,7 @@ class ResultsStore:
         try:
             while True:
                 message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+
                 if message is None:
                     # Si aucun message n'est trouvé, on vérifie si la tâche est terminée.
                     task_status = TaskManager.get_job_status(job_id)
@@ -183,6 +184,7 @@ class ResultsStore:
                 try:
                     update_data = json.loads(message["data"])
                 except Exception as ex:
+                    logger.error(f"Erreur lors de la désérialisation du message: {ex}")
                     continue
                 
                 # Reconstituer le JobResult complet.
@@ -190,11 +192,14 @@ class ResultsStore:
 
                 logger.info("Diffusion de la mise à jour")
                 yield job_result
-                
+        
+        except Exception as e:
+            logger.error(f"Erreur lors de la souscription aux mises à jour de résultats: {e}")
+            logger.error(traceback.format)
         finally:
+            logger.info("Fin de la souscription aux mises à jour de résultats")
             await pubsub.unsubscribe(channel_name)
-
-        logger.info("Fin de la souscription aux mises à jour de résultats")
+        logger.info("Bye bye")
 
 results_store = ResultsStore()
 
@@ -401,7 +406,7 @@ class TaskManager:
             logger.info(f"Souscription aux mises à jour pour le job {job_id}")
             async for update in results_store.subscribe_to_results(job_id):
                 logger.info(f"Envoi de la mise à jour pour le job {job_id}")
-                if websocket.client_state != WebSocketState.DISCONNECTED:
+                if websocket.client_state == WebSocketState.DISCONNECTED:
                     logger.info(f"Client WebSocket déconnecté pour le job {job_id}")
                     break
  
