@@ -6,7 +6,6 @@ import NoSidebarLayout from '@/layouts/NoSidebarLayout';
 import { UserPrivileges } from '@/lib/authenticate';
 
 import LoadingSpinner from './components/loading';
-import Settings from './features/settings/Settings';
 import OptionalSidebarLayout from './layouts/OptionalLayout';
 import { lazyLoadFeature } from './lib/i18n';
 import Error from './pages/Error';
@@ -33,6 +32,10 @@ const ExportDashboard = lazyLoadFeature(
 const Maintenance = lazyLoadFeature(
   'maintenance',
   () => import('./features/maintenance/Maintenance')
+);
+const Settings = lazyLoadFeature(
+  'settings',
+  () => import('./features/settings/Settings')
 );
 const Users = lazyLoadFeature(
   'settings',

@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 import { PdfWorkerRequest, PdfWorkerResponse } from './pdfWorker';
 import WebWorker from './pdfWorker?worker&inline';
 
-type ExportFormat = 'Excel' | 'PDF' | 'JPEG';
+export type ExportFormat = 'Excel' | 'PDF' | 'JPEG';
 
 const exportData = (
   data: Record<string, string | number | boolean>[],

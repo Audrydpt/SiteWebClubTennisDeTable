@@ -16,7 +16,7 @@ type ChartTiles = {
 interface WidgetActionsProps {
   isOperator: boolean;
   item: ChartTiles;
-  chartRef: HTMLDivElement | undefined;
+  chartRef?: HTMLDivElement;
   edit: (widget: StoredWidget) => void;
   remove: (id: string) => void;
   clone: (widget: StoredWidget) => void;

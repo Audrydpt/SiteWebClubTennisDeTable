@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 import { ExportStep } from '../lib/export';
-import exportData from '../lib/exportData';
+import exportData, { ExportFormat } from '../lib/exportData';
 import { AcicAggregation, AggregationTypeToObject } from '../lib/props';
 import { getWidgetDataForExport } from '../lib/utils';
 
@@ -30,9 +30,9 @@ export default function QuickExport({
   const [loading, setLoading] = useState(false);
   const groupByColumn = storedWidget.groupBy ? storedWidget.groupBy : '';
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [selectedFormat, setSelectedFormat] = useState<
-    'PDF' | 'Excel' | 'JPEG' | null
-  >(null);
+  const [selectedFormat, setSelectedFormat] = useState<ExportFormat | null>(
+    null
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -92,7 +92,7 @@ export default function QuickExport({
     enabled: true,
   });
 
-  const handleExport = async (format: 'PDF' | 'Excel' | 'JPEG') => {
+  const handleExport = async (format: ExportFormat) => {
     if (!data || !isSuccess) return;
     let filename = `${storedWidget.table}_export_${new Date().toISOString().split('T')[0]}`;
 
@@ -127,7 +127,7 @@ export default function QuickExport({
           <div className="space-y-4">
             <RadioGroup
               value={storedWidget.format}
-              onValueChange={(value: 'PDF' | 'Excel' | 'JPEG') => {
+              onValueChange={(value: ExportFormat) => {
                 updateStoredWidget({ format: value });
                 setStepValidity(true);
                 handleExport(value);
