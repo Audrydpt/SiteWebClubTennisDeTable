@@ -367,7 +367,7 @@ class FastAPIServer:
         async def get_tasks():
             try:
                 tasks = {}
-                for job_id in TaskManager.get_jobs():
+                async for job_id in TaskManager.get_jobs():
                     status = TaskManager.get_job_status(job_id)
                     task_info = {
                         "status": status
@@ -471,9 +471,9 @@ class FastAPIServer:
         async def stop_all_task():
             try:
                 cancelled = []
-                for job_id in TaskManager.get_jobs():
+                async for job_id in TaskManager.get_jobs():
                     if TaskManager.get_job_status(job_id) in [JobStatus.PENDING, JobStatus.RECEIVED, JobStatus.STARTED, JobStatus.RETRY]:
-                        TaskManager.cancel_job(job_id)
+                        await TaskManager.cancel_job(job_id)
                         cancelled.append(job_id)
                         
                 return {"status": "ok", "cancelled_tasks": cancelled}
@@ -491,7 +491,7 @@ class FastAPIServer:
                     raise HTTPException(status_code=404, detail="Tâche introuvable")
                     
                 if status in [JobStatus.PENDING, JobStatus.RECEIVED, JobStatus.STARTED, JobStatus.RETRY]:
-                    success = TaskManager.cancel_job(guid)
+                    success = await TaskManager.cancel_job(guid)
                     if success:
                         return {"guid": guid, "status": "cancelled"}
                     else:
