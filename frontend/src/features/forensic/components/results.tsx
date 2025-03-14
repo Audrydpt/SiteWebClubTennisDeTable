@@ -24,6 +24,7 @@ export default function Results({
     []
   );
 
+  // Results are already sorted by the heap in useSearch, so we can use them directly
   const renderSearchResults = () => {
     if (results.length > 0) {
       return (

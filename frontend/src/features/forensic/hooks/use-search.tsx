@@ -1,13 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FormData as CustomFormData, formatQuery } from '../lib/format-query';
-
-export interface ForensicResult {
-  id: string;
-  imageData: string;
-  timestamp: string;
-  score: number;
-  cameraId: string;
-}
+import { ForensicResult } from '../lib/types';
+import forensicResultsHeap from '../lib/data-structure/heap';
 
 // New interface for forensic task
 interface ForensicTask {
@@ -64,6 +58,7 @@ export default function useSearch(sessionId: string) {
         cleanupResources();
 
         // Reset states
+        forensicResultsHeap.clear(); // Réinitialiser le heap au début d'une recherche
         setResults([]);
         setIsSearching(true);
         setManualClose(false);
@@ -255,7 +250,9 @@ export default function useSearch(sessionId: string) {
               cameraId: metadataQueue.current.camera ?? 'unknown',
             };
 
-            setResults((prev) => [...prev, newResult]);
+            // Ajouter au heap et obtenir les résultats triés
+            forensicResultsHeap.addResult(newResult);
+            setResults(forensicResultsHeap.getBestResults());
           }
         };
 
