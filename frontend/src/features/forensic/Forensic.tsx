@@ -9,7 +9,6 @@ import useSearch from './hooks/use-search';
 import { useAuth } from '@/providers/auth-context';
 import { createSearchFormData } from './lib/format-query';
 
-// Import the extracted components
 import ForensicForm from './components/form';
 import Results from './components/results';
 

@@ -7,8 +7,13 @@ import {
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { Color } from '../../lib/types';
+
 import { ForensicFormValues } from '../../lib/provider/forensic-form-context';
+
+interface Color {
+  name: string;
+  value: string;
+}
 
 interface ColorPickerProps {
   colors: Color[];

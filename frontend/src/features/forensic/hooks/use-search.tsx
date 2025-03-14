@@ -5,8 +5,14 @@ export interface ForensicResult {
   id: string;
   imageData: string;
   timestamp: string;
-  confidence: number;
+  score: number;
   cameraId: string;
+}
+
+// New interface for forensic task
+interface ForensicTask {
+  guid: string;
+  status: string;
 }
 
 export default function useSearch(sessionId: string) {
@@ -22,6 +28,12 @@ export default function useSearch(sessionId: string) {
   // Références pour WebSocket et AbortController
   const wsRef = useRef<WebSocket | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const metadataQueue = useRef<{
+    timestamp?: string;
+    score?: number;
+    camera?: string;
+  }>({});
 
   // Fonction pour nettoyer toutes les ressources
   const cleanupResources = useCallback(() => {
@@ -42,7 +54,7 @@ export default function useSearch(sessionId: string) {
     () => () => {
       cleanupResources();
     },
-    []
+    [cleanupResources]
   );
 
   const startSearch = useCallback(
@@ -102,10 +114,50 @@ export default function useSearch(sessionId: string) {
     [sessionId, cleanupResources]
   );
 
+  // Add this function inside the useSearch hook
+  const checkTaskStatus = useCallback(
+    async (taskJobId: string): Promise<boolean> => {
+      try {
+        console.log('🔍 Vérification du statut de la tâche:', taskJobId);
+
+        const response = await fetch(`${process.env.MAIN_API_URL}/forensics`, {
+          headers: {
+            Authorization: `X-Session-Id ${sessionId}`,
+          },
+        });
+
+        if (!response.ok) {
+          console.error(
+            `❌ Erreur lors de la vérification: ${response.status}`
+          );
+          return false;
+        }
+
+        const tasks = await response.json();
+        const task = tasks.find((t: ForensicTask) => t.guid === taskJobId);
+
+        if (!task) {
+          console.log('⚠️ Tâche non trouvée dans la liste');
+          return false;
+        }
+
+        const status = task.status?.toLowerCase();
+        console.log(`📊 Statut de la tâche ${taskJobId}: ${status}`);
+
+        // Only return true if the task is pending or running
+        return status === 'pending' || status === 'running';
+      } catch (error) {
+        console.error('❌ Erreur lors de la vérification du statut:', error);
+        return false;
+      }
+    },
+    [sessionId]
+  );
+
   const initWebSocket = useCallback(
     (jobIdParam?: string) => {
-      const id = jobIdParam || jobId;
-      if (!id) {
+      const wsJobId = jobIdParam || jobId;
+      if (!wsJobId) {
         console.error(
           '⚠️ Pas de jobId disponible pour initialiser le WebSocket'
         );
@@ -135,14 +187,14 @@ export default function useSearch(sessionId: string) {
 
       // Créer une nouvelle connexion WebSocket
       try {
-        const ws = new WebSocket(`wss://${hostname}/front-api/forensics/${id}`);
+        const ws = new WebSocket(
+          `wss://${hostname}/front-api/forensics/${wsJobId}`
+        );
         wsRef.current = ws;
-        const lastDate = new Date();
-        let lastConfidence = 0;
 
         // Gestionnaires d'événements WebSocket
         ws.onopen = () => {
-          console.log('✅ WebSocket connecté pour job', id);
+          console.log('✅ WebSocket connecté pour job', wsJobId);
         };
 
         ws.onmessage = (event) => {
@@ -155,19 +207,18 @@ export default function useSearch(sessionId: string) {
             try {
               const data = JSON.parse(event.data);
 
-              if (data.timestamp) {
-                lastDate.setTime(Date.parse(data.timestamp));
-              }
-              if (data.score) {
-                lastConfidence = data.score;
-              }
+              // Store metadata for next image
+              if (data.timestamp)
+                metadataQueue.current.timestamp = data.timestamp;
+              if (data.score !== undefined)
+                metadataQueue.current.score = data.score;
+              if (data.camera) metadataQueue.current.camera = data.camera;
 
               if (data.progress !== undefined) {
                 setProgress(data.progress);
 
                 if (data.progress === 100) {
                   setIsSearching(false);
-                  // Fermeture propre après avoir atteint 100%
                   setTimeout(() => {
                     if (
                       wsRef.current &&
@@ -193,12 +244,15 @@ export default function useSearch(sessionId: string) {
             const blob = event.data;
             const imageUrl = URL.createObjectURL(blob);
 
+            // Use current metadata for this image
             const newResult: ForensicResult = {
               id: crypto.randomUUID(),
               imageData: imageUrl,
-              timestamp: lastDate.toISOString(),
-              confidence: lastConfidence,
-              cameraId: 'unknown',
+              timestamp: metadataQueue.current.timestamp
+                ? new Date(metadataQueue.current.timestamp).toISOString()
+                : new Date().toISOString(),
+              score: metadataQueue.current.score ?? 0,
+              cameraId: metadataQueue.current.camera ?? 'unknown',
             };
 
             setResults((prev) => [...prev, newResult]);
@@ -209,25 +263,43 @@ export default function useSearch(sessionId: string) {
           console.error('❌ Erreur WebSocket', event);
         };
 
-        ws.onclose = (event) => {
+        ws.onclose = async (event) => {
           console.log(
             `🔴 WebSocket fermé, code: ${event.code}, raison: ${event.reason || 'Non spécifiée'}`
           );
 
-          // Reconnecter seulement si ce n'était pas une fermeture manuelle ou une annulation
+          // Only attempt reconnection if it wasn't a normal closure or manual action
           if (
-            id &&
+            wsJobId &&
             !manualClose &&
             !isCancelling &&
             event.code !== 1000 &&
             event.code !== 1001 &&
             isSearching
           ) {
-            console.log('🔄 Reconnexion automatique après fermeture...');
-            // Délai plus long pour éviter les reconnexions trop rapides
-            setTimeout(() => initWebSocket(id), 2000);
+            try {
+              // Check if task is still active before reconnecting
+              const isTaskActive = await checkTaskStatus(wsJobId);
+
+              if (isTaskActive) {
+                console.log('🔄 Reconnexion - tâche toujours active');
+                // Delay to avoid immediate reconnection attempts
+                setTimeout(() => initWebSocket(wsJobId), 2000);
+              } else {
+                console.log(
+                  '🛑 Pas de reconnexion - tâche inactive ou terminée'
+                );
+                setIsSearching(false);
+              }
+            } catch (error) {
+              console.error(
+                '❌ Erreur lors de la vérification pour reconnexion:',
+                error
+              );
+              setIsSearching(false);
+            }
           } else {
-            // Si la fermeture était intentionnelle ou si le code est normal, on arrête la recherche
+            // Normal closure or manual action, stop searching
             setIsSearching(false);
           }
         };
@@ -236,7 +308,7 @@ export default function useSearch(sessionId: string) {
         setIsSearching(false);
       }
     },
-    [jobId, manualClose, isCancelling, isSearching]
+    [jobId, manualClose, isCancelling, isSearching, checkTaskStatus]
   );
 
   const closeWebSocket = useCallback(() => {

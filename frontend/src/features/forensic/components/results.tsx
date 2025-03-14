@@ -31,15 +31,49 @@ export default function Results({
           {results.map((result: ForensicResult) => (
             <div
               key={result.id}
-              className="border rounded-md overflow-hidden shadow-sm"
+              className="border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-card"
             >
-              <img
-                src={result.imageData}
-                alt="Forensic result"
-                className="w-full h-auto object-cover aspect-[16/9]"
-              />
-              <div className="p-3">
-                <p className="text-sm">Time: {result.timestamp}</p>
+              <div className="relative">
+                <img
+                  src={result.imageData}
+                  alt="Forensic result"
+                  className="w-full h-auto object-cover aspect-[16/9]"
+                />
+                <div className="absolute top-2 right-2 bg-black/70 text-white rounded-full px-2 py-0.5 text-xs font-medium">
+                  {(result.score * 100).toFixed(1)}%
+                </div>
+              </div>
+              <div className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold truncate">
+                    {result.cameraId !== 'unknown'
+                      ? result.cameraId
+                      : 'Caméra inconnue'}
+                  </h4>
+                </div>
+                <div className="flex items-center text-xs text-muted-foreground">
+                  <svg
+                    className="w-3.5 h-3.5 mr-1.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  {new Date(result.timestamp).toLocaleString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </div>
               </div>
             </div>
           ))}
