@@ -31,82 +31,9 @@ class CameraClient:
     async def __aexit__(self, exc_type, exc, tb):
         if self.writer:
             self.writer.close()
-            await self.writer.wait_closed()
+            await asyncio.wait_for(self.writer.wait_closed(), timeout=5.0)
     
-    async def _send_request(self, xml_content: str) -> Any:
-        content_length = len(xml_content)
-        http_request = (
-            f"Accept: application/json\r\n"
-            f"Content-Length: {content_length}\r\n"
-            f"Content-Type: application/xml\r\n"
-            f"\r\n"
-            f"{xml_content}"
-        )
-
-        try:
-            logger.info(f"Connexion à {self.host}:{self.port}")
-            self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
-
-            logger.info(f"Envoi de la requête: {xml_content}")
-            self.writer.write(http_request.encode("utf-8"))
-            await self.writer.drain()
-
-            # Lecture des headers
-            buffer = b""
-            while b"\r\n\r\n" not in buffer:
-                chunk = await asyncio.wait_for(self.reader.read(4096), timeout=2.0)
-                if not chunk:
-                    break
-                buffer += chunk
-
-            # Séparation des headers et du début du body
-            header_part, remaining = buffer.split(b"\r\n\r\n", 1)
-            headers = {}
-            for line in header_part.decode("utf-8").split("\r\n"):
-                if line.strip() == "":
-                    continue
-                try:
-                    key, value = line.split(": ", 1)
-                except ValueError:
-                    continue
-                headers[key] = value
-
-            logger.info(f"Headers: {headers}")
-
-            # Récupération du Content-Length indiqué par le serveur
-            total_length = int(headers.get("Content-Length", 0))
-            logger.info(f"Longueur du contenu: {total_length}")
-
-            # Compléter la lecture
-            body = remaining
-            while len(body) < total_length:
-                data = await asyncio.wait_for(self.reader.read(4096), timeout=2.0)
-                if not data:
-                    break
-                body += data
-
-            body = body[:total_length]
-            mime = headers.get("Content-Type", "").lower()
-            if "application/json" in mime:
-                text = body.decode("utf-8")
-                logger.info(text)
-                return json.loads(text)
-            elif "application/xml" in mime:
-                text = body.decode("utf-8")
-                logger.info(text)
-                return ET.fromstring(text)
-            else:
-                return body
-        except Exception as e:
-            logger.error(f"Erreur lors de la requête: {e}")
-            logger.error(traceback.format_exc())
-            raise e
-        finally:
-            if self.writer:
-                self.writer.close()
-                await self.writer.wait_closed()
-
-    async def _stream_request(self, xml_content: str):
+    async def _send_request(self, xml_content: str):
         content_length = len(xml_content)
         http_request = (
             f"Accept: application/json\r\n"
@@ -115,37 +42,100 @@ class CameraClient:
             "\r\n"
             f"{xml_content}"
         )
-
-        buffer = b""
         try:
-            self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
+            self.reader, self.writer = await asyncio.wait_for(
+                asyncio.open_connection(self.host, self.port),
+                timeout=5.0
+            )
             self.writer.write(http_request.encode("utf-8"))
-            await self.writer.drain()
+            await asyncio.wait_for(self.writer.drain(), timeout=5.0)
 
+            headers = {}
             while True:
-                while b"\r\n\r\n" not in buffer:
-                    chunk = await asyncio.wait_for(self.reader.read(4096), timeout=20.0)
-                    if not chunk:
-                        return
-                    buffer += chunk
+                line = await asyncio.wait_for(self.reader.readline(), timeout=5.0)
+                if not line or line == b"\r\n":
+                    break
+                try:
+                    key, value = line.decode("utf-8").strip().split(": ", 1)
+                    headers[key] = value
+                except ValueError as e:
+                    logger.error(f"Header invalide: {line} | Exception: {e}")
+                    continue
 
-                header_part, buffer = buffer.split(b"\r\n\r\n", 1)
+            logger.info(f"Headers: {headers}")
+            total_length = int(headers.get("Content-Length", 0))
+            logger.info(f"Longueur du contenu: {total_length}")
 
-                headers = {}
-                for line in header_part.decode("utf-8").split("\r\n"):
-                    if ": " in line:
-                        key, value = line.split(": ", 1)
-                        headers[key] = value
-                total_length = int(headers.get("Content-Length", 0))
+            if total_length > 0:
+                body = await asyncio.wait_for(self.reader.readexactly(total_length), timeout=10.0)
+            else:
+                body = b""
 
-                while len(buffer) < total_length:
-                    chunk = await asyncio.wait_for(self.reader.read(4096), timeout=20.0)
-                    if not chunk:
-                        break
-                    buffer += chunk
+            mime = headers.get("Content-Type", "").lower()
+            try:
+                if "application/json" in mime:
+                    text = body.decode("utf-8")
+                    logger.info(text)
+                    return json.loads(text)
+                elif "application/xml" in mime:
+                    text = body.decode("utf-8")
+                    logger.info(text)
+                    return ET.fromstring(text)
+                else:
+                    return body
+            except Exception as e:
+                logger.error(f"Erreur lors du traitement de la réponse (mimetype: {mime}): {e}")
+                raise e
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la requête: {e}")
+            logger.error(traceback.format_exc())
+            raise e
+        finally:
+            if self.writer:
+                self.writer.close()
+                await asyncio.wait_for(self.writer.wait_closed(), timeout=5.0)
 
-                body, buffer = buffer[:total_length], buffer[total_length:]
-                mime = headers.get("Content-Type", "").lower()
+    async def _stream_request(self, xml_content: str) -> AsyncGenerator:
+        content_length = len(xml_content)
+        http_request = (
+            f"Accept: application/json\r\n"
+            f"Content-Length: {content_length}\r\n"
+            f"Content-Type: application/xml\r\n"
+            "\r\n"
+            f"{xml_content}"
+        )
+        try:
+            self.reader, self.writer = await asyncio.wait_for(
+                asyncio.open_connection(self.host, self.port),
+                timeout=5.0
+            )
+            self.writer.write(http_request.encode("utf-8"))
+            await asyncio.wait_for(self.writer.drain(), timeout=5.0)
+
+            headers = {}
+            while True:
+                line = await asyncio.wait_for(self.reader.readline(), timeout=5.0)
+                if not line or line == b"\r\n":
+                    break
+                try:
+                    key, value = line.decode("utf-8").strip().split(": ", 1)
+                    headers[key] = value
+                except ValueError as e:
+                    logger.error(f"Header invalide: {line} | Exception: {e}")
+                    continue
+
+            logger.info(f"Headers: {headers}")
+            total_length = int(headers.get("Content-Length", 0))
+            logger.info(f"Longueur du contenu: {total_length}")
+
+            if total_length > 0:
+                body = await asyncio.wait_for(self.reader.readexactly(total_length), timeout=10.0)
+            else:
+                body = b""
+
+            mime = headers.get("Content-Type", "").lower()
+            try:
                 if "application/json" in mime:
                     text = body.decode("utf-8")
                     logger.info(text)
@@ -156,6 +146,9 @@ class CameraClient:
                     yield ET.fromstring(text)
                 else:
                     yield body
+            except Exception as e:
+                logger.error(f"Erreur lors du traitement de la réponse (mimetype: {mime}): {e}")
+                raise e
         except Exception as e:
             logger.error(f"Erreur lors de la requête: {e}")
             logger.error(traceback.format_exc())
@@ -163,7 +156,7 @@ class CameraClient:
         finally:
             if self.writer:
                 self.writer.close()
-                await self.writer.wait_closed()
+                await asyncio.wait_for(self.writer.wait_closed(), timeout=5.0)
   
     async def get_system_info(self) -> Optional[Dict[str, str]]:
         xml = """<?xml version="1.0" encoding="UTF-8"?><methodcall><requestid>0</requestid><methodname>systeminfo</methodname></methodcall>"""
@@ -224,6 +217,7 @@ class CameraClient:
         codec = None
         time_frame = None
         codec_format = None
+        guess_codec = None
         pts_counter = 0
 
         async for data in response:
@@ -239,7 +233,11 @@ class CameraClient:
                     if codec is None:
                         container = av.open(io.BytesIO(data), mode='r')
                         video_stream = container.streams.video[0]
-                        codec = av.CodecContext.create(video_stream.codec_context.codec.name, 'r')
+                        guess_codec = video_stream.codec_context.codec.name
+                        if guess_codec != codec_format:
+                            logger.error(f"Codec détecté ({guess_codec}) différent du codec attendu ({codec_format})")
+                        
+                        codec = av.CodecContext.create(guess_codec, 'r')
                         pts_counter = 0
 
                     packet = av.Packet(data)
@@ -252,7 +250,8 @@ class CameraClient:
                         yield img, time_frame
 
                 except Exception as e:
-                    logger.error(f"Erreur lors du décodage: {e}")
+                    logger.error(f"Erreur lors du décodage du paquet vidéo {codec_format} / {guess_codec}: {e}")
+                    logger.error(traceback.format_exc())
                     codec = None
                     continue
 

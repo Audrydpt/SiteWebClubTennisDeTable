@@ -39,9 +39,7 @@ export default function Results({
                 className="w-full h-auto object-cover aspect-[16/9]"
               />
               <div className="p-3">
-                <p className="text-sm">
-                  Time: {new Date(result.timestamp).toLocaleString()}
-                </p>
+                <p className="text-sm">Time: {result.timestamp}</p>
               </div>
             </div>
           ))}
