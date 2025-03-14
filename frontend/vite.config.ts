@@ -37,6 +37,7 @@ export default defineConfig(({ mode }) => {
       watch: {
         usePolling: true,
       },
+      hmr: false,
     },
     worker: {
       format: 'es',
