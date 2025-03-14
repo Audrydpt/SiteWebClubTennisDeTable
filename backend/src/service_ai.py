@@ -10,6 +10,22 @@ logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 logger.addHandler(logging.FileHandler(f"/tmp/{__name__}.log"))
 
+def bgr_to_yuv420p(bgr_image):
+    """Convert BGR image to YUV420p raw format"""
+    # Convert BGR to YUV
+    yuv_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2YUV)
+    
+    height, width = yuv_image.shape[0], yuv_image.shape[1]
+    
+    # Y plane: full resolution
+    y = yuv_image[:, :, 0]
+    
+    # Downsample U and V planes (half resolution in both dimensions)
+    u = cv2.resize(yuv_image[:, :, 1], (width // 2, height // 2), interpolation=cv2.INTER_AREA)
+    v = cv2.resize(yuv_image[:, :, 2], (width // 2, height // 2), interpolation=cv2.INTER_AREA)
+        
+    return y , u ,v
+
 class ServiceAI:
     def __init__(self, analytic="192.168.20.212:53211", *args, **kwargs):
         self.analytic = "192.168.20.212:53211"
@@ -97,24 +113,34 @@ class ServiceAI:
 
         if image.shape[0] < obj_modelHeight:
             #add black padding at the bottom
-            image = cv2.resize(image, (obj_modelWidth, int(obj_modelWidth / image_ar))) # What if the image is not the ratio of the model?
-            padding = np.zeros((obj_modelHeight - image.shape[0], image.shape[1], 3), dtype=np.uint8)
-            image = np.concatenate([image, padding], axis=0)
+            resized_height = int(obj_modelWidth / image_ar) >> 2
+            resized_height +=1
+            resized_height <<= 2
+            image = cv2.resize(image, (obj_modelWidth, resized_height))
 
         elif image.shape[0] > obj_modelHeight:
             #add black padding on the right
-            image = cv2.resize(image, (int(obj_modelHeight * image_ar), obj_modelHeight))
-            padding = np.zeros((image.shape[0], obj_modelWidth - image.shape[1], 3), dtype=np.uint8)
-            image = np.concatenate([image, padding], axis=1)
+            resized_width = int(obj_modelHeight * image_ar) >> 2
+            resized_width +=1
+            resized_width <<= 2
+            image = cv2.resize(image, (resized_width, obj_modelHeight))
+
+       #image_raw = cv2.cvtColor(image, cv2.COLOR_BGR2YUV_I420).astype("uint8")
+
+        image_raw = bgr_to_yuv420p(image)
+
+        image_jpeg = cv2.imencode(".jpg", image)[1]
 
 
-        image_raw = cv2.cvtColor(image, cv2.COLOR_BGR2YUV_I420).astype("uint8")
-
-        obj_response = await self.__detect_object(width=obj_modelWidth, height=obj_modelHeight, raw=image_raw, object_detection=True,model=obj_model)
+        #obj_response = await self.__detect_object(width=obj_modelWidth, height=obj_modelHeight, jpeg=image_jpeg, object_detection=True,model=obj_model)
+        obj_response = await self.__detect_object(width=image.shape[1],height=image.shape[0], raw=image_raw,object_detection=True,model=obj_model)
         
+        #check if obj_response is NoneType
+        if obj_response is None or len(obj_response) == 0:
+            return [], []
         
         filtered_obj_response = [obj for obj in obj_response if any(cls in obj["bbox"]["probabilities"].keys() for cls in selected_classes)]
-
+        
         all_classif_response = []
         for model in classif_models:
             classif_response = []
@@ -126,13 +152,18 @@ class ServiceAI:
                 
                 image_class = self.get_thumbnail(image,res,0.)
                 image_class = cv2.resize(image_class, (class_modelWidth, class_modelHeight))
-                image_raw_class = cv2.cvtColor(image_class, cv2.COLOR_BGR2YUV_I420).astype("uint8")
+                #image_raw_class = cv2.cvtColor(image_class, cv2.COLOR_BGR2YUV_I420) .astype("uint8")
+                image_raw_class = bgr_to_yuv420p(image_class)
+                image_jpeg_class = cv2.imencode(".jpg", image_class)[1]
                 
-                #save on disk
-                cv2.imwrite(f"test_save_class_{i}.jpg", cv2.cvtColor(image_raw_class, cv2.COLOR_YUV2BGR_I420))
+                #save jpeg on disk
+                with open(f"test_save_class_{i}.jpg", "wb") as f:
+                    f.write(image_jpeg_class.tobytes())
                 i+=1
+                
                 try:
-                    classif_response.append(await self.__detect_object(width=class_modelWidth, height=class_modelHeight, raw=image_raw_class, classification=True,model=model))
+                    #classif_response.append(await self.__detect_object(width=class_modelWidth, height=class_modelHeight, jpeg=image_jpeg_class, classification=True,model=model))
+                    classif_response.append(await self.__detect_object(width=image_class.shape[1],height=image_class.shape[0], raw=image_raw_class, classification=True,model=model))
                 except Exception as e:
                     logger.error(f"Error during classification detection: {e}")
                     break
@@ -197,7 +228,7 @@ class ServiceAI:
 
         return top, bottom, left, right
 
-    def get_thumbnail(self, frame, detection, scale=1.0):
+    def get_thumbnail(self, frame, detection, scale=0.0):
         top, bottom, left, right = self.get_pixel_bbox(frame, detection)
         
         # scale the bounding box
@@ -227,17 +258,21 @@ class ServiceAI:
               "image": {
                   "type": "YUV420P",
                   "resolution": {
-                      "width": width,
-                      "height": height,
+                      "width": width if width !=0 else raw.shape[1],
+                      "height": height if height !=0 else raw.shape[0],
                   }
               },
               "userDefinedParameters": {
+                  "sequenceId": self.seq,
                   "id": self.seq,
               }
           }
           #logger.info(f"Sending request: {req}")
           await self.ws[model][0].send_json(req)
-          await self.ws[model][0].send_bytes(raw.tobytes())
+          await self.ws[model][0].send_bytes(raw[0].tobytes())
+          await self.ws[model][0].send_bytes(raw[1].tobytes())
+          await self.ws[model][0].send_bytes(raw[2].tobytes())
+
         elif jpeg is not None:
           req = {
               "image": {
@@ -274,12 +309,12 @@ class ServiceAI:
                            
 
 async def main():
-    async with ServiceAI("127.0.0.1:53211") as forensic:
+    async with ServiceAI("192.168.20.220:53211") as forensic:
         print("Starting")
         await forensic.get_version()
 
         #params
-        test = cv2.imread("test.jpg")
+        test = cv2.imread("/home/sbakkouche/Documents/dashboard/backend/test.jpg")
         selected_classes = ["car","truck","bus","motorcycle","bicycle"]
         short_print = True
         nbr_classif_values = 3
@@ -288,8 +323,13 @@ async def main():
 
         detections,classifs = await forensic.process(test,selected_classes)
 
-
+        if len(detections) == 0:
+            print("No objects detected")
+            print("closing")
+            return
+        
         print(f"{len(detections)} objects detected and classified:")
+
         for idx,(detection,classif) in enumerate(zip(detections,classifs[0])):
             
             if short_print:
