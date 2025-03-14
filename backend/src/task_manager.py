@@ -24,13 +24,11 @@ from fastapi import WebSocket, WebSocketDisconnect
 from service_ai import ServiceAI
 from vms import CameraClient
 
-# Configuration du logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 logger.addHandler(logging.FileHandler(f"/tmp/{__name__}.log"))
 
-# Configuration de Celery avec Redis
 celery_app = Celery(
     'forensic_tasks',
     broker='redis://localhost:6379/0',
@@ -49,10 +47,8 @@ celery_app.conf.update(
     task_reject_on_worker_lost=True     # Rejeter les tâches si le worker s'arrête
 )
 
-# TaskManager avec Redis
 redis_pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
 
-# Alignement avec les états Celery
 class JobStatus(str, Enum):
     PENDING = "PENDING"                 # Tâche créée, pas encore préparée pour l'exécution
     RECEIVED = "RECEIVED"               # Tâche reçue, prête à être exécutée
@@ -71,7 +67,6 @@ class JobResult:
     final: bool = False
     
     def to_redis_message(self) -> Dict[str, Any]:
-        # Générer un UUID pour la frame si elle existe et qu'aucun UUID n'a été assigné
         if self.frame is not None and not self.frame_uuid:
             self.frame_uuid = str(uuid.uuid4())
             
@@ -185,7 +180,7 @@ class ResultsStore:
                 except Exception as ex:
                     continue
                 
-                # Reconstituer le JobResult complet (avec la frame récupérée si nécessaire).
+                # Reconstituer le JobResult complet.
                 job_result = await JobResult.from_redis_message(update_data, redis_client=redis)
                 yield job_result
                 
@@ -228,7 +223,7 @@ def execute_job(self, job_type: str, job_params: Dict[str, Any]):
                         raise TaskRevokedError()
             except asyncio.CancelledError:
                 logger.info(f"Job {job_id} annulé")
-                cancel_event.set()  # Signaler l'annulation au job
+                cancel_event.set()
                 raise TaskRevokedError()
             
             # Notification finale
@@ -263,7 +258,6 @@ def execute_job(self, job_type: str, job_params: Dict[str, Any]):
         logger.error(f"Erreur dans le job {job_id}: {e}")
         logger.error(traceback.format_exc())
         
-        # Envoyer une notification d'erreur
         async def send_error():
             result = JobResult(
                 job_id=job_id,
@@ -371,9 +365,6 @@ class TaskManager:
     
     @staticmethod
     async def get_job_results(job_id: str) -> List[JobResult]:
-        """
-        Récupère tous les résultats d'une tâche.
-        """
         return await results_store.get_results(job_id)
     
     @staticmethod
@@ -637,16 +628,10 @@ class VehicleReplayJob:
                         metadata = {
                             "type": "detection",
                             "progress": progress,
-                            "score": float(score),  # Conversion explicite pour JSON
+                            "camera": source_guid,
+                            "score": score,
                             "timestamp": time.isoformat(),
                             "source": source_guid,
-                            "bbox": {
-                                "top": int(bbox[0]),
-                                "bottom": int(bbox[1]),
-                                "left": int(bbox[2]),
-                                "right": int(bbox[3])
-                            },
-                            "confidence": float(score)  # Pour compatibilité
                         }
                         
                         # Extraire et encoder la vignette
@@ -669,11 +654,6 @@ class VehicleReplayJob:
                     yield {"type": "warning", "message": f"Pas d'image à traiter pour la caméra: {source_guid}"}, None
 
     async def _execute(self) -> AsyncGenerator[Tuple[dict, Optional[bytes]], None]:
-        """
-        Exécution principale du job. 
-        Générateur asynchrone qui produit des tuples (metadata, frame).
-        Compatible avec Celery.
-        """
         logger.info(f"Processing Forensic job {self.job_id}")
         logger.info(f"Sources: {self.sources}")
         logger.info(f"Time range: {self.time_from} - {self.time_to}")
