@@ -1,8 +1,10 @@
 import { Search } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
-import { ForensicResult } from '../hooks/use-search';
+import { ForensicResult } from '../lib/types';
+import forensicResultsHeap from '../lib/data-structure/heap';
+import { Button } from '@/components/ui/button';
 
 interface ResultsProps {
   results: ForensicResult[];
@@ -10,11 +12,30 @@ interface ResultsProps {
   progress: number | null;
 }
 
+// Function to generate random test data
+const generateRandomResult = (): ForensicResult => ({
+  id: crypto.randomUUID(),
+  imageData: `https://picsum.photos/seed/${Math.random()}/300/200`,
+  timestamp: new Date().toISOString(),
+  score: Math.random(), // Random score between 0 and 1
+  cameraId: `Camera-${Math.floor(Math.random() * 10)}`,
+});
+
+// Helper function to avoid nested ternaries
+const getScoreBackgroundColor = (score: number) => {
+  if (score > 0.7) return 'rgba(220, 38, 38, 0.8)'; // Red for high scores
+  if (score > 0.4) return 'rgba(245, 158, 11, 0.8)'; // Orange for medium scores
+  return 'rgba(0, 0, 0, 0.7)'; // Black for low scores
+};
+
 export default function Results({
   results,
   isSearching,
   progress,
 }: ResultsProps) {
+  const [testMode, setTestMode] = useState(false);
+  const [testResults, setTestResults] = useState<ForensicResult[]>([]);
+
   // Generate stable skeleton IDs
   const skeletonIds = useMemo(
     () =>
@@ -23,13 +44,38 @@ export default function Results({
       ),
     []
   );
+  useEffect(() => {
+    if (!testMode) {
+      // Clear test data when disabling test mode
+      setTestResults([]);
+      forensicResultsHeap.clear();
+      return () => {};
+    }
+
+    const intervalId = setInterval(() => {
+      const newResult = generateRandomResult();
+      forensicResultsHeap.addResult(newResult);
+      setTestResults(forensicResultsHeap.getBestResults());
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [testMode]);
+
+  // Use either real results or test results based on test mode
+  const displayResults = testMode ? testResults : results;
+
+  // Sort results by score in descending order to place high scores at the top
+  const sortedResults = useMemo(
+    () => [...displayResults].sort((a, b) => b.score - a.score),
+    [displayResults]
+  );
 
   // Results are already sorted by the heap in useSearch, so we can use them directly
   const renderSearchResults = () => {
-    if (results.length > 0) {
+    if (displayResults.length > 0) {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {results.map((result: ForensicResult) => (
+          {sortedResults.map((result: ForensicResult) => (
             <div
               key={result.id}
               className="border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-card"
@@ -40,7 +86,12 @@ export default function Results({
                   alt="Forensic result"
                   className="w-full h-auto object-cover aspect-[16/9]"
                 />
-                <div className="absolute top-2 right-2 bg-black/70 text-white rounded-full px-2 py-0.5 text-xs font-medium">
+                <div
+                  className="absolute top-2 right-2 text-white rounded-full px-2 py-0.5 text-xs font-medium"
+                  style={{
+                    backgroundColor: getScoreBackgroundColor(result.score),
+                  }}
+                >
                   {(result.score * 100).toFixed(1)}%
                 </div>
               </div>
@@ -82,7 +133,7 @@ export default function Results({
       );
     }
 
-    if (isSearching && progress !== 100) {
+    if ((isSearching && progress !== 100) || testMode) {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {skeletonIds.map((id) => (
@@ -118,19 +169,36 @@ export default function Results({
 
   return (
     <>
-      <div className="mb-4">
+      <div className="mb-4 flex justify-between items-center">
         <h2 className="text-lg font-semibold">Résultats de recherche</h2>
-        {progress !== null && progress < 100 && (
-          <div className="mt-2">
-            <Progress value={progress} className="h-2" />
-            <p className="text-sm text-muted-foreground mt-1">
-              Progression: {progress}%
-            </p>
-          </div>
-        )}
+        <Button
+          variant={testMode ? 'destructive' : 'outline'}
+          size="sm"
+          onClick={() => setTestMode(!testMode)}
+        >
+          {testMode ? 'Arrêter Test Heap' : 'Tester Heap'}
+        </Button>
       </div>
 
-      <ScrollArea className="h-[calc(100%-3rem)]">
+      {progress !== null && progress < 100 && !testMode && (
+        <div className="mt-2 mb-4">
+          <Progress value={progress} className="h-2" />
+          <p className="text-sm text-muted-foreground mt-1">
+            Progression: {progress}%
+          </p>
+        </div>
+      )}
+
+      {testMode && (
+        <div className="mb-4 bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded-md">
+          <p className="text-sm text-yellow-800 dark:text-yellow-300">
+            Mode test actif: {displayResults.length} résultats | Un nouveau
+            résultat toutes les secondes
+          </p>
+        </div>
+      )}
+
+      <ScrollArea className="h-[calc(100%-3rem)] pb-9">
         {renderSearchResults()}
       </ScrollArea>
     </>
