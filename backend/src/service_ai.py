@@ -1,4 +1,5 @@
 import logging
+import traceback
 import numpy as np
 import cv2
 import json
@@ -7,8 +8,9 @@ import asyncio
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-logger.addHandler(logging.StreamHandler())
-logger.addHandler(logging.FileHandler(f"/tmp/{__name__}.log"))
+file_handler = logging.FileHandler(f"/tmp/{__name__}.log")
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+logger.addHandler(file_handler)
 
 class ServiceAI:
     def __init__(self, analytic="192.168.20.212:53211", *args, **kwargs):
@@ -25,9 +27,9 @@ class ServiceAI:
     async def __aexit__(self, exc_type, exc, tb):
         logger.info(f"Closing websockets")
         for ws in self.ws:
-            await asyncio.wait_for(ws.close(), timeout=5)
+            await asyncio.wait_for(self.ws[ws].close(), timeout=5)
         for sess in self.session:
-            await asyncio.wait_for(sess.close(), timeout=5)
+            await asyncio.wait_for(self.session[sess].close(), timeout=5)
 
     async def __describe(self):
         if self.describe is None:
@@ -47,7 +49,7 @@ class ServiceAI:
         del copy["msg"]
         return copy
     
-    async def parse_classif_response(self, classif_response,sort=False):
+    async def __parse_classif_response(self, classif_response,sort=False):
         parsed_classif_response = []
         for classif in classif_response: # for all bbox detections
             parsed_classif = {}
@@ -132,44 +134,94 @@ class ServiceAI:
                     logger.error(f"Error during classification detection: {e}")
                     break
             
-            parsed_classif_response = await self.parse_classif_response(classif_response,sort=True)
+            parsed_classif_response = await self.__parse_classif_response(classif_response,sort=True)
 
             all_classif_response.append(parsed_classif_response)
         
         return filtered_obj_response, all_classif_response
 
-        
-        
-
-
     async def detect(self, frame):
         version = await self.get_version()
-        logger.info(f"Version: {version}")
         if version[0] <= 1 or version[0] == 2 and version[1] < 2:
             logger.error(f"Incompatible version")
             raise Exception("Incompatible version")
         
         models = await self.get_models()
-        logger.info(f"Models: {models}")
-        model = list(models.keys())[0]
+
+        if "/object" not in models:
+            logger.error(f"No object detection model found")
+            raise Exception("No object detection model found")
+        
+        model = "/object"
         modelWidth = models[model]["networkWidth"]
         modelHeight = models[model]["networkHeight"]
 
         await asyncio.wait_for(self.__init_ws(model), timeout=5)
         image_jpeg = cv2.imencode(".jpg", frame)[1]
 
-        detections = await asyncio.wait_for(self.__detect_object(width=modelWidth, height=modelHeight, jpeg=image_jpeg), timeout=5)
+        detections = await asyncio.wait_for(self.__detect_object(width=modelWidth, height=modelHeight, model=model, object_detection=True, jpeg=image_jpeg), timeout=5)
         logger.info(f"Detections: {detections}")
         return detections
+    
+    async def classify(self, frame):
+        async def get_classes(model):
+            modelWidth = models[model]["networkWidth"]
+            modelHeight = models[model]["networkHeight"]
 
+            await asyncio.wait_for(self.__init_ws(model), timeout=5)
+            valid, image_jpeg = cv2.imencode(".jpg", frame)
+            if not valid:
+                logger.error(f"Error while encoding image to jpeg {frame.shape}")
+                cv2.imwrite(f"/tmp/test_save_{model}.jpg", frame)
+                raise Exception("Error while encoding image to jpeg")
+
+            data = await asyncio.wait_for(self.__detect_object(width=modelWidth, height=modelHeight, model=model, classification=True, jpeg=image_jpeg), timeout=5)
+            if data is None:
+                cv2.imwrite(f"/tmp/test_save_{model}.jpg", frame)
+                logger.error(f"No data - saved image to /tmp/test_save_{model}.jpg")
+                logger.error(traceback.format_exc())
+                raise Exception("No data")
+            
+            if len(data) == 1:
+                raise Exception("Not implemented")
+            else:
+                attributes = {}
+                for heads in data:
+                    for head_name in heads:
+                        attributes[head_name] = heads[head_name]
+                return attributes
+
+        version = await self.get_version()
+        if version[0] <= 1 or version[0] == 2 and version[1] < 2:
+            logger.error(f"Incompatible version")
+            raise Exception("Incompatible version")
+        
+        models = await self.get_models()
+
+        attributes = {}
+        if "/vehicule" in models or "/vehicule_attributes" in models:
+            model = "/vehicule" if "/vehicule" in models else "/vehicule_attributes"
+            attributes = await get_classes(model)
+        
+        if "/color" in models or "/vehicule_color" in models:
+            model = "/color" if "/color" in models else "/vehicule_color"
+            attributes["color"] = await get_classes(model)
+        
+        if "/type" in models or "/vehicule_type" in models:
+            model = "/type" if "/type" in models else "/vehicule_type"
+            attributes["type"] = await get_classes(model)
+
+        return attributes
+    
     async def __heartbeat(self):
         for ws in self.ws:
-            await asyncio.wait_for(ws.ping(), timeout=5)
+            await asyncio.wait_for(self.ws[ws].ping(), timeout=1)
     
     async def __init_ws(self, model):
         if model not in self.ws:
             self.session[model] = aiohttp.ClientSession()
             self.ws[model] = await self.session[model].ws_connect(f"ws://{self.analytic}{model}/requestsQueue")
+
 
     def get_pixel_bbox(self, frame, detection):
         def getCoord(x, y, w, h):
@@ -206,17 +258,25 @@ class ServiceAI:
 
         return frame[top:bottom, left:right]
 
-    async def __detect_object(self, object_detection=False, classification=False, width=0, height=0, raw=None, jpeg=None,model=None):
+    async def __detect_object(self, model, object_detection=False, classification=False, width=0, height=0, raw=None, jpeg=None):        
+        if object_detection == classification:
+            logger.error("You must choose between object detection or classification")
+            raise Exception("You must choose between object detection or classification")
+        
         ctx = {
-            "confidenceThreshold": 0.05,
+            "confidenceThreshold": 0.5,
             "overlapThreshold": 0.1,
             "bbox": True if object_detection else False,
             "classifier": True if classification else False
         }
-        #logger.info(f"Sending context: {ctx}")
+        logger.info(f"Sending context: {ctx} to {model}")
         await self.ws[model].send_json(ctx)
         
         if raw is not None:
+          if width == 0 or height == 0:
+                logger.error("Width and height must be defined")
+                raise Exception("Width and height must be defined")
+          
           req = {
               "image": {
                   "type": "YUV420P",
@@ -229,10 +289,9 @@ class ServiceAI:
                   "id": self.seq,
               }
           }
-          #logger.info(f"Sending request: {req}")
+          logger.info(f"Sending request: {req}")
           await self.ws[model].send_json(req)
           await self.ws[model].send_bytes(raw.tobytes())
-          await asyncio.wait_for(self.ws[model].drain(), timeout=5)
         elif jpeg is not None:
           req = {
               "image": {
@@ -242,35 +301,48 @@ class ServiceAI:
                   "id": self.seq,
               }
           }
-          #logger.info(f"Sending request: {req}")
+          logger.info(f"Sending request: {req}")
           await self.ws[model].send_json(req)
           await self.ws[model].send_bytes(jpeg.tobytes())
-          await asyncio.wait_for(self.ws[model].drain(), timeout=5)
         else:
           logger.error("No image provided")
           raise Exception("No image provided")
         
         try:
-            msg = await asyncio.wait_for(self.ws[model].receive(), timeout=1)
-            if msg.type == aiohttp.WSMsgType.TEXT:
-                data = json.loads(msg.data)
-                #logger.info(f"Received: {data}")
-                if data["msg"] == "response":
+            for i in range(0, 10):
+                msg = await asyncio.wait_for(self.ws[model].receive(), timeout=1)
+                
+                if msg.type == aiohttp.WSMsgType.TEXT:
+                    data = json.loads(msg.data)
+                    if data["msg"] == "response":
+                        
+                        if object_detection:
+                            logger.info(f"Detection response {data["detections"]}")
+                            return data["detections"]
 
-                    # classifier has higher priority than obj detector
-                    if "classifiers" in data:
-                        return data["classifiers"]
+                        if classification:
+                            logger.info(f"Classifier response {data["classifiers"]}")
+                            return data["classifiers"]
+                        
+                        logger.error(f"Unknown response {msg.data}")
+                        raise Exception("Unknown response")
 
-                    return data["detections"]
+                    elif data["msg"] == "error":
+                        logger.error(f"Error message: {data["error"]}")
+
+                    else:
+                        logger.error(f"Unknown message {msg.data}")
                 else:
-                    logger.debug(data)
+                    logger.error(f"Unknown message type {msg.type}")
+                    raise Exception("Unknown message type")
+            
         except asyncio.TimeoutError:
             logger.error("Timeout while waiting for response")
             raise Exception("Timeout while waiting for response")
                            
 
 async def main():
-    async with ServiceAI("127.0.0.1:53211") as forensic:
+    async with ServiceAI() as forensic:
         print("Starting")
         await forensic.get_version()
 
@@ -279,9 +351,6 @@ async def main():
         selected_classes = ["car","truck","bus","motorcycle","bicycle"]
         short_print = True
         nbr_classif_values = 3
-
-
-
         detections,classifs = await forensic.process(test,selected_classes)
 
 
@@ -318,9 +387,7 @@ async def main():
                 print(classif)
                 print("\n\n")
 
-        
-        print("closing")
-    print("completed")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

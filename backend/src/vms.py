@@ -16,8 +16,9 @@ from typing import Optional, Dict, AsyncGenerator, Tuple, Any
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-logger.addHandler(logging.StreamHandler())
-logger.addHandler(logging.FileHandler(f"/tmp/{__name__}.log"))
+file_handler = logging.FileHandler(f"/tmp/{__name__}.log")
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+logger.addHandler(file_handler)
 
 class CameraClient:
     def __init__(self, host: str, port: int):
@@ -230,7 +231,7 @@ class CameraClient:
                     parser.isoparse(time_str).astimezone(datetime.timezone.utc)
                     if time_str else None
                 )
-                codec_format = data.get("Format")
+                codec_format = data.get("Format").lower()
             elif isinstance(data, bytes):
                 try:
                     if codec is None:
@@ -295,7 +296,7 @@ async def main():
 
     client = CameraClient(args.host, args.port)
     try:
-        if True:
+        if False:
             await test_dual_stream(args.host, args.port)
         else:
             cameras = await client.get_system_info()
@@ -305,8 +306,9 @@ async def main():
                 first_guid = next(iter(cameras))
                 print("GUID de la première caméra:", first_guid)
 
-                async for img, time in client.start_replay(first_guid, datetime.datetime(2025, 2, 28, 0, 0, 0), datetime.datetime(2025, 2, 28, 10, 0, 0), gap=5):
-                    print(img.shape, time)
+                streams = client.start_live(first_guid)
+                img = await anext(streams)
+                cv2.imwrite("test.jpg", img)
 
     except Exception as e:
         print(f"Erreur lors de l'exécution: {e}")

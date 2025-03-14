@@ -6,6 +6,7 @@ import asyncio
 import datetime
 import uuid
 
+from fastapi.websockets import WebSocketState
 import numpy as np
 import cv2
 import redis
@@ -27,7 +28,9 @@ from vms import CameraClient
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
-logger.addHandler(logging.FileHandler(f"/tmp/{__name__}.log"))
+file_handler = logging.FileHandler(f"/tmp/{__name__}.log")
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+logger.addHandler(file_handler)
 
 celery_app = Celery(
     'forensic_tasks',
@@ -157,6 +160,8 @@ class ResultsStore:
         pubsub = redis.pubsub()
         channel_name = f"task:{job_id}:updates"
         await pubsub.subscribe(channel_name)
+
+        logger.info("Souscription aux mises à jour de résultats")
         
         try:
             while True:
@@ -182,10 +187,14 @@ class ResultsStore:
                 
                 # Reconstituer le JobResult complet.
                 job_result = await JobResult.from_redis_message(update_data, redis_client=redis)
+
+                logger.info("Diffusion de la mise à jour")
                 yield job_result
                 
         finally:
             await pubsub.unsubscribe(channel_name)
+
+        logger.info("Fin de la souscription aux mises à jour de résultats")
 
 results_store = ResultsStore()
 
@@ -368,41 +377,47 @@ class TaskManager:
         return await results_store.get_results(job_id)
     
     @staticmethod
-    async def stream_job_results(websocket: WebSocket, job_id: str):
+    async def stream_job_results(websocket: WebSocket, job_id: str, send_old_results: bool = True):
         """
         Diffuse les résultats d'une tâche vers un WebSocket.
         Envoie l'historique des résultats puis s'abonne aux mises à jour.
         """
         try:
+
+            logger.info(f"Client WebSocket connecté pour le job {job_id}")
+
             # Envoyer les résultats précédents
-            previous_results = await results_store.get_results(job_id)
-            for result in previous_results:
-                # Envoyer les métadonnées
-                await websocket.send_json({
-                    "type": "history",
-                    "data": {
-                        "job_id": result.job_id,
-                        "metadata": result.metadata,
-                        "frame_uuid": result.frame_uuid,
-                        "final": result.final
-                    }
-                })
-                
-                # Envoyer la frame si présente
-                if result.frame:
-                    await websocket.send_bytes(result.frame)
-            
+            if send_old_results:
+                logger.info(f"Envoi des résultats précédents pour le job {job_id}")
+                previous_results = await results_store.get_results(job_id)
+                for result in previous_results:
+                    if result.metadata:
+                        await websocket.send_json(result.metadata)
+                    if result.frame:
+                        await websocket.send_bytes(result.frame)
+                logger.info(f"Envoi des résultats précédents terminé pour le job {job_id}")
+
             # S'abonner aux nouvelles mises à jour
+            logger.info(f"Souscription aux mises à jour pour le job {job_id}")
             async for update in results_store.subscribe_to_results(job_id):
-                if update["type"] == "metadata":
-                    await websocket.send_json(update["data"])
-                elif update["type"] == "frame":
-                    await websocket.send_bytes(update["frame"])
-                    
-                    # Vérifier si le websocket est toujours connecté
-                    if websocket.client_state.DISCONNECTED:
-                        break
-        
+                logger.info(f"Envoi de la mise à jour pour le job {job_id}")
+                if websocket.client_state != WebSocketState.DISCONNECTED:
+                    logger.info(f"Client WebSocket déconnecté pour le job {job_id}")
+                    break
+ 
+                if update.metadata:
+                    logger.info(f"Envoi des métadonnées pour le job {job_id}")
+                    await websocket.send_json(update.metadata)
+                if update.frame:
+                    logger.info(f"Envoi de la frame pour le job {job_id}")
+                    await websocket.send_bytes(update.frame)
+                
+                if update.final:
+                    logger.info(f"Fin de la diffusion pour le job {job_id}")
+                    break
+            
+            logger.info(f"Fin de la diffusion pour le job {job_id}")
+                           
         except WebSocketDisconnect:
             logger.info(f"Client WebSocket déconnecté pour le job {job_id}")
         except Exception as e:
@@ -411,13 +426,15 @@ class TaskManager:
             
             # Essayer d'envoyer un message d'erreur si le websocket est encore connecté
             try:
-                if not websocket.client_state.DISCONNECTED:
+                if websocket.client_state != WebSocketState.DISCONNECTED:
                     await websocket.send_json({
                         "type": "error",
                         "message": f"Erreur de streaming: {str(e)}"
                     })
             except:
                 pass
+        finally:
+            logger.info(f"Finally {job_id}")
 
 class VehicleReplayJob:
     """
@@ -569,7 +586,6 @@ class VehicleReplayJob:
                 previous_boxes = []
                 frame_count = 0
                 
-                # Vérifier l'annulation
                 if self.cancel_event.is_set():
                     return
                 
@@ -578,21 +594,15 @@ class VehicleReplayJob:
                     self.time_from, 
                     self.time_to
                 ):
-                    # Vérifier l'annulation
                     if self.cancel_event.is_set():
                         return
                     
                     logger.info(f"got a frame at {time}")
-                    # Calculer la progression
                     progress = self._calculate_progress(time, self.time_from, self.time_to)
                     frame_count += 1
                     
                     # Envoyer une mise à jour de progression sans image
                     yield {"type": "progress", "progress": progress}, None
-
-                    # Vérifier l'annulation avant analyse
-                    if self.cancel_event.is_set():
-                        return
                     
                     # Détecter les objets
                     detections = await forensic.detect(img)
@@ -600,7 +610,6 @@ class VehicleReplayJob:
 
                     current_boxes = []
                     for detection in detections:
-                        # Vérifier l'annulation pendant le traitement
                         if self.cancel_event.is_set():
                             return
                             
@@ -624,6 +633,8 @@ class VehicleReplayJob:
                         if is_duplicate:
                             continue
 
+                        attributes = await forensic.classify(img)
+
                         # Créer les métadonnées
                         metadata = {
                             "type": "detection",
@@ -632,9 +643,8 @@ class VehicleReplayJob:
                             "score": score,
                             "timestamp": time.isoformat(),
                             "source": source_guid,
+                            "attributes": attributes
                         }
-                        
-                        # Extraire et encoder la vignette
                         thumbnail = forensic.get_thumbnail(img, detection, 1.1)
                         if thumbnail is None:
                             continue
@@ -642,7 +652,6 @@ class VehicleReplayJob:
                         _, encoded_image = cv2.imencode('.jpg', thumbnail)
                         frame_bytes = encoded_image.tobytes()
 
-                        # Renvoyer les métadonnées et la frame
                         yield metadata, frame_bytes
                         
                     # Mettre à jour les boîtes précédentes
@@ -663,30 +672,19 @@ class VehicleReplayJob:
             return
         
         try:
+            # TODO: await asyncio.gather() pour traiter plusieurs flux en parallèle
+
             for source_guid in self.sources:
-                # Vérifier annulation avant de démarrer une nouvelle source
                 if self.cancel_event.is_set():
                     return
                     
                 logger.info(f"Starting query for source: {source_guid}")
-                
-                # Indiquer le démarrage d'une nouvelle source
-                yield {
-                    "type": "info", 
-                    "message": f"Traitement de la source: {source_guid}",
-                    "source": source_guid
-                }, None
-                
-                # Traiter cette source
                 async for metadata, frame in self.__process_stream(source_guid):
-                    # Vérifier l'annulation à chaque itération
                     if self.cancel_event.is_set():
                         return
                     
-                    # Passer les résultats au générateur parent
                     yield metadata, frame
             
-            # Envoyer une notification de succès final
             yield {
                 "type": "completed", 
                 "message": "Analyse terminée avec succès",
