@@ -1,5 +1,9 @@
 import os
+import traceback
 import cv2
+import json
+import uuid
+from fastapi.websockets import WebSocketState
 import gunicorn
 import uvicorn
 import datetime
@@ -7,6 +11,7 @@ import time
 import aiohttp
 import threading
 import asyncio
+import logging
 
 from pydantic import Field, create_model
 
@@ -16,9 +21,13 @@ from sqlalchemy.inspection import inspect
 from fastapi.staticfiles import StaticFiles
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import Response
+from fastapi import Response, WebSocket, WebSocketDisconnect, HTTPException
+from starlette.requests import Request
 
 from gunicorn.app.base import BaseApplication
+
+
+from task_manager import JobStatus, TaskManager
 
 from typing import Annotated, Literal, Optional, Type, Union, List, Dict, Any
 from enum import Enum
@@ -28,8 +37,14 @@ from event_grabber import EventGrabber
 from database import Dashboard, GenericDAL, Widget
 from database import AcicAllInOneEvent, AcicCounting, AcicEvent, AcicLicensePlate, AcicNumbering, AcicOCR, AcicOccupancy, AcicUnattendedItem
 
+from pydantic import BaseModel, Field, Extra
 
 from vms import CameraClient
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
+logger.addHandler(logging.FileHandler(f"/tmp/{__name__}.log"))
 
 class ModelName(str, Enum):
     minute = "1 minute"
@@ -44,6 +59,8 @@ class ModelName(str, Enum):
     year = "1 year"
     lifetime = "100 years"
 
+
+
 # Please follow: https://www.belgif.be/specification/rest/api-guide/#resource-uri
 class FastAPIServer:
     def __init__(self, event_grabber:EventGrabber):
@@ -52,7 +69,11 @@ class FastAPIServer:
             docs_url=None, redoc_url=None,
             swagger_ui_parameters={
                 "persistAuthorization": True
-            })
+            },
+            servers=[
+                {"description": "production", "url": "/front-api"},
+                {"description": "development", "url": "/"},
+            ])
 
         self.app.add_middleware(
             CORSMiddleware,
@@ -77,7 +98,57 @@ class FastAPIServer:
         async def custom_swagger_ui_html():
             return get_custom_swagger_ui_html(openapi_url="openapi.json", title=self.app.title + " - Swagger UI",)
 
-        @self.app.get("/health", tags=["/health"], include_in_schema=False)
+        @self.app.get("/servers/grabbers", tags=["servers"])
+        async def get_all_servers(health: Optional[bool] = False):
+            try:
+                ret = []
+
+                for grabber in self.event_grabber.get_grabbers():
+                    status = dict()
+                    status["type"] = grabber.hosttype
+                    status["host"] = grabber.acichost
+                    status["ports"] = {
+                        "http": grabber.acicaliveport,
+                        "https": 443,
+                        "streaming": grabber.acichostport
+                    }
+
+                    if health:
+                        status["health"] = {
+                            "is_alive": grabber.is_alive(),
+                            "is_longrunning": grabber.is_long_running(),
+                            "is_reachable": grabber.is_reachable(timeout=0.2),
+                            "is_streaming": grabber.is_streaming(timeout=0.2)
+                        }
+
+                    ret.append(status)
+
+                return ret
+
+            except ValueError as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        self.__create_endpoint("AcicUnattendedItem", AcicUnattendedItem)
+        self.__create_endpoint("AcicCounting", AcicCounting)
+        self.__create_endpoint("AcicNumbering", AcicNumbering, agg_func=func.avg(AcicNumbering.count))
+        self.__create_endpoint("AcicOccupancy", AcicOccupancy, agg_func=func.avg(AcicOccupancy.value))
+        self.__create_endpoint("AcicLicensePlate", AcicLicensePlate)
+        self.__create_endpoint("AcicOCR", AcicOCR)
+        self.__create_endpoint("AcicAllInOneEvent", AcicAllInOneEvent)
+        self.__create_endpoint("AcicEvent", AcicEvent)
+
+        @self.app.get("/dashboard/widgets", tags=["dashboard"])
+        async def get_dashboard():
+            return self.__registered_dashboard
+
+        self.__create_tabs()
+        self.__create_widgets()
+        self.__create_health()
+        self.__create_forensic()
+        self.__create_vms()
+
+    def __create_health(self):
+        @self.app.get("/health", tags=["health"], include_in_schema=False)
         async def health():
             grabbers = {}
             for grabber in self.event_grabber.get_grabbers():
@@ -89,7 +160,7 @@ class FastAPIServer:
                 "grabbers": grabbers
             }
 
-        @self.app.get("/health/aiServer/{ip}", tags=["/health"])
+        @self.app.get("/health/aiServer/{ip}", tags=["health"])
         async def health_ai_server(ip: str):
             try:
                 username = "administrator"
@@ -128,7 +199,7 @@ class FastAPIServer:
             except asyncio.TimeoutError:
                 return {"status": "error", "message": "Request timed out"}
         
-        @self.app.get("/health/lprServer/{ip}", tags=["/health"])
+        @self.app.get("/health/lprServer/{ip}", tags=["health"])
         async def health_lpr_server(ip: str):
             try:
                 username = "administrator"
@@ -167,7 +238,7 @@ class FastAPIServer:
             except asyncio.TimeoutError:
                 return {"status": "error", "message": "Request timed out"}
 
-        @self.app.get("/health/secondaryServer/{ip}", tags=["/health"])
+        @self.app.get("/health/secondaryServer/{ip}", tags=["health"])
         async def health_secondary_server(ip: str):
             try:
                 async with aiohttp.ClientSession() as session:
@@ -224,7 +295,242 @@ class FastAPIServer:
                 "type": "blocking"
             }
 
-        @self.app.get("/vms/{ip}/cameras", tags=["/vms"])
+    def __create_forensic(self):
+        
+        class TimeRange(BaseModel):
+            time_from: datetime.datetime
+            time_to: datetime.datetime
+        
+        Confidence = Literal["low", "medium", "high"]
+        Color = Literal["brown", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "pink", "white", "gray", "black"]
+
+        class Model(BaseModel):
+            sources: List[str]
+            timerange: TimeRange
+        
+        class MMR(BaseModel):
+            brand: str
+            model: Optional[List[str]] = None
+        
+        class VehiculeApperance(BaseModel):
+            type: Optional[List[str]] = None
+            color: Optional[List[Color]] = None
+            confidence: Confidence
+        
+        class VehiculeAttributes(BaseModel):
+            mmr: Optional[List[MMR]] = None
+            plate: Optional[str] = None
+            other: Dict[str, bool]
+            confidence: Confidence
+        
+        class ModelVehicle(Model):
+            type: Literal["vehicle"]
+            appearances: VehiculeApperance
+            attributes: VehiculeAttributes
+            context: Dict[str, Any]
+        
+        class Hair(BaseModel):
+            length: Optional[List[Literal["none", "short", "medium", "long"]]] = None
+            color: Optional[List[Literal["black", "brown", "blonde", "gray", "white", "other"]]] = None
+            style: Optional[List[Literal["straight", "wavy", "curly"]]] = None
+
+        class PersonApperance(BaseModel):
+            gender: Optional[List[Literal["male", "female"]]] = None
+            seenAge: Optional[List[Literal["child", "teen", "adult", "senior"]]] = None
+            realAge: Optional[int] = None
+            build: Optional[List[Literal["slim", "average", "athletic", "heavy"]]] = None
+            height: Optional[List[Literal["short", "average", "tall"]]] = None
+            hair: Hair
+            confidence: Confidence
+        
+        class UpperPersonAttributes(BaseModel):
+            color: Optional[List[Color]] = None
+            type: Optional[List[Literal["shirt", "jacket", "coat", "sweater", "dress", "other"]]] = None
+        
+        class LowerPersonAttributes(BaseModel):
+            color: Optional[List[Color]] = None
+            type: Optional[List[Literal["pants", "shorts", "skirt", "dress", "other"]]] = None
+            
+        class PersonAttributes(BaseModel):
+            upper: UpperPersonAttributes
+            lower: LowerPersonAttributes
+            other: Dict[str, bool]
+            confidence: Confidence
+
+        class ModelPerson(Model):
+            type: Literal["person"]
+            appearances: PersonApperance
+            attributes: PersonAttributes
+            context: Dict[str, Any]
+                
+        @self.app.get("/forensics", tags=["forensics"])
+        async def get_tasks():
+            try:
+                tasks = {}
+                for job_id in TaskManager.get_jobs():
+                    status = TaskManager.get_job_status(job_id)
+                    task_info = {
+                        "status": status
+                    }
+                    
+                    if status == JobStatus.FAILURE:
+                        error, stacktrace = await TaskManager.get_job_error(job_id)
+                        task_info["error"] = error
+                        task_info["stacktrace"] = stacktrace
+                        
+                    tasks[job_id] = task_info
+                    
+                return {"tasks": tasks}
+            except Exception as e:
+                logger.error(f"Erreur lors de la récupération des tâches: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
+
+        @self.app.post("/forensics", tags=["forensics"])
+        async def start_task(request: Request, data: Union[ModelVehicle, ModelPerson]):
+            try:
+                job_params = data.model_dump()
+                
+                # Soumettre la tâche appropriée selon le type
+                if data.type == "vehicle":
+                    job_id = TaskManager.submit_job("VehicleReplayJob", job_params)
+                elif data.type == "person":
+                    raise HTTPException(status_code=400, detail="Person not supported yet")
+                else:
+                    raise HTTPException(status_code=400, detail="Type non supporté")
+                    
+                return {"guid": job_id}
+            
+            except ValueError as e:
+                logger.error(f"Erreur de validation: {e}")
+                raise HTTPException(status_code=400, detail=str(e))
+            except Exception as e:
+                logger.error(f"Erreur lors du démarrage de la tâche: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
+        
+        @self.app.websocket("/forensics/{guid}")
+        async def task_updates(websocket: WebSocket, guid: str):
+            try:
+                # Accepter la connexion WebSocket
+                await websocket.accept()
+                
+                # Valider que la tâche existe
+                status = TaskManager.get_job_status(guid)
+                if not status:
+                    await websocket.close(code=1000, reason="Tâche introuvable")
+                    return
+                    
+                # Envoyer l'état initial
+                await websocket.send_json({
+                    "type": "status",
+                    "status": status,
+                    "message": f"Tâche {guid} en cours"
+                })
+                
+                # Utiliser la fonction de streaming du TaskManager
+                try:
+                    await TaskManager.stream_job_results(websocket, guid)
+                except WebSocketDisconnect:
+                    logger.info(f"Client déconnecté pour la tâche {guid}")
+                except asyncio.CancelledError:
+                    logger.info(f"Streaming annulé pour la tâche {guid}")
+                except Exception as e:
+                    logger.error(f"Erreur pendant le streaming de la tâche {guid}: {e}")
+                    logger.error(traceback.format_exc())
+                    if websocket.client_state != WebSocket.CLIENT_DISCONNECTED:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": f"Erreur de streaming: {str(e)}"
+                        })
+            
+            except WebSocketDisconnect:
+                logger.info(f"Client déconnecté pour la tâche {guid}")
+            
+            except Exception as e:
+                logger.error(f"Erreur WebSocket pour la tâche {guid}: {e}")
+                logger.error(traceback.format_exc())
+                
+                # Tenter d'envoyer un message d'erreur avant de fermer
+                try:
+                    if websocket.client_state != WebSocket.CLIENT_DISCONNECTED:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": f"Erreur: {str(e)}"
+                        })
+                        await websocket.close(code=1011, reason="Erreur serveur")
+                except:
+                    pass
+            
+            finally:
+                # S'assurer que la connexion est fermée
+                if websocket.client_state != WebSocket.CLIENT_DISCONNECTED:
+                    await websocket.close(code=1000, reason="Streaming terminé")
+
+        @self.app.delete("/forensics", tags=["forensics"])
+        async def stop_all_task():
+            try:
+                cancelled = []
+                for job_id in TaskManager.get_jobs():
+                    if TaskManager.get_job_status(job_id) in [JobStatus.PENDING, JobStatus.RECEIVED, JobStatus.STARTED, JobStatus.RETRY]:
+                        TaskManager.cancel_job(job_id)
+                        cancelled.append(job_id)
+                        
+                return {"status": "ok", "cancelled_tasks": cancelled}
+            
+            except Exception as e:
+                logger.error(f"Erreur lors de l'arrêt de toutes les tâches: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
+        
+        @self.app.delete("/forensics/{guid}", tags=["forensics"])
+        async def stop_task(guid: str):
+            try:
+                status = TaskManager.get_job_status(guid)
+                if not status:
+                    raise HTTPException(status_code=404, detail="Tâche introuvable")
+                    
+                if status in [JobStatus.PENDING, JobStatus.RECEIVED, JobStatus.STARTED, JobStatus.RETRY]:
+                    success = TaskManager.cancel_job(guid)
+                    if success:
+                        return {"guid": guid, "status": "cancelled"}
+                    else:
+                        raise HTTPException(status_code=500, detail="Échec de l'annulation")
+                else:
+                    return {"guid": guid, "status": status}
+            
+            except Exception as e:
+                logger.error(f"Erreur lors de l'arrêt de la tâche {guid}: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
+        
+        @self.app.get("/forensics/{guid}", tags=["forensics"])
+        async def get_task(guid: str):
+            try:
+                status = TaskManager.get_job_status(guid)
+                if not status:
+                    raise HTTPException(status_code=404, detail="Tâche introuvable")
+                    
+                results = await TaskManager.get_job_results(guid)
+                
+                # Ne pas inclure les données binaires dans la réponse
+                for result in results:
+                    if "frame" in result:
+                        del result["frame"]
+                        
+                return {
+                    "guid": guid,
+                    "status": status,
+                    "results": results
+                }
+            
+            except Exception as e:
+                logger.error(f"Erreur lors de la récupération des résultats de la tâche {guid}: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
+        
+    def __create_vms(self):
+        @self.app.get("/vms/{ip}/cameras", tags=["vms"])
         async def get_cameras(ip: str):
             try:
                 async with CameraClient(ip, 7778) as client:
@@ -232,7 +538,7 @@ class FastAPIServer:
             except:
                 raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
 
-        @self.app.get("/vms/{ip}/cameras/{guuid}/live", tags=["/vms"])
+        @self.app.get("/vms/{ip}/cameras/{guuid}/live", tags=["vms"])
         async def get_live(ip: str, guuid: str):
             try:
                 async with CameraClient(ip, 7778) as client:
@@ -244,7 +550,7 @@ class FastAPIServer:
             except Exception as e:
                 raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
 
-        @self.app.get("/vms/{ip}/cameras/{guuid}/replay", tags=["/vms"])
+        @self.app.get("/vms/{ip}/cameras/{guuid}/replay", tags=["vms"])
         async def get_replay(ip: str, guuid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0):
             try:
                 async with CameraClient(ip, 7778) as client:
@@ -255,59 +561,13 @@ class FastAPIServer:
             except Exception as e:
                 raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
 
-        @self.app.get("/servers/grabbers", tags=["servers"])
-        async def get_all_servers(health: Optional[bool] = False):
-            try:
-                ret = []
-
-                for grabber in self.event_grabber.get_grabbers():
-                    status = dict()
-                    status["type"] = grabber.hosttype
-                    status["host"] = grabber.acichost
-                    status["ports"] = {
-                        "http": grabber.acicaliveport,
-                        "https": 443,
-                        "streaming": grabber.acichostport
-                    }
-
-                    if health:
-                        status["health"] = {
-                            "is_alive": grabber.is_alive(),
-                            "is_longrunning": grabber.is_long_running(),
-                            "is_reachable": grabber.is_reachable(timeout=0.2),
-                            "is_streaming": grabber.is_streaming(timeout=0.2)
-                        }
-
-                    ret.append(status)
-
-                return ret
-
-            except ValueError as e:
-                raise HTTPException(status_code=500, detail=str(e))
-
-        self.__create_endpoint("AcicUnattendedItem", AcicUnattendedItem)
-        self.__create_endpoint("AcicCounting", AcicCounting)
-        self.__create_endpoint("AcicNumbering", AcicNumbering, agg_func=func.avg(AcicNumbering.count))
-        self.__create_endpoint("AcicOccupancy", AcicOccupancy, agg_func=func.avg(AcicOccupancy.value))
-        self.__create_endpoint("AcicLicensePlate", AcicLicensePlate)
-        self.__create_endpoint("AcicOCR", AcicOCR)
-        self.__create_endpoint("AcicAllInOneEvent", AcicAllInOneEvent)
-        self.__create_endpoint("AcicEvent", AcicEvent)
-
-        @self.app.get("/dashboard/widgets", tags=["/dashboard"])
-        async def get_dashboard():
-            return self.__registered_dashboard
-
-        self.__create_tabs()
-        self.__create_widgets()
-
     def __create_tabs(self):
         Model = create_model('TabModel',
             title=(str, Field(description="The title of the dashboard tab")),
             order=(Optional[int], Field(default=None, description="The order of the tab"))
         )
 
-        @self.app.get("/dashboard/tabs", tags=["/dashboard/tabs"])
+        @self.app.get("/dashboard/tabs", tags=["dashboard/tabs"])
         async def get_tabs():
             try:
                 ret = {}
@@ -325,7 +585,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.post("/dashboard/tabs", tags=["/dashboard/tabs"])
+        @self.app.post("/dashboard/tabs", tags=["dashboard/tabs"])
         async def add_tab(data: Model):
             try:
                 dal = GenericDAL()
@@ -336,7 +596,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.put("/dashboard/tabs/{id}", tags=["/dashboard/tabs"])
+        @self.app.put("/dashboard/tabs/{id}", tags=["dashboard/tabs"])
         async def update_tab(id: str, data: Model):
             try:
                 dal = GenericDAL()
@@ -351,7 +611,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.delete("/dashboard/tabs/{id}", tags=["/dashboard/tabs"])
+        @self.app.delete("/dashboard/tabs/{id}", tags=["dashboard/tabs"])
         async def delete_tab(id: str):
             try:
                 dal = GenericDAL()
@@ -376,7 +636,7 @@ class FastAPIServer:
 
         Model = create_model('WidgetModel', **fields)
 
-        @self.app.get("/dashboard/tabs/{id}/widgets", tags=["/dashboard/tabs/widgets"])
+        @self.app.get("/dashboard/tabs/{id}/widgets", tags=["dashboard/tabs/widgets"])
         async def get_widgets(id: str):
             try:
                 dal = GenericDAL()
@@ -385,7 +645,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.post("/dashboard/tabs/{id}/widgets", tags=["/dashboard/tabs/widgets"])
+        @self.app.post("/dashboard/tabs/{id}/widgets", tags=["dashboard/tabs/widgets"])
         async def add_widget(id: str, data: Model):
             try:
                 dal = GenericDAL()
@@ -403,7 +663,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.put("/dashboard/tabs/{id}/widgets", tags=["/dashboard/tabs/widgets"])
+        @self.app.put("/dashboard/tabs/{id}/widgets", tags=["dashboard/tabs/widgets"])
         async def update_all_widgets(id: str, data: list[Model]):
             try:
                 dal = GenericDAL()
@@ -428,7 +688,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.patch("/dashboard/tabs/{id}/widgets", tags=["/dashboard/tabs/widgets"])
+        @self.app.patch("/dashboard/tabs/{id}/widgets", tags=["dashboard/tabs/widgets"])
         async def patch_all_widgets(id: str, data: list[dict]):
             try:
                 dal = GenericDAL()
@@ -474,7 +734,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.put("/dashboard/tabs/{id}/widgets/{widget_id}", tags=["/dashboard/tabs/widgets"])
+        @self.app.put("/dashboard/tabs/{id}/widgets/{widget_id}", tags=["dashboard/tabs/widgets"])
         async def update_widget(id: str, widget_id: str, data: Model):
             try:
                 dal = GenericDAL()
@@ -496,7 +756,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.delete("/dashboard/tabs/{id}/widgets/{widget_id}", tags=["/dashboard/tabs/widgets"])
+        @self.app.delete("/dashboard/tabs/{id}/widgets/{widget_id}", tags=["dashboard/tabs/widgets"])
         async def delete_widget(id: str, widget_id: str):
             try:
                 dal = GenericDAL()
@@ -523,7 +783,7 @@ class FastAPIServer:
         date = (datetime.datetime, Field(default=None, description="The timestamp to filter by"))
 
         AggregateParam = create_model(f"{model_class.__name__}Aggregate", aggregate=aggregate, group_by=group, time_from=date, time_to=date, **query)
-        @self.app.get("/dashboard/widgets/" + path, tags=["/dashboard"])
+        @self.app.get("/dashboard/widgets/" + path, tags=["dashboard"])
         async def get_bucket(kwargs: Annotated[AggregateParam, Query()]):
             try:
                 time = kwargs.aggregate
@@ -554,8 +814,7 @@ class FastAPIServer:
                 raise HTTPException(status_code=500, detail=str(e))
 
     def start(self, host="0.0.0.0", port=5020):
-        uvicorn.run(self.app, host=host, port=port, root_path="/front-api")
-
+        uvicorn.run(self.app, host=host, port=port, root_path="/front-api", ws_ping_interval=30, ws_ping_timeout=30)
 
 class ThreadedFastAPIServer(BaseApplication):
     def __init__(self, event_grabber, threads=1, workers=2):
@@ -568,7 +827,11 @@ class ThreadedFastAPIServer(BaseApplication):
             "preload_app": True,
             "accesslog": "-",
             "errorlog": "-",
-            "loglevel": "info"
+            "loglevel": "info",
+            "worker_options": {
+                "ws_ping_interval": 30,
+                "ws_ping_timeout": 30
+            }
         }
         super().__init__()
 
@@ -582,9 +845,8 @@ class ThreadedFastAPIServer(BaseApplication):
     
     def start(self, host="0.0.0.0", port=5020):
         self.options["bind"] = f"{host}:{port}"
-        self.load_config()
-
         if "root_path" not in self.options:
             self.options["root_path"] = "/front-api"
 
+        self.load_config()
         self.run()

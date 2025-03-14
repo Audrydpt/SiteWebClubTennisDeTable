@@ -23,10 +23,23 @@ deploy: build
 		systemctl restart acic-httpd; \
         fi'
 
+	# if there is front-api but without websocket add it
+	ssh root@$(SERVER) 'if grep -q "/front-api" /opt/ACIC/etc/lighttpd.conf && ! grep -q "upgrade.*enable.*front-api\\|front-api.*upgrade" /opt/ACIC/etc/lighttpd.conf; then \
+			cp /opt/ACIC/etc/lighttpd.conf /opt/ACIC/etc/lighttpd.conf.bak && \
+			sed -i "/\$HTTP\\[\"url\"\\] =~ \"\^\/front-api\/\"/,/\}/d" /opt/ACIC/etc/lighttpd.conf && \
+			echo "" >> /opt/ACIC/etc/lighttpd.conf && \
+			echo "\$$HTTP[\"url\"] =~ \"^/front-api/\" {" >> /opt/ACIC/etc/lighttpd.conf && \
+			echo "	proxy.header = ( \"map-urlpath\" => ( \"/front-api\" => \"\" ), \"upgrade\" => \"enable\", \"connect\" => \"enable\" )" >> /opt/ACIC/etc/lighttpd.conf && \
+			echo "	proxy.server = ( \"\" => ( ( \"host\" => \"127.0.0.1\", \"port\" => 5020 ) ) )" >> /opt/ACIC/etc/lighttpd.conf && \
+			echo "}" >> /opt/ACIC/etc/lighttpd.conf && \
+			systemctl restart acic-httpd; \
+	fi'
+
+	# if there is no front-api at all, add it
 	ssh root@$(SERVER) 'if ! grep -q "/front-api" /opt/ACIC/etc/lighttpd.conf; then \
 		echo "" >> /opt/ACIC/etc/lighttpd.conf && \
 		echo "\$$HTTP[\"url\"] =~ \"^/front-api/\" {" >> /opt/ACIC/etc/lighttpd.conf && \
-		echo "	proxy.header = ( \"map-urlpath\" => ( \"/front-api\" => \"\" ) )" >> /opt/ACIC/etc/lighttpd.conf && \
+		echo "	proxy.header = ( \"map-urlpath\" => ( \"/front-api\" => \"\" ), \"upgrade\" => \"enable\", \"connect\" => \"enable\" )" >> /opt/ACIC/etc/lighttpd.conf && \
 		echo "	proxy.server = ( \"\" => ( ( \"host\" => \"127.0.0.1\", \"port\" => 5020 ) ) )" >> /opt/ACIC/etc/lighttpd.conf && \
 		echo "}" >> /opt/ACIC/etc/lighttpd.conf && \
 		systemctl restart acic-httpd; \
