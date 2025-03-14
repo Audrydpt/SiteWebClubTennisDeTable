@@ -31,12 +31,11 @@ class CameraClient:
     async def __aexit__(self, exc_type, exc, tb):
         if self.writer:
             self.writer.close()
-            await self.writer.wait_closed()
+            await asyncio.wait_for(self.writer.wait_closed(), timeout=5.0)
     
     async def _send_request(self, xml_content: str):
         content_length = len(xml_content)
         http_request = (
-            #f"POST / HTTP/1.1\r\n"
             f"Accept: application/json\r\n"
             f"Content-Length: {content_length}\r\n"
             f"Content-Type: application/xml\r\n"
@@ -44,9 +43,12 @@ class CameraClient:
             f"{xml_content}"
         )
         try:
-            self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
+            self.reader, self.writer = await asyncio.wait_for(
+                asyncio.open_connection(self.host, self.port),
+                timeout=5.0
+            )
             self.writer.write(http_request.encode("utf-8"))
-            await self.writer.drain()
+            await asyncio.wait_for(self.writer.drain(), timeout=5.0)
 
             headers = {}
             while True:
@@ -56,7 +58,8 @@ class CameraClient:
                 try:
                     key, value = line.decode("utf-8").strip().split(": ", 1)
                     headers[key] = value
-                except ValueError:
+                except ValueError as e:
+                    logger.error(f"Header invalide: {line} | Exception: {e}")
                     continue
 
             logger.info(f"Headers: {headers}")
@@ -69,16 +72,21 @@ class CameraClient:
                 body = b""
 
             mime = headers.get("Content-Type", "").lower()
-            if "application/json" in mime:
-                text = body.decode("utf-8")
-                logger.info(text)
-                return json.loads(text)
-            elif "application/xml" in mime:
-                text = body.decode("utf-8")
-                logger.info(text)
-                return ET.fromstring(text)
-            else:
-                return body
+            try:
+                if "application/json" in mime:
+                    text = body.decode("utf-8")
+                    logger.info(text)
+                    return json.loads(text)
+                elif "application/xml" in mime:
+                    text = body.decode("utf-8")
+                    logger.info(text)
+                    return ET.fromstring(text)
+                else:
+                    return body
+            except Exception as e:
+                logger.error(f"Erreur lors du traitement de la réponse (mimetype: {mime}): {e}")
+                raise e
+            
         except Exception as e:
             logger.error(f"Erreur lors de la requête: {e}")
             logger.error(traceback.format_exc())
@@ -86,7 +94,7 @@ class CameraClient:
         finally:
             if self.writer:
                 self.writer.close()
-                await self.writer.wait_closed()
+                await asyncio.wait_for(self.writer.wait_closed(), timeout=5.0)
 
     async def _stream_request(self, xml_content: str) -> AsyncGenerator:
         content_length = len(xml_content)
@@ -98,9 +106,12 @@ class CameraClient:
             f"{xml_content}"
         )
         try:
-            self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
+            self.reader, self.writer = await asyncio.wait_for(
+                asyncio.open_connection(self.host, self.port),
+                timeout=5.0
+            )
             self.writer.write(http_request.encode("utf-8"))
-            await self.writer.drain()
+            await asyncio.wait_for(self.writer.drain(), timeout=5.0)
 
             headers = {}
             while True:
@@ -110,7 +121,8 @@ class CameraClient:
                 try:
                     key, value = line.decode("utf-8").strip().split(": ", 1)
                     headers[key] = value
-                except ValueError:
+                except ValueError as e:
+                    logger.error(f"Header invalide: {line} | Exception: {e}")
                     continue
 
             logger.info(f"Headers: {headers}")
@@ -123,16 +135,20 @@ class CameraClient:
                 body = b""
 
             mime = headers.get("Content-Type", "").lower()
-            if "application/json" in mime:
-                text = body.decode("utf-8")
-                logger.info(text)
-                yield json.loads(text)
-            elif "application/xml" in mime:
-                text = body.decode("utf-8")
-                logger.info(text)
-                yield ET.fromstring(text)
-            else:
-                yield body
+            try:
+                if "application/json" in mime:
+                    text = body.decode("utf-8")
+                    logger.info(text)
+                    yield json.loads(text)
+                elif "application/xml" in mime:
+                    text = body.decode("utf-8")
+                    logger.info(text)
+                    yield ET.fromstring(text)
+                else:
+                    yield body
+            except Exception as e:
+                logger.error(f"Erreur lors du traitement de la réponse (mimetype: {mime}): {e}")
+                raise e
         except Exception as e:
             logger.error(f"Erreur lors de la requête: {e}")
             logger.error(traceback.format_exc())
@@ -140,7 +156,7 @@ class CameraClient:
         finally:
             if self.writer:
                 self.writer.close()
-                await self.writer.wait_closed()
+                await asyncio.wait_for(self.writer.wait_closed(), timeout=5.0)
   
     async def get_system_info(self) -> Optional[Dict[str, str]]:
         xml = """<?xml version="1.0" encoding="UTF-8"?><methodcall><requestid>0</requestid><methodname>systeminfo</methodname></methodcall>"""
@@ -201,6 +217,7 @@ class CameraClient:
         codec = None
         time_frame = None
         codec_format = None
+        guess_codec = None
         pts_counter = 0
 
         async for data in response:
@@ -216,7 +233,11 @@ class CameraClient:
                     if codec is None:
                         container = av.open(io.BytesIO(data), mode='r')
                         video_stream = container.streams.video[0]
-                        codec = av.CodecContext.create(video_stream.codec_context.codec.name, 'r')
+                        guess_codec = video_stream.codec_context.codec.name
+                        if guess_codec != codec_format:
+                            logger.error(f"Codec détecté ({guess_codec}) différent du codec attendu ({codec_format})")
+                        
+                        codec = av.CodecContext.create(guess_codec, 'r')
                         pts_counter = 0
 
                     packet = av.Packet(data)
@@ -229,7 +250,8 @@ class CameraClient:
                         yield img, time_frame
 
                 except Exception as e:
-                    logger.error(f"Erreur lors du décodage: {e}")
+                    logger.error(f"Erreur lors du décodage du paquet vidéo {codec_format} / {guess_codec}: {e}")
+                    logger.error(traceback.format_exc())
                     codec = None
                     continue
 
