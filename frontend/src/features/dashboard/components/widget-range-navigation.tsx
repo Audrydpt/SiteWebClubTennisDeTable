@@ -16,14 +16,16 @@ export default function WidgetRangeNavigator({
   widget,
   updateWidgetData,
 }: WidgetRangeNavigatorProps) {
-  const [currentRange, setCurrentRange] = useState();
+  const [currentRange, setCurrentRange] = useState<
+    { from: Date; to: Date } | undefined
+  >(undefined);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const queryClient = useQueryClient();
 
   if (widget.duration) {
     const to = DateTime.now().minus({ millisecond: 1 }).toJSDate();
     const from = DateTime.now()
-      .minus(AggregationTypeToObject[widget.duration])
+      .minus(AggregationTypeToObject[widget.duration!])
       .toJSDate();
     setCurrentRange({ from, to });
   }
@@ -41,31 +43,37 @@ export default function WidgetRangeNavigator({
   };
 
   const handlePrevious = () => {
-    const newTo = DateTime.fromJSDate(currentRange.from)
-      .minus(AggregationTypeToObject[widget.duration])
-      .toJSDate();
-    const newFrom = DateTime.fromJSDate(currentRange.from)
-      .minus(AggregationTypeToObject[widget.duration])
-      .toJSDate();
-    const newRange = { from: newFrom, to: newTo };
-    setCurrentRange(newRange);
-    fetchData(newRange);
+    if (currentRange) {
+      const newTo = DateTime.fromJSDate(currentRange.from)
+        .minus(AggregationTypeToObject[widget.duration!])
+        .toJSDate();
+      const newFrom = DateTime.fromJSDate(currentRange.from)
+        .minus(AggregationTypeToObject[widget.duration!])
+        .toJSDate();
+      const newRange = { from: newFrom, to: newTo };
+      setCurrentRange(newRange);
+      fetchData(newRange);
+    }
   };
 
   const handleNext = () => {
-    const newFrom = DateTime.fromJSDate(currentRange.to)
-      .plus({ millisecond: 1 })
-      .toJSDate();
-    const newTo = DateTime.fromJSDate(currentRange.to)
-      .plus(AggregationTypeToObject[widget.duration])
-      .toJSDate();
-    const newRange = { from: newFrom, to: newTo };
-    setCurrentRange(newRange);
-    fetchData(newRange);
+    if (currentRange) {
+      const newFrom = DateTime.fromJSDate(currentRange.to)
+        .plus({ millisecond: 1 })
+        .toJSDate();
+      const newTo = DateTime.fromJSDate(currentRange.to)
+        .plus(AggregationTypeToObject[widget.duration!])
+        .toJSDate();
+      const newRange = { from: newFrom, to: newTo };
+      setCurrentRange(newRange);
+      fetchData(newRange);
+    }
   };
 
   useEffect(() => {
-    setCurrentRange(widget.range);
+    if (widget.range && widget.range.from && widget.range.to) {
+      setCurrentRange(widget.range as { from: Date; to: Date });
+    }
   }, [widget.range]);
 
   return (

@@ -27,6 +27,13 @@ function Settings() {
           <RetentionV2 />
         </div>
       </section>
+
+      <section className="mb-6">
+        <Header title="Retention Settings V2" level="h2" />
+        <div className="grid grid-cols-1 gap-4">
+          <RetentionV2 />
+        </div>
+      </section>
     </div>
   );
 }

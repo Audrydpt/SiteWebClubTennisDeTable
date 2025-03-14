@@ -97,14 +97,14 @@ export default function QuickExport({
     let filename = `${storedWidget.table}_export_${new Date().toISOString().split('T')[0]}`;
 
     if (format === 'JPEG') {
-      filename = `${chartContent.props?.title}`;
+      filename = chartContent?.props?.title || filename;
     }
 
     setSelectedFormat(format);
     setLoading(true);
 
     if (format === 'JPEG') {
-      const chartRef = getChartRef();
+      const chartRef = getChartRef ? getChartRef() : null;
       if (chartRef) {
         exportData(data, format, filename, setLoading, chartRef);
       } else {
