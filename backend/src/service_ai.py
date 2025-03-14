@@ -323,7 +323,9 @@ class ServiceAI:
           }
           logger.info(f"Sending request: {req}")
           await self.ws[model].send_json(req)
-          await self.ws[model].send_bytes(raw.tobytes())
+          await self.ws[model].send_bytes(raw[0].tobytes())
+          await self.ws[model].send_bytes(raw[1].tobytes())
+          await self.ws[model].send_bytes(raw[2].tobytes())
         elif jpeg is not None:
           req = {
               "image": {
