@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/popover.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { FormMessage } from '@/components/ui/form.tsx';
+import SearchInput from '@/components/search-input';
 
 interface SourcesProps {
   useScrollArea?: boolean;
@@ -27,11 +28,12 @@ interface SourcesProps {
 }
 
 export default function Sources({
-                                  useScrollArea = false,
-                                  onSelectedCamerasChange,
-                                }: SourcesProps) {
+  useScrollArea = false,
+  onSelectedCamerasChange,
+}: SourcesProps) {
   const { sessionId = '' } = useAuth();
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   // Add the form context
   const formContext = useFormContext();
@@ -45,6 +47,11 @@ export default function Sources({
     snapshots,
     snapshotLoadingStates,
   } = useSources(sessionId);
+
+  // Filter cameras based on search term
+  const filteredCameras = cameras.filter((camera) =>
+    camera.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   // Update both local state and form context
   const updateSelectedCameras = (newCameras: string[]) => {
@@ -60,7 +67,7 @@ export default function Sources({
   };
 
   const toggleAllCameras = (checked: boolean) => {
-    const newSelected = checked ? cameras.map((cam) => cam.id) : [];
+    const newSelected = checked ? filteredCameras.map((cam) => cam.id) : [];
     updateSelectedCameras(newSelected);
   };
 
@@ -109,79 +116,95 @@ export default function Sources({
 
   const content = (
     <div className="space-y-4">
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="select-all"
-          checked={
-            selectedCameras.length === cameras.length && cameras.length > 0
-          }
-          onCheckedChange={toggleAllCameras}
-        />
-        <Label htmlFor="select-all" className="text-sm font-medium">
-          Sélectionner tout
-        </Label>
-      </div>
+      <SearchInput
+        value={searchTerm}
+        onChange={setSearchTerm}
+        placeholder="Rechercher une caméra..."
+        className="w-full mb-2"
+      />
+
+      {filteredCameras.length > 0 && (
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="select-all"
+            checked={
+              selectedCameras.length >= filteredCameras.length &&
+              filteredCameras.length > 0
+            }
+            onCheckedChange={toggleAllCameras}
+          />
+          <Label htmlFor="select-all" className="text-sm font-medium">
+            Sélectionner tout
+          </Label>
+        </div>
+      )}
       <div className="space-y-2">
         {isLoading
           ? Array(4)
             .fill(0)
             .map((_, index) => (
-              <div
-                key={`loading-skeleton-${index}`}
-                className="flex items-center space-x-2"
-              >
-                <Skeleton className="h-4 w-4" />
-                <Skeleton className="h-5 w-32" />
-              </div>
-            ))
-          : cameras.map((camera) => (
-            <div
-              key={camera.id}
-              className="flex items-center justify-between"
-            >
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id={`camera-${camera.id}`}
-                  checked={selectedCameras.includes(camera.id)}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      updateSelectedCameras([...selectedCameras, camera.id]);
-                    } else {
-                      updateSelectedCameras(
-                        selectedCameras.filter((id) => id !== camera.id)
-                      );
-                    }
-                  }}
-                />
-                <Label
-                  htmlFor={`camera-${camera.id}`}
-                  className="text-sm font-medium"
+                <div
+                  key={`loading-skeleton-${index}`}
+                  className="flex items-center space-x-2"
                 >
-                  {camera.name}
-                </Label>
-              </div>
-
-              <Popover
-                open={openPopoverId === camera.id}
-                onOpenChange={(open) =>
-                  handlePopoverOpenChange(open, camera.id)
-                }
+                  <Skeleton className="h-4 w-4" />
+                  <Skeleton className="h-5 w-32" />
+                </div>
+            ))
+          : filteredCameras.map((camera) => (
+              <div
+                key={camera.id}
+                className="flex items-center justify-between"
               >
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="p-1 hover:bg-muted rounded-sm relative"
-                    aria-label="Afficher l'aperçu"
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`camera-${camera.id}`}
+                    checked={selectedCameras.includes(camera.id)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        updateSelectedCameras([...selectedCameras, camera.id]);
+                      } else {
+                        updateSelectedCameras(
+                          selectedCameras.filter((id) => id !== camera.id)
+                        );
+                      }
+                    }}
+                  />
+                  <Label
+                    htmlFor={`camera-${camera.id}`}
+                    className="text-sm font-medium"
                   >
-                    {renderCameraIcon(camera.id)}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  {renderSnapshotContent(camera.id, camera.name)}
-                </PopoverContent>
-              </Popover>
-            </div>
+                    {camera.name}
+                  </Label>
+                </div>
+
+                <Popover
+                  open={openPopoverId === camera.id}
+                  onOpenChange={(open) =>
+                    handlePopoverOpenChange(open, camera.id)
+                  }
+                >
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="p-1 hover:bg-muted rounded-sm relative"
+                      aria-label="Afficher l'aperçu"
+                    >
+                      {renderCameraIcon(camera.id)}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    {renderSnapshotContent(camera.id, camera.name)}
+                  </PopoverContent>
+                </Popover>
+              </div>
           ))}
+
+        {!isLoading && filteredCameras.length === 0 && (
+          <div className="text-sm text-muted-foreground py-2">
+            Aucunes caméras trouvées
+          </div>
+        )}
       </div>
 
       {sourcesError && (

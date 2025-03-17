@@ -4,17 +4,13 @@ import { ForensicResult } from '../types';
 // Number of maximum results to keep
 const MAX_RESULTS = 50;
 
-/**
- * Class to manage the best forensic results using a min heap
- * for efficient replacement of lowest scoring items
- */
 class ForensicResultsHeap {
   private minHeap: MinHeap<ForensicResult>;
 
   private resultMap: Map<string, boolean>;
 
   constructor() {
-    // Use MinHeap instead - so the lowest scoring result is always at the root
+    // the lowest scoring result is always at the root
     this.minHeap = new MinHeap<ForensicResult>((result) => result.score);
     this.resultMap = new Map<string, boolean>();
   }
