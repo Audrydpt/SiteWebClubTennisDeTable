@@ -1,9 +1,6 @@
 import socket
 import argparse
-import signal
-import sys
 
-from task_manager import SharedTaskManager
 from database import GenericDAL
 from event_grabber import EventGrabber
 from api import ThreadedFastAPIServer, FastAPIServer
@@ -51,12 +48,10 @@ if __name__ == "__main__":
                     grabber.add_grabber(server_ip, 8081)
     grabber.start()
 
-    SharedTaskManager.initialize()
-
     # init web server
     print("Init web server")
-    server = FastAPIServer(grabber)
-    #server = ThreadedFastAPIServer(grabber, workers=4)
+    #server = FastAPIServer(grabber)
+    server = ThreadedFastAPIServer(grabber, workers=4)
     server.start(port=args.port)
     # wait for the server to stop
 

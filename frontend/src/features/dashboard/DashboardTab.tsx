@@ -1,4 +1,4 @@
-import { JSX, useEffect } from 'react';
+import { JSX, useEffect, useRef, useState } from 'react';
 import { ReactSortable } from 'react-sortablejs';
 
 import LoadingSpinner from '@/components/loading';
@@ -46,10 +46,24 @@ export default function DashboardTab({
   const { data, isLoading, isError } = query;
   const { user } = useAuth();
   const isOperator = user?.privileges === 'Operator';
+  const chartRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
+  const [refsUpdated, setRefsUpdated] = useState(false);
 
   useEffect(() => {
     onAddWidget(() => add);
   }, [onAddWidget, add]);
+
+  // Force un re-render après que les refs sont mises à jour
+  // eslint-disable-next-line consistent-return
+  useEffect(() => {
+    if (data && !refsUpdated) {
+      // Donner un peu de temps au DOM pour se mettre à jour
+      const timer = setTimeout(() => {
+        setRefsUpdated(true);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [data, refsUpdated]);
 
   const handleSort = (newWidgets: ChartTiles[]) => {
     if (data) {
@@ -57,7 +71,6 @@ export default function DashboardTab({
         .map((widget: ChartTiles, index: number) => {
           const storedWidget = data.find((stored) => stored.id === widget.id);
           if (!storedWidget) return null;
-
           return {
             ...storedWidget,
             order: index,
@@ -96,15 +109,24 @@ export default function DashboardTab({
           key={item.id}
           data-id={item.id}
           className={`${widthClassMap[item.widget.size]} ${heightClassMap[item.widget.size]} group relative`}
+          ref={(el) => {
+            if (el) {
+              chartRefsMap.current.set(item.id, el);
+            } else {
+              chartRefsMap.current.delete(item.id);
+            }
+          }}
         >
           {item.content}
           <WidgetActions
             isOperator={isOperator}
             item={item}
+            chartRef={chartRefsMap.current.get(item.id)}
             edit={edit}
             remove={remove}
             clone={clone}
           />
+          {/* <WidgetRangeNavigation /> */}
         </div>
       ))}
     </ReactSortable>

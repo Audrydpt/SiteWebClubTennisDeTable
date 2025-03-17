@@ -24,8 +24,9 @@ def safe_float(val):
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-logger.addHandler(logging.StreamHandler())
-logger.addHandler(logging.FileHandler(f"/tmp/{__name__}.log"))
+file_handler = logging.FileHandler(f"/tmp/{__name__}.log")
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+logger.addHandler(file_handler)
 
 class EventGrabber(threading.Thread):
     def __init__(self):

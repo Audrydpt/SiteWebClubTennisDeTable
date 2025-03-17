@@ -21,15 +21,13 @@ from sqlalchemy.inspection import inspect
 from fastapi.staticfiles import StaticFiles
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import Response, BackgroundTasks, WebSocket, WebSocketDisconnect, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import Response, WebSocket, WebSocketDisconnect, HTTPException
 from starlette.requests import Request
 
 from gunicorn.app.base import BaseApplication
 
 
-from forensic import VehicleReplayJob
-from task_manager import CounterJob, JobStatus, SharedQueueObserver, SharedTaskManager, TaskManagerServer, WebSocketObserver
+from task_manager import JobStatus, TaskManager
 
 from typing import Annotated, Literal, Optional, Type, Union, List, Dict, Any
 from enum import Enum
@@ -45,8 +43,9 @@ from vms import CameraClient
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-logger.addHandler(logging.StreamHandler())
-logger.addHandler(logging.FileHandler(f"/tmp/{__name__}.log"))
+file_handler = logging.FileHandler(f"/tmp/{__name__}.log")
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+logger.addHandler(file_handler)
 
 class ModelName(str, Enum):
     minute = "1 minute"
@@ -66,7 +65,6 @@ class ModelName(str, Enum):
 # Please follow: https://www.belgif.be/specification/rest/api-guide/#resource-uri
 class FastAPIServer:
     def __init__(self, event_grabber:EventGrabber):
-        self.task_manager = SharedTaskManager.get_manager()
         self.event_grabber = event_grabber
         self.app = FastAPI(
             docs_url=None, redoc_url=None,
@@ -368,127 +366,166 @@ class FastAPIServer:
                 
         @self.app.get("/forensics", tags=["forensics"])
         async def get_tasks():
-            ret = {}
-            for job in self.task_manager.get_jobs():
-                status = self.task_manager.get_job_status(job)
-                ret[job] = {
-                    "status": status
-                }
-                if status == JobStatus.FAILED:
-                    ret[job]["error"], ret[job]["stacktrace"] = self.task_manager.get_job_error(job)
-
-                
-            return ret
+            try:
+                tasks = {}
+                for job_id in await TaskManager.get_jobs():
+                    status = TaskManager.get_job_status(job_id)
+                    task_info = {
+                        "status": status
+                    }
+                    
+                    if status == JobStatus.FAILURE:
+                        error, stacktrace = await TaskManager.get_job_error(job_id)
+                        task_info["error"] = error
+                        task_info["stacktrace"] = stacktrace
+                        
+                    tasks[job_id] = task_info
+                    
+                return {"tasks": tasks}
+            except Exception as e:
+                logger.error(f"Erreur lors de la récupération des tâches: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=traceback.format_exc())
 
         @self.app.post("/forensics", tags=["forensics"])
         async def start_task(request: Request, data: Union[ModelVehicle, ModelPerson]):
-
-            job = None
-            if data.type == "vehicle":
-                job = VehicleReplayJob(data.model_dump())
-            elif data.type == "person": # Placeholder pour le traitement des personnes
-                job = CounterJob(
-                    duration=10,
-                    target=data.type
-                )
-            else:
-                raise HTTPException(status_code=400, detail="Invalid type")
+            try:
+                job_params = data.model_dump()
                 
-            # Soumettre le job au gestionnaire de tâches
-            job_id = self.task_manager.submit_job(job)
+                # Soumettre la tâche appropriée selon le type
+                if data.type == "vehicle":
+                    job_id = TaskManager.submit_job("VehicleReplayJob", job_params)
+                elif data.type == "person":
+                    raise HTTPException(status_code=400, detail="Person not supported yet")
+                else:
+                    raise HTTPException(status_code=400, detail="Type non supporté")
+                    
+                return {"guid": job_id}
             
-            return {"guid": job_id}
+            except ValueError as e:
+                logger.error(f"Erreur de validation: {e}")
+                raise HTTPException(status_code=400, detail=str(e))
+            except Exception as e:
+                logger.error(f"Erreur lors du démarrage de la tâche: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
         
         @self.app.websocket("/forensics/{guid}")
         async def task_updates(websocket: WebSocket, guid: str):
             try:
+                # Accepter la connexion WebSocket
+                logger.info(f"Client connecté pour la tâche {guid}")
                 await websocket.accept()
                 
-                task_manager = SharedTaskManager.get_manager()
-                observer = SharedQueueObserver()
-                start_time = time.time()
-                max_duration = 120
-                
-                if not task_manager.add_observer(guid, observer):
-                    await websocket.close(code=1000, reason="Job not found")
+                # Valider que la tâche existe
+                status = TaskManager.get_job_status(guid)
+                if not status:
+                    await websocket.close(code=1000, reason="Tâche introuvable")
                     return
-
-                while True:
-                    # Vérification du timeout
-                    current_time = time.time()
-                    if current_time - start_time > max_duration:
-                        logger.warning(f"Job {guid} a dépassé la durée maximale de 5 minutes")
+               
+                # Utiliser la fonction de streaming du TaskManager
+                logger.info(f"Démarrage du streaming pour la tâche {guid}")
+                try:
+                    await TaskManager.stream_job_results(websocket, guid, False)
+                    logger.info(f"Streaming terminé pour la tâche {guid}")
+                except WebSocketDisconnect:
+                    logger.info(f"Client déconnecté pour la tâche {guid}")
+                except asyncio.CancelledError:
+                    logger.info(f"Streaming annulé pour la tâche {guid}")
+                except Exception as e:
+                    logger.error(f"Erreur pendant le streaming de la tâche {guid}: {e}")
+                    logger.error(traceback.format_exc())
+                    if websocket.client_state != WebSocketState.DISCONNECTED:
                         await websocket.send_json({
-                            "type": "timeout",
-                            "message": "Le WS a dépassé la durée maximale de 5 minutes"
+                            "type": "error",
+                            "message": f"Erreur de streaming: {str(e)}"
                         })
-                        await websocket.close(code=1006, reason="Timeout exceeded")
-                        return
-                    
-                    # Attente de résultats avec un court timeout
-                    result = await observer.get(timeout=1.0)
-                    if result is None:
-                        status = task_manager.get_job_status(guid)
-                        if status in [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED]:
-                            await websocket.close(code=1000, reason="Job finished")
-                            return
+                logger.info(f"Fin du streaming pour la tâche {guid}")
 
-                        await asyncio.sleep(0.1)
-                        continue
-                    
-                    if result.metadata is not None:
-                        logger.info(f"Sending result... {result.metadata}")
-                        await websocket.send_json(result.metadata)
-                    
-                    if result.frame is not None:
-                        await websocket.send_bytes(result.frame)
-
-                    if result.final is True:
-                        logger.info("Final result")
-                        await websocket.close(code=1000, reason="Job finished")
-                        return
-            
             except WebSocketDisconnect:
-                logger.error("Client disconnected")
-
+                logger.info(f"Client déconnecté pour la tâche {guid}")
+            
             except Exception as e:
-                logger.error("Error", e)
+                logger.error(f"Erreur WebSocket pour la tâche {guid}: {e}")
                 logger.error(traceback.format_exc())
-                await websocket.close(code=1006, reason="Job errored")
-
-            finally:
-                if websocket.client_state != WebSocketState.DISCONNECTED:
-                    logger.info("Closing websocket")
-                    await websocket.close(code=1000, reason="Job finished")
                 
-                task_manager.remove_observer(guid, observer)
+                # Tenter d'envoyer un message d'erreur avant de fermer
+                try:
+                    if websocket.client_state != WebSocketState.DISCONNECTED:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": f"Erreur: {str(e)}"
+                        })
+                        await websocket.close(code=1011, reason="Erreur serveur")
+                except:
+                    pass
+            
+            finally:
+                logger.info(f"Client déconnecté pour la tâche {guid}")
+                # S'assurer que la connexion est fermée
+                if websocket.client_state != WebSocketState.DISCONNECTED:
+                    await websocket.close(code=1000, reason="Streaming terminé")
 
         @self.app.delete("/forensics", tags=["forensics"])
         async def stop_all_task():
-            self.task_manager.stop()
-            self.task_manager.start()
-
-            return {"status": "ok"}
+            try:
+                cancelled = []
+                for job_id in await TaskManager.get_jobs():
+                    if TaskManager.get_job_status(job_id) in [JobStatus.PENDING, JobStatus.RECEIVED, JobStatus.STARTED, JobStatus.RETRY]:
+                        await TaskManager.cancel_job(job_id)
+                        cancelled.append(job_id)
+                        
+                return {"status": "ok", "cancelled_tasks": cancelled}
+            
+            except Exception as e:
+                logger.error(f"Erreur lors de l'arrêt de toutes les tâches: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
         
         @self.app.delete("/forensics/{guid}", tags=["forensics"])
         async def stop_task(guid: str):
-            task_manager = SharedTaskManager.get_manager()
-            task_manager.cancel_job(guid)
-            return {"guid": guid}
+            try:
+                status = TaskManager.get_job_status(guid)
+                if not status:
+                    raise HTTPException(status_code=404, detail="Tâche introuvable")
+                    
+                if status in [JobStatus.PENDING, JobStatus.RECEIVED, JobStatus.STARTED, JobStatus.RETRY]:
+                    success = await TaskManager.cancel_job(guid)
+                    if success:
+                        return {"guid": guid, "status": "cancelled"}
+                    else:
+                        raise HTTPException(status_code=500, detail="Échec de l'annulation")
+                else:
+                    return {"guid": guid, "status": status}
+            
+            except Exception as e:
+                logger.error(f"Erreur lors de l'arrêt de la tâche {guid}: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
         
         @self.app.get("/forensics/{guid}", tags=["forensics"])
         async def get_task(guid: str):
-            task_manager = SharedTaskManager.get_manager()
-            job = task_manager.get_job(guid)
-            if job is None:
-                raise HTTPException(status_code=404, detail="Job not found")
+            try:
+                status = TaskManager.get_job_status(guid)
+                if not status:
+                    raise HTTPException(status_code=404, detail="Tâche introuvable")
+                    
+                results = await TaskManager.get_job_results(guid)
+                
+                # Ne pas inclure les données binaires dans la réponse
+                for result in results:
+                    result.frame = None
+                        
+                return {
+                    "guid": guid,
+                    "status": status,
+                    "results": results
+                }
             
-            results = []
-            for result in job.results.get_results():
-                results.append({
-                    "metadata": result.metadata,
-                })
-            return results
+            except Exception as e:
+                logger.error(f"Erreur lors de la récupération des résultats de la tâche {guid}: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=traceback.format_exc())
         
     def __create_vms(self):
         @self.app.get("/vms/{ip}/cameras", tags=["vms"])
@@ -496,8 +533,8 @@ class FastAPIServer:
             try:
                 async with CameraClient(ip, 7778) as client:
                     return await client.get_system_info()
-            except:
-                raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=traceback.format_exc())
 
         @self.app.get("/vms/{ip}/cameras/{guuid}/live", tags=["vms"])
         async def get_live(ip: str, guuid: str):
@@ -509,7 +546,7 @@ class FastAPIServer:
                     return Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
 
             except Exception as e:
-                raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
+                raise HTTPException(status_code=500, detail=traceback.format_exc())
 
         @self.app.get("/vms/{ip}/cameras/{guuid}/replay", tags=["vms"])
         async def get_replay(ip: str, guuid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0):
@@ -520,7 +557,7 @@ class FastAPIServer:
                     _, bytes = cv2.imencode('.jpg', img)
                     return Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
             except Exception as e:
-                raise HTTPException(status_code=500, detail="Impossible to connect to VMS")
+                raise HTTPException(status_code=500, detail=traceback.format_exc())
 
     def __create_tabs(self):
         Model = create_model('TabModel',
@@ -544,7 +581,7 @@ class FastAPIServer:
                 return ret
 
             except ValueError as e:
-                raise HTTPException(status_code=500, detail=str(e))
+                raise HTTPException(status_code=500, detail=traceback.format_exc())
 
         @self.app.post("/dashboard/tabs", tags=["dashboard/tabs"])
         async def add_tab(data: Model):
@@ -555,7 +592,7 @@ class FastAPIServer:
                 tab.id = guid
                 return tab
             except ValueError as e:
-                raise HTTPException(status_code=500, detail=str(e))
+                raise HTTPException(status_code=500, detail=traceback.format_exc())
 
         @self.app.put("/dashboard/tabs/{id}", tags=["dashboard/tabs"])
         async def update_tab(id: str, data: Model):
@@ -570,7 +607,7 @@ class FastAPIServer:
 
                 return await dal.async_update(obj[0])
             except ValueError as e:
-                raise HTTPException(status_code=500, detail=str(e))
+                raise HTTPException(status_code=500, detail=traceback.format_exc())
 
         @self.app.delete("/dashboard/tabs/{id}", tags=["dashboard/tabs"])
         async def delete_tab(id: str):
@@ -581,7 +618,7 @@ class FastAPIServer:
                     raise HTTPException(status_code=404, detail="Tab not found")
                 return await dal.async_remove(obj[0])
             except ValueError as e:
-                raise HTTPException(status_code=500, detail=str(e))
+                raise HTTPException(status_code=500, detail=traceback.format_exc())
 
     def __create_widgets(self):
         fields = {}
@@ -604,7 +641,7 @@ class FastAPIServer:
                 return await dal.async_get(Widget, dashboard_id=id, _order='order')
 
             except ValueError as e:
-                raise HTTPException(status_code=500, detail=str(e))
+                raise HTTPException(status_code=500, detail=traceback.format_exc())
 
         @self.app.post("/dashboard/tabs/{id}/widgets", tags=["dashboard/tabs/widgets"])
         async def add_widget(id: str, data: Model):
