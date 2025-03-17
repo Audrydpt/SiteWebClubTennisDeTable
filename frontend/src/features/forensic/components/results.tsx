@@ -1,5 +1,5 @@
 import { Search, SortAsc, SortDesc } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { ForensicResult } from '../lib/types';
@@ -30,6 +30,19 @@ const generateRandomResult = (): ForensicResult => ({
   ).toISOString(), // Random date within the last 24h
   score: Math.random(), // Random score between 0 and 1
   cameraId: `Camera-${Math.floor(Math.random() * 10)}`,
+  attributes: {
+    color: {
+      red: Math.random(),
+      green: Math.random(),
+      blue: Math.random(),
+    },
+    type: {
+      person: Math.random(),
+      car: Math.random(),
+      truck: Math.random(),
+    },
+  },
+  progress: Math.floor(Math.random() * 100),
 });
 
 // Helper function to avoid nested ternaries
@@ -66,6 +79,7 @@ export default function Results({
   const [testResults, setTestResults] = useState<ForensicResult[]>([]);
   const [sortType, setSortType] = useState<SortType>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [expandedImage, setExpandedImage] = useState<string | null>(null);
 
   // Generate stable skeleton IDs
   const skeletonIds = useMemo(
@@ -119,6 +133,55 @@ export default function Results({
     setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
   };
 
+  // Render expanded image modal
+  const renderExpandedImageModal = () => {
+    if (!expandedImage) return null;
+
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+        onClick={() => setExpandedImage(null)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') setExpandedImage(null);
+        }}
+        role="presentation"
+        tabIndex={-1}
+      >
+        <div className="relative max-w-[90%] max-h-[90%]">
+          <button
+            className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white rounded-full p-2"
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpandedImage(null);
+            }}
+            aria-label="Fermer"
+            type="button"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+          <img
+            src={expandedImage}
+            alt="Résultat agrandi"
+            className="max-w-full max-h-[85vh] object-contain"
+          />
+        </div>
+      </div>
+    );
+  };
+
   // Results are already sorted by the heap in useSearch, so we can use them directly
   const renderSearchResults = () => {
     if (displayResults.length > 0) {
@@ -130,7 +193,7 @@ export default function Results({
             return (
               <Popover key={result.id}>
                 <PopoverTrigger asChild>
-                  <div className="border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-card cursor-pointer">
+                  <div className="border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-card cursor-pointer relative group">
                     <div className="relative">
                       <img
                         src={result.imageData}
@@ -147,6 +210,34 @@ export default function Results({
                       >
                         {(result.score * 100).toFixed(1)}%
                       </div>
+
+                      {/* Add expand button */}
+                      <button
+                        className="absolute bottom-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedImage(result.imageData);
+                        }}
+                        aria-label="Agrandir l'image"
+                        type="button"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <polyline points="15 3 21 3 21 9" />
+                          <polyline points="9 21 3 21 3 15" />
+                          <line x1="21" y1="3" x2="14" y2="10" />
+                          <line x1="3" y1="21" x2="10" y2="14" />
+                        </svg>
+                      </button>
                     </div>
                     <div className="p-4 space-y-2">
                       <div className="flex items-center text-xs text-muted-foreground">
@@ -180,13 +271,15 @@ export default function Results({
                     <h3 className="font-medium text-sm">Métadonnées</h3>
                     <div className="grid grid-cols-2 gap-1 text-sm">
                       <div className="text-muted-foreground">Type:</div>
-                      <div>detection</div>
+                      <div>{result.type || 'detection'}</div>
 
                       <div className="text-muted-foreground">Caméra:</div>
-                      <div>{extractCameraInfo(result.cameraId).name}</div>
-
-                      <div className="text-muted-foreground">IP:</div>
-                      <div>{extractCameraInfo(result.cameraId).ip}</div>
+                      <div>
+                        {
+                          extractCameraInfo(result.camera || result.cameraId)
+                            .name
+                        }
+                      </div>
 
                       <div className="text-muted-foreground">Score:</div>
                       <div>{(result.score * 100).toFixed(1)}%</div>
@@ -202,14 +295,20 @@ export default function Results({
                           second: '2-digit',
                         })}
                       </div>
-
-                      <div className="text-muted-foreground">Source:</div>
-                      <div>{result.cameraId}</div>
                     </div>
-                    <div className="pt-2">
-                      <Button variant="outline" size="sm" className="w-full">
-                        Voir l&#39;image en plein écran
-                      </Button>
+
+                    {/* Full raw data */}
+                    <div className="mt-1">
+                      <details>
+                        <summary className="text-sm font-medium cursor-pointer">
+                          Données brutes
+                        </summary>
+                        <div className="text-xs bg-muted p-2 mt-2 rounded-md overflow-auto max-h-48">
+                          <pre className="whitespace-pre-wrap">
+                            {JSON.stringify(result, null, 2)}
+                          </pre>
+                        </div>
+                      </details>
                     </div>
                   </div>
                 </PopoverContent>
@@ -332,6 +431,8 @@ export default function Results({
       <ScrollArea className="h-[calc(100%-3rem)] pb-9">
         {renderSearchResults()}
       </ScrollArea>
+
+      {renderExpandedImageModal()}
     </>
   );
 }
