@@ -164,6 +164,14 @@ class Widget(Database):
     dashboard_id = Column(UUID(as_uuid=True), ForeignKey('dashboard.id'), nullable=True)
     dashboard = relationship("Dashboard", back_populates="widgets")
 
+class DashboardSettings(Database):
+    __table_args__ = (
+        {'info': {'check_constraints': [
+            'retentionDays >= 1 AND retentionDays <= 720'
+        ]}}
+    )
+    retentionDays = Column(Integer, default=90)
+
 class GenericDAL:
     initialized = False
     lock = threading.Lock()
@@ -332,7 +340,7 @@ class GenericDAL:
     def remove(self, obj) -> bool:
         return run_async(self.async_remove)(obj)
     
-    def clean(self, cls, days=100) -> bool:
+    def clean(self, cls, days=DashboardSettings.retentionDays) -> bool:
         return run_async(self.async_clean)(cls, days)
     
     # ----- Asynchronous API methods -----

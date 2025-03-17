@@ -1,20 +1,20 @@
+import useSidebarState from '@/hooks/use-sidebar-state';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
-import useSidebarState from '@/hooks/use-sidebar-state';
 
 import ProtectedRoute from '@/components/protected-routes';
 import NoSidebarLayout from '@/layouts/NoSidebarLayout';
 import { UserPrivileges } from '@/lib/authenticate';
 
+import Forensic from '@/features/forensic/Forensic.tsx';
+import CollapsedSidebarLayout from '@/layouts/CollapsedSidebarLayout';
 import LoadingSpinner from './components/loading';
 import OptionalSidebarLayout from './layouts/OptionalLayout';
-import CollapsedSidebarLayout from '@/layouts/CollapsedSidebarLayout';
 import { lazyLoadFeature } from './lib/i18n';
 import Error from './pages/Error';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Theme from './pages/Theme';
-import Forensic from '@/features/forensic/Forensic.tsx';
 
 const Dashboard = lazyLoadFeature(
   'dashboard',
