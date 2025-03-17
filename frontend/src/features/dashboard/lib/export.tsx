@@ -1,4 +1,7 @@
+import { JSX } from 'react';
 import { AcicAggregation, AcicEvent } from './props';
+
+import { ExportFormat } from './exportData';
 
 export type Filter = {
   column: string;
@@ -21,10 +24,12 @@ export interface StepperFormData {
   where?: Filter[];
 
   // Format: export format
-  format?: 'PDF' | 'Excel';
+  format?: ExportFormat;
 }
 export interface ExportStep {
   storedWidget: StepperFormData;
+  chartContent?: JSX.Element;
+  getChartRef?: () => HTMLDivElement | undefined;
   updateStoredWidget: (newData: Partial<StepperFormData>) => void;
   setStepValidity: (valid: boolean) => void;
   children?: React.ReactNode;

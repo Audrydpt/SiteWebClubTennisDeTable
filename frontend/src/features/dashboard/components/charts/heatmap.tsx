@@ -305,9 +305,11 @@ export default function HeatmapComponent({
   }
 
   return (
-    <Card className="w-full h-full flex flex-col justify-center items-center">
+    <Card className="w-full h-full flex flex-col justify-center">
       <CardHeader>
-        <CardTitle>{title ?? `Heatmap ${layout.toString()}`}</CardTitle>
+        <CardTitle className="text-left">
+          {title ?? `Heatmap ${layout.toString()}`}
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex-grow w-full">
         <TooltipProvider delayDuration={1}>
