@@ -771,7 +771,8 @@ class FastAPIServer:
         """Create endpoints to manage dashboard settings"""
         
         Model = create_model('SettingsModel',
-            retentionDays=(int, Field(description="Number of days to retain data", ge=1, le=3650))
+            key=(str, Field(description="Setting key")),
+            value=(str, Field(description="Setting value"))
         )
 
         @self.app.get("/dashboard/settings", tags=["dashboard/settings"])
@@ -782,29 +783,38 @@ class FastAPIServer:
                 
                 # Return the first settings object
                 result = {}
-                for column in inspect(DashboardSettings).mapper.column_attrs:
-                    if column.key not in ['id', 'timestamp']:
-                        result[column.key] = getattr(settings[0], column.key)
+                for setting in settings:
+                    result[setting.key_index] = setting.value_index
                 
                 return result
 
             except ValueError as e:
+                logger.error(f"Error retrieving dashboard settings: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.put("/dashboard/settings", tags=["dashboard/settings"])
-        async def update_settings(data: Model):
+        async def update_settings(key: str, data: Model):
+            """Update a specific setting by key"""
             try:
                 dal = GenericDAL()
                 settings = await dal.async_get(DashboardSettings)
                 
-                # Update existing settings
-                settings_obj = settings[0]
-                for field, value in data.dict().items():
-                    setattr(settings_obj, field, value)
+                setting = next((s for s in settings if s.key_index == key), None)
                 
-                return await dal.async_update(settings_obj)
+                if not setting:
+                    logger.error(f"Setting parameter '{key}' not found")
+                    raise HTTPException(
+                        status_code=404, 
+                        detail=f"Setting '{key}' not found"
+                    )
+                
+                setting.value_index = data.value
+                await dal.async_update(setting)
+            
+                return {"status": "success", "key": key, "value": data.value}
                 
             except ValueError as e:
+                logger.error(f"Error updating setting '{key}': {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
         
     def __create_endpoint(self, path: str, model_class: Type, agg_func=None):
