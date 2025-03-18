@@ -11,7 +11,12 @@ import {
 } from '@/components/ui/accordion.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Calendar } from '@/components/ui/calendar.tsx';
-import { FormField, FormItem, FormLabel } from '@/components/ui/form.tsx';
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form.tsx';
 import {
   Popover,
   PopoverContent,
@@ -137,7 +142,7 @@ function DateTimePicker({
 
 export default function Times() {
   const { formMethods } = useForensicForm();
-  const { control, watch, setValue } = formMethods;
+  const { control, watch, setValue, setError, clearErrors } = formMethods;
 
   const timerange = watch('timerange');
   const timeFrom = timerange?.time_from
@@ -168,6 +173,21 @@ export default function Times() {
 
   const hasTimeError =
     isSameDay && timeFrom && timeTo && timeFrom.getTime() > timeTo.getTime();
+
+  // Update form error state when validation changes
+  useEffect(() => {
+    if (hasTimeError) {
+      setError('timerange', {
+        type: 'manual',
+        message: "L'heure de début doit être antérieure à l'heure de fin",
+      });
+    } else {
+      clearErrors('timerange');
+    }
+  }, [hasTimeError, setError, clearErrors]);
+
+  const timerangeError = formMethods.formState.errors.timerange?.message;
+  const hasError = !!timerangeError || hasTimeError;
 
   const timeOptions = {
     hours: Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')),
@@ -246,7 +266,11 @@ export default function Times() {
 
   return (
     <AccordionItem value="time">
-      <AccordionTrigger>Plage temporelle</AccordionTrigger>
+      <AccordionTrigger
+        className={hasError ? 'text-destructive font-medium' : ''}
+      >
+        Plage temporelle
+      </AccordionTrigger>
       <AccordionContent>
         <FormField
           control={control}
@@ -282,7 +306,7 @@ export default function Times() {
                 <div
                   className={cn(
                     'text-sm',
-                    hasTimeError ? 'text-destructive' : 'text-muted-foreground'
+                    hasError ? 'text-destructive' : 'text-muted-foreground'
                   )}
                 >
                   {`Recherche du ${format(timeFrom, 'dd/MM/yyyy', { locale: fr })} à ${format(timeFrom, 'HH:mm')}`}
@@ -291,13 +315,14 @@ export default function Times() {
                     ? ` au ${format(timeTo, 'dd/MM/yyyy', { locale: fr })}`
                     : ''}{' '}
                   à {format(timeTo, 'HH:mm')}
-                  {hasTimeError && (
-                    <div className="text-destructive font-medium mt-1">
-                      L&apos;heure de début doit être antérieure à l&apos;heure
-                      de fin
-                    </div>
-                  )}
                 </div>
+              )}
+
+              {hasError && (
+                <FormMessage>
+                  {timerangeError ||
+                    "L'heure de début doit être antérieure à l'heure de fin"}
+                </FormMessage>
               )}
             </div>
           )}
