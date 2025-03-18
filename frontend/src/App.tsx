@@ -1,8 +1,8 @@
-import useSidebarState from '@/hooks/use-sidebar-state';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
 import ProtectedRoute from '@/components/protected-routes';
+import useSidebarState from '@/hooks/use-sidebar-state';
 import NoSidebarLayout from '@/layouts/NoSidebarLayout';
 import { UserPrivileges } from '@/lib/authenticate';
 
