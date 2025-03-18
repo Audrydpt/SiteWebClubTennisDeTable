@@ -772,7 +772,7 @@ class FastAPIServer:
         """Create endpoints to manage dashboard settings"""
         
         Model = create_model('SettingsModel',
-            retentionDays=(int, Field(description="Number of days to retain data", ge=1, le=720))
+            retentionDays=(int, Field(description="Number of days to retain data", ge=1, le=3650))
         )
 
         @self.app.get("/dashboard/settings", tags=["dashboard/settings"])
@@ -780,10 +780,6 @@ class FastAPIServer:
             try:
                 dal = GenericDAL()
                 settings = await dal.async_get(DashboardSettings)
-                
-                # If no settings exist yet, return default values
-                if not settings or len(settings) == 0:
-                    return {"retentionDays": 90}  # Default retention period
                 
                 # Return the first settings object
                 result = {}
@@ -801,13 +797,6 @@ class FastAPIServer:
             try:
                 dal = GenericDAL()
                 settings = await dal.async_get(DashboardSettings)
-                
-                # If no settings exist yet, create new settings
-                if not settings or len(settings) == 0:
-                    new_settings = DashboardSettings(**data.dict())
-                    guid = await dal.async_add(new_settings)
-                    new_settings.id = guid
-                    return new_settings
                 
                 # Update existing settings
                 settings_obj = settings[0]

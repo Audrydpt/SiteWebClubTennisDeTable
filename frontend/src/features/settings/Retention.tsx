@@ -15,8 +15,8 @@ import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 
 function Retention() {
-  const [retentionDays, setRetentionDays] = useState<number>(30);
-  const [inputValue, setInputValue] = useState<string>('30');
+  const [retentionDays, setRetentionDays] = useState<number>(90);
+  const [inputValue, setInputValue] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const handleSliderChange = (value: number[]) => {
@@ -43,7 +43,7 @@ function Retention() {
     setInputValue(value);
 
     // Update slider if value is within valid range
-    if (parsedValue >= 1 && parsedValue <= 730) {
+    if (parsedValue >= 1 && parsedValue <= 3650) {
       setRetentionDays(parsedValue);
     }
   };
@@ -94,8 +94,8 @@ function Retention() {
             </div>
 
             <Slider
-              defaultValue={[30]}
-              max={730}
+              defaultValue={[90]}
+              max={3650}
               min={1}
               step={1}
               value={[retentionDays]}
@@ -114,7 +114,7 @@ function Retention() {
                   inputMode="numeric"
                   pattern="[0-9]*"
                   min={1}
-                  max={730}
+                  max={3650}
                 />
               </div>
 
