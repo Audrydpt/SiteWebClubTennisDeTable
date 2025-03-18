@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 import { Eye, Loader2 } from 'lucide-react';
@@ -21,6 +21,7 @@ import {
 import { Label } from '@/components/ui/label.tsx';
 import { FormMessage } from '@/components/ui/form.tsx';
 import SearchInput from '@/components/search-input';
+import { ForensicFormValues } from '../../lib/provider/forensic-form-context';
 
 interface SourcesProps {
   useScrollArea?: boolean;
@@ -30,15 +31,18 @@ interface SourcesProps {
 export default function Sources({
   useScrollArea = false,
   onSelectedCamerasChange,
-}: SourcesProps) {
+  }: SourcesProps) {
   const { sessionId = '' } = useAuth();
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   // Add the form context
-  const formContext = useFormContext();
+  const formContext = useFormContext<ForensicFormValues>();
   const sourcesError = formContext.formState.errors.sources?.message;
   const hasError = !!sourcesError;
+
+  // Get current sources from form
+  const formSources = formContext.watch('sources');
 
   const {
     cameras,
@@ -47,7 +51,15 @@ export default function Sources({
     setSelectedCameras,
     snapshots,
     snapshotLoadingStates,
-  } = useSources(sessionId);
+  } = useSources(sessionId, undefined, formSources);
+
+  // Sync form sources with selectedCameras when component mounts or form sources change
+  useEffect(() => {
+    if (formSources && formSources.length > 0 &&
+      JSON.stringify(formSources) !== JSON.stringify(selectedCameras)) {
+      setSelectedCameras(formSources);
+    }
+  }, [formSources, setSelectedCameras]);
 
   // Filter cameras based on search term
   const filteredCameras = cameras.filter((camera) =>
@@ -144,61 +156,61 @@ export default function Sources({
           ? Array(4)
             .fill(0)
             .map((_, index) => (
-                <div
-                  key={`loading-skeleton-${index}`}
-                  className="flex items-center space-x-2"
-                >
-                  <Skeleton className="h-4 w-4" />
-                  <Skeleton className="h-5 w-32" />
-                </div>
+              <div
+                key={`loading-skeleton-${index}`}
+                className="flex items-center space-x-2"
+              >
+                <Skeleton className="h-4 w-4" />
+                <Skeleton className="h-5 w-32" />
+              </div>
             ))
           : filteredCameras.map((camera) => (
-              <div
-                key={camera.id}
-                className="flex items-center justify-between"
-              >
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`camera-${camera.id}`}
-                    checked={selectedCameras.includes(camera.id)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        updateSelectedCameras([...selectedCameras, camera.id]);
-                      } else {
-                        updateSelectedCameras(
-                          selectedCameras.filter((id) => id !== camera.id)
-                        );
-                      }
-                    }}
-                  />
-                  <Label
-                    htmlFor={`camera-${camera.id}`}
-                    className="text-sm font-medium"
-                  >
-                    {camera.name}
-                  </Label>
-                </div>
-
-                <Popover
-                  open={openPopoverId === camera.id}
-                  onOpenChange={(open) =>
-                    handlePopoverOpenChange(open, camera.id)
-                  }
+            <div
+              key={camera.id}
+              className="flex items-center justify-between"
+            >
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id={`camera-${camera.id}`}
+                  checked={selectedCameras.includes(camera.id)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      updateSelectedCameras([...selectedCameras, camera.id]);
+                    } else {
+                      updateSelectedCameras(
+                        selectedCameras.filter((id) => id !== camera.id)
+                      );
+                    }
+                  }}
+                />
+                <Label
+                  htmlFor={`camera-${camera.id}`}
+                  className="text-sm font-medium"
                 >
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className="p-1 hover:bg-muted rounded-sm relative"
-                      aria-label="Afficher l'aperçu"
-                    >
-                      {renderCameraIcon(camera.id)}
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="end">
-                    {renderSnapshotContent(camera.id, camera.name)}
-                  </PopoverContent>
-                </Popover>
+                  {camera.name}
+                </Label>
               </div>
+
+              <Popover
+                open={openPopoverId === camera.id}
+                onOpenChange={(open) =>
+                  handlePopoverOpenChange(open, camera.id)
+                }
+              >
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="p-1 hover:bg-muted rounded-sm relative"
+                    aria-label="Afficher l'aperçu"
+                  >
+                    {renderCameraIcon(camera.id)}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  {renderSnapshotContent(camera.id, camera.name)}
+                </PopoverContent>
+              </Popover>
+            </div>
           ))}
 
         {!isLoading && filteredCameras.length === 0 && (

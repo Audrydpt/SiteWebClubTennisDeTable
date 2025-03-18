@@ -18,10 +18,12 @@ export default function Forensic() {
   const collapsedWidth = 1;
   const expandedWidth = 350;
   const containerRef = useRef<HTMLDivElement>(null);
+  const [canStartSearch, setCanStartSearch] = useState(true);
 
   const {
     startSearch,
     initWebSocket,
+    isInitializing,
     closeWebSocket,
     progress,
     results,
@@ -33,11 +35,21 @@ export default function Forensic() {
   };
 
   const handleSearch = async (data: ForensicFormValues) => {
+    if (!canStartSearch) {
+      console.log(
+        '⏱️ Veuillez patienter avant de lancer une nouvelle recherche'
+      );
+      return;
+    }
+
     if (isSearching) {
+      setCanStartSearch(false);
       await closeWebSocket();
-      await new Promise((resolve) => {
-        setTimeout(resolve, 500);
-      });
+      setTimeout(() => {
+        setCanStartSearch(true);
+      }, 3000);
+
+      return;
     }
 
     try {
@@ -80,6 +92,8 @@ export default function Forensic() {
               <ForensicForm
                 onSubmit={handleSearch}
                 isSearching={isSearching}
+                isInitializing={isInitializing}
+                canStartSearch={canStartSearch}
                 progress={progress}
                 closeWebSocket={closeWebSocket}
                 isCollapsed={isCollapsed}

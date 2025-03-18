@@ -17,9 +17,12 @@ const getAuthHeader = (sessionId: string) => ({
 
 export default function useSources(
   sessionId: string,
-  vmsIp: string = DEFAULT_VMS_IP
+  vmsIp: string = DEFAULT_VMS_IP,
+  initialSelectedCameras: string[] = []
 ) {
-  const [selectedCameras, setSelectedCameras] = useState<string[]>([]);
+  const [selectedCameras, setSelectedCameras] = useState<string[]>(
+    initialSelectedCameras
+  );
   const [snapshotLoadingStates, setSnapshotLoadingStates] = useState<
     Record<string, boolean>
   >({});

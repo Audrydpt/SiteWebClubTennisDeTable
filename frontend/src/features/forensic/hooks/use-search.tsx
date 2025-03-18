@@ -11,6 +11,8 @@ export default function useSearch(sessionId: string) {
   const [progress, setProgress] = useState<number | null>(null);
   const [results, setResults] = useState<ForensicResult[]>([]);
 
+  const [isInitializing, setIsInitializing] = useState(false);
+
   const [jobId, setJobId] = useState<string | null>(null);
   const latestJobId = useLatest(jobId);
 
@@ -64,6 +66,9 @@ export default function useSearch(sessionId: string) {
         setResults([]);
         setIsSearching(true);
         setIsCancelling(false);
+        setIsInitializing(true);
+
+        forensicResultsHeap.clear();
 
         // Créer un nouvel AbortController pour cette requête
         abortControllerRef.current = new AbortController();
@@ -98,6 +103,10 @@ export default function useSearch(sessionId: string) {
         }
 
         setJobId(guid);
+        // ajouter un délai de 2 sec pour stopper spam
+        setTimeout(() => {
+          setIsInitializing(false);
+        }, 2000);
         return guid;
       } catch (error) {
         // Ne pas logger d'erreur si c'est une annulation intentionnelle
@@ -105,6 +114,7 @@ export default function useSearch(sessionId: string) {
           console.error('❌ Erreur lors du démarrage de la recherche:', error);
         }
         setIsSearching(false);
+        setIsInitializing(false);
         throw error;
       }
     },
@@ -241,12 +251,12 @@ export default function useSearch(sessionId: string) {
         setIsSearching(false);
       }
     },
-    [latestIsCancelling, latestIsSearching, latestJobId]
+    [latestIsCancelling, latestIsSearching, latestJobId, isCancelling]
   );
 
   const closeWebSocket = useCallback(() => {
     // Vérifier si une annulation est déjà en cours
-    if (isCancelling) {
+    if (isCancelling || isInitializing) {
       console.log('🔄 Une annulation est déjà en cours, ignoré');
       return Promise.resolve();
     }
@@ -329,7 +339,7 @@ export default function useSearch(sessionId: string) {
         // S'assurer que isSearching est bien à false
         setIsSearching(false);
       });
-  }, [sessionId, isSearching, jobId, isCancelling]);
+  }, [sessionId, isSearching, jobId, isCancelling, isInitializing]);
 
   return {
     startSearch,
@@ -339,5 +349,6 @@ export default function useSearch(sessionId: string) {
     results,
     isSearching,
     jobId,
+    isInitializing,
   };
 }

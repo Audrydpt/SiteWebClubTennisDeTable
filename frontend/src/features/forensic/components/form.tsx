@@ -9,6 +9,8 @@ import Submit from './ui/submit';
 interface ForensicFormProps {
   onSubmit: (data: ForensicFormValues) => Promise<void>;
   isSearching: boolean;
+  isInitializing: boolean;
+  canStartSearch: boolean;
   progress: number | null;
   closeWebSocket: () => Promise<void>;
   isCollapsed: boolean;
@@ -17,9 +19,11 @@ interface ForensicFormProps {
 export default function ForensicForm({
   onSubmit,
   isSearching,
+  isInitializing,
   progress,
   closeWebSocket,
   isCollapsed,
+  canStartSearch,
 }: ForensicFormProps) {
   const { formMethods } = useForensicForm();
 
@@ -32,6 +36,8 @@ export default function ForensicForm({
         <Params isCollapsed={isCollapsed} />
         <Submit
           isSearching={isSearching}
+          isInitializing={isInitializing}
+          canStartSearch={canStartSearch}
           progress={progress}
           onCancel={closeWebSocket}
         />
