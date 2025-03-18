@@ -790,22 +790,32 @@ class FastAPIServer:
                 return result
 
             except ValueError as e:
+                logger.error(f"Error retrieving dashboard settings: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.put("/dashboard/settings", tags=["dashboard/settings"])
         async def update_settings(data: Model):
+            """Update the dashboard settings"""
             try:
                 dal = GenericDAL()
                 settings = await dal.async_get(DashboardSettings)
                 
-                # Update existing settings
-                settings_obj = settings[0]
-                for field, value in data.dict().items():
-                    setattr(settings_obj, field, value)
+                retention_setting = next((s for s in settings if s.key_index == "retention"), None)
                 
-                return await dal.async_update(settings_obj)
+                if not retention_setting:
+                    logger.error("retention parameter not found")
+                    raise HTTPException(
+                        status_code=500, 
+                        detail="incomplete settings, retention parameter not found"
+                    )
+                
+                retention_setting.value_index = str(data.retentionDays)
+                await dal.async_update(retention_setting)
+            
+                return {"status": "success"}
                 
             except ValueError as e:
+                logger.error(f"Error updating dashboard settings: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
         
     def __create_endpoint(self, path: str, model_class: Type, agg_func=None):
