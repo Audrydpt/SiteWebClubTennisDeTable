@@ -1,9 +1,17 @@
-export interface Camera {
+/* eslint-disable */
+export interface ForensicResult {
   id: string;
-  name: string;
-}
-
-export interface Color {
-  name: string;
-  value: string;
+  imageData: string;
+  timestamp: string;
+  score: number;
+  progress?: number;
+  cameraId: string;
+  type?: string;
+  source?: string;
+  camera?: string;
+  attributes?: {
+    color?: Record<string, number>;
+    type?: Record<string, number>;
+    [key: string]: any;
+  };
 }

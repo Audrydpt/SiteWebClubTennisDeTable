@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useState, SetStateAction, Dispatch, useEffect } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CalendarIcon, Clock } from 'lucide-react';
@@ -43,7 +43,7 @@ function DateTimePicker({
   hours: string;
   minutes: string;
   isOpen: boolean;
-  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsOpen: Dispatch<SetStateAction<boolean>>;
   handleSelect: (date: Date | undefined) => void;
   updateTimeValue: (hoursValue: string, minutesValue: string) => void;
   timeOptions: { hours: string[]; minutes: string[] };
@@ -145,8 +145,21 @@ export default function Times() {
     : undefined;
   const timeTo = timerange?.time_to ? new Date(timerange.time_to) : undefined;
 
-  const [startOpen, setStartOpen] = React.useState(false);
-  const [endOpen, setEndOpen] = React.useState(false);
+  // TODO: à enlever pour prod
+  useEffect(() => {
+    const now = new Date();
+    const oneHourAgo = new Date(now);
+    oneHourAgo.setHours(now.getHours() - 1);
+
+    // Set the initial values
+    setValue('timerange.time_to', now.toISOString());
+    setValue('timerange.time_from', oneHourAgo.toISOString());
+  }, [setValue]);
+
+  // juqu'ici
+
+  const [startOpen, setStartOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
 
   const isSameDay =
     timeFrom &&

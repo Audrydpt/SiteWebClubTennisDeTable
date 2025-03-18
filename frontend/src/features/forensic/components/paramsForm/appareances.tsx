@@ -18,7 +18,7 @@ import {
   vehicleTypes,
   toleranceOptions,
   colors,
-} from '../../lib/form-config.ts';
+} from '../../lib/json/form-config.ts';
 import {
   useForensicForm,
   PersonForensicFormValues,

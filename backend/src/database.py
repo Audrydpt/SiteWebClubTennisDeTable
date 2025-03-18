@@ -164,6 +164,10 @@ class Widget(Database):
     dashboard_id = Column(UUID(as_uuid=True), ForeignKey('dashboard.id'), nullable=True)
     dashboard = relationship("Dashboard", back_populates="widgets")
 
+class DashboardSettings(Database):
+    key_index = Column(Text, nullable=False, index=True)
+    value_index = Column(Text, nullable=False)
+
 class GenericDAL:
     initialized = False
     lock = threading.Lock()
@@ -301,6 +305,13 @@ class GenericDAL:
             if query and len(query) == 1 and not query[0].order:
                 query[0].order = 0
                 session.commit()
+            
+            # Create default settings if needed
+            settings = session.query(DashboardSettings).first()
+            if settings is None:
+                default_settings = DashboardSettings(key_index="retention", value_index="90")
+                session.add(default_settings)
+                session.commit()
 
     def __init_cron(self):
         trigger = "0 0 * * *"
@@ -332,7 +343,10 @@ class GenericDAL:
     def remove(self, obj) -> bool:
         return run_async(self.async_remove)(obj)
     
-    def clean(self, cls, days=100) -> bool:
+    def clean(self, cls) -> bool:
+        with self.SyncSession() as session:
+            setting = session.query(DashboardSettings).filter(DashboardSettings.key_index == "retention").first()
+            days = int(setting.value_index) if setting else 90
         return run_async(self.async_clean)(cls, days)
     
     # ----- Asynchronous API methods -----
