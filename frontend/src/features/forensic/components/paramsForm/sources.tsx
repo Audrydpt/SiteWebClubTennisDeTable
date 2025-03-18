@@ -38,6 +38,7 @@ export default function Sources({
   // Add the form context
   const formContext = useFormContext();
   const sourcesError = formContext.formState.errors.sources?.message;
+  const hasError = !!sourcesError;
 
   const {
     cameras,
@@ -219,7 +220,11 @@ export default function Sources({
 
   return (
     <AccordionItem value="sources">
-      <AccordionTrigger>Sources vidéo</AccordionTrigger>
+      <AccordionTrigger
+        className={hasError ? 'text-destructive font-medium' : ''}
+      >
+        Sources vidéo
+      </AccordionTrigger>
       <AccordionContent>
         {useScrollArea ? (
           <ScrollArea

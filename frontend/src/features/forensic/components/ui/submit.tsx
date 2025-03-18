@@ -42,7 +42,7 @@ export default function Submit({
           <Progress value={progress ?? 0} className="h-2 mt-2" />
           <p className="text-xs text-muted-foreground mt-1 text-center">
             {progress !== null
-              ? `${progress}% terminé`
+              ? `${progress.toFixed(1)}% terminé`
               : 'Initialisation de la recherche...'}
           </p>
         </>

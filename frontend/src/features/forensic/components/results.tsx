@@ -414,7 +414,7 @@ export default function Results({
         <div className="mt-2 mb-4">
           <Progress value={progress} className="h-2" />
           <p className="text-sm text-muted-foreground mt-1">
-            Progression: {progress}%
+            Progression: {progress.toFixed(1)}%
           </p>
         </div>
       )}
