@@ -34,7 +34,7 @@ from enum import Enum
 
 from swagger import get_custom_swagger_ui_html
 from event_grabber import EventGrabber
-from database import Dashboard, GenericDAL, Widget
+from database import Dashboard, GenericDAL, Widget, DashboardSettings
 from database import AcicAllInOneEvent, AcicCounting, AcicEvent, AcicLicensePlate, AcicNumbering, AcicOCR, AcicOccupancy, AcicUnattendedItem
 
 from pydantic import BaseModel, Field, Extra
@@ -144,6 +144,7 @@ class FastAPIServer:
 
         self.__create_tabs()
         self.__create_widgets()
+        self.__create_settings()
         self.__create_health()
         self.__create_forensic()
         self.__create_vms()
@@ -765,6 +766,46 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
+    def __create_settings(self):
+        """Create endpoints to manage dashboard settings"""
+        
+        Model = create_model('SettingsModel',
+            retentionDays=(int, Field(description="Number of days to retain data", ge=1, le=3650))
+        )
+
+        @self.app.get("/dashboard/settings", tags=["dashboard/settings"])
+        async def get_settings():
+            try:
+                dal = GenericDAL()
+                settings = await dal.async_get(DashboardSettings)
+                
+                # Return the first settings object
+                result = {}
+                for column in inspect(DashboardSettings).mapper.column_attrs:
+                    if column.key not in ['id', 'timestamp']:
+                        result[column.key] = getattr(settings[0], column.key)
+                
+                return result
+
+            except ValueError as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.put("/dashboard/settings", tags=["dashboard/settings"])
+        async def update_settings(data: Model):
+            try:
+                dal = GenericDAL()
+                settings = await dal.async_get(DashboardSettings)
+                
+                # Update existing settings
+                settings_obj = settings[0]
+                for field, value in data.dict().items():
+                    setattr(settings_obj, field, value)
+                
+                return await dal.async_update(settings_obj)
+                
+            except ValueError as e:
+                raise HTTPException(status_code=500, detail=str(e))
+        
     def __create_endpoint(self, path: str, model_class: Type, agg_func=None):
         query = {}
         for column in inspect(model_class).mapper.column_attrs:
