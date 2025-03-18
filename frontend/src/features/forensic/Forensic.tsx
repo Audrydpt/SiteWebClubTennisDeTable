@@ -4,20 +4,19 @@ import { Card, CardContent } from '@/components/ui/card';
 import {
   ForensicFormProvider,
   ForensicFormValues,
-} from '@/features/forensic/lib/provider/forensic-form-context';
+} from './lib/provider/forensic-form-context';
 import useSearch from './hooks/use-search';
 import { useAuth } from '@/providers/auth-context';
 import { createSearchFormData } from './lib/format-query';
 
-// Import the extracted components
 import ForensicForm from './components/form';
 import Results from './components/results';
 
 export default function Forensic() {
   const { sessionId = '' } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const collapsedWidth = 1; // Width when collapsed
-  const expandedWidth = 350; // Width when expanded
+  const collapsedWidth = 1;
+  const expandedWidth = 350;
   const containerRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -108,9 +107,9 @@ export default function Forensic() {
         </button>
       </div>
 
-      {/* Results Area - takes remaining space */}
+      {/* Results Panel */}
       <Card className="h-[calc(100vh-2rem)] overflow-hidden flex-1 ml-2">
-        <CardContent className="p-4 h-full">
+        <CardContent className="p-10 pb-8 h-full">
           <Results
             results={results}
             isSearching={isSearching}

@@ -24,8 +24,8 @@ import {
   distinctiveItems,
   contextualItems,
   colors,
-} from '../../lib/form-config.ts';
-import carBrands from '../../lib/car-brand.json';
+} from '../../lib/json/form-config.ts';
+import carBrands from '../../lib/json/car-brand.json';
 import {
   useForensicForm,
   PersonForensicFormValues,

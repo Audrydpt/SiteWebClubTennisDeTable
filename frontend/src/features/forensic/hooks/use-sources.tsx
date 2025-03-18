@@ -1,7 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { Camera } from '../lib/types';
+
+interface Camera {
+  id: string;
+  name: string;
+}
 
 const BASE_URL = process.env.MAIN_API_URL || '';
 const DEFAULT_VMS_IP = '192.168.20.72'; // Default VMS IP
