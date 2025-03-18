@@ -344,7 +344,9 @@ class GenericDAL:
         return run_async(self.async_remove)(obj)
     
     def clean(self, cls) -> bool:
-        days = self.session.query(DashboardSettings.value_index).filter(DashboardSettings.id == 1).scalar()
+        with self.SyncSession() as session:
+            setting = session.query(DashboardSettings).filter(DashboardSettings.key_index == "retention").first()
+            days = int(setting.value_index) if setting else 90
         return run_async(self.async_clean)(cls, days)
     
     # ----- Asynchronous API methods -----
