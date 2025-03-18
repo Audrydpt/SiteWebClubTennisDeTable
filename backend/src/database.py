@@ -165,8 +165,7 @@ class Widget(Database):
     dashboard = relationship("Dashboard", back_populates="widgets")
 
 class DashboardSettings(Database):
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    key_index = Column(Text, nullable=False)
+    key_index = Column(Text, nullable=False, index=True)
     value_index = Column(Text, nullable=False)
 
 class GenericDAL:
@@ -308,9 +307,9 @@ class GenericDAL:
                 session.commit()
             
             # Create default settings if needed
-            settings = session.query(DashboardSettings).all()
-            if not settings or len(settings) == 0:
-                default_settings = DashboardSettings(id=1, key_index="retention", value_index="90")
+            settings = session.query(DashboardSettings).first()
+            if settings is None:
+                default_settings = DashboardSettings(key_index="retention", value_index="90")
                 session.add(default_settings)
                 session.commit()
 
@@ -344,7 +343,7 @@ class GenericDAL:
     def remove(self, obj) -> bool:
         return run_async(self.async_remove)(obj)
     
-    def clean(self, cls, days) -> bool:
+    def clean(self, cls) -> bool:
         days = self.session.query(DashboardSettings.value_index).filter(DashboardSettings.id == 1).scalar()
         return run_async(self.async_clean)(cls, days)
     
