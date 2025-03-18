@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import {
   ForensicFormProvider,
   ForensicFormValues,
-} from '@/features/forensic/lib/provider/forensic-form-context';
+} from './lib/provider/forensic-form-context';
 import useSearch from './hooks/use-search';
 import { useAuth } from '@/providers/auth-context';
 import { createSearchFormData } from './lib/format-query';
