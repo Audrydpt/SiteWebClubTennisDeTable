@@ -1,8 +1,6 @@
 /* eslint-disable no-console */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import useLatest from '@/hooks/use-latest';
-
 import { FormData as CustomFormData, formatQuery } from '../lib/format-query';
 import { ForensicResult } from '../lib/types';
 import forensicResultsHeap from '../lib/data-structure/heap';
@@ -18,12 +16,10 @@ export default function useSearch(sessionId: string) {
   const [results, setResults] = useState<ForensicResult[]>([]);
 
   const [jobId, setJobId] = useState<string | null>(null);
-  const latestJobId = useLatest(jobId);
 
   const [isSearching, setIsSearching] = useState(false);
 
   const [isCancelling, setIsCancelling] = useState(false);
-  const latestIsCancelling = useLatest(isCancelling);
 
   // References
   const wsRef = useRef<WebSocket | null>(null);
@@ -85,7 +81,6 @@ export default function useSearch(sessionId: string) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-
         const response = await fetch(`${process.env.MAIN_API_URL}/forensics`, {
           headers: {
             Authorization: `X-Session-Id ${sessionId}`,
@@ -122,7 +117,6 @@ export default function useSearch(sessionId: string) {
 
   // Initialize WebSocket connection
   const initWebSocket = useCallback(
-
     (taskJobId: string) => {
       if (!taskJobId) {
         console.error('⚠️ No job ID available for WebSocket');
@@ -138,7 +132,6 @@ export default function useSearch(sessionId: string) {
         setProgress(100); // Mark as completed to avoid stuck UI
         return;
       }
-
 
       // Close existing connection if present
       if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
@@ -202,7 +195,6 @@ export default function useSearch(sessionId: string) {
             try {
               const data = JSON.parse(event.data);
 
-
               // Store metadata for next image
               if (data.timestamp)
                 metadataQueue.current.timestamp = data.timestamp;
@@ -211,7 +203,6 @@ export default function useSearch(sessionId: string) {
               if (data.camera) metadataQueue.current.camera = data.camera;
               if (data.attributes)
                 metadataQueue.current.attributes = data.attributes;
-
 
               if (data.progress !== undefined) {
                 setProgress(data.progress);
@@ -236,7 +227,6 @@ export default function useSearch(sessionId: string) {
               }
             } catch (error) {
               console.error('❌ WebSocket data parsing error:', error);
-
             }
           } else if (event.data instanceof Blob) {
             const blob = event.data;
@@ -409,7 +399,6 @@ export default function useSearch(sessionId: string) {
 
     setIsCancelling(true);
     console.log('🔒 Starting search cancellation procedure');
-
 
     // Create a new AbortController for the cancellation request
     const controller = new AbortController();
