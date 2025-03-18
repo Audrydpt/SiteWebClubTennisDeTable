@@ -210,16 +210,18 @@ class ServiceAI:
             modelWidth = models[model]["networkWidth"]
             modelHeight = models[model]["networkHeight"]
 
+            resized = cv2.resize(frame, (modelWidth, modelHeight))
+
             await asyncio.wait_for(self.__init_ws(model), timeout=5)
-            valid, image_jpeg = cv2.imencode(".jpg", frame)
+            valid, image_jpeg = cv2.imencode(".jpg", resized)
             if not valid:
-                logger.error(f"Error while encoding image to jpeg {frame.shape}")
-                cv2.imwrite(f"/tmp/test_save_{model}.jpg", frame)
+                logger.error(f"Error while encoding image to jpeg {resized.shape}")
+                cv2.imwrite(f"/tmp/test_save_{model}.jpg", resized)
                 raise Exception("Error while encoding image to jpeg")
 
             data = await asyncio.wait_for(self.__detect_object(width=modelWidth, height=modelHeight, model=model, classification=True, jpeg=image_jpeg), timeout=5)
             if data is None:
-                cv2.imwrite(f"/tmp/test_save_{model}.jpg", frame)
+                cv2.imwrite(f"/tmp/test_save_{model}.jpg", resized)
                 logger.error(f"No data - saved image to /tmp/test_save_{model}.jpg")
                 logger.error(traceback.format_exc())
                 raise Exception("No data")
@@ -394,7 +396,7 @@ async def main():
         await forensic.get_version()
 
         #params
-        test = cv2.imread("/home/sbakkouche/Documents/dashboard/backend/test.jpg")
+        test = cv2.imread("test.jpg")
         selected_classes = ["car","truck","bus","motorcycle","bicycle"]
         short_print = True
         nbr_classif_values = 3

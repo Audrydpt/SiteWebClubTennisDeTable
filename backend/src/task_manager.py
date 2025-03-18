@@ -10,6 +10,7 @@ from fastapi.websockets import WebSocketState
 import numpy as np
 import cv2
 import redis
+import os
 
 from celery import Celery
 from celery.result import AsyncResult
@@ -455,6 +456,9 @@ class VehicleReplayJob:
         self.time_to = self.timerange.get("time_to").astimezone(datetime.timezone.utc)
 
         self.type = data.get("type", None)
+        self.appearances = data.get("appearances", None)
+        self.attributes = data.get("attributes", None)
+        self.context = data.get("context", None)
         
         # Récupère l'ID de job Celery s'il est fourni, sinon génère un UUID
         self.job_id = data.get("job_id", str(uuid.uuid4()))
@@ -505,17 +509,16 @@ class VehicleReplayJob:
         
         return intersection_area / union_area
     
-    def _filter(self, bbox, probabilities: Dict[str, float]):
-        size = self._filter_size(bbox)
-        detector = self._filter_detections(probabilities)
-        classifier = self._filter_classification()
-        return size * detector * classifier
+    def _filter_detections(self, bbox, probabilities: Dict[str, float]):
+        size = self._filter_detections_size(bbox)
+        detector = self._filter_detections_classes(probabilities)
+        return size * detector
     
-    def _filter_size(self, bbox):
+    def _filter_detections_size(self, bbox):
         top, bottom, left, right = bbox
 
-        min_size = 64  # below this size, the object is too small and the model is not reliable
-        max_size = 224 # trained model size
+        min_size = 32 # below this size, the object is too small and the model is not reliable
+        max_size = 64 # trained model size
 
         width = right - left
         height = bottom - top
@@ -527,7 +530,7 @@ class VehicleReplayJob:
         # lerp based on min_dim between min_size and max_size
         return max(0.0, min(1.0, (min_dim - min_size) / (max_size - min_size)))
     
-    def _filter_detections(self, probabilities: Dict[str, float]):
+    def _filter_detections_classes(self, probabilities: Dict[str, float]):
         allowed_classes = set()
         
         if self.type == "vehicle":
@@ -566,8 +569,41 @@ class VehicleReplayJob:
         
         return max(filtered_probs.values()) if filtered_probs else 0.0
 
-    def _filter_classification(self):
-        # TODO: Implémenter le filtre de classification
+    def _filter_classification(self, probabilities: Dict[str, float], appearances: Dict[str, Dict[str,float]], attributes: Dict[str, Dict[str,float]]):
+        appearance = self._filter_classification_appearance(probabilities, appearances)
+        attributes = self._filter_classification_attributes(probabilities, attributes)
+        return appearance * attributes
+    
+    def _filter_classification_appearance(self, probabilities: Dict[str, float], appearances: Dict[str, Dict[str,float]]):
+        try:
+            confidence = self.appearances.get("confidence", "medium")
+            # high, topconf = wanted stuff, otherwise 0.
+            # medium, topconf = wanted or nearby, otherwise 0.
+            # low, return max(wanted, nearby).
+
+            # maybe the type is available also in probabilities given classes ? 
+            type_score = 1.0
+            wanted_type = appearances.get("type", [])
+            if len(wanted_type) > 0:
+                type_score = 0.0
+                for t in wanted_type:
+                    type_score = max(type_score, appearances.get("type", {}).get(t, 1.0))
+            
+            color_score = 1.0
+            wanted_color = appearances.get("color", [])
+            if len(wanted_color) > 0:
+                color_score = 0.0
+                for c in wanted_color:
+                    color_score = max(color_score, appearances.get("color", {}).get(c, 1.0))
+
+            logger.info(f"config: {self.appearances} - found: {appearances} - wanted {wanted_type} -> {type_score} - score: {wanted_color} -> {color_score}")
+            return type_score * color_score
+        
+        except Exception as e:
+            logger.error(f"Error in appearance filter: {e}")
+            return 1.0
+    
+    def _filter_classification_attributes(self, probabilities: Dict[str, float], attributes: Dict[str, Dict[str,float]]):
         return 1.0
     
     async def __process_stream(self, source_guid) -> AsyncGenerator[Tuple[dict, Optional[bytes]], None]:
@@ -621,8 +657,8 @@ class VehicleReplayJob:
                         bbox = forensic.get_pixel_bbox(img, detection)
                         probabilities = detection["bbox"]["probabilities"]
 
-                        score = self._filter(bbox, probabilities)
-                        if score <= 0.01:
+                        obj_score = self._filter_detections(bbox, probabilities)
+                        if obj_score <= 0.01:
                             continue
 
                         current_boxes.append(bbox)
@@ -638,24 +674,39 @@ class VehicleReplayJob:
                         if is_duplicate:
                             continue
 
-                        attributes = await forensic.classify(img)
+                        thumbnail = forensic.get_thumbnail(img, detection)
+                        if thumbnail is None:
+                            continue
+                        
+                        attributes = await forensic.classify(thumbnail)
+                        cls_score = self._filter_classification(probabilities, attributes, attributes)
+                        if cls_score <= 0.01:
+                            continue
 
                         # Créer les métadonnées
                         metadata = {
                             "type": "detection",
                             "progress": progress,
                             "camera": source_guid,
-                            "score": score,
+                            "score": obj_score * cls_score,
                             "timestamp": time.isoformat(),
                             "source": source_guid,
                             "attributes": attributes
                         }
-                        thumbnail = forensic.get_thumbnail(img, detection, 1.1)
-                        if thumbnail is None:
+                        export = forensic.get_thumbnail(img, detection, 1.1)
+                        if export is None:
                             continue
                         
-                        _, encoded_image = cv2.imencode('.jpg', thumbnail)
+                        _, encoded_image = cv2.imencode('.jpg', export)
                         frame_bytes = encoded_image.tobytes()
+
+                        if True:
+                            path = "/var/lib/postgresql/16/main"
+                            #path = "/opt/ACIC/front/database"
+                            name = f"{source_guid}:{time.strftime('%Y-%m-%dT%H:%M')}"
+                            #name = uuid.uuid4()
+                            os.makedirs(f"{path}/thumbnail/", exist_ok=True)
+                            cv2.imwrite(f"{path}/thumbnail/{name}.jpg", thumbnail)
 
                         yield metadata, frame_bytes
                         

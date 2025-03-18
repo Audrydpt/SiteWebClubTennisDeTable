@@ -1,3 +1,4 @@
+from enum import Enum
 import logging
 import traceback
 import xml.etree.ElementTree as ET
@@ -19,6 +20,20 @@ logger.setLevel(logging.INFO)
 file_handler = logging.FileHandler(f"/tmp/{__name__}.log")
 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 logger.addHandler(file_handler)
+
+"""
+ { "Message": "Time Out of stream, image too old", "Type": "INFO", "Time": "{rawDataContent.FrameTime}"}
+ { "Message": "Time Out of stream", "Type": "INFO" }
+ { "Message": "End time of stream reached", "Type": "INFO", "Time": "{rawDataContent.FrameTime}"}
+ { "Message": "Streaming", "FrameTime": "2025-03-17T06:31:55.8370000Z", "IsKeyFrame": true, "MediaType": "Video", "Format": "H264", "Type": "INFO"}
+ { "Message": "End readstream", "Type": "INFO"}
+"""
+class MessageType(str, Enum):
+    TooOld = "Time Out of stream, image too old"            # en dehors du range possible du vms
+    NotFound = "Time Out of stream"                         # pas de donnée dans le recorder
+    Streaming = "Streaming"                                 # La donnée suivera sera du binaire à décoder selon le format
+    EndOfStream = "End time of stream reached"              # après la dernière frame
+    ClosingSocket = "End readstream"                        # fermeture du socket
 
 class CameraClient:
     def __init__(self, host: str, port: int):
@@ -226,12 +241,20 @@ class CameraClient:
 
         async for data in response:
             if isinstance(data, dict):
-                time_str = data.get("FrameTime")
-                time_frame = (
-                    parser.isoparse(time_str).astimezone(datetime.timezone.utc)
-                    if time_str else None
-                )
-                codec_format = data.get("Format").lower()
+                message = data.get("Message", "Streaming")
+                logger.info(f"Message: {message} -- {data}")
+                if message == MessageType.Streaming:
+                    time_str = data.get("FrameTime")
+                    time_frame = (
+                        parser.isoparse(time_str).astimezone(datetime.timezone.utc)
+                        if time_str else None
+                    )
+                    codec_format = data.get("Format").lower()
+                elif message in [MessageType.TooOld, MessageType.NotFound, MessageType.EndOfStream, MessageType.ClosingSocket]:
+                    logger.info(f"Message: {message}")
+                    break
+                else:
+                    logger.warning(f"Message inconnu: {message}")
             elif isinstance(data, bytes):
                 try:
                     if codec is None:

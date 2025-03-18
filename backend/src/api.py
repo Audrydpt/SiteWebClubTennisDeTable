@@ -538,6 +538,7 @@ class FastAPIServer:
 
         @self.app.get("/vms/{ip}/cameras/{guuid}/live", tags=["vms"])
         async def get_live(ip: str, guuid: str):
+            return HTTPException(status_code=501, detail="Not implemented")
             try:
                 async with CameraClient(ip, 7778) as client:
                     streams = client.start_live(guuid)
