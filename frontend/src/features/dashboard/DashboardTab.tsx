@@ -6,6 +6,7 @@ import { useAuth } from '@/providers/auth-context';
 
 import { StoredWidget } from './components/form-widget';
 import WidgetActions from './components/widget-actions';
+import WidgetRangeNavigation from './components/widget-range-navigation';
 import useWidgetAPI from './hooks/use-widget';
 import { ChartTypeComponents } from './lib/const';
 import { ChartSize } from './lib/props';
@@ -31,6 +32,7 @@ export type ChartTiles = {
   id: string;
   content: JSX.Element;
   widget: StoredWidget;
+  page: number;
 };
 
 interface DashboardTabProps {
@@ -53,11 +55,9 @@ export default function DashboardTab({
     onAddWidget(() => add);
   }, [onAddWidget, add]);
 
-  // Force un re-render après que les refs sont mises à jour
   // eslint-disable-next-line consistent-return
   useEffect(() => {
     if (data && !refsUpdated) {
-      // Donner un peu de temps au DOM pour se mettre à jour
       const timer = setTimeout(() => {
         setRefsUpdated(true);
       }, 300);
@@ -95,6 +95,7 @@ export default function DashboardTab({
         id,
         widget,
         content: <Component {...chart} />,
+        page: 0,
       } as ChartTiles;
     }) ?? [];
 
@@ -118,6 +119,7 @@ export default function DashboardTab({
           }}
         >
           {item.content}
+          page: {item.page}
           <WidgetActions
             isOperator={isOperator}
             item={item}
@@ -126,7 +128,7 @@ export default function DashboardTab({
             remove={remove}
             clone={clone}
           />
-          {/* <WidgetRangeNavigation /> */}
+          <WidgetRangeNavigation item={item} updateWidgetData={() => {}} />
         </div>
       ))}
     </ReactSortable>

@@ -1,81 +1,43 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { ChevronLeftCircle, ChevronRightCircle } from 'lucide-react';
 import { DateTime } from 'luxon';
 import { useEffect, useState } from 'react';
 
-import { StepperFormData } from '../lib/export';
-import { AcicAggregation, AggregationTypeToObject } from '../lib/props';
-import { getWidgetDataForExport } from '../lib/utils';
-import { StoredWidget } from './form-widget';
+import { ChartTiles } from '../DashboardTab';
+import { AggregationTypeToObject } from '../lib/props';
 
 interface WidgetRangeNavigatorProps {
-  widget: StepperFormData;
-  updateWidgetData: (data: StoredWidget) => void;
+  item: ChartTiles;
+  updateWidgetData: (data: ChartTiles) => void;
 }
 
-export default function WidgetRangeNavigator({
-  widget,
+export default function WidgetRangeNavigation({
+  item,
   updateWidgetData,
 }: WidgetRangeNavigatorProps) {
   const [currentRange, setCurrentRange] = useState<
     { from: Date; to: Date } | undefined
   >(undefined);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const queryClient = useQueryClient();
-
-  if (widget.duration) {
-    const to = DateTime.now().minus({ millisecond: 1 }).toJSDate();
-    const from = DateTime.now()
-      .minus(AggregationTypeToObject[widget.duration!])
-      .toJSDate();
-    setCurrentRange({ from, to });
-  }
-  const fetchData = async (range: { from: Date; to: Date }) => {
-    const data = await getWidgetDataForExport(
-      {
-        table: widget.table,
-        aggregation: widget.aggregation || AcicAggregation.OneHour,
-        range,
-        where: widget.where,
-      },
-      widget.groupBy || ''
-    );
-    updateWidgetData(data);
-  };
-
-  const handlePrevious = () => {
-    if (currentRange) {
-      const newTo = DateTime.fromJSDate(currentRange.from)
-        .minus(AggregationTypeToObject[widget.duration!])
-        .toJSDate();
-      const newFrom = DateTime.fromJSDate(currentRange.from)
-        .minus(AggregationTypeToObject[widget.duration!])
-        .toJSDate();
-      const newRange = { from: newFrom, to: newTo };
-      setCurrentRange(newRange);
-      fetchData(newRange);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentRange) {
-      const newFrom = DateTime.fromJSDate(currentRange.to)
-        .plus({ millisecond: 1 })
-        .toJSDate();
-      const newTo = DateTime.fromJSDate(currentRange.to)
-        .plus(AggregationTypeToObject[widget.duration!])
-        .toJSDate();
-      const newRange = { from: newFrom, to: newTo };
-      setCurrentRange(newRange);
-      fetchData(newRange);
-    }
-  };
 
   useEffect(() => {
-    if (widget.range && widget.range.from && widget.range.to) {
-      setCurrentRange(widget.range as { from: Date; to: Date });
+    if (item.widget.duration) {
+      const to = DateTime.now().minus({ millisecond: 1 }).toJSDate();
+      const from = DateTime.now()
+        .minus(AggregationTypeToObject[item.widget.duration])
+        .toJSDate();
+      setCurrentRange({ from, to });
     }
-  }, [widget.range]);
+  }, [item.widget.duration]);
+
+  useEffect(() => {
+    if (currentRange) {
+      const updatedWidget = { ...item, range: currentRange };
+      updateWidgetData(updatedWidget);
+    }
+  }, [currentRange, item, updateWidgetData]);
+
+  const handlePrevious = () => {};
+
+  const handleNext = () => {};
 
   return (
     <div>
