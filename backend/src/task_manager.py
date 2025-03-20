@@ -110,46 +110,114 @@ class ResultsStore:
         self._redis = None
         
     async def _get_redis(self) -> aioredis.Redis:
-        if self._redis is None:
-            self._redis = aioredis.Redis(connection_pool=redis_pool)
-        return self._redis
+        try:
+            logger.info("Attempting to get Redis client")
+            if self._redis is None:
+                logger.info("Redis client not found, creating new Redis connection")
+                self._redis = aioredis.Redis(connection_pool=redis_pool)
+            else:
+                logger.info("Returning existing Redis client")
+            return self._redis
+        except Exception as e:
+            logger.info(f"Error while obtaining Redis client: {e}")
+            raise
     
     async def add_result(self, result: JobResult) -> None:
-        redis = await self._get_redis()
-        
-        # Clés Redis pour cette tâche
-        result_list_key = f"task:{result.job_id}:results"
-        channel_name = f"task:{result.job_id}:updates"
-        
-        # Stocker les métadonnées du résultat (sans la frame)
-        result_data = result.to_redis_message()
-        await redis.lpush(result_list_key, json.dumps(result_data))
-        await redis.ltrim(result_list_key, 0, self.max_results - 1)
-        
-        # Publier le résultat sur le canal Redis
-        await redis.publish(channel_name, json.dumps(result_data))
-        
-        # Si une frame est présente, la stocker séparément et notifier
+        try:
+            redis = await self._get_redis()
+            logger.info("Obtained Redis connection successfully.")
+        except Exception as e:
+            logger.error(f"Error obtaining Redis connection: {e}")
+            raise
+
+        try:
+            # Clés Redis pour cette tâche
+            result_list_key = f"task:{result.job_id}:results"
+            channel_name = f"task:{result.job_id}:updates"
+            logger.info(f"Prepared Redis keys: {result_list_key} and {channel_name}.")
+        except Exception as e:
+            logger.error(f"Error preparing Redis keys: {e}")
+            raise
+
+        try:
+            # Stocker les métadonnées du résultat (sans la frame)
+            result_data = result.to_redis_message()
+            await redis.lpush(result_list_key, json.dumps(result_data))
+            await redis.ltrim(result_list_key, 0, self.max_results - 1)
+            logger.info("Stored result metadata in Redis list successfully.")
+        except Exception as e:
+            logger.error(f"Error storing result metadata: {e}")
+            raise
+
+        try:
+            # Publier le résultat sur le canal Redis
+            await redis.publish(channel_name, json.dumps(result_data))
+            logger.info("Published result data on Redis channel successfully.")
+        except Exception as e:
+            logger.error(f"Error publishing result data on Redis channel: {e}")
+            raise
+
         if result.frame and result.frame_uuid:
-            frame_key = f"task:{result.job_id}:frame:{result.frame_uuid}"
-            await redis.set(frame_key, result.frame, ex=3600)  # Expire après 1h
-            frame_notification = {
-                "job_id": result.job_id,
-                "frame_uuid": result.frame_uuid
-            }
-            await redis.publish(f"{channel_name}:frames", json.dumps(frame_notification))
+            try:
+                # Stocker la frame séparément
+                frame_key = f"task:{result.job_id}:frame:{result.frame_uuid}"
+                await redis.set(frame_key, result.frame, ex=3600)  # Expire après 1h
+                logger.info("Stored frame data in Redis with expiration of 1 hour.")
+            except Exception as e:
+                logger.error(f"Error storing frame data: {e}")
+                raise
+
+            try:
+                # Notifier que la frame a été stockée
+                frame_notification = {
+                    "job_id": result.job_id,
+                    "frame_uuid": result.frame_uuid
+                }
+                await redis.publish(f"{channel_name}:frames", json.dumps(frame_notification))
+                logger.info("Published frame notification on Redis channel frames successfully.")
+            except Exception as e:
+                logger.error(f"Error publishing frame notification: {e}")
+                raise
     
     async def get_results(self, job_id: str, start: int = 0, end: int = -1) -> List[JobResult]:
-        redis = await self._get_redis()
-        result_list_key = f"task:{job_id}:results"
-        
-        results_json = await redis.lrange(result_list_key, start, end)
+        try:
+            redis = await self._get_redis()
+            logger.info("Obtained Redis connection successfully.")
+        except Exception as e:
+            logger.error("Error obtaining Redis connection", exc_info=True)
+            raise
+
+        try:
+            result_list_key = f"task:{job_id}:results"
+            logger.info(f"Prepared result_list_key: {result_list_key}.")
+        except Exception as e:
+            logger.error("Error preparing result_list_key", exc_info=True)
+            raise
+
+        try:
+            results_json = await redis.lrange(result_list_key, start, end)
+            logger.info("Retrieved results from Redis.")
+        except Exception as e:
+            logger.error("Error retrieving results from Redis", exc_info=True)
+            raise
+
         results = []
         
         for result_json in results_json:
-            message = json.loads(result_json)
-            result = await JobResult.from_redis_message(message, redis)
-            results.append(result)
+            try:
+                message = json.loads(result_json)
+                logger.info("Parsed JSON message successfully.")
+            except Exception as e:
+                logger.error("Error parsing JSON message", exc_info=True)
+                continue
+
+            try:
+                result = await JobResult.from_redis_message(message, redis)
+                logger.info("Created JobResult from message.")
+                results.append(result)
+            except Exception as e:
+                logger.error("Error processing JobResult from message", exc_info=True)
+                continue
             
         return results
     
@@ -157,49 +225,90 @@ class ResultsStore:
         """
         Souscrit aux mises à jour et yield des JobResult.
         """
-        redis = await self._get_redis()
-        pubsub = redis.pubsub()
+        try:
+            logger.info("Obtention du client Redis")
+            redis = await self._get_redis()
+        except Exception as e:
+            logger.error(f"Erreur lors de l'obtention du client Redis: {e}")
+            return
+
+        try:
+            logger.info("Création du pubsub Redis")
+            pubsub = redis.pubsub()
+        except Exception as e:
+            logger.error(f"Erreur lors de la création du pubsub: {e}")
+            return
+        
         channel_name = f"task:{job_id}:updates"
-        await pubsub.subscribe(channel_name)
+        try:
+            logger.info(f"Souscription au canal {channel_name}")
+            await pubsub.subscribe(channel_name)
+        except Exception as e:
+            logger.error(f"Erreur lors de la souscription au canal {channel_name}: {e}")
+            return
 
         logger.info("Souscription aux mises à jour de résultats")
         
         try:
             while True:
-                message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+                try:
+                    logger.info("Tentative de récupération d'un message")
+                    message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+                    logger.info(f"Message récupéré: {message}")
+                except Exception as e:
+                    logger.error(f"Erreur lors de la récupération du message: {e}")
+                    continue
 
                 if message is None:
-                    # Si aucun message n'est trouvé, on vérifie si la tâche est terminée.
-                    task_status = TaskManager.get_job_status(job_id)
+                    try:
+                        task_status = TaskManager.get_job_status(job_id)
+                        logger.info(f"Statut de la tâche {job_id}: {task_status}")
+                    except Exception as e:
+                        logger.error(f"Erreur lors de la récupération du statut de la tâche: {e}")
+                        task_status = None
+
                     if task_status in [JobStatus.SUCCESS, JobStatus.FAILURE, JobStatus.REVOKED]:
-                        # On attend quelques instants supplémentaires pour être sûr de ne rien rater.
                         for _ in range(5):
-                            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
-                            if message:
-                                break
+                            try:
+                                message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+                                if message:
+                                    logger.info(f"Message récupéré durant l'attente: {message}")
+                                    break
+                            except Exception as e:
+                                logger.error(f"Erreur pendant l'attente du message: {e}")
                         if message is None:
+                            logger.info("Aucun message supplémentaire, fin de la boucle")
                             break
                     continue
                 
-                # On s'assure qu'il s'agit bien d'un message complet de type metadata.
                 try:
+                    logger.info("Tentative de désérialisation du message")
                     update_data = json.loads(message["data"])
+                    logger.info("Désérialisation réussie")
                 except Exception as ex:
                     logger.error(f"Erreur lors de la désérialisation du message: {ex}")
                     continue
-                
-                # Reconstituer le JobResult complet.
-                job_result = await JobResult.from_redis_message(update_data, redis_client=redis)
+
+                try:
+                    logger.info("Reconstitution du JobResult")
+                    job_result = await JobResult.from_redis_message(update_data, redis_client=redis)
+                    logger.info("JobResult reconstitué avec succès")
+                except Exception as ex:
+                    logger.error(f"Erreur lors de la reconstitution du JobResult: {ex}")
+                    continue
 
                 logger.info("Diffusion de la mise à jour")
                 yield job_result
         
         except Exception as e:
             logger.error(f"Erreur lors de la souscription aux mises à jour de résultats: {e}")
-            logger.error(traceback.format)
+            logger.error(traceback.format_exc())
         finally:
-            logger.info("Fin de la souscription aux mises à jour de résultats")
-            await pubsub.unsubscribe(channel_name)
+            try:
+                logger.info(f"Désabonnement du canal {channel_name}")
+                await pubsub.unsubscribe(channel_name)
+            except Exception as e:
+                logger.error(f"Erreur lors du désabonnement du canal {channel_name}: {e}")
         logger.info("Bye bye")
 
 results_store = ResultsStore()
@@ -207,41 +316,51 @@ results_store = ResultsStore()
 @celery_app.task(bind=True, name="task_manager.execute_job")
 def execute_job(self, job_type: str, job_params: Dict[str, Any]):   
     job_id = self.request.id
-    logger.info(f"Exécution du job {job_type} avec l'ID {job_id}")
+    logger.info(f"Starting execute_job: job_type={job_type}, job_id={job_id}")
     
     # Publier l'état initial
+    logger.info("Updating state to STARTED")
     self.update_state(state=JobStatus.STARTED.value)
     
     try:
         if job_type == "VehicleReplayJob":
+            logger.info("Job type is VehicleReplayJob, creating cancel_event")
             cancel_event = asyncio.Event()
             job_params['job_id'] = job_id  # Transmettre l'ID de la tâche
+            logger.info("Instantiating VehicleReplayJob")
             job = VehicleReplayJob(job_params, cancel_event=cancel_event)
         else:
-            raise ValueError(f"Type de job non reconnu: {job_type}")
+            error_message = f"Type de job non reconnu: {job_type}"
+            logger.error(error_message)
+            raise ValueError(error_message)
         
+        logger.info("Creating new asyncio event loop")
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
         async def process_job_results():
+            logger.info(f"Starting asynchronous processing of job results for job {job_id}")
             try:
                 async for metadata, frame in job._execute():
+                    logger.info(f"Processing update for job {job_id}: metadata={metadata}")
                     result = JobResult(
                         job_id=job_id,
                         metadata=metadata,
                         frame=frame
                     )
+                    logger.info("Adding result to Redis")
                     await results_store.add_result(result)
                     
                     if cancel_event.is_set() or TaskManager.get_job_status(job_id) == JobStatus.REVOKED:
-                        logger.info(f"Job {job_id} annulé pendant l'exécution")
+                        logger.info(f"Job {job_id} cancelled during execution")
                         raise TaskRevokedError()
             except asyncio.CancelledError:
-                logger.info(f"Job {job_id} annulé")
+                logger.info(f"Job {job_id} cancelled via asyncio.CancelledError")
                 cancel_event.set()
                 raise TaskRevokedError()
             
             # Notification finale
+            logger.info(f"Sending final completion result for job {job_id}")
             final_result = JobResult(
                 job_id=job_id,
                 metadata={"type": "completed", "message": "Tâche terminée avec succès"},
@@ -249,16 +368,19 @@ def execute_job(self, job_type: str, job_params: Dict[str, Any]):
             )
             await results_store.add_result(final_result)
                 
+        logger.info("Running process_job_results in event loop")
         loop.run_until_complete(process_job_results())
         loop.close()
         
+        logger.info(f"Job {job_id} executed successfully")
         return {"job_id": job_id, "status": JobStatus.SUCCESS.value}
     
     except TaskRevokedError:
-        logger.info(f"Job {job_id} révoqué")
+        logger.info(f"Job {job_id} revoked")
         
         # Envoyer une notification d'annulation
         async def send_cancellation():
+            logger.info(f"Sending cancellation notification for job {job_id}")
             result = JobResult(
                 job_id=job_id,
                 metadata={"type": "cancelled", "message": "Tâche annulée"},
@@ -270,10 +392,11 @@ def execute_job(self, job_type: str, job_params: Dict[str, Any]):
         return {"job_id": job_id, "status": JobStatus.REVOKED.value}
     
     except Exception as e:
-        logger.error(f"Erreur dans le job {job_id}: {e}")
+        logger.error(f"Error in job {job_id}: {e}")
         logger.error(traceback.format_exc())
         
         async def send_error():
+            logger.info(f"Sending error notification for job {job_id}")
             result = JobResult(
                 job_id=job_id,
                 metadata={
@@ -288,94 +411,190 @@ def execute_job(self, job_type: str, job_params: Dict[str, Any]):
         asyncio.run(send_error())
         return {"job_id": job_id, "status": JobStatus.FAILURE.value, "error": str(e)}
 
+
 class TaskManager:
     """Gestionnaire de tâches façade pour les opérations Celery/Redis"""
     
     @staticmethod
     def submit_job(job_type: str, job_params: Dict[str, Any]) -> str:
-        logger.info(f"Soumission d'un nouveau job de type {job_type}")
-        task = execute_job.apply_async(args=[job_type, job_params])
-        return task.id
+        try:
+            logger.info(f"Soumission d'un nouveau job de type {job_type}")
+            try:
+                logger.info("Appel de execute_job.apply_async")
+                task = execute_job.apply_async(args=[job_type, job_params])
+                logger.info(f"Job soumis avec succès, id: {task.id}")
+            except Exception as e:
+                logger.error(f"Erreur lors de l'appel de execute_job.apply_async: {e}")
+                raise
+            return task.id
+        except Exception as e:
+            logger.error(f"Erreur lors de la soumission du job: {e}")
+            raise
     
     @staticmethod
     async def cancel_job(job_id: str) -> bool:
         logger.info(f"Tentative d'annulation du job {job_id}")
         try:
+            logger.info("Revoking job using celery_app.control.revoke")
             await asyncio.to_thread(celery_app.control.revoke, job_id, terminate=True)
-            
+            logger.info(f"Job {job_id} revoked successfully")
+        except Exception as rev_e:
+            logger.error(f"Erreur lors de la révocation du job {job_id}: {rev_e}")
+            return False
+        
+        try:
+            logger.info("Sending cancellation notification to Redis")
             async def send_cancellation():
-                result = JobResult(
-                    job_id=job_id,
-                    metadata={"type": "cancelled", "message": "Tâche annulée manuellement"},
-                    final=True
-                )
-                await results_store.add_result(result)
-                
-            await send_cancellation()
-            return True
-        except Exception as e:
-            logger.error(f"Erreur lors de l'annulation du job {job_id}: {e}")
+                try:
+                    logger.info("Creating cancellation JobResult")
+                    result = JobResult(
+                        job_id=job_id,
+                        metadata={"type": "cancelled", "message": "Tâche annulée manuellement"},
+                        final=True
+                    )
+                    logger.info("Adding cancellation result to Redis")
+                    await results_store.add_result(result)
+                    logger.info("Cancellation result added successfully")
+                except Exception as inner_e:
+                    logger.error(f"Erreur lors de l'ajout du résultat d'annulation pour le job {job_id}: {inner_e}")
+                    raise
+                await send_cancellation()
+                logger.info(f"Cancellation notification for job {job_id} sent successfully")
+                return True
+        except Exception as send_e:
+            logger.error(f"Erreur lors de l'envoi de la notification d'annulation pour le job {job_id}: {send_e}")
             return False
     
     @staticmethod
     def get_job_status(job_id: str) -> JobStatus:
-        result = AsyncResult(job_id)
-        
-        if result.failed():
-            return JobStatus.FAILURE
-        elif result.successful():
-            return JobStatus.SUCCESS
- 
         try:
+            logger.info(f"Obtaining AsyncResult for job_id: {job_id}")
+            result = AsyncResult(job_id)
+        except Exception as e:
+            logger.error(f"Error creating AsyncResult for job_id {job_id}: {e}")
+            return JobStatus.REVOKED
+
+        try:
+            if result.failed():
+                logger.info(f"Job {job_id} has failed")
+                return JobStatus.FAILURE
+            elif result.successful():
+                logger.info(f"Job {job_id} has succeeded")
+                return JobStatus.SUCCESS
+        except Exception as e:
+            logger.error(f"Error checking job status for job_id {job_id}: {e}")
+            return JobStatus.REVOKED
+
+        try:
+            logger.info(f"Job {job_id} state before conversion: {result.state}")
             state_str = result.state.upper()
+            logger.info(f"Converted state for job {job_id}: {state_str}")
             return JobStatus[state_str]
         except KeyError:
-            logger.warning(f"État inconnu pour la tâche {job_id}: {result.state}")
+            logger.warning(f"Unknown state for job {job_id}: {result.state}")
+            return JobStatus.REVOKED
+        except Exception as e:
+            logger.error(f"Unexpected error while processing job status for job_id {job_id}: {e}")
             return JobStatus.REVOKED
     
     @staticmethod
     async def get_job_error(job_id: str) -> Tuple[Optional[str], Optional[str]]:
         try:
+            logger.info("Creating AsyncResult for job %s", job_id)
             result = AsyncResult(job_id, app=celery_app)
+        except Exception as e:
+            logger.error("Failed to create AsyncResult for job %s: %s", job_id, e)
+            return str(e), None
+        
+        try:
+            logger.info("Checking if job %s failed", job_id)
             if result.failed():
-                # Tenter de récupérer les résultats d'erreur stockés dans Redis
-                error_data = await results_store.get_results(job_id, 0, 0)
+                logger.info("Job %s failed. Attempting to retrieve error data from Redis", job_id)
+                try:
+                    logger.info("Calling results_store.get_results for job %s", job_id)
+                    error_data = await results_store.get_results(job_id, 0, 0)
+                    logger.info("Retrieved error data from Redis for job %s: %s", job_id, error_data)
+                except Exception as e:
+                    logger.error("Error retrieving results from Redis for job %s: %s", job_id, e)
+                    error_data = None
+
                 if error_data and len(error_data) > 0:
                     metadata = error_data[0].metadata
+                    logger.info("Found error metadata for job %s", job_id)
                     return metadata.get("message"), metadata.get("stacktrace")
-                    
-                # Sinon, utiliser l'erreur Celery
+                
+                logger.info("No error metadata found in Redis for job %s. Using Celery error result", job_id)
                 return str(result.result), None
+                
+                logger.info("Job %s did not fail", job_id)
             return None, None
         except Exception as e:
-            logger.error(f"Erreur lors de la récupération des détails d'erreur du job {job_id}: {e}")
+            logger.error("Error processing job error details for job %s: %s", job_id, e)
             return str(e), None
     
     @staticmethod
     async def get_jobs() -> List[str]:
         all_tasks: Set[str] = set()
         try:
-            # Récupérer les tâches actives via Celery
-            inspect = celery_app.control.inspect()
-            active_tasks = inspect.active() or {}
-            for tasks in active_tasks.values():
-                all_tasks.update(task['id'] for task in tasks)
+            logger.info("Starting retrieval of active tasks from Celery")
+            try:
+                inspect = celery_app.control.inspect()
+                logger.info("Obtained inspect object from Celery: %s", inspect)
+            except Exception as e:
+                logger.error("Error while creating inspect object: %s", e)
+                raise
+
+            try:
+                active_tasks = inspect.active() or {}
+                logger.info("Active tasks retrieved: %s", active_tasks)
+            except Exception as e:
+                logger.error("Error while retrieving active tasks: %s", e)
+                raise
+
+            try:
+                for tasks in active_tasks.values():
+                    for task in tasks:
+                        task_id = task.get('id')
+                        logger.info("Adding active task id: %s", task_id)
+                        all_tasks.add(task_id)
+            except Exception as e:
+                logger.error("Error while iterating over active tasks: %s", e)
+                raise
         except Exception as e:
-            logger.error(f"Erreur lors de la récupération des tâches actives: {e}")
+            logger.error("Erreur lors de la récupération des tâches actives: %s", e)
 
         try:
-            # Récupérer les tâches terminées depuis Redis à partir des clés "task:*:results"
-            redis = aioredis.Redis(connection_pool=redis_pool)
-            keys = await redis.keys("task:*:results")
-            for key in keys:
-                key_str = key.decode('utf-8') if isinstance(key, bytes) else str(key)
-                parts = key_str.split(':')
-                if len(parts) >= 2:
-                    all_tasks.add(parts[1])
-            await redis.close()
+            logger.info("Connecting to Redis to retrieve completed tasks")
+            redis_client = aioredis.Redis(connection_pool=redis_pool)
+            logger.info("Connected to Redis")
+            try:
+                keys = await redis_client.keys("task:*:results")
+                logger.info("Keys retrieved from Redis: %s", keys)
+            except Exception as e:
+                logger.error("Erreur lors de la récupération des clés Redis: %s", e)
+                keys = []
+            try:
+                for key in keys:
+                    try:
+                        key_str = key.decode('utf-8') if isinstance(key, bytes) else str(key)
+                        logger.info("Processing Redis key: %s", key_str)
+                        parts = key_str.split(':')
+                        if len(parts) >= 2:
+                            logger.info("Adding task id from key: %s", parts[1])
+                            all_tasks.add(parts[1])
+                    except Exception as e:
+                        logger.error("Error processing key %s: %s", key, e)
+            except Exception as e:
+                logger.error("Error iterating over Redis keys: %s", e)
+            try:
+                await redis_client.close()
+                logger.info("Redis connection closed successfully")
+            except Exception as e:
+                logger.error("Error closing Redis connection: %s", e)
         except Exception as e:
-            logger.error(f"Erreur lors de la récupération des tâches depuis Redis: {e}")
+            logger.error("Erreur lors de la récupération des tâches depuis Redis: %s", e)
 
+        logger.info("Total tasks collected: %s", all_tasks)
         return list(all_tasks)
     
     @staticmethod
@@ -396,10 +615,17 @@ class TaskManager:
             if send_old_results:
                 logger.info(f"Envoi des résultats précédents pour le job {job_id}")
                 previous_results = await results_store.get_results(job_id)
+                logger.info(f"Résultats précédents récupérés pour le job {job_id}")
                 for result in previous_results:
+                    if websocket.client_state == WebSocketState.DISCONNECTED:
+                        logger.info(f"Client WebSocket déconnecté pour le job {job_id}")
+                        break
+                    
                     if result.metadata:
+                        logger.info(f"Envoi des métadonnées pour le job {job_id}")
                         await websocket.send_json(result.metadata)
                     if result.frame:
+                        logger.info(f"Envoi de la frame pour le job {job_id}")
                         await websocket.send_bytes(result.frame)
                 logger.info(f"Envoi des résultats précédents terminé pour le job {job_id}")
 
@@ -433,14 +659,16 @@ class TaskManager:
             # Essayer d'envoyer un message d'erreur si le websocket est encore connecté
             try:
                 if websocket.client_state != WebSocketState.DISCONNECTED:
+                    logger.info(f"Envoi d'un message d'erreur pour le job {job_id}")
                     await websocket.send_json({
                         "type": "error",
                         "message": f"Erreur de streaming: {str(e)}"
                     })
             except:
-                pass
+                logger.info(f"Erreur lors de l'envoi du message d'erreur pour le job {job_id}")
         finally:
             logger.info(f"Finally {job_id}")
+        logger.info("bye")
 
 class VehicleReplayJob:
     """
@@ -475,39 +703,90 @@ class VehicleReplayJob:
             raise ValueError("La plage temporelle (time_from et time_to) doit être spécifiée")
         
     def _calculate_progress(self, current: datetime.datetime, from_time: datetime.datetime, to_time: datetime.datetime) -> float:
-        total_duration = (to_time - from_time).total_seconds()
-        if total_duration <= 0:
-            logger.error(f"Invalid time range: {from_time} - {to_time}")
+        try:
+            logger.info("Calculating total_duration")
+            total_duration = (to_time - from_time).total_seconds()
+            logger.info(f"Total duration: {total_duration} seconds")
+
+            if total_duration <= 0:
+                logger.error(f"Invalid time range: {from_time} - {to_time}")
+                return 100.0
+
+            logger.info("Calculating elapsed time")
+            elapsed = (current - from_time).total_seconds()
+            logger.info(f"Elapsed time: {elapsed} seconds")
+
+            logger.info("Calculating progress percentage")
+            progress = min(100.0, max(0.0, (elapsed / total_duration) * 100.0))
+            logger.info(f"Computed progress: {progress}%")
+            return progress
+
+        except Exception as e:
+            logger.error(f"Error in _calculate_progress: {e}")
             return 100.0
-            
-        elapsed = (current - from_time).total_seconds()
-        progress = min(100.0, max(0.0, (elapsed / total_duration) * 100.0))
-        return progress
     
     def __calculate_iou(self, box1, box2):
-        top1, bottom1, left1, right1 = box1
-        top2, bottom2, left2, right2 = box2
-        
-        x_left = max(left1, left2)
-        y_top = max(top1, top2)
-        x_right = min(right1, right2)
-        y_bottom = min(bottom1, bottom2)
-        
-        # Vérifier s'il y a intersection
-        if x_right < x_left or y_bottom < y_top:
+        try:
+            logger.info("Unpacking box1 and box2")
+            top1, bottom1, left1, right1 = box1
+            top2, bottom2, left2, right2 = box2
+        except Exception as e:
+            logger.error(f"Error unpacking boxes: {e}")
             return 0.0
-        
-        intersection_area = (x_right - x_left) * (y_bottom - y_top)
-        
-        box1_area = (right1 - left1) * (bottom1 - top1)
-        box2_area = (right2 - left2) * (bottom2 - top2)
-        
-        union_area = box1_area + box2_area - intersection_area
-        
-        if union_area <= 0:
+
+        try:
+            logger.info("Calculating intersection coordinates")
+            x_left = max(left1, left2)
+            y_top = max(top1, top2)
+            x_right = min(right1, right2)
+            y_bottom = min(bottom1, bottom2)
+        except Exception as e:
+            logger.error(f"Error calculating intersection coordinates: {e}")
             return 0.0
-        
-        return intersection_area / union_area
+
+        try:
+            logger.info("Checking if boxes intersect")
+            if x_right < x_left or y_bottom < y_top:
+                logger.info("No intersection found")
+                return 0.0
+        except Exception as e:
+            logger.error(f"Error checking intersection condition: {e}")
+            return 0.0
+
+        try:
+            logger.info("Calculating intersection area")
+            intersection_area = (x_right - x_left) * (y_bottom - y_top)
+        except Exception as e:
+            logger.error(f"Error calculating intersection area: {e}")
+            return 0.0
+
+        try:
+            logger.info("Calculating areas of box1 and box2")
+            box1_area = (right1 - left1) * (bottom1 - top1)
+            box2_area = (right2 - left2) * (bottom2 - top2)
+        except Exception as e:
+            logger.error(f"Error calculating box areas: {e}")
+            return 0.0
+
+        try:
+            logger.info("Calculating union area")
+            union_area = box1_area + box2_area - intersection_area
+            if union_area <= 0:
+                logger.info("Union area is zero or negative")
+                return 0.0
+        except Exception as e:
+            logger.error(f"Error calculating union area: {e}")
+            return 0.0
+
+        try:
+            logger.info("Calculating IoU")
+            iou = intersection_area / union_area
+        except Exception as e:
+            logger.error(f"Error calculating IoU: {e}")
+            return 0.0
+
+        logger.info("Returning IoU value")
+        return iou
     
     def _filter_detections(self, bbox, probabilities: Dict[str, float]):
         size = self._filter_detections_size(bbox)
@@ -583,14 +862,14 @@ class VehicleReplayJob:
 
             # maybe the type is available also in probabilities given classes ? 
             type_score = 1.0
-            wanted_type = appearances.get("type", [])
+            wanted_type = self.appearances.get("type", [])
             if len(wanted_type) > 0:
                 type_score = 0.0
                 for t in wanted_type:
                     type_score = max(type_score, appearances.get("type", {}).get(t, 1.0))
             
             color_score = 1.0
-            wanted_color = appearances.get("color", [])
+            wanted_color = self.appearances.get("color", [])
             if len(wanted_color) > 0:
                 color_score = 0.0
                 for c in wanted_color:
@@ -607,116 +886,117 @@ class VehicleReplayJob:
         return 1.0
     
     async def __process_stream(self, source_guid) -> AsyncGenerator[Tuple[dict, Optional[bytes]], None]:
-        logger.info(f"Connecting to AI Service")
-        async with ServiceAI() as forensic:
-            logger.info(f"Connected to AI Service")
+        try:
+            logger.info("Step 1: Connecting to AI Service")
+            async with ServiceAI() as forensic:
+                logger.info("Connected to AI Service")
 
-            logger.info(f"Connecting to VMS")
-            async with CameraClient("192.168.20.72", 7778) as client:
-                logger.info(f"Connected to VMS")
+                logger.info("Step 2: Connecting to VMS")
+                async with CameraClient("192.168.20.72", 7778) as client:
+                    logger.info("Connected to VMS")
 
-                # Vérifier si la caméra existe
-                logger.info(f"Getting system info")
-                system_info = await client.get_system_info()
-                if source_guid not in system_info:
-                    logger.info(f"GUID de caméra non trouvé: {source_guid}")
-                    yield {"type": "error", "message": f"GUID de caméra non trouvé: {source_guid}"}, None
-                    return
-            
-                logger.info(f"Starting replay")
-                previous_boxes = []
-                frame_count = 0
-                
-                if self.cancel_event.is_set():
-                    return
-                
-                async for img, time in client.start_replay(
-                    source_guid, 
-                    self.time_from, 
-                    self.time_to
-                ):
+                    logger.info("Step 3: Getting system info")
+                    system_info = await client.get_system_info()
+                    if source_guid not in system_info:
+                        logger.info(f"GUID de caméra non trouvé: {source_guid}")
+                        yield {"type": "error", "message": f"GUID de caméra non trouvé: {source_guid}"}, None
+                        return
+
+                    logger.info("Step 4: Starting replay")
+                    previous_boxes = []
+                    frame_count = 0
+                    
                     if self.cancel_event.is_set():
                         return
                     
-                    logger.info(f"got a frame at {time}")
-                    progress = self._calculate_progress(time, self.time_from, self.time_to)
-                    frame_count += 1
-                    
-                    # Envoyer une mise à jour de progression sans image
-                    yield {"type": "progress", "progress": progress}, None
-                    
-                    # Détecter les objets
-                    detections = await forensic.detect(img)
-                    logger.debug(f"Detections: {len(detections)}")
-
-                    current_boxes = []
-                    for detection in detections:
+                    async for img, time in client.start_replay(
+                        source_guid, 
+                        self.time_from, 
+                        self.time_to
+                    ):
                         if self.cancel_event.is_set():
                             return
+                        
+                        logger.info(f"Received a frame at {time}")
+                        progress = self._calculate_progress(time, self.time_from, self.time_to)
+                        frame_count += 1
+                        
+                        logger.info("Yielding progress update")
+                        yield {"type": "progress", "progress": progress}, None
+                        
+                        logger.info("Step 5: Detecting objects")
+                        detections = await forensic.detect(img)
+                        logger.info(f"Detections count: {len(detections)}")
+
+                        current_boxes = []
+                        for detection in detections:
+                            if self.cancel_event.is_set():
+                                return
                             
-                        bbox = forensic.get_pixel_bbox(img, detection)
-                        probabilities = detection["bbox"]["probabilities"]
+                            bbox = forensic.get_pixel_bbox(img, detection)
+                            probabilities = detection["bbox"]["probabilities"]
 
-                        obj_score = self._filter_detections(bbox, probabilities)
-                        if obj_score <= 0.01:
-                            continue
+                            obj_score = self._filter_detections(bbox, probabilities)
+                            if obj_score <= 0.01:
+                                continue
 
-                        current_boxes.append(bbox)
+                            current_boxes.append(bbox)
 
-                        # Vérifier si la boîte est similaire à une boîte précédente
-                        is_duplicate = False
-                        for prev_box in previous_boxes:
-                            iou = self.__calculate_iou(bbox, prev_box)
-                            if iou > 0.2:  # Seuil plus élevé pour réduire les faux positifs
-                                logger.debug(f"Ignoring duplicate detection with IoU: {iou}")
-                                is_duplicate = True
-                                break
-                        if is_duplicate:
-                            continue
+                            is_duplicate = False
+                            for prev_box in previous_boxes:
+                                iou = self.__calculate_iou(bbox, prev_box)
+                                if iou > 0.2:  # Seuil pour réduire les faux positifs
+                                    logger.info(f"Ignoring duplicate detection with IoU: {iou}")
+                                    is_duplicate = True
+                                    break
+                            if is_duplicate:
+                                continue
 
-                        thumbnail = forensic.get_thumbnail(img, detection)
-                        if thumbnail is None:
-                            continue
-                        
-                        attributes = await forensic.classify(thumbnail)
-                        cls_score = self._filter_classification(probabilities, attributes, attributes)
-                        if cls_score <= 0.01:
-                            continue
+                            thumbnail = forensic.get_thumbnail(img, detection)
+                            if thumbnail is None:
+                                continue
+                            
+                            logger.info("Step 6: Classifying thumbnail")
+                            attributes = await forensic.classify(thumbnail)
+                            cls_score = self._filter_classification(probabilities, attributes, attributes)
+                            if cls_score <= 0.01:
+                                continue
 
-                        # Créer les métadonnées
-                        metadata = {
-                            "type": "detection",
-                            "progress": progress,
-                            "camera": source_guid,
-                            "score": obj_score * cls_score,
-                            "timestamp": time.isoformat(),
-                            "source": source_guid,
-                            "attributes": attributes
-                        }
-                        export = forensic.get_thumbnail(img, detection, 1.1)
-                        if export is None:
-                            continue
-                        
-                        _, encoded_image = cv2.imencode('.jpg', export)
-                        frame_bytes = encoded_image.tobytes()
+                            metadata = {
+                                "type": "detection",
+                                "progress": progress,
+                                "camera": source_guid,
+                                "score": obj_score * cls_score,
+                                "timestamp": time.isoformat(),
+                                "source": source_guid,
+                                "attributes": attributes
+                            }
+                            export = forensic.get_thumbnail(img, detection, 1.1)
+                            if export is None:
+                                continue
+                            
+                            _, encoded_image = cv2.imencode('.jpg', export)
+                            frame_bytes = encoded_image.tobytes()
 
-                        if True:
+                            logger.info("Step 7: Saving thumbnail to disk")
                             path = "/var/lib/postgresql/16/main"
-                            #path = "/opt/ACIC/front/database"
                             name = f"{source_guid}:{time.strftime('%Y-%m-%dT%H:%M')}"
-                            #name = uuid.uuid4()
                             os.makedirs(f"{path}/thumbnail/", exist_ok=True)
                             cv2.imwrite(f"{path}/thumbnail/{name}.jpg", thumbnail)
 
-                        yield metadata, frame_bytes
-                        
-                    # Mettre à jour les boîtes précédentes
-                    previous_boxes = current_boxes
-                
-                # Si aucune image n'a été traitée
-                if frame_count == 0:
-                    logger.warning(f"Pas d'image à traiter pour: {source_guid}")
-                    yield {"type": "warning", "message": f"Pas d'image à traiter pour la caméra: {source_guid}"}, None
+                            yield metadata, frame_bytes
+                            
+                        logger.info("Updating previous boxes for the next frame")
+                        previous_boxes = current_boxes
+                    
+                    if frame_count == 0:
+                        logger.info(f"No image processed for camera: {source_guid}")
+                        yield {"type": "warning", "message": f"Pas d'image à traiter pour la caméra: {source_guid}"}, None
+        except Exception as ex:
+            logger.error(f"Exception in __process_stream: {ex}")
+            yield {"type": "error", "message": f"Exception in stream processing: {ex}"}, None
+        
+        logger.info("Stream processing completed")
 
     async def _execute(self) -> AsyncGenerator[Tuple[dict, Optional[bytes]], None]:
         logger.info(f"Processing Forensic job {self.job_id}")
@@ -724,23 +1004,28 @@ class VehicleReplayJob:
         logger.info(f"Time range: {self.time_from} - {self.time_to}")
         
         if not self.sources:
+            logger.info("No sources provided, yielding error result")
             yield {"type": "error", "message": "Aucune source spécifiée"}, None
             return
         
         try:
+            logger.info("Beginning processing of all sources")
             # TODO: await asyncio.gather() pour traiter plusieurs flux en parallèle
-
             for source_guid in self.sources:
                 if self.cancel_event.is_set():
+                    logger.info(f"Cancellation flagged before processing source: {source_guid}")
                     return
                     
                 logger.info(f"Starting query for source: {source_guid}")
                 async for metadata, frame in self.__process_stream(source_guid):
                     if self.cancel_event.is_set():
+                        logger.info(f"Cancellation flagged during processing source: {source_guid}")
                         return
                     
+                    logger.info(f"Yielding update from source: {source_guid} with metadata: {metadata}")
                     yield metadata, frame
             
+            logger.info("All sources processed, yielding final completion result")
             yield {
                 "type": "completed", 
                 "message": "Analyse terminée avec succès",
@@ -750,9 +1035,11 @@ class VehicleReplayJob:
         except Exception as e:
             error_message = f"Erreur lors du traitement du flux vidéo: {str(e)}"
             stacktrace = traceback.format_exc()
+            logger.error("An exception occurred during _execute processing")
             logger.error(error_message)
             logger.error(stacktrace)
             
+            logger.info("Yielding error result due to exception")
             yield {
                 "type": "error", 
                 "message": error_message, 
