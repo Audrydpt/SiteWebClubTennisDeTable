@@ -1,5 +1,7 @@
 import { DatabaseIcon, Recycle } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,11 +15,20 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
+import useRetentionAPI from './hooks/use-retention';
 
 function Retention() {
-  const [retentionDays, setRetentionDays] = useState<number>(90);
+  const [retentionDays, setRetentionDays] = useState<number>(0);
   const [inputValue, setInputValue] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const { query, edit } = useRetentionAPI();
+
+  useEffect(() => {
+    if (query.data && query.data.retention) {
+      const days = Number(query.data.retention);
+      setRetentionDays(days);
+    }
+  }, [query.data]);
 
   const handleSliderChange = (value: number[]) => {
     setRetentionDays(value[0]);
@@ -27,45 +38,48 @@ function Retention() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
 
-    // Allow empty input for better user experience while typing
     if (value === '') {
       setInputValue('');
       return;
     }
 
-    // Check if input is a valid integer
     const parsedValue = parseInt(value, 10);
     if (Number.isNaN(parsedValue)) {
       return;
     }
 
-    // Update input field
     setInputValue(value);
 
-    // Update slider if value is within valid range
     if (parsedValue >= 1 && parsedValue <= 3650) {
       setRetentionDays(parsedValue);
     }
   };
 
   const handleInputBlur = () => {
-    // When input loses focus, ensure value is within bounds
     const parsedValue = parseInt(inputValue, 10);
 
-    if (Number.isNaN(parsedValue) || parsedValue < 1) {
-      setInputValue('1');
-      setRetentionDays(1);
-    } else if (parsedValue > 730) {
-      setInputValue('730');
-      setRetentionDays(730);
+    if (Number.isNaN(parsedValue) || parsedValue < 1 || parsedValue > 3650) {
+      setInputValue(retentionDays.toString());
+      setInputValue('');
     }
   };
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-    }, 2000);
+    edit(retentionDays, {
+      onSuccess: () => {
+        setIsSubmitting(false);
+        toast('Changes applied', {
+          description: `Retention period successfully set to ${retentionDays} days.`,
+        });
+      },
+      onError: () => {
+        setIsSubmitting(false);
+        toast('Error', {
+          description: 'Failed to update retention period. Please try again.',
+        });
+      },
+    });
   };
 
   const getBadgeVariant = () => {
@@ -143,7 +157,11 @@ function Retention() {
           <Button
             onClick={handleSubmit}
             className="w-full"
-            disabled={isSubmitting}
+            disabled={
+              retentionDays === query.data?.retention ||
+              isSubmitting ||
+              query.isLoading
+            }
           >
             {isSubmitting ? 'Saving...' : 'Apply Changes'}
           </Button>

@@ -9,6 +9,7 @@ import { UserPrivileges } from '@/lib/authenticate';
 import Forensic from '@/features/forensic/Forensic.tsx';
 import CollapsedSidebarLayout from '@/layouts/CollapsedSidebarLayout';
 import LoadingSpinner from './components/loading';
+import { Toaster } from './components/ui/sonner';
 import OptionalSidebarLayout from './layouts/OptionalLayout';
 import { lazyLoadFeature } from './lib/i18n';
 import Error from './pages/Error';
@@ -112,6 +113,7 @@ export default function App() {
           <Route path="*" element={<Error type="404" />} />
         </Route>
       </Routes>
+      <Toaster />
     </Suspense>
   );
 }
