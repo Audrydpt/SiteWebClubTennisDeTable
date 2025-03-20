@@ -1,9 +1,8 @@
 import { Search, SortAsc, SortDesc } from 'lucide-react';
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { ForensicResult } from '../lib/types';
-import forensicResultsHeap from '../lib/data-structure/heap';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
 import {
@@ -20,30 +19,6 @@ interface ResultsProps {
   isSearching: boolean;
   progress: number | null;
 }
-
-// Function to generate random test data
-const generateRandomResult = (): ForensicResult => ({
-  id: crypto.randomUUID(),
-  imageData: `https://picsum.photos/seed/${Math.random()}/300/200`,
-  timestamp: new Date(
-    Date.now() - Math.floor(Math.random() * 86400000)
-  ).toISOString(), // Random date within the last 24h
-  score: Math.random(), // Random score between 0 and 1
-  cameraId: `Camera-${Math.floor(Math.random() * 10)}`,
-  attributes: {
-    color: {
-      red: Math.random(),
-      green: Math.random(),
-      blue: Math.random(),
-    },
-    type: {
-      person: Math.random(),
-      car: Math.random(),
-      truck: Math.random(),
-    },
-  },
-  progress: Math.floor(Math.random() * 100),
-});
 
 // Helper function to avoid nested ternaries
 const getScoreBackgroundColor = (score: number) => {
@@ -75,8 +50,6 @@ export default function Results({
   isSearching,
   progress,
 }: ResultsProps) {
-  const [testMode, setTestMode] = useState(false);
-  const [testResults, setTestResults] = useState<ForensicResult[]>([]);
   const [sortType, setSortType] = useState<SortType>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
@@ -90,31 +63,11 @@ export default function Results({
     []
   );
 
-  useEffect(() => {
-    if (!testMode) {
-      // Clear test data when disabling test mode
-      setTestResults([]);
-      forensicResultsHeap.clear();
-      return () => {};
-    }
-
-    const intervalId = setInterval(() => {
-      const newResult = generateRandomResult();
-      forensicResultsHeap.addResult(newResult);
-      setTestResults(forensicResultsHeap.getBestResults());
-    }, 1000);
-
-    return () => clearInterval(intervalId);
-  }, [testMode]);
-
-  // Use either real results or test results based on test mode
-  const displayResults = testMode ? testResults : results;
-
   // Sort results based on current sort type and order
   const sortedResults = useMemo(() => {
-    if (!displayResults.length) return [];
+    if (!results.length) return [];
 
-    return [...displayResults].sort((a, b) => {
+    return [...results].sort((a, b) => {
       if (sortType === 'score') {
         return sortOrder === 'desc' ? b.score - a.score : a.score - b.score;
       }
@@ -123,7 +76,7 @@ export default function Results({
       const dateB = new Date(b.timestamp).getTime();
       return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
-  }, [displayResults, sortType, sortOrder]);
+  }, [results, sortType, sortOrder]);
 
   const toggleSortType = () => {
     setSortType(sortType === 'score' ? 'date' : 'score');
@@ -184,7 +137,7 @@ export default function Results({
 
   // Results are already sorted by the heap in useSearch, so we can use them directly
   const renderSearchResults = () => {
-    if (displayResults.length > 0) {
+    if (results.length > 0) {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {sortedResults.map((result: ForensicResult) => {
@@ -319,7 +272,7 @@ export default function Results({
       );
     }
 
-    if ((isSearching && progress !== 100) || testMode) {
+    if (isSearching && progress !== 100) {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {skeletonIds.map((id) => (
@@ -398,32 +351,14 @@ export default function Results({
               <SortAsc className="h-4 w-4" />
             )}
           </Button>
-
-          {/* Test mode button */}
-          <Button
-            variant={testMode ? 'destructive' : 'outline'}
-            size="sm"
-            onClick={() => setTestMode(!testMode)}
-          >
-            {testMode ? 'Arrêter' : 'Tester'}
-          </Button>
         </div>
       </div>
 
-      {progress !== null && progress < 100 && !testMode && (
+      {progress !== null && progress < 100 && (
         <div className="mt-2 mb-4">
           <Progress value={progress} className="h-2" />
           <p className="text-sm text-muted-foreground mt-1">
             Progression: {progress.toFixed(1)}%
-          </p>
-        </div>
-      )}
-
-      {testMode && (
-        <div className="mb-4 bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded-md">
-          <p className="text-sm text-yellow-800 dark:text-yellow-300">
-            Mode test actif: {displayResults.length} résultats | Un nouveau
-            résultat toutes les secondes
           </p>
         </div>
       )}
