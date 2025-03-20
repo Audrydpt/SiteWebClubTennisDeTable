@@ -15,3 +15,10 @@ export interface ForensicResult {
     [key: string]: any;
   };
 }
+
+export interface SourceProgress {
+  sourceId: string;
+  sourceName?: string;
+  progress: number;
+  timestamp?: string;
+}

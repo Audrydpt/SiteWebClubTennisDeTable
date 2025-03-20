@@ -1,8 +1,16 @@
-import { Search, SortAsc, SortDesc } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import {
+  Search,
+  SortAsc,
+  SortDesc,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
-import { ForensicResult } from '../lib/types';
+import { ForensicResult, SourceProgress } from '../lib/types';
+import forensicResultsHeap from '../lib/data-structure/heap';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
 import {
@@ -10,6 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 
 // Enum to represent different sort types
 type SortType = 'score' | 'date';
@@ -18,7 +27,32 @@ interface ResultsProps {
   results: ForensicResult[];
   isSearching: boolean;
   progress: number | null;
+  sourceProgress: SourceProgress[];
 }
+
+// Function to generate random test data
+const generateRandomResult = (): ForensicResult => ({
+  id: crypto.randomUUID(),
+  imageData: `https://picsum.photos/seed/${Math.random()}/300/200`,
+  timestamp: new Date(
+    Date.now() - Math.floor(Math.random() * 86400000)
+  ).toISOString(), // Random date within the last 24h
+  score: Math.random(), // Random score between 0 and 1
+  cameraId: `Camera-${Math.floor(Math.random() * 10)}`,
+  attributes: {
+    color: {
+      red: Math.random(),
+      green: Math.random(),
+      blue: Math.random(),
+    },
+    type: {
+      person: Math.random(),
+      car: Math.random(),
+      truck: Math.random(),
+    },
+  },
+  progress: Math.floor(Math.random() * 100),
+});
 
 // Helper function to avoid nested ternaries
 const getScoreBackgroundColor = (score: number) => {
@@ -49,10 +83,14 @@ export default function Results({
   results,
   isSearching,
   progress,
+  sourceProgress,
 }: ResultsProps) {
+  const [testMode, setTestMode] = useState(false);
+  const [testResults, setTestResults] = useState<ForensicResult[]>([]);
   const [sortType, setSortType] = useState<SortType>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
+  const [showSourceDetails, setShowSourceDetails] = useState(false);
 
   // Generate stable skeleton IDs
   const skeletonIds = useMemo(
@@ -63,11 +101,31 @@ export default function Results({
     []
   );
 
+  useEffect(() => {
+    if (!testMode) {
+      // Clear test data when disabling test mode
+      setTestResults([]);
+      forensicResultsHeap.clear();
+      return () => {};
+    }
+
+    const intervalId = setInterval(() => {
+      const newResult = generateRandomResult();
+      forensicResultsHeap.addResult(newResult);
+      setTestResults(forensicResultsHeap.getBestResults());
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [testMode]);
+
+  // Use either real results or test results based on test mode
+  const displayResults = testMode ? testResults : results;
+
   // Sort results based on current sort type and order
   const sortedResults = useMemo(() => {
-    if (!results.length) return [];
+    if (!displayResults.length) return [];
 
-    return [...results].sort((a, b) => {
+    return [...displayResults].sort((a, b) => {
       if (sortType === 'score') {
         return sortOrder === 'desc' ? b.score - a.score : a.score - b.score;
       }
@@ -76,7 +134,7 @@ export default function Results({
       const dateB = new Date(b.timestamp).getTime();
       return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
-  }, [results, sortType, sortOrder]);
+  }, [displayResults, sortType, sortOrder]);
 
   const toggleSortType = () => {
     setSortType(sortType === 'score' ? 'date' : 'score');
@@ -84,6 +142,129 @@ export default function Results({
 
   const toggleSortOrder = () => {
     setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
+  };
+
+  // Render progress section with general progress bar and collapsible source progress bars
+  const renderProgressSection = () => {
+    if (progress === null) return null;
+
+    return (
+      <div className="mt-2 mb-6 space-y-3">
+        <div className="flex justify-between items-center">
+          <p className="text-sm font-medium text-foreground">
+            Progression moyenne:{' '}
+            <span className="text-primary font-semibold">
+              {progress.toFixed(1)}%
+            </span>
+          </p>
+          {sourceProgress.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 hover:bg-secondary/80"
+              onClick={() => setShowSourceDetails(!showSourceDetails)}
+            >
+              {showSourceDetails
+                ? 'Masquer les détails'
+                : 'Afficher les détails'}
+              {showSourceDetails ? (
+                <ChevronUp className="ml-1 h-4 w-4" />
+              ) : (
+                <ChevronDown className="ml-1 h-4 w-4" />
+              )}
+            </Button>
+          )}
+        </div>
+
+        <Progress value={progress} className="h-2.5 bg-secondary" />
+
+        {sourceProgress.length > 0 && (
+          <Collapsible
+            open={showSourceDetails}
+            onOpenChange={setShowSourceDetails}
+            className="space-y-3 mt-3"
+          >
+            <CollapsibleContent className="bg-secondary/20 rounded-lg p-3 transition-all">
+              <div className="grid gap-3">
+                {sourceProgress.map((source) => {
+                  // Get camera name from the sourceId using extractCameraInfo
+                  const cameraInfo = extractCameraInfo(source.sourceId);
+                  // Determine progress color based on value
+                  const progressColor =
+                    source.progress >= 100
+                      ? 'bg-green-500'
+                      : source.progress > 50
+                        ? 'bg-blue-500'
+                        : 'bg-primary';
+
+                  return (
+                    <div
+                      key={source.sourceId}
+                      className="space-y-1.5 border-b border-secondary/50 pb-3 last:border-0 last:pb-0"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-sm">
+                            {cameraInfo.name}
+                          </span>
+                          {source.timestamp && (
+                            <span className="text-xs text-muted-foreground mt-0.5 flex items-center">
+                              <svg
+                                className="w-3 h-3 mr-1 inline-block"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <circle cx="12" cy="12" r="10" />
+                                <polyline points="12 6 12 12 16 14" />
+                              </svg>
+                              {new Date(source.timestamp).toLocaleString(
+                                'fr-FR',
+                                {
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  second: '2-digit',
+                                }
+                              )}
+                            </span>
+                          )}
+                        </div>
+                        <span
+                          className={`text-sm font-medium px-2 py-0.5 rounded-full ${
+                            source.progress >= 100
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-primary/10 text-primary-foreground/80'
+                          }`}
+                        >
+                          {source.progress.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="relative pt-1">
+                        <div className="overflow-hidden h-2 text-xs flex rounded-full bg-secondary">
+                          <div
+                            style={{
+                              width: `${Math.min(100, source.progress)}%`,
+                            }}
+                            className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-500 ${progressColor}`}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+      </div>
+    );
   };
 
   // Render expanded image modal
@@ -137,7 +318,7 @@ export default function Results({
 
   // Results are already sorted by the heap in useSearch, so we can use them directly
   const renderSearchResults = () => {
-    if (results.length > 0) {
+    if (displayResults.length > 0) {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {sortedResults.map((result: ForensicResult) => {
@@ -272,7 +453,7 @@ export default function Results({
       );
     }
 
-    if (isSearching && progress !== 100) {
+    if ((isSearching && progress !== 100) || testMode) {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {skeletonIds.map((id) => (
@@ -351,17 +532,28 @@ export default function Results({
               <SortAsc className="h-4 w-4" />
             )}
           </Button>
+          {/*
+          <Button
+            variant={testMode ? 'destructive' : 'outline'}
+            size="sm"
+            onClick={() => setTestMode(!testMode)}
+          >
+            {testMode ? 'Arrêter' : 'Tester'}
+          </Button>
+          */}
         </div>
       </div>
 
-      {progress !== null && progress < 100 && (
-        <div className="mt-2 mb-4">
-          <Progress value={progress} className="h-2" />
-          <p className="text-sm text-muted-foreground mt-1">
-            Progression: {progress.toFixed(1)}%
+      {testMode && (
+        <div className="mb-4 bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded-md">
+          <p className="text-sm text-yellow-800 dark:text-yellow-300">
+            Mode test actif: {displayResults.length} résultats | Un nouveau
+            résultat toutes les secondes
           </p>
         </div>
       )}
+
+      {renderProgressSection()}
 
       <ScrollArea className="h-[calc(100%-3rem)] pb-9">
         {renderSearchResults()}

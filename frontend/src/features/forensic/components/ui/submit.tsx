@@ -1,12 +1,10 @@
 import { Loader, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 
 interface SubmitProps {
   isSearching: boolean;
   isInitializing: boolean;
   canStartSearch: boolean;
-  progress: number | null;
   onCancel: () => Promise<void>;
 }
 
@@ -14,7 +12,6 @@ export default function Submit({
   isSearching,
   isInitializing,
   canStartSearch,
-  progress,
   onCancel,
 }: SubmitProps) {
   // Helper function to render button content based on state
@@ -69,17 +66,6 @@ export default function Submit({
       >
         Annuler la recherche
       </Button>
-
-      {isSearching && (
-        <>
-          <Progress value={progress ?? 0} className="h-2 mt-2" />
-          <p className="text-xs text-muted-foreground mt-1 text-center">
-            {progress !== null
-              ? `${progress.toFixed(1)}% terminé`
-              : 'Initialisation de la recherche...'}
-          </p>
-        </>
-      )}
     </div>
   );
 }

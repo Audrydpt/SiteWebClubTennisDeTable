@@ -4,12 +4,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import useLatest from '@/hooks/use-latest';
 
 import { FormData as CustomFormData, formatQuery } from '../lib/format-query';
-import { ForensicResult } from '../lib/types';
+import { ForensicResult, SourceProgress } from '../lib/types';
 import forensicResultsHeap from '@/features/forensic/lib/data-structure/heap.tsx';
 
 export default function useSearch(sessionId: string) {
   const [progress, setProgress] = useState<number | null>(null);
   const [results, setResults] = useState<ForensicResult[]>([]);
+  const [sourceProgress, setSourceProgress] = useState<SourceProgress[]>([]);
 
   const [isInitializing, setIsInitializing] = useState(false);
 
@@ -33,6 +34,16 @@ export default function useSearch(sessionId: string) {
     progress?: number;
     attributes?: Record<string, unknown>;
   }>({});
+
+  const initializeSourceProgress = useCallback((selectedSources: string[]) => {
+    setSourceProgress(
+      selectedSources.map((guid) => ({
+        sourceId: guid,
+        sourceName: `Source ${guid.slice(0, 8)}...`,
+        progress: 0,
+      }))
+    );
+  }, []);
 
   // Fonction pour nettoyer toutes les ressources
   const cleanupResources = useCallback(() => {
@@ -177,8 +188,62 @@ export default function useSearch(sessionId: string) {
               if (data.attributes)
                 metadataQueue.current.attributes = data.attributes;
 
-              if (data.progress !== undefined) {
-                setProgress(data.progress);
+              if (data.type === 'progress' && data.progress !== undefined) {
+                // Handle source-specific progress by guid
+                if (data.guid) {
+                  setSourceProgress((prev) => {
+                    // Find if we already have this source
+                    const existingIndex = prev.findIndex(
+                      (s) => s.sourceId === data.guid
+                    );
+
+                    let updated;
+                    if (existingIndex >= 0) {
+                      // Update existing source
+                      updated = [...prev];
+                      updated[existingIndex] = {
+                        ...updated[existingIndex],
+                        progress: data.progress,
+                        sourceName:
+                          data.sourceName || updated[existingIndex].sourceName,
+                        // Store timestamp from the WebSocket message
+                        timestamp:
+                          data.timestamp || updated[existingIndex].timestamp,
+                      };
+                    } else {
+                      // Add new source with guid as sourceId
+                      updated = [
+                        ...prev,
+                        {
+                          sourceId: data.guid,
+                          sourceName:
+                            data.sourceName || `Source ${prev.length + 1}`,
+                          progress: data.progress,
+                          // Include timestamp from the WebSocket message
+                          timestamp: data.timestamp,
+                        },
+                      ];
+                    }
+
+                    // Calculate average progress
+                    const totalProgress = updated.reduce(
+                      (sum, source) => sum + source.progress,
+                      0
+                    );
+                    const averageProgress =
+                      updated.length > 0 ? totalProgress / updated.length : 0;
+
+                    // Update the general progress
+                    setProgress(averageProgress);
+
+                    return updated;
+                  });
+                } else {
+                  // If no guid, still update the global progress (fallback)
+                  setProgress(data.progress);
+                }
+
+                // Check if search is complete
                 if (data.progress === 100) {
                   console.log('🏁 Search completed (100%)');
                   setIsSearching(false);
@@ -192,9 +257,7 @@ export default function useSearch(sessionId: string) {
                     }
                   }, 500);
                 }
-              }
-
-              if (data.error) {
+              } else if (data.error) {
                 console.error('⚠️ WebSocket error:', data.error);
                 setIsSearching(false);
               }
@@ -350,5 +413,7 @@ export default function useSearch(sessionId: string) {
     isSearching,
     jobId,
     isInitializing,
+    sourceProgress,
+    initializeSourceProgress,
   };
 }

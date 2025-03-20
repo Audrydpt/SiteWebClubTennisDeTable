@@ -11,7 +11,6 @@ interface ForensicFormProps {
   isSearching: boolean;
   isInitializing: boolean;
   canStartSearch: boolean;
-  progress: number | null;
   closeWebSocket: () => Promise<void>;
   isCollapsed: boolean;
 }
@@ -20,7 +19,6 @@ export default function ForensicForm({
   onSubmit,
   isSearching,
   isInitializing,
-  progress,
   closeWebSocket,
   isCollapsed,
   canStartSearch,
@@ -38,7 +36,6 @@ export default function ForensicForm({
           isSearching={isSearching}
           isInitializing={isInitializing}
           canStartSearch={canStartSearch}
-          progress={progress}
           onCancel={closeWebSocket}
         />
       </form>
