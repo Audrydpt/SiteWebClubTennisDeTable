@@ -206,7 +206,6 @@ export default function useSearch(sessionId: string) {
                         progress: data.progress,
                         sourceName:
                           data.sourceName || updated[existingIndex].sourceName,
-                        // Store timestamp from the WebSocket message
                         timestamp:
                           data.timestamp || updated[existingIndex].timestamp,
                       };
@@ -219,8 +218,8 @@ export default function useSearch(sessionId: string) {
                           sourceName:
                             data.sourceName || `Source ${prev.length + 1}`,
                           progress: data.progress,
-                          // Include timestamp from the WebSocket message
                           timestamp: data.timestamp,
+                          startTime: new Date().toISOString(),
                         },
                       ];
                     }
@@ -243,19 +242,38 @@ export default function useSearch(sessionId: string) {
                   setProgress(data.progress);
                 }
 
-                // Check if search is complete
+                // Check if search is complete by checking if ALL sources are at 100%
                 if (data.progress === 100) {
-                  console.log('🏁 Search completed (100%)');
-                  setIsSearching(false);
-
-                  setTimeout(() => {
-                    if (
-                      wsRef.current &&
-                      wsRef.current.readyState === WebSocket.OPEN
-                    ) {
-                      wsRef.current.close(1000, 'Recherche terminée');
+                  setSourceProgress((prevSources) => {
+                    const updatedSources = [...prevSources];
+                    const sourceIndex = updatedSources.findIndex(
+                      (s) => s.sourceId === data.guid
+                    );
+                    if (sourceIndex >= 0) {
+                      updatedSources[sourceIndex].progress = 100;
                     }
-                  }, 500);
+
+                    // Only consider search complete when ALL sources reach 100%
+                    const allComplete = updatedSources.every(
+                      (source) => source.progress === 100
+                    );
+
+                    if (allComplete) {
+                      console.log('🏁 All searches completed (100%)');
+                      setIsSearching(false);
+
+                      setTimeout(() => {
+                        if (
+                          wsRef.current &&
+                          wsRef.current.readyState === WebSocket.OPEN
+                        ) {
+                          wsRef.current.close(1000, 'All searches completed');
+                        }
+                      }, 500);
+                    }
+
+                    return updatedSources;
+                  });
                 }
               } else if (data.error) {
                 console.error('⚠️ WebSocket error:', data.error);

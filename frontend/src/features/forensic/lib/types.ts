@@ -21,4 +21,5 @@ export interface SourceProgress {
   sourceName?: string;
   progress: number;
   timestamp?: string;
+  startTime?: string;
 }

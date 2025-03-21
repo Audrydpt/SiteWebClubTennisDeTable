@@ -144,24 +144,153 @@ export default function Results({
     setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
   };
 
-  // Render progress section with general progress bar and collapsible source progress bars
+  /*
+  const formatTimeRemaining = (timeMs: number): string => {
+    console.log('Formatting time remaining:', timeMs);
+
+    if (timeMs < 60000) {
+      // Less than a minute
+      return "moins d'une minute";
+    }
+    if (timeMs < 3600000) {
+      // Less than an hour
+      const minutes = Math.ceil(timeMs / 60000);
+      return `environ ${minutes} minute${minutes > 1 ? 's' : ''}`;
+    }
+    // Hours and minutes
+    const hours = Math.floor(timeMs / 3600000);
+    const minutes = Math.ceil((timeMs % 3600000) / 60000);
+    return `environ ${hours} heure${hours > 1 ? 's' : ''} ${minutes > 0 ? `et ${minutes} minute${minutes > 1 ? 's' : ''}` : ''}`;
+  }; */
+
+  /* const calculateTimeRemaining = (
+    sourcesProgress: SourceProgress[]
+  ): {
+    combined: string | null;
+    individual: Record<string, string | null>;
+  } => {
+    console.log('calculateTimeRemaining called with:', sourcesProgress);
+
+    // Filter sources that have progress > 0 but < 100
+    const activeSources = sourcesProgress.filter(
+      (source) => source.progress > 0 && source.progress < 100
+    );
+
+    console.log('Active sources for time calculation:', activeSources);
+
+    const result = {
+      combined: null as string | null,
+      individual: {} as Record<string, string | null>,
+    };
+
+    if (activeSources.length === 0) {
+      console.log(
+        'No active sources with valid progress data, returning empty result'
+      );
+      return result;
+    }
+
+    // Use a fixed estimate of 5 minutes for a complete search as baseline
+    const BASELINE_COMPLETE_SEARCH_MS = 300000; // 5 minutes
+
+    // Calculate individual times first
+    activeSources.forEach((source) => {
+      if (source.progress <= 0) {
+        result.individual[source.sourceId] = null;
+        return;
+      }
+
+      // Calculate remaining time based on progress percentage
+      const remainingPercent = 100 - source.progress;
+      const estimatedRemaining =
+        (remainingPercent / source.progress) *
+        (source.startTime
+          ? Date.now() - new Date(source.startTime).getTime()
+          : BASELINE_COMPLETE_SEARCH_MS * (source.progress / 100));
+
+      console.log(
+        `Source ${source.sourceId}: progress=${source.progress}, estimated remaining=${estimatedRemaining}ms`
+      );
+
+      if (estimatedRemaining > 0 && isFinite(estimatedRemaining)) {
+        result.individual[source.sourceId] =
+          formatTimeRemaining(estimatedRemaining);
+        console.log(
+          `Source ${source.sourceId}: Formatted estimate=${result.individual[source.sourceId]}`
+        );
+      } else {
+        result.individual[source.sourceId] = null;
+      }
+    });
+
+    // For combined estimate, use the first active source's time multiplied by the number of sources
+    // This gives a better approximation of total time than averaging
+    if (activeSources.length > 0 && activeSources[0].progress > 0) {
+      const firstSourceRemainingPercent = 100 - activeSources[0].progress;
+      const firstSourceElapsedTime = activeSources[0].startTime
+        ? Date.now() - new Date(activeSources[0].startTime).getTime()
+        : BASELINE_COMPLETE_SEARCH_MS * (activeSources[0].progress / 100);
+
+      const firstSourceEstimatedRemaining =
+        (firstSourceRemainingPercent / activeSources[0].progress) *
+        firstSourceElapsedTime;
+
+      // Multiply by the number of sources to get total time
+      const totalEstimatedTime =
+        firstSourceEstimatedRemaining * activeSources.length;
+
+      if (totalEstimatedTime > 0 && isFinite(totalEstimatedTime)) {
+        result.combined = formatTimeRemaining(totalEstimatedTime);
+        console.log('Combined time estimate:', result.combined);
+      }
+    }
+
+    console.log('Final time estimates:', result);
+    return result;
+  };
+
+  // Add logs in useMemo to see when it's recalculated
+  const timeEstimates = useMemo(() => {
+    console.log(
+      'Recalculating timeEstimates with sourceProgress:',
+      sourceProgress
+    );
+    const result = calculateTimeRemaining(sourceProgress);
+    console.log('Calculated time estimates:', result);
+    return result;
+  }, [sourceProgress]); */
+
+  // Add logs in the renderProgressSection function
   const renderProgressSection = () => {
-    if (progress === null) return null;
+    if (progress === null) {
+      return null;
+    }
 
     return (
       <div className="mt-2 mb-6 space-y-3">
         <div className="flex justify-between items-center">
-          <p className="text-sm font-medium text-foreground">
-            Progression moyenne:{' '}
-            <span className="text-primary font-semibold">
-              {progress.toFixed(1)}%
-            </span>
-          </p>
+          <div className="flex flex-col">
+            <p className="text-sm font-medium text-foreground">
+              Progression :{' '}
+              <span className="text-primary font-semibold">
+                {progress.toFixed(0)}%
+              </span>
+              {/* timeEstimates.combined ? (
+                <span className="text-muted-foreground ml-2 text-xs font-medium">
+                  • Temps restant : {timeEstimates.combined}
+                </span>
+              ) : (
+                <span className="text-muted-foreground ml-2 text-xs font-medium">
+                  • Calcul du temps restant...
+                </span>
+              ) */}
+            </p>
+          </div>
           {sourceProgress.length > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 px-2 hover:bg-secondary/80"
+              className="h-7 px-2 hover:bg-muted/80"
               onClick={() => setShowSourceDetails(!showSourceDetails)}
             >
               {showSourceDetails
@@ -176,7 +305,7 @@ export default function Results({
           )}
         </div>
 
-        <Progress value={progress} className="h-2.5 bg-secondary" />
+        <Progress value={progress} className="w-full" />
 
         {sourceProgress.length > 0 && (
           <Collapsible
@@ -184,78 +313,84 @@ export default function Results({
             onOpenChange={setShowSourceDetails}
             className="space-y-3 mt-3"
           >
-            <CollapsibleContent className="bg-secondary/20 rounded-lg p-3 transition-all">
+            <CollapsibleContent className="bg-muted rounded-lg p-3 transition-all">
               <div className="grid gap-3">
                 {sourceProgress.map((source) => {
                   // Get camera name from the sourceId using extractCameraInfo
                   const cameraInfo = extractCameraInfo(source.sourceId);
-                  // Determine progress color based on value
-                  const progressColor =
-                    source.progress >= 100
-                      ? 'bg-green-500'
-                      : source.progress > 50
-                        ? 'bg-blue-500'
-                        : 'bg-primary';
+                  // const sourceTimeEstimate =
+                  // timeEstimates.individual[source.sourceId];
 
                   return (
                     <div
                       key={source.sourceId}
-                      className="space-y-1.5 border-b border-secondary/50 pb-3 last:border-0 last:pb-0"
+                      className="space-y-1.5 border-b border-foreground/50 pb-3 last:border-0 last:pb-0"
                     >
                       <div className="flex justify-between items-center">
                         <div className="flex flex-col">
                           <span className="font-medium text-sm">
                             {cameraInfo.name}
                           </span>
-                          {source.timestamp && (
-                            <span className="text-xs text-muted-foreground mt-0.5 flex items-center">
-                              <svg
-                                className="w-3 h-3 mr-1 inline-block"
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <circle cx="12" cy="12" r="10" />
-                                <polyline points="12 6 12 12 16 14" />
-                              </svg>
-                              {new Date(source.timestamp).toLocaleString(
-                                'fr-FR',
-                                {
-                                  year: 'numeric',
-                                  month: '2-digit',
-                                  day: '2-digit',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  second: '2-digit',
-                                }
-                              )}
-                            </span>
-                          )}
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                            {source.timestamp && (
+                              <span className="flex items-center">
+                                <svg
+                                  className="w-3 h-3 mr-1 inline-block"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <circle cx="12" cy="12" r="10" />
+                                  <polyline points="12 6 12 12 16 14" />
+                                </svg>
+                                {new Date(source.timestamp).toLocaleString(
+                                  'fr-FR',
+                                  {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  }
+                                )}
+                              </span>
+                            )}
+                            {source.progress > 0 && source.progress < 100 && (
+                              // sourceTimeEstimate && (
+                              <span className="flex items-center">
+                                <svg
+                                  className="w-3 h-3 mr-1 inline-block"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M17 8h2a2 2 0 0 1 2 2v2m-2 8H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h10" />
+                                  <path d="M22 16H13c-2 0-2-4-4-4H7" />
+                                </svg>
+                                {/* sourceTimeEstimate */}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <span
                           className={`text-sm font-medium px-2 py-0.5 rounded-full ${
                             source.progress >= 100
                               ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                              : 'bg-primary/10 text-primary-foreground/80'
+                              : 'bg-muted/10 text-primary/80'
                           }`}
                         >
-                          {source.progress.toFixed(1)}%
+                          {source.progress.toFixed(0)}%
                         </span>
                       </div>
-                      <div className="relative pt-1">
-                        <div className="overflow-hidden h-2 text-xs flex rounded-full bg-secondary">
-                          <div
-                            style={{
-                              width: `${Math.min(100, source.progress)}%`,
-                            }}
-                            className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-500 ${progressColor}`}
-                          />
-                        </div>
-                      </div>
+                      <Progress value={source.progress} className="w-full" />
                     </div>
                   );
                 })}
