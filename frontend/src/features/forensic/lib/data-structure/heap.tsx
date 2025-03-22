@@ -1,4 +1,5 @@
 import { MinHeap } from '@datastructures-js/heap';
+
 import { ForensicResult } from '../types';
 
 // Number of maximum results to keep

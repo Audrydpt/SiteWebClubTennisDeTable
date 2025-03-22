@@ -1,17 +1,16 @@
-/* eslint-disable */
-import { useState, useRef } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+/* eslint-disable no-console */
+import { useRef, useState } from 'react';
 
-import {
-  ForensicFormProvider,
-  ForensicFormValues,
-} from './lib/provider/forensic-form-context';
-import useSearch from './hooks/use-search';
+import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/providers/auth-context';
+
+import useSearch from './hooks/use-search';
 import { createSearchFormData } from './lib/format-query';
 
 import ForensicForm from './components/form';
 import Results from './components/results';
+import ForensicFormProvider from './lib/provider/forensic-form-provider';
+import { ForensicFormValues } from './lib/types';
 
 export default function Forensic() {
   const { sessionId = '' } = useAuth();
@@ -62,9 +61,12 @@ export default function Forensic() {
 
       // Get the selected sources from the form values directly rather than FormData
       // This avoids the TypeScript errors with FormData's type
-      const selectedSources = Array.isArray(data.sources)
-        ? data.sources
-        : data.sources ? [data.sources] : [];
+      let selectedSources: string[] = [];
+      if (Array.isArray(data.sources)) {
+        selectedSources = data.sources;
+      } else if (data.sources) {
+        selectedSources = [data.sources];
+      }
 
       // Initialize source progress with selected sources before starting the search
       initializeSourceProgress(selectedSources);

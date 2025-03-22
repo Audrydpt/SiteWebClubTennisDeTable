@@ -3,9 +3,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import useLatest from '@/hooks/use-latest';
 
+import forensicResultsHeap from '../lib/data-structure/heap.tsx';
 import { FormData as CustomFormData, formatQuery } from '../lib/format-query';
 import { ForensicResult, SourceProgress } from '../lib/types';
-import forensicResultsHeap from '@/features/forensic/lib/data-structure/heap.tsx';
 
 export default function useSearch(sessionId: string) {
   const [progress, setProgress] = useState<number | null>(null);

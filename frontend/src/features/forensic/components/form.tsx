@@ -1,8 +1,7 @@
 import { Form } from '@/components/ui/form';
-import {
-  ForensicFormValues,
-  useForensicForm,
-} from '@/features/forensic/lib/provider/forensic-form-context';
+
+import { useForensicForm } from '../lib/provider/forensic-form-context';
+import { ForensicFormValues } from '../lib/types';
 import Params from './ui/params';
 import Submit from './ui/submit';
 

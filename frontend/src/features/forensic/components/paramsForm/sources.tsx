@@ -1,27 +1,27 @@
-/* eslint-disable */
-import { useState, useEffect } from 'react';
+import { Eye, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
-import { Eye, Loader2 } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox.tsx';
+import SearchInput from '@/components/search-input';
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion.tsx';
-import { ScrollArea } from '@/components/ui/scroll-area.tsx';
-import useSources from '../../hooks/use-sources.tsx';
-import { Skeleton } from '@/components/ui/skeleton.tsx';
-import { useAuth } from '@/providers/auth-context.tsx';
+import { Checkbox } from '@/components/ui/checkbox.tsx';
+import { FormMessage } from '@/components/ui/form.tsx';
+import { Label } from '@/components/ui/label.tsx';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover.tsx';
-import { Label } from '@/components/ui/label.tsx';
-import { FormMessage } from '@/components/ui/form.tsx';
-import SearchInput from '@/components/search-input';
-import { ForensicFormValues } from '../../lib/provider/forensic-form-context';
+import { ScrollArea } from '@/components/ui/scroll-area.tsx';
+import { Skeleton } from '@/components/ui/skeleton.tsx';
+import { useAuth } from '@/providers/auth-context.tsx';
+
+import useSources from '../../hooks/use-sources.tsx';
+import { ForensicFormValues } from '../../lib/types.ts';
 
 interface SourcesProps {
   useScrollArea?: boolean;
@@ -31,7 +31,7 @@ interface SourcesProps {
 export default function Sources({
   useScrollArea = false,
   onSelectedCamerasChange,
-  }: SourcesProps) {
+}: SourcesProps) {
   const { sessionId = '' } = useAuth();
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -55,11 +55,14 @@ export default function Sources({
 
   // Sync form sources with selectedCameras when component mounts or form sources change
   useEffect(() => {
-    if (formSources && formSources.length > 0 &&
-      JSON.stringify(formSources) !== JSON.stringify(selectedCameras)) {
+    if (
+      formSources &&
+      formSources.length > 0 &&
+      JSON.stringify(formSources) !== JSON.stringify(selectedCameras)
+    ) {
       setSelectedCameras(formSources);
     }
-  }, [formSources, setSelectedCameras]);
+  }, [formSources, selectedCameras, setSelectedCameras]);
 
   // Filter cameras based on search term
   const filteredCameras = cameras.filter((camera) =>
@@ -152,23 +155,23 @@ export default function Sources({
         </div>
       )}
       <div className="space-y-2">
-        {isLoading
-          ? Array(4)
-            .fill(0)
-            .map((_, index) => (
+        {isLoading && (
+          <>
+            {[1, 2, 3, 4].map((skeleton) => (
               <div
-                key={`loading-skeleton-${index}`}
+                key={`loading-skeleton-${skeleton}`}
                 className="flex items-center space-x-2"
               >
                 <Skeleton className="h-4 w-4" />
                 <Skeleton className="h-5 w-32" />
               </div>
-            ))
-          : filteredCameras.map((camera) => (
-            <div
-              key={camera.id}
-              className="flex items-center justify-between"
-            >
+            ))}
+          </>
+        )}
+
+        {!isLoading &&
+          filteredCameras.map((camera) => (
+            <div key={camera.id} className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id={`camera-${camera.id}`}

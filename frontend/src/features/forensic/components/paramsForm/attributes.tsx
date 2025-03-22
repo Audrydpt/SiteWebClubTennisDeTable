@@ -1,12 +1,15 @@
 import { useCallback } from 'react';
-import { Checkbox } from '@/components/ui/checkbox.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { ScrollArea } from '@/components/ui/scroll-area.tsx';
+
+import MultiSelect from '@/components/multi-select.tsx';
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion.tsx';
+import { Checkbox } from '@/components/ui/checkbox.tsx';
+import { Input } from '@/components/ui/input.tsx';
+import { Label } from '@/components/ui/label.tsx';
+import { ScrollArea } from '@/components/ui/scroll-area.tsx';
 import {
   Select,
   SelectContent,
@@ -14,37 +17,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.tsx';
-import { Label } from '@/components/ui/label.tsx';
-import ColorPicker from '../ui/color-picker.tsx';
-import MultiSelect from '@/components/multi-select.tsx';
-import {
-  topTypeOptions,
-  bottomTypeOptions,
-  toleranceOptions,
-  distinctiveItems,
-  contextualItems,
-  colors,
-} from '../../lib/json/form-config.ts';
+
 import carBrands from '../../lib/json/car-brand.json';
 import {
-  useForensicForm,
+  bottomTypeOptions,
+  colors,
+  contextualItems,
+  distinctiveItems,
+  toleranceOptions,
+  topTypeOptions,
+} from '../../lib/json/form-config.ts';
+import { useForensicForm } from '../../lib/provider/forensic-form-context.tsx';
+import {
   PersonForensicFormValues,
   VehicleForensicFormValues,
-} from '../../lib/provider/forensic-form-context.tsx';
+} from '../../lib/types.ts';
+import ColorPicker from '../ui/color-picker.tsx';
 
 export default function Attributes() {
   const { formMethods, subjectType } = useForensicForm();
   const { watch, setValue } = formMethods;
+
+  // Get attribute values from the form
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const attributes = watch('attributes') || {};
+  const tolerance = attributes.confidence || 'medium';
 
   const toleranceLabels: Record<string, string> = {
     low: 'Basse',
     medium: 'Moyenne',
     high: 'Haute',
   };
-
-  // Get attribute values from the form
-  const attributes = watch('attributes') || {};
-  const tolerance = attributes.confidence || 'medium';
   // Create option maps for more efficient rendering
   const optionMaps = {
     topType: topTypeOptions.map((option) => option.value),

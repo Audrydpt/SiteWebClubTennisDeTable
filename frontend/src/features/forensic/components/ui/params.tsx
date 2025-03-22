@@ -1,10 +1,11 @@
 import { Accordion } from '@/components/ui/accordion';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import Appearances from '@/features/forensic/components/paramsForm/appareances.tsx';
-import Attributes from '@/features/forensic/components/paramsForm/attributes.tsx';
-import Sources from '@/features/forensic/components/paramsForm/sources.tsx';
-import Times from '@/features/forensic/components/paramsForm/times.tsx';
-import Types from '@/features/forensic/components/paramsForm/types.tsx';
+
+import Appearances from '../paramsForm/appareances';
+import Attributes from '../paramsForm/attributes';
+import Sources from '../paramsForm/sources';
+import Times from '../paramsForm/times';
+import Types from '../paramsForm/types';
 
 interface ParamsProps {
   isCollapsed: boolean;

@@ -1,9 +1,8 @@
-import { useState, SetStateAction, Dispatch, useEffect } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CalendarIcon, Clock } from 'lucide-react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 
-import { cn } from '@/lib/utils.ts';
 import {
   AccordionContent,
   AccordionItem,
@@ -29,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.tsx';
+import { cn } from '@/lib/utils.ts';
 import { useForensicForm } from '../../lib/provider/forensic-form-context.tsx';
 
 function DateTimePicker({

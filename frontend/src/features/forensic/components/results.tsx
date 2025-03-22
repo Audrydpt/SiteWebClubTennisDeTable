@@ -1,24 +1,26 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
+  ChevronDown,
+  ChevronUp,
   Search,
   SortAsc,
   SortDesc,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
-import React, { useMemo, useState, useEffect } from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Progress } from '@/components/ui/progress';
-import { ForensicResult, SourceProgress } from '../lib/types';
-import forensicResultsHeap from '../lib/data-structure/heap';
+import { useEffect, useMemo, useState } from 'react';
+
 import { Button } from '@/components/ui/button';
-import { Toggle } from '@/components/ui/toggle';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
+import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Toggle } from '@/components/ui/toggle';
+
+import forensicResultsHeap from '../lib/data-structure/heap';
+import { ForensicResult, SourceProgress } from '../lib/types';
 
 // Enum to represent different sort types
 type SortType = 'score' | 'date';
