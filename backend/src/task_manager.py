@@ -541,7 +541,53 @@ class VehicleReplayJob:
         self.appearances = data.get("appearances", None)
         self.attributes = data.get("attributes", None)
         self.context = data.get("context", None)
+
+        # TODO: Gérer le conf d'apparance et attribut séparément
+        self.confidence = self.appearances.get("confidence","medium") if self.appearances else "medium"
+        self.class_score = data.get("class_score", None)
+        self.global_score = data.get("global_score", None)
+
+        match self.confidence :
+            case "high":
+                self.top_type = 2
+                self.top_color = 2
+                self.threshold_type = 0.40
+                self.threshold_color = 0.40
+
+                if not self.class_score:
+                     self.class_score = 0.1
+                if not self.global_score:
+                    self.global_score = 0.1
+
+            case "medium":
+                self.top_type = 3
+                self.top_color = 3
+                self.threshold_type = 0.20
+                self.threshold_color = 0.20
+
+                if not self.class_score:
+                     self.class_score = 0.05
+                if not self.global_score:
+                    self.global_score = 0.05
+
+            case "low":
+                self.top_type = 4
+                self.top_color = 4
+                self.threshold_type = 0.10
+                self.threshold_color = 0.10
+
+                if not self.class_score:
+                     self.class_score = 0.01
+                if not self.global_score:
+                    self.global_score = 0.01
+            
+            case _ : 
+                    raise ValueError("unknown confidence strategy")
         
+        #set path to save thumbnails
+        self.save_path = data.get("save_thumbnail_path", "/var/lib/postgresql/16/main")
+        self.time_format = data.get("time_format", '%Y-%m-%dT%H:%M')
+
         # Récupère l'ID de job Celery s'il est fourni, sinon génère un UUID
         self.job_id = data.get("job_id", str(uuid.uuid4()))
         
@@ -603,7 +649,7 @@ class VehicleReplayJob:
     def _filter_detections_size(self, bbox):
         top, bottom, left, right = bbox
 
-        min_size = 32 # below this size, the object is too small and the model is not reliable
+        min_size = 16 # below this size, the object is too small and the model is not reliable
         max_size = 64 # trained model size
 
         width = right - left
@@ -661,26 +707,31 @@ class VehicleReplayJob:
         return appearance * attributes
     
     def _filter_classification_appearance(self, probabilities: Dict[str, float], appearances: Dict[str, Dict[str,float]]):
-        try:
-            confidence = self.appearances.get("confidence", "medium")
-            # high, topconf = wanted stuff, otherwise 0.
-            # medium, topconf = wanted or nearby, otherwise 0.
-            # low, return max(wanted, nearby).
+        try:       
 
             # maybe the type is available also in probabilities given classes ? 
             type_score = 1.0
             wanted_type = self.appearances.get("type", [])
             if len(wanted_type) > 0:
                 type_score = 0.0
+
+                detected_type = appearances.get("type", {})
+                filtered_detected_type = {k: v for k, v in detected_type.items() if v > self.threshold_type}    #filter conf too low
+                filtered_detected_type = dict(list(filtered_detected_type.items())[:self.top_type])             # keep top x results
+
                 for t in wanted_type:
-                    type_score = max(type_score, appearances.get("type", {}).get(t, 1.0))
+                    type_score = max(type_score, filtered_detected_type.get(t, 0.0))
             
             color_score = 1.0
             wanted_color = self.appearances.get("color", [])
             if len(wanted_color) > 0:
                 color_score = 0.0
+
+                detected_color = appearances.get("color", {})
+                filtered_detected_color = {k: v for k, v in detected_color.items() if v > self.threshold_color} #filter conf too low
+                filtered_detected_color = dict(list(filtered_detected_color.items())[:self.top_color])          # keep top x results
                 for c in wanted_color:
-                    color_score = max(color_score, appearances.get("color", {}).get(c, 1.0))
+                    color_score = max(color_score, filtered_detected_color.get(c, 0.0))
 
             logger.info(f"config: {self.appearances} - found: {appearances} - wanted {wanted_type} -> {type_score} - score: {wanted_color} -> {color_score}")
             return type_score * color_score
@@ -692,6 +743,68 @@ class VehicleReplayJob:
     def _filter_classification_attributes(self, probabilities: Dict[str, float], attributes: Dict[str, Dict[str,float]]):
         return 1.0
     
+    async def __process_image(self, forensic, img, time, previous_boxes, progress, source_guid):
+        detections = await forensic.detect(img)
+        current_boxes = []
+        for index, detection in enumerate(detections): #index seulement pour les tests, à virer plus tard
+            if self.cancel_event.is_set():
+                return
+            
+            bbox = forensic.get_pixel_bbox(img, detection)
+            probabilities = detection["bbox"]["probabilities"]
+
+            obj_score = self._filter_detections(bbox, probabilities)
+            if obj_score <= 0.1:
+                continue
+
+            current_boxes.append(bbox)
+
+            is_duplicate = False
+            for prev_box in previous_boxes:
+                iou = self.__calculate_iou(bbox, prev_box)
+                if iou > 0.2:
+                    is_duplicate = True
+                    break
+            if is_duplicate:
+                continue
+
+            thumbnail = forensic.get_thumbnail(img, detection)
+            if thumbnail is None:
+                continue
+            
+            attributes = await forensic.classify(thumbnail)
+            cls_score = self._filter_classification(probabilities, attributes, attributes)
+            if cls_score <= self.class_score:
+                continue
+
+            global_score = obj_score * cls_score
+            if global_score <= self.global_score:
+                continue
+
+            metadata = {
+                "type": "detection",
+                "progress": progress,
+                "camera": source_guid,
+                "score": global_score,
+                "timestamp": time.isoformat(),
+                "source": source_guid,
+                "attributes": attributes
+            }
+            export = forensic.get_thumbnail(img, detection, 1.1)
+            if export is None:
+                continue
+            
+            _, encoded_image = cv2.imencode('.jpg', export)
+            frame_bytes = encoded_image.tobytes()
+
+            path = "/var/lib/postgresql/16/main"
+            name = f"{source_guid}:{time.strftime('%Y-%m-%dT%H:%M')}"
+            os.makedirs(f"{path}/thumbnail/", exist_ok=True)
+            cv2.imwrite(f"{path}/thumbnail/{name}.jpg", thumbnail)
+            #cv2.imwrite(f"{ self.save_path}/thumbnail/{name}_{index}.jpg", thumbnail) #seulement pour les tests
+
+            yield metadata, frame_bytes, current_boxes
+
     async def __process_stream(self, source_guid) -> AsyncGenerator[Tuple[dict, Optional[bytes]], None]:
         try:
             async with ServiceAI() as forensic:
@@ -725,68 +838,10 @@ class VehicleReplayJob:
                         
                         yield {"type": "progress", "progress": progress, "guid": source_guid, "timestamp": time.isoformat()}, None
                         
-                        detections = await forensic.detect(img)
-                        current_boxes = []
-                        for detection in detections:
-                            if self.cancel_event.is_set():
-                                return
-                            
-                            bbox = forensic.get_pixel_bbox(img, detection)
-                            probabilities = detection["bbox"]["probabilities"]
-
-                            obj_score = self._filter_detections(bbox, probabilities)
-                            if obj_score <= 0.1:
-                                continue
-
-                            current_boxes.append(bbox)
-
-                            is_duplicate = False
-                            for prev_box in previous_boxes:
-                                iou = self.__calculate_iou(bbox, prev_box)
-                                if iou > 0.2:
-                                    is_duplicate = True
-                                    break
-                            if is_duplicate:
-                                continue
-
-                            thumbnail = forensic.get_thumbnail(img, detection)
-                            if thumbnail is None:
-                                continue
-                            
-                            attributes = await forensic.classify(thumbnail)
-                            cls_score = self._filter_classification(probabilities, attributes, attributes)
-                            if cls_score <= 0.01:
-                                continue
-
-                            global_score = obj_score * cls_score
-                            if global_score <= 0.01:
-                                continue
-
-                            metadata = {
-                                "type": "detection",
-                                "progress": progress,
-                                "camera": source_guid,
-                                "score": global_score,
-                                "timestamp": time.isoformat(),
-                                "source": source_guid,
-                                "attributes": attributes
-                            }
-                            export = forensic.get_thumbnail(img, detection, 1.1)
-                            if export is None:
-                                continue
-                            
-                            _, encoded_image = cv2.imencode('.jpg', export)
-                            frame_bytes = encoded_image.tobytes()
-
-                            path = "/var/lib/postgresql/16/main"
-                            name = f"{source_guid}:{time.strftime('%Y-%m-%dT%H:%M')}"
-                            os.makedirs(f"{path}/thumbnail/", exist_ok=True)
-                            cv2.imwrite(f"{path}/thumbnail/{name}.jpg", thumbnail)
-
+                        async for metadata, frame_bytes, current_boxes in self.__process_image(forensic, img, time, previous_boxes, progress,source_guid):
+                            previous_boxes = current_boxes
                             yield metadata, frame_bytes
-                            
-                        previous_boxes = current_boxes
-                    
+                                            
                     if frame_count == 0:
                         logger.info(f"No image processed for camera: {source_guid}")
                         yield {"type": "warning", "message": f"Pas d'image à traiter pour la caméra: {source_guid}"}, None
@@ -858,3 +913,79 @@ class VehicleReplayJob:
             }, None
             
             raise
+
+async def test_process_stream():
+    from datetime import datetime, timezone, timedelta
+    data = {}
+
+    data["save_thumbnail_path"] = "/tmp"
+    data["time_format"] = '%Y-%m-%dT%H:%M:%S.%f'
+
+    data["sources"] = ['00000001-0000-babe-0000-00408cec7f31']
+
+    start = datetime(2025, 3, 21, 14, 0, 0, tzinfo=timezone(timedelta(hours=1)))
+    time_range = {
+        "time_from": start ,
+        "time_to": start + timedelta(minutes=5)
+    }
+    data["timerange"] = time_range
+    data["type"] = "vehicle"
+    data["appearances"] = {"confidence" : "low", "type" : ["car"], "color" : ["black"]}
+
+
+    replay = VehicleReplayJob(data=data)
+    print("Starting")
+    for source in data["sources"] :
+        async for response in replay._VehicleReplayJob__process_stream(source):
+            if response[1] :
+                print(f"\n\n response : {response[0]}")
+        
+
+async def test_process_image():
+
+    from datetime import datetime, timezone, timedelta
+    data = {}
+
+    data["save_thumbnail_path"] = "/tmp"
+    data["sources"] = 'test'
+
+    #start = datetime.now(timezone.utc)
+    start = datetime(2025, 3, 21, 14, 0, 0, tzinfo=timezone(timedelta(hours=1)))
+    time_range = {
+        "time_from": start,
+        "time_to": start + timedelta(minutes=2)
+    }
+    data["timerange"] = time_range
+    data["type"] = "vehicle"
+    data["appearances"] = {"confidence" : "low", "type" : ["motorbike"], "color" : ["black"]}
+
+
+    async with ServiceAI() as forensic :
+        replay = VehicleReplayJob(data=data)
+        print("Starting")
+        await forensic.get_version()
+
+        #params
+        current_boxes = []
+        previous_boxes = []
+        progress = 0.
+        source_guid = "test"
+        time = start
+        img_path = "test.jpg"
+
+        img = cv2.imread(img_path)
+
+        async for metadata, frame_bytes, current_boxes in replay._VehicleReplayJob__process_image(forensic, img, time, previous_boxes, progress, source_guid):
+            previous_boxes = current_boxes
+            print(f"metadata : {metadata}")
+
+"""
+def main():
+    if True:
+        asyncio.run(test_process_stream())
+    else:
+        asyncio.run(test_process_image())
+
+if __name__ == "__main__":
+    main()
+"""
