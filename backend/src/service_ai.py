@@ -308,7 +308,7 @@ class ServiceAI:
             raise Exception("You must choose between object detection or classification")
         
         ctx = {
-            "confidenceThreshold": 0.5,
+            "confidenceThreshold": 0.1,
             "overlapThreshold": 0.1,
             "bbox": True if object_detection else False,
             "classifier": True if classification else False
