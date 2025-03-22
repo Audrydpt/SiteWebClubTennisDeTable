@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 
 interface Camera {
   id: string;
@@ -17,9 +17,12 @@ const getAuthHeader = (sessionId: string) => ({
 
 export default function useSources(
   sessionId: string,
-  vmsIp: string = DEFAULT_VMS_IP
+  vmsIp: string = DEFAULT_VMS_IP, // n'a pas de sens de venir de l'extérieur, ta classe Source devrait être "self-contained" pour gérer ça
+  initialSelectedCameras: string[] = [] // idem non? pourquoi t'as besoin de ça ?
 ) {
-  const [selectedCameras, setSelectedCameras] = useState<string[]>([]);
+  const [selectedCameras, setSelectedCameras] = useState<string[]>(
+    initialSelectedCameras
+  );
   const [snapshotLoadingStates, setSnapshotLoadingStates] = useState<
     Record<string, boolean>
   >({});

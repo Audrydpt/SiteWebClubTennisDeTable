@@ -1,15 +1,15 @@
 import { Form } from '@/components/ui/form';
-import {
-  ForensicFormValues,
-  useForensicForm,
-} from '@/features/forensic/lib/provider/forensic-form-context';
+
+import { useForensicForm } from '../lib/provider/forensic-form-context';
+import { ForensicFormValues } from '../lib/types';
 import Params from './ui/params';
 import Submit from './ui/submit';
 
 interface ForensicFormProps {
   onSubmit: (data: ForensicFormValues) => Promise<void>;
   isSearching: boolean;
-  progress: number | null;
+  isInitializing: boolean;
+  canStartSearch: boolean;
   closeWebSocket: () => Promise<void>;
   isCollapsed: boolean;
 }
@@ -17,9 +17,10 @@ interface ForensicFormProps {
 export default function ForensicForm({
   onSubmit,
   isSearching,
-  progress,
+  isInitializing,
   closeWebSocket,
   isCollapsed,
+  canStartSearch,
 }: ForensicFormProps) {
   const { formMethods } = useForensicForm();
 
@@ -32,7 +33,8 @@ export default function ForensicForm({
         <Params isCollapsed={isCollapsed} />
         <Submit
           isSearching={isSearching}
-          progress={progress}
+          isInitializing={isInitializing}
+          canStartSearch={canStartSearch}
           onCancel={closeWebSocket}
         />
       </form>

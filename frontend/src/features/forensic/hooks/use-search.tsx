@@ -1,32 +1,31 @@
 /* eslint-disable no-console */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { FormData as CustomFormData, formatQuery } from '../lib/format-query';
-import { ForensicResult } from '../lib/types';
-import forensicResultsHeap from '../lib/data-structure/heap';
+import useLatest from '@/hooks/use-latest';
 
-// Interface for forensic task
-interface ForensicTask {
-  guid: string;
-  status: string;
-}
+import forensicResultsHeap from '../lib/data-structure/heap.tsx';
+import { FormData as CustomFormData, formatQuery } from '../lib/format-query';
+import { ForensicResult, SourceProgress } from '../lib/types';
 
 export default function useSearch(sessionId: string) {
   const [progress, setProgress] = useState<number | null>(null);
   const [results, setResults] = useState<ForensicResult[]>([]);
+  const [sourceProgress, setSourceProgress] = useState<SourceProgress[]>([]);
+
+  const [isInitializing, setIsInitializing] = useState(false);
 
   const [jobId, setJobId] = useState<string | null>(null);
+  const latestJobId = useLatest(jobId);
 
   const [isSearching, setIsSearching] = useState(false);
+  const latestIsSearching = useLatest(isSearching);
 
   const [isCancelling, setIsCancelling] = useState(false);
+  const latestIsCancelling = useLatest(isCancelling);
 
-  // References
+  // Références pour WebSocket et AbortController
   const wsRef = useRef<WebSocket | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const reconnectTimeoutRef = useRef<number | null>(null);
-  const reconnectCountRef = useRef<number>(0);
-  const MAX_RECONNECT_ATTEMPTS = 5;
 
   const metadataQueue = useRef<{
     timestamp?: string;
@@ -36,35 +35,31 @@ export default function useSearch(sessionId: string) {
     attributes?: Record<string, unknown>;
   }>({});
 
-  // Clear all resources and timers
-  const cleanupResources = useCallback(() => {
-    // Clear any pending reconnection timeout
-    if (reconnectTimeoutRef.current !== null) {
-      window.clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
+  const initializeSourceProgress = useCallback((selectedSources: string[]) => {
+    setSourceProgress(
+      selectedSources.map((guid) => ({
+        sourceId: guid,
+        sourceName: `Source ${guid.slice(0, 8)}...`,
+        progress: 0,
+      }))
+    );
+  }, []);
 
-    // Close WebSocket if exists
+  // Fonction pour nettoyer toutes les ressources
+  const cleanupResources = useCallback(() => {
+    // Fermer WebSocket s'il existe
     if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
-      try {
-        wsRef.current.close(1000, 'Cleanup');
-      } catch (e) {
-        console.warn('Error closing WebSocket:', e);
-      }
+      wsRef.current.close(1000, 'Component unmounted');
       wsRef.current = null;
     }
-
-    // Abort any ongoing fetch request
+    // Annuler toute requête fetch en cours
     if (abortControllerRef.current) {
       abortControllerRef.current.abort('Cleanup');
       abortControllerRef.current = null;
     }
-
-    // Reset reconnect counter
-    reconnectCountRef.current = 0;
   }, []);
 
-  // Clean up on unmount
+  // Clean up WebSocket et AbortController on unmount
   useEffect(
     () => () => {
       cleanupResources();
@@ -72,117 +67,106 @@ export default function useSearch(sessionId: string) {
     [cleanupResources]
   );
 
-  // Check if a task is still active
-  const checkTaskStatus = useCallback(
-    async (taskJobId: string): Promise<boolean> => {
+  const startSearch = useCallback(
+    async (formData: CustomFormData, duration: number) => {
       try {
-        console.log('🔍 Checking task status:', taskJobId);
+        // S'assurer que toutes les ressources précédentes sont bien fermées
+        cleanupResources();
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        // Reset states
+        setResults([]);
+        setIsSearching(true);
+        setIsCancelling(false);
+        setIsInitializing(true);
 
-        const response = await fetch(`${process.env.MAIN_API_URL}/forensics`, {
-          headers: {
-            Authorization: `X-Session-Id ${sessionId}`,
-          },
-          signal: controller.signal,
-        });
+        forensicResultsHeap.clear();
 
-        clearTimeout(timeoutId);
+        // Créer un nouvel AbortController pour cette requête
+        abortControllerRef.current = new AbortController();
+
+        // Format query and make API call
+        const queryData = formatQuery(formData);
+        console.log('queryData', queryData);
+
+        const response = await fetch(
+          `${process.env.MAIN_API_URL}/forensics?duration=${duration}`,
+          {
+            method: 'POST',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+              Authorization: `X-Session-Id ${sessionId}`,
+            },
+            body: JSON.stringify(queryData),
+            signal: abortControllerRef.current.signal,
+          }
+        );
 
         if (!response.ok) {
-          console.error(`❌ Status check error: ${response.status}`);
-          return false;
+          throw new Error(`API returned status ${response.status}`);
         }
 
-        const tasks = await response.json();
-        const task = tasks.find((t: ForensicTask) => t.guid === taskJobId);
+        const data = await response.json();
+        const { guid } = data;
 
-        if (!task) {
-          console.log('⚠️ Task not found in list');
-          return false;
+        if (!guid) {
+          throw new Error('No job ID returned from API');
         }
 
-        const status = task.status?.toLowerCase();
-        console.log(`📊 Task ${taskJobId} status: ${status}`);
-
-        return status === 'pending' || status === 'running';
+        setJobId(guid);
+        // ajouter un délai de 2 sec pour stopper spam
+        setTimeout(() => {
+          setIsInitializing(false);
+        }, 2000);
+        return guid;
       } catch (error) {
-        console.error('❌ Status check error:', error);
-        return false;
+        // Ne pas logger d'erreur si c'est une annulation intentionnelle
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('❌ Erreur lors du démarrage de la recherche:', error);
+        }
+        setIsSearching(false);
+        setIsInitializing(false);
+        throw error;
       }
     },
-    [sessionId]
+    [sessionId, cleanupResources]
   );
 
-  // Initialize WebSocket connection
   const initWebSocket = useCallback(
-    (taskJobId: string) => {
-      if (!taskJobId) {
-        console.error('⚠️ No job ID available for WebSocket');
-        return;
-      }
-
-      // Don't attempt reconnection if we've reached max attempts
-      if (reconnectCountRef.current >= MAX_RECONNECT_ATTEMPTS) {
-        console.warn(
-          `⚠️ Maximum reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached`
+    (id: string) => {
+      if (!id) {
+        console.error(
+          '⚠️ Aucun jobId disponible pour initialiser le WebSocket'
         );
-        setIsSearching(false);
-        setProgress(100); // Mark as completed to avoid stuck UI
+        return;
+      }
+      // On ne crée pas la connexion si une fermeture manuelle ou une annulation est en cours.
+      if (latestIsCancelling.current) {
+        console.log(
+          '🚫 Initialisation du WebSocket ignorée – fermeture ou annulation en cours'
+        );
         return;
       }
 
-      // Close existing connection if present
+      // Si une connexion existe déjà, on la ferme proprement avant d’en créer une nouvelle.
       if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
-        try {
-          wsRef.current.close(1000, 'New connection requested');
-        } catch (e) {
-          console.warn('Error closing existing WebSocket:', e);
-        }
-        wsRef.current = null;
+        wsRef.current.close(1000, 'Nouvelle connexion demandée');
       }
 
-      // Determine the hostname
+      // Déterminer le hostname en privilégiant la variable d'environnement si possible
       let { hostname } = window.location;
       try {
-        const apiUrl = process.env.MAIN_API_URL;
-        if (apiUrl) {
-          const url = new URL(apiUrl);
-          hostname = url.hostname;
-        }
-      } catch (e) {
-        console.warn(
-          'Failed to parse API URL, using window.location.hostname:',
-          e
-        );
+        hostname = new URL(process.env.MAIN_API_URL || '').hostname || hostname;
+      } catch {
+        // En cas d'erreur, on garde le hostname par défaut
       }
 
       try {
-        console.log(
-          `🔌 Connecting WebSocket for job ${taskJobId} (attempt ${reconnectCountRef.current + 1})`
-        );
-
-        // Create the WebSocket connection
-        const ws = new WebSocket(
-          `wss://${hostname}/front-api/forensics/${taskJobId}`
-        );
+        const ws = new WebSocket(`wss://${hostname}/front-api/forensics/${id}`);
         wsRef.current = ws;
 
-        // Connection timeout - if it doesn't connect within 10 seconds, retry
-        const connectionTimeoutId = setTimeout(() => {
-          if (ws.readyState !== WebSocket.OPEN) {
-            console.warn('⏱️ WebSocket connection timeout');
-            ws.close(4000, 'Connection timeout');
-          }
-        }, 10000);
-
-        // WebSocket event handlers
         ws.onopen = () => {
-          console.log('✅ WebSocket connected for job', taskJobId);
-          clearTimeout(connectionTimeoutId);
-          // Reset reconnection counter on successful connection
-          reconnectCountRef.current = 0;
+          console.log('✅ WebSocket connecté pour le job', id);
         };
 
         ws.onmessage = (event) => {
@@ -204,24 +188,94 @@ export default function useSearch(sessionId: string) {
               if (data.attributes)
                 metadataQueue.current.attributes = data.attributes;
 
-              if (data.progress !== undefined) {
-                setProgress(data.progress);
-                if (data.progress === 100) {
-                  console.log('🏁 Search completed (100%)');
-                  setIsSearching(false);
+              if (data.type === 'progress' && data.progress !== undefined) {
+                // Handle source-specific progress by guid
+                if (data.guid) {
+                  setSourceProgress((prev) => {
+                    // Find if we already have this source
+                    const existingIndex = prev.findIndex(
+                      (s) => s.sourceId === data.guid
+                    );
 
-                  setTimeout(() => {
-                    if (
-                      wsRef.current &&
-                      wsRef.current.readyState === WebSocket.OPEN
-                    ) {
-                      wsRef.current.close(1000, 'Recherche terminée');
+                    let updated;
+                    if (existingIndex >= 0) {
+                      // Update existing source
+                      updated = [...prev];
+                      updated[existingIndex] = {
+                        ...updated[existingIndex],
+                        progress: data.progress,
+                        sourceName:
+                          data.sourceName || updated[existingIndex].sourceName,
+                        timestamp:
+                          data.timestamp || updated[existingIndex].timestamp,
+                      };
+                    } else {
+                      // Add new source with guid as sourceId
+                      updated = [
+                        ...prev,
+                        {
+                          sourceId: data.guid,
+                          sourceName:
+                            data.sourceName || `Source ${prev.length + 1}`,
+                          progress: data.progress,
+                          timestamp: data.timestamp,
+                          startTime: new Date().toISOString(),
+                        },
+                      ];
                     }
-                  }, 500);
-                }
-              }
 
-              if (data.error) {
+                    // Calculate average progress
+                    const totalProgress = updated.reduce(
+                      (sum, source) => sum + source.progress,
+                      0
+                    );
+                    const averageProgress =
+                      updated.length > 0 ? totalProgress / updated.length : 0;
+
+                    // Update the general progress
+                    setProgress(averageProgress);
+
+                    return updated;
+                  });
+                } else {
+                  // If no guid, still update the global progress (fallback)
+                  setProgress(data.progress);
+                }
+
+                // Check if search is complete by checking if ALL sources are at 100%
+                if (data.progress === 100) {
+                  setSourceProgress((prevSources) => {
+                    const updatedSources = [...prevSources];
+                    const sourceIndex = updatedSources.findIndex(
+                      (s) => s.sourceId === data.guid
+                    );
+                    if (sourceIndex >= 0) {
+                      updatedSources[sourceIndex].progress = 100;
+                    }
+
+                    // Only consider search complete when ALL sources reach 100%
+                    const allComplete = updatedSources.every(
+                      (source) => source.progress === 100
+                    );
+
+                    if (allComplete) {
+                      console.log('🏁 All searches completed (100%)');
+                      setIsSearching(false);
+
+                      setTimeout(() => {
+                        if (
+                          wsRef.current &&
+                          wsRef.current.readyState === WebSocket.OPEN
+                        ) {
+                          wsRef.current.close(1000, 'All searches completed');
+                        }
+                      }, 500);
+                    }
+
+                    return updatedSources;
+                  });
+                }
+              } else if (data.error) {
                 console.error('⚠️ WebSocket error:', data.error);
                 setIsSearching(false);
               }
@@ -252,161 +306,54 @@ export default function useSearch(sessionId: string) {
         };
 
         ws.onerror = (event) => {
-          console.error('❌ WebSocket error', event);
-          clearTimeout(connectionTimeoutId);
+          console.error('❌ Erreur sur le WebSocket', event);
         };
 
-        ws.onclose = async (event) => {
-          clearTimeout(connectionTimeoutId);
-
+        ws.onclose = (event) => {
           console.log(
-            `🔴 WebSocket closed, code: ${event.code}, reason: ${event.reason || 'Not specified'}`
+            `🔴 WebSocket fermé – Code: ${event.code}, Raison: ${event.reason || 'Non spécifiée'}`
           );
 
-          // Only attempt reconnection for unexpected closure during active search
+          // On reconnexte le WS seulement en cas de fermeture anormale
           if (
-            taskJobId &&
-            !isCancelling &&
-            isSearching &&
+            latestJobId.current === id &&
+            !latestIsCancelling.current &&
+            latestIsSearching.current &&
             event.code !== 1000 &&
             event.code !== 1001
           ) {
-            try {
-              // Check if task is still active before reconnecting
-              const isTaskActive = await checkTaskStatus(taskJobId);
-
-              if (isTaskActive) {
-                console.log('🔄 Reconnecting - task still active');
-
-                // Increment reconnect counter
-                reconnectCountRef.current += 1;
-
-                // Delay with exponential backoff (1s, 2s, 4s, 8s...)
-                const reconnectDelay = Math.min(
-                  1000 * 2 ** (reconnectCountRef.current - 1),
-                  10000
-                );
-
-                // Clear any existing timeout
-                if (reconnectTimeoutRef.current !== null) {
-                  window.clearTimeout(reconnectTimeoutRef.current);
-                }
-
-                reconnectTimeoutRef.current = window.setTimeout(() => {
-                  reconnectTimeoutRef.current = null;
-                  initWebSocket(taskJobId);
-                }, reconnectDelay);
-
-                console.log(`⏱️ Will attempt reconnect in ${reconnectDelay}ms`);
-              } else {
-                console.log('🛑 No reconnection - task inactive or completed');
-                setIsSearching(false);
-                setProgress(100);
-              }
-            } catch (error) {
-              console.error('❌ Error checking for reconnection:', error);
-              setIsSearching(false);
-            }
-          } else if (isSearching && event.code === 1000) {
-            // Normal closure during search indicates completion
-            console.log('🏁 Search completed (WS close)');
+            setTimeout(() => initWebSocket(id), 1000);
+          } else {
             setIsSearching(false);
-            setProgress(100);
           }
         };
       } catch (error) {
-        console.error('❌ Error creating WebSocket:', error);
+        console.error('❌ Erreur lors de la création du WebSocket:', error);
         setIsSearching(false);
       }
     },
-    [isCancelling, isSearching, checkTaskStatus]
+    [latestIsCancelling, latestIsSearching, latestJobId, isCancelling]
   );
 
-  // Start a new search
-  const startSearch = useCallback(
-    async (formData: CustomFormData, duration: number) => {
-      try {
-        // Ensure all previous resources are closed
-        cleanupResources();
-
-        // Reset states
-        forensicResultsHeap.clear();
-        setResults([]);
-        setProgress(0);
-        setIsSearching(true);
-        setIsCancelling(false);
-        reconnectCountRef.current = 0;
-
-        // Create new AbortController
-        const controller = new AbortController();
-        abortControllerRef.current = controller;
-
-        // Format query and make API call
-        const queryData = formatQuery(formData);
-        console.log('🚀 Starting forensic search', { duration });
-
-        const response = await fetch(
-          `${process.env.MAIN_API_URL}/forensics?duration=${duration}`,
-          {
-            method: 'POST',
-            headers: {
-              Accept: 'application/json',
-              'Content-Type': 'application/json',
-              Authorization: `X-Session-Id ${sessionId}`,
-            },
-            body: JSON.stringify(queryData),
-            signal: controller.signal,
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`API returned status ${response.status}`);
-        }
-
-        const data = await response.json();
-        const { guid } = data;
-
-        if (!guid) {
-          throw new Error('No job ID returned from API');
-        }
-
-        console.log(`✅ Search started with job ID: ${guid}`);
-        setJobId(guid);
-
-        // Initialize WebSocket with the new job ID
-        initWebSocket(guid);
-
-        return guid;
-      } catch (error) {
-        // Don't log error if it's an intentional cancellation
-        if (error instanceof Error && error.name !== 'AbortError') {
-          console.error('❌ Error starting search:', error);
-        }
-        setIsSearching(false);
-        setProgress(null);
-        throw error;
-      }
-    },
-    [sessionId, cleanupResources, initWebSocket]
-  );
-
-  // Cancel ongoing search
   const closeWebSocket = useCallback(() => {
-    if (isCancelling) {
-      console.log('🔄 Cancellation already in progress');
+    // Vérifier si une annulation est déjà en cours
+    if (isCancelling || isInitializing) {
+      console.log('🔄 Une annulation est déjà en cours, ignoré');
       return Promise.resolve();
     }
 
+    // Marquer comme en cours d'annulation pour éviter les doubles appels
     setIsCancelling(true);
-    console.log('🔒 Starting search cancellation procedure');
 
-    // Create a new AbortController for the cancellation request
+    console.log("🔒 Démarrage de la procédure d'annulation de recherche");
+
+    // Créer un nouvel AbortController pour la requête d'annulation
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    // If there's no active search or job ID, just reset
+    // Si la recherche n'est pas active ou qu'il n'y a pas de WebSocket, juste réinitialiser
     if (!isSearching || !jobId) {
-      console.log('⚠️ No active search to cancel');
+      console.log('⚠️ Pas de recherche active à annuler');
       setIsSearching(false);
       setProgress(null);
       setJobId(null);
@@ -414,34 +361,31 @@ export default function useSearch(sessionId: string) {
       return Promise.resolve();
     }
 
-    // First close the WebSocket if it exists
+    // D'abord fermer le WebSocket s'il existe - FORCE CODE 1000
     if (wsRef.current) {
       if (
         wsRef.current.readyState === WebSocket.OPEN ||
         wsRef.current.readyState === WebSocket.CONNECTING
       ) {
-        console.log('🔒 Closing WebSocket connection with code 1000...');
-        try {
-          wsRef.current.close(1000, 'Client cancelled search');
-        } catch (e) {
-          console.warn('Error closing WebSocket during cancellation:', e);
-        }
+        console.log('🔒 Fermeture de la connexion WebSocket avec code 1000...');
+        // Force close avec code 1000 (fermeture normale)
+        wsRef.current.close(1000, 'Client cancelled search');
       }
       wsRef.current = null;
     }
 
-    // Reset UI states immediately
+    // Réinitialiser les états du UI immédiatement
     setIsSearching(false);
     setProgress(null);
 
-    // Timeout for DELETE request
+    // Timeout pour la requête DELETE
     const timeoutId = setTimeout(() => {
       if (controller && !controller.signal.aborted) {
         controller.abort('Timeout');
       }
     }, 5000);
 
-    // Cancel the search via API
+    // Puis annuler la recherche via l'API
     return fetch(`${process.env.MAIN_API_URL}/forensics?duration=5`, {
       method: 'DELETE',
       headers: {
@@ -454,9 +398,9 @@ export default function useSearch(sessionId: string) {
       .then((response) => {
         clearTimeout(timeoutId);
         if (response.ok) {
-          console.log('✅ Search cancelled successfully via API');
+          console.log("✅ Recherche annulée avec succès via l'API");
         } else {
-          console.error(`❌ Cancellation failed: ${response.status}`);
+          console.error(`❌ Échec de l'annulation: ${response.status}`);
         }
       })
       .catch((error) => {
@@ -476,7 +420,7 @@ export default function useSearch(sessionId: string) {
         // S'assurer que isSearching est bien à false
         setIsSearching(false);
       });
-  }, [sessionId, isSearching, jobId, isCancelling]);
+  }, [sessionId, isSearching, jobId, isCancelling, isInitializing]);
 
   return {
     startSearch,
@@ -486,5 +430,8 @@ export default function useSearch(sessionId: string) {
     results,
     isSearching,
     jobId,
+    isInitializing,
+    sourceProgress,
+    initializeSourceProgress,
   };
 }

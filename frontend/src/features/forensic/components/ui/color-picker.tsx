@@ -1,14 +1,15 @@
 import { Check, Palette } from 'lucide-react';
-import { useController, Control, Path } from 'react-hook-form';
+import { Control, Path, useController } from 'react-hook-form';
+
+import { Button } from '@/components/ui/button';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-import { ForensicFormValues } from '../../lib/provider/forensic-form-context';
+import { ForensicFormValues } from '../../lib/types';
 
 interface Color {
   name: string;

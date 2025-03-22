@@ -38,9 +38,14 @@ const pingSession = async (sessionId: string) => {
 
     if (!response.ok) {
       console.warn('Failed to ping session', response.status);
+      if (response.status === 401) {
+        removeSessionId();
+        window.location.href = '/front-react/login';
+        return undefined;
       }
     }
-   catch (error) {
+    return undefined;
+  } catch (error) {
     console.error('Error pinging session:', error);
     return undefined;
   }

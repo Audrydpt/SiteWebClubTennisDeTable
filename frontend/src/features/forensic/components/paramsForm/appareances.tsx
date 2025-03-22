@@ -1,29 +1,14 @@
 import { useCallback } from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area.tsx';
+
+import MultiSelect from '@/components/multi-select.tsx';
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import ColorPicker from '../ui/color-picker.tsx';
-import MultiSelect from '@/components/multi-select.tsx';
-import {
-  genderOptions,
-  ageOptions,
-  buildOptions,
-  heightOptions,
-  hairLengthOptions,
-  hairStyleOptions,
-  vehicleTypes,
-  toleranceOptions,
-  colors,
-} from '../../lib/json/form-config.ts';
-import {
-  useForensicForm,
-  PersonForensicFormValues,
-  VehicleForensicFormValues,
-} from '../../lib/provider/forensic-form-context.tsx';
+import { ScrollArea } from '@/components/ui/scroll-area.tsx';
+
 import {
   Select,
   SelectContent,
@@ -31,6 +16,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.tsx';
+import {
+  ageOptions,
+  buildOptions,
+  colors,
+  genderOptions,
+  hairLengthOptions,
+  hairStyleOptions,
+  heightOptions,
+  toleranceOptions,
+  vehicleTypes,
+} from '../../lib/json/form-config.ts';
+import { useForensicForm } from '../../lib/provider/forensic-form-context.tsx';
+import {
+  PersonForensicFormValues,
+  VehicleForensicFormValues,
+} from '../../lib/types.ts';
+import ColorPicker from '../ui/color-picker.tsx';
 
 export default function Appearances() {
   const { formMethods, subjectType } = useForensicForm();
@@ -62,7 +64,6 @@ export default function Appearances() {
         | 'appearances.type',
       values: string[]
     ) => {
-      console.log(`Setting ${path} to:`, values);
       setValue(path, values);
     },
     [setValue]

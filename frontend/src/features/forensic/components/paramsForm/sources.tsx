@@ -1,26 +1,27 @@
-/* eslint-disable */
-import { useState } from 'react';
+import { Eye, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
-import { Eye, Loader2 } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox.tsx';
+import SearchInput from '@/components/search-input';
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion.tsx';
-import { ScrollArea } from '@/components/ui/scroll-area.tsx';
-import useSources from '../../hooks/use-sources.tsx';
-import { Skeleton } from '@/components/ui/skeleton.tsx';
-import { useAuth } from '@/providers/auth-context.tsx';
+import { Checkbox } from '@/components/ui/checkbox.tsx';
+import { FormMessage } from '@/components/ui/form.tsx';
+import { Label } from '@/components/ui/label.tsx';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover.tsx';
-import { Label } from '@/components/ui/label.tsx';
-import { FormMessage } from '@/components/ui/form.tsx';
-import SearchInput from '@/components/search-input';
+import { ScrollArea } from '@/components/ui/scroll-area.tsx';
+import { Skeleton } from '@/components/ui/skeleton.tsx';
+import { useAuth } from '@/providers/auth-context.tsx';
+
+import useSources from '../../hooks/use-sources.tsx';
+import { ForensicFormValues } from '../../lib/types.ts';
 
 interface SourcesProps {
   useScrollArea?: boolean;
@@ -36,8 +37,12 @@ export default function Sources({
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   // Add the form context
-  const formContext = useFormContext();
+  const formContext = useFormContext<ForensicFormValues>();
   const sourcesError = formContext.formState.errors.sources?.message;
+  const hasError = !!sourcesError;
+
+  // Get current sources from form
+  const formSources = formContext.watch('sources');
 
   const {
     cameras,
@@ -46,7 +51,18 @@ export default function Sources({
     setSelectedCameras,
     snapshots,
     snapshotLoadingStates,
-  } = useSources(sessionId);
+  } = useSources(sessionId, undefined, formSources);
+
+  // Sync form sources with selectedCameras when component mounts or form sources change
+  useEffect(() => {
+    if (
+      formSources &&
+      formSources.length > 0 &&
+      JSON.stringify(formSources) !== JSON.stringify(selectedCameras)
+    ) {
+      setSelectedCameras(formSources);
+    }
+  }, [formSources, selectedCameras, setSelectedCameras]);
 
   // Filter cameras based on search term
   const filteredCameras = cameras.filter((camera) =>
@@ -139,65 +155,65 @@ export default function Sources({
         </div>
       )}
       <div className="space-y-2">
-        {isLoading
-          ? Array(4)
-            .fill(0)
-            .map((_, index) => (
-                <div
-                  key={`loading-skeleton-${index}`}
-                  className="flex items-center space-x-2"
-                >
-                  <Skeleton className="h-4 w-4" />
-                  <Skeleton className="h-5 w-32" />
-                </div>
-            ))
-          : filteredCameras.map((camera) => (
+        {isLoading && (
+          <>
+            {[1, 2, 3, 4].map((skeleton) => (
               <div
-                key={camera.id}
-                className="flex items-center justify-between"
+                key={`loading-skeleton-${skeleton}`}
+                className="flex items-center space-x-2"
               >
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`camera-${camera.id}`}
-                    checked={selectedCameras.includes(camera.id)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        updateSelectedCameras([...selectedCameras, camera.id]);
-                      } else {
-                        updateSelectedCameras(
-                          selectedCameras.filter((id) => id !== camera.id)
-                        );
-                      }
-                    }}
-                  />
-                  <Label
-                    htmlFor={`camera-${camera.id}`}
-                    className="text-sm font-medium"
-                  >
-                    {camera.name}
-                  </Label>
-                </div>
-
-                <Popover
-                  open={openPopoverId === camera.id}
-                  onOpenChange={(open) =>
-                    handlePopoverOpenChange(open, camera.id)
-                  }
-                >
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className="p-1 hover:bg-muted rounded-sm relative"
-                      aria-label="Afficher l'aperçu"
-                    >
-                      {renderCameraIcon(camera.id)}
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="end">
-                    {renderSnapshotContent(camera.id, camera.name)}
-                  </PopoverContent>
-                </Popover>
+                <Skeleton className="h-4 w-4" />
+                <Skeleton className="h-5 w-32" />
               </div>
+            ))}
+          </>
+        )}
+
+        {!isLoading &&
+          filteredCameras.map((camera) => (
+            <div key={camera.id} className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id={`camera-${camera.id}`}
+                  checked={selectedCameras.includes(camera.id)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      updateSelectedCameras([...selectedCameras, camera.id]);
+                    } else {
+                      updateSelectedCameras(
+                        selectedCameras.filter((id) => id !== camera.id)
+                      );
+                    }
+                  }}
+                />
+                <Label
+                  htmlFor={`camera-${camera.id}`}
+                  className="text-sm font-medium"
+                >
+                  {camera.name}
+                </Label>
+              </div>
+
+              <Popover
+                open={openPopoverId === camera.id}
+                onOpenChange={(open) =>
+                  handlePopoverOpenChange(open, camera.id)
+                }
+              >
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="p-1 hover:bg-muted rounded-sm relative"
+                    aria-label="Afficher l'aperçu"
+                  >
+                    {renderCameraIcon(camera.id)}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  {renderSnapshotContent(camera.id, camera.name)}
+                </PopoverContent>
+              </Popover>
+            </div>
           ))}
 
         {!isLoading && filteredCameras.length === 0 && (
@@ -219,7 +235,11 @@ export default function Sources({
 
   return (
     <AccordionItem value="sources">
-      <AccordionTrigger>Sources vidéo</AccordionTrigger>
+      <AccordionTrigger
+        className={hasError ? 'text-destructive font-medium' : ''}
+      >
+        Sources vidéo
+      </AccordionTrigger>
       <AccordionContent>
         {useScrollArea ? (
           <ScrollArea

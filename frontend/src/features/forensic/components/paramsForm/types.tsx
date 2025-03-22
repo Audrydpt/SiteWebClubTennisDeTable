@@ -1,4 +1,10 @@
 import {
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion.tsx';
+import { FormField, FormItem, FormLabel } from '@/components/ui/form.tsx';
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -7,12 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.tsx';
-import {
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion.tsx';
-import { FormField, FormItem, FormLabel } from '@/components/ui/form.tsx';
+
 import { useForensicForm } from '../../lib/provider/forensic-form-context.tsx';
 
 const typeOptions = [
