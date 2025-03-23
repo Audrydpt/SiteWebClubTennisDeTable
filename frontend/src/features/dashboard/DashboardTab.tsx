@@ -32,7 +32,6 @@ export type ChartTiles = {
   id: string;
   content: JSX.Element;
   widget: StoredWidget;
-  page: number;
 };
 
 interface DashboardTabProps {
@@ -50,6 +49,7 @@ export default function DashboardTab({
   const isOperator = user?.privileges === 'Operator';
   const chartRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
   const [refsUpdated, setRefsUpdated] = useState(false);
+  const [pagesToChart, setPagesToChart] = useState<Record<string, number>>({});
 
   useEffect(() => {
     onAddWidget(() => add);
@@ -94,7 +94,7 @@ export default function DashboardTab({
       return {
         id,
         widget,
-        content: <Component {...chart} />,
+        content: <Component {...chart} page={pagesToChart[id!]} />,
         page: 0,
       } as ChartTiles;
     }) ?? [];
@@ -119,7 +119,7 @@ export default function DashboardTab({
           }}
         >
           {item.content}
-          page: {item.page}
+          page: {pagesToChart[item.id]}
           <WidgetActions
             isOperator={isOperator}
             item={item}
@@ -128,7 +128,12 @@ export default function DashboardTab({
             remove={remove}
             clone={clone}
           />
-          <WidgetRangeNavigation item={item} updateWidgetData={() => {}} />
+          <WidgetRangeNavigation
+            item={item}
+            updateWidgetData={(c) => {
+              setPagesToChart((prev) => ({ ...prev, [item.id]: c.page }));
+            }}
+          />
         </div>
       ))}
     </ReactSortable>

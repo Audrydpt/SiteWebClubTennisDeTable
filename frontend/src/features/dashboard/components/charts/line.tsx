@@ -45,9 +45,9 @@ export default function LineComponent({
   ...props
 }: MultiLineComponentProps & GroupByChartProps) {
   const { t, i18n } = useTranslation();
-  const { title, table, aggregation, duration, where } = props;
+  const { title, table, aggregation, duration, where, page } = props;
   const { groupBy } = props;
-
+  console.log('line page :', page);
   const { isLoading, isError, data } = useQuery({
     queryKey: [table, aggregation, duration, where, groupBy],
     queryFn: () =>

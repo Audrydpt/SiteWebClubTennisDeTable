@@ -2,6 +2,7 @@ import { ChevronLeftCircle, ChevronRightCircle } from 'lucide-react';
 import { DateTime } from 'luxon';
 import { useEffect, useState } from 'react';
 
+// eslint-disable-next-line import/no-cycle
 import { ChartTiles } from '../DashboardTab';
 import { AggregationTypeToObject } from '../lib/props';
 
@@ -17,6 +18,7 @@ export default function WidgetRangeNavigation({
   const [currentRange, setCurrentRange] = useState<
     { from: Date; to: Date } | undefined
   >(undefined);
+  const [page, setPage] = useState(item.page || 0);
 
   useEffect(() => {
     if (item.widget.duration) {
@@ -35,10 +37,20 @@ export default function WidgetRangeNavigation({
     }
   }, [currentRange, item, updateWidgetData]);
 
-  const handlePrevious = () => {};
+  const handlePrevious = () => {
+    setPage(page - 1);
+    updateWidgetData({ ...item, page: page - 1 });
+  };
 
-  const handleNext = () => {};
-
+  const handleNext = () => {
+    if (page === 0) {
+      console.log('Can not go further');
+    } else {
+      setPage(page + 1);
+      updateWidgetData({ ...item, page: page + 1 });
+    }
+  };
+  console.log('page', page);
   return (
     <div>
       <div className="absolute left-2 top-1/2 transform -translate-y-1/2 cursor-pointer">
