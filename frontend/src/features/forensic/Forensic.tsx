@@ -18,12 +18,10 @@ export default function Forensic() {
   const collapsedWidth = 1;
   const expandedWidth = 350;
   const containerRef = useRef<HTMLDivElement>(null);
-  const [canStartSearch, setCanStartSearch] = useState(true);
 
   const {
     startSearch,
     initWebSocket,
-    isInitializing,
     closeWebSocket,
     progress,
     results,
@@ -39,20 +37,7 @@ export default function Forensic() {
   // In Forensic.tsx, modify the handleSearch function to correctly access form data
 
   const handleSearch = async (data: ForensicFormValues) => {
-    if (!canStartSearch) {
-      console.log(
-        '⏱️ Veuillez patienter avant de lancer une nouvelle recherche'
-      );
-      return;
-    }
-
     if (isSearching) {
-      setCanStartSearch(false);
-      await closeWebSocket();
-      setTimeout(() => {
-        setCanStartSearch(true);
-      }, 3000);
-
       return;
     }
 
@@ -71,7 +56,7 @@ export default function Forensic() {
       // Initialize source progress with selected sources before starting the search
       initializeSourceProgress(selectedSources);
 
-      const guid = await startSearch(searchFormData, 5);
+      const guid = await startSearch(searchFormData);
       initWebSocket(guid);
     } catch (error) {
       console.error('Failed to start search:', error);
@@ -109,8 +94,6 @@ export default function Forensic() {
               <ForensicForm
                 onSubmit={handleSearch}
                 isSearching={isSearching}
-                isInitializing={isInitializing}
-                canStartSearch={canStartSearch}
                 closeWebSocket={closeWebSocket}
                 isCollapsed={isCollapsed}
               />

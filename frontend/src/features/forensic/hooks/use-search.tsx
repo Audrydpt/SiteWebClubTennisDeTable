@@ -12,8 +12,6 @@ export default function useSearch(sessionId: string) {
   const [results, setResults] = useState<ForensicResult[]>([]);
   const [sourceProgress, setSourceProgress] = useState<SourceProgress[]>([]);
 
-  const [isInitializing, setIsInitializing] = useState(false);
-
   const [jobId, setJobId] = useState<string | null>(null);
   const latestJobId = useLatest(jobId);
 
@@ -68,18 +66,27 @@ export default function useSearch(sessionId: string) {
   );
 
   const startSearch = useCallback(
-    async (formData: CustomFormData, duration: number) => {
+    async (formData: CustomFormData) => {
+      console.log('hi');
       try {
-        // S'assurer que toutes les ressources précédentes sont bien fermées
-        cleanupResources();
-
         // Reset states
         setResults([]);
         setIsSearching(true);
         setIsCancelling(false);
-        setIsInitializing(true);
-
         forensicResultsHeap.clear();
+
+        // S'assurer que toutes les ressources précédentes sont bien fermées
+        cleanupResources();
+
+        // Annuler toute recherche en cours via l'API:
+        await fetch(`${process.env.MAIN_API_URL}/forensics`, {
+          method: 'DELETE',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            Authorization: `X-Session-Id ${sessionId}`,
+          },
+        });
 
         // Créer un nouvel AbortController pour cette requête
         abortControllerRef.current = new AbortController();
@@ -88,19 +95,16 @@ export default function useSearch(sessionId: string) {
         const queryData = formatQuery(formData);
         console.log('queryData', queryData);
 
-        const response = await fetch(
-          `${process.env.MAIN_API_URL}/forensics?duration=${duration}`,
-          {
-            method: 'POST',
-            headers: {
-              Accept: 'application/json',
-              'Content-Type': 'application/json',
-              Authorization: `X-Session-Id ${sessionId}`,
-            },
-            body: JSON.stringify(queryData),
-            signal: abortControllerRef.current.signal,
-          }
-        );
+        const response = await fetch(`${process.env.MAIN_API_URL}/forensics`, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            Authorization: `X-Session-Id ${sessionId}`,
+          },
+          body: JSON.stringify(queryData),
+          signal: abortControllerRef.current.signal,
+        });
 
         if (!response.ok) {
           throw new Error(`API returned status ${response.status}`);
@@ -114,10 +118,6 @@ export default function useSearch(sessionId: string) {
         }
 
         setJobId(guid);
-        // ajouter un délai de 2 sec pour stopper spam
-        setTimeout(() => {
-          setIsInitializing(false);
-        }, 2000);
         return guid;
       } catch (error) {
         // Ne pas logger d'erreur si c'est une annulation intentionnelle
@@ -125,7 +125,6 @@ export default function useSearch(sessionId: string) {
           console.error('❌ Erreur lors du démarrage de la recherche:', error);
         }
         setIsSearching(false);
-        setIsInitializing(false);
         throw error;
       }
     },
@@ -337,7 +336,7 @@ export default function useSearch(sessionId: string) {
 
   const closeWebSocket = useCallback(() => {
     // Vérifier si une annulation est déjà en cours
-    if (isCancelling || isInitializing) {
+    if (isCancelling) {
       console.log('🔄 Une annulation est déjà en cours, ignoré');
       return Promise.resolve();
     }
@@ -386,7 +385,7 @@ export default function useSearch(sessionId: string) {
     }, 5000);
 
     // Puis annuler la recherche via l'API
-    return fetch(`${process.env.MAIN_API_URL}/forensics?duration=5`, {
+    return fetch(`${process.env.MAIN_API_URL}/forensics`, {
       method: 'DELETE',
       headers: {
         Accept: 'application/json',
@@ -420,7 +419,7 @@ export default function useSearch(sessionId: string) {
         // S'assurer que isSearching est bien à false
         setIsSearching(false);
       });
-  }, [sessionId, isSearching, jobId, isCancelling, isInitializing]);
+  }, [sessionId, isSearching, jobId, isCancelling]);
 
   return {
     startSearch,
@@ -430,7 +429,6 @@ export default function useSearch(sessionId: string) {
     results,
     isSearching,
     jobId,
-    isInitializing,
     sourceProgress,
     initializeSourceProgress,
   };
