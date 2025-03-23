@@ -2,7 +2,6 @@
 import { useRef, useState } from 'react';
 
 import { Card, CardContent } from '@/components/ui/card';
-import { useAuth } from '@/providers/auth-context';
 
 import useSearch from './hooks/use-search';
 import { createSearchFormData } from './lib/format-query';
@@ -13,7 +12,6 @@ import ForensicFormProvider from './lib/provider/forensic-form-provider';
 import { ForensicFormValues } from './lib/types';
 
 export default function Forensic() {
-  const { sessionId = '' } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const collapsedWidth = 1;
   const expandedWidth = 350;
@@ -21,20 +19,16 @@ export default function Forensic() {
 
   const {
     startSearch,
-    initWebSocket,
-    closeWebSocket,
+    stopSearch,
     progress,
     results,
     isSearching,
     sourceProgress,
-    initializeSourceProgress,
-  } = useSearch(sessionId);
+  } = useSearch();
 
   const handleToggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
   };
-
-  // In Forensic.tsx, modify the handleSearch function to correctly access form data
 
   const handleSearch = async (data: ForensicFormValues) => {
     if (isSearching) {
@@ -43,21 +37,7 @@ export default function Forensic() {
 
     try {
       const searchFormData = createSearchFormData(data);
-
-      // Get the selected sources from the form values directly rather than FormData
-      // This avoids the TypeScript errors with FormData's type
-      let selectedSources: string[] = [];
-      if (Array.isArray(data.sources)) {
-        selectedSources = data.sources;
-      } else if (data.sources) {
-        selectedSources = [data.sources];
-      }
-
-      // Initialize source progress with selected sources before starting the search
-      initializeSourceProgress(selectedSources);
-
-      const guid = await startSearch(searchFormData);
-      initWebSocket(guid);
+      await startSearch(searchFormData);
     } catch (error) {
       console.error('Failed to start search:', error);
     }
@@ -94,7 +74,7 @@ export default function Forensic() {
               <ForensicForm
                 onSubmit={handleSearch}
                 isSearching={isSearching}
-                closeWebSocket={closeWebSocket}
+                stopSearch={stopSearch}
                 isCollapsed={isCollapsed}
               />
             </ForensicFormProvider>

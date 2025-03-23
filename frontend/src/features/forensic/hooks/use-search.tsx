@@ -2,12 +2,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import useLatest from '@/hooks/use-latest';
+import { useAuth } from '@/providers/auth-context';
 
 import forensicResultsHeap from '../lib/data-structure/heap.tsx';
 import { FormData as CustomFormData, formatQuery } from '../lib/format-query';
 import { ForensicResult, SourceProgress } from '../lib/types';
 
-export default function useSearch(sessionId: string) {
+export default function useSearch() {
+  const { sessionId = '' } = useAuth();
   const [progress, setProgress] = useState<number | null>(null);
   const [results, setResults] = useState<ForensicResult[]>([]);
   const [sourceProgress, setSourceProgress] = useState<SourceProgress[]>([]);
@@ -43,7 +45,6 @@ export default function useSearch(sessionId: string) {
     );
   }, []);
 
-  // Fonction pour nettoyer toutes les ressources
   const cleanupResources = useCallback(() => {
     // Fermer WebSocket s'il existe
     if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
@@ -56,80 +57,6 @@ export default function useSearch(sessionId: string) {
       abortControllerRef.current = null;
     }
   }, []);
-
-  // Clean up WebSocket et AbortController on unmount
-  useEffect(
-    () => () => {
-      cleanupResources();
-    },
-    [cleanupResources]
-  );
-
-  const startSearch = useCallback(
-    async (formData: CustomFormData) => {
-      console.log('hi');
-      try {
-        // Reset states
-        setResults([]);
-        setIsSearching(true);
-        setIsCancelling(false);
-        forensicResultsHeap.clear();
-
-        // S'assurer que toutes les ressources précédentes sont bien fermées
-        cleanupResources();
-
-        // Annuler toute recherche en cours via l'API:
-        await fetch(`${process.env.MAIN_API_URL}/forensics`, {
-          method: 'DELETE',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            Authorization: `X-Session-Id ${sessionId}`,
-          },
-        });
-
-        // Créer un nouvel AbortController pour cette requête
-        abortControllerRef.current = new AbortController();
-
-        // Format query and make API call
-        const queryData = formatQuery(formData);
-        console.log('queryData', queryData);
-
-        const response = await fetch(`${process.env.MAIN_API_URL}/forensics`, {
-          method: 'POST',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            Authorization: `X-Session-Id ${sessionId}`,
-          },
-          body: JSON.stringify(queryData),
-          signal: abortControllerRef.current.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(`API returned status ${response.status}`);
-        }
-
-        const data = await response.json();
-        const { guid } = data;
-
-        if (!guid) {
-          throw new Error('No job ID returned from API');
-        }
-
-        setJobId(guid);
-        return guid;
-      } catch (error) {
-        // Ne pas logger d'erreur si c'est une annulation intentionnelle
-        if (error instanceof Error && error.name !== 'AbortError') {
-          console.error('❌ Erreur lors du démarrage de la recherche:', error);
-        }
-        setIsSearching(false);
-        throw error;
-      }
-    },
-    [sessionId, cleanupResources]
-  );
 
   const initWebSocket = useCallback(
     (id: string) => {
@@ -147,7 +74,7 @@ export default function useSearch(sessionId: string) {
         return;
       }
 
-      // Si une connexion existe déjà, on la ferme proprement avant d’en créer une nouvelle.
+      // Si une connexion existe déjà, on la ferme proprement avant d'en créer une nouvelle.
       if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
         wsRef.current.close(1000, 'Nouvelle connexion demandée');
       }
@@ -334,7 +261,87 @@ export default function useSearch(sessionId: string) {
     [latestIsCancelling, latestIsSearching, latestJobId, isCancelling]
   );
 
-  const closeWebSocket = useCallback(() => {
+  // Clean up WebSocket et AbortController on unmount
+  useEffect(
+    () => () => {
+      cleanupResources();
+    },
+    [cleanupResources]
+  );
+
+  const startSearch = useCallback(
+    async (formData: CustomFormData) => {
+      console.log('hi');
+      try {
+        // Reset states
+        setResults([]);
+        setIsSearching(true);
+        setIsCancelling(false);
+        forensicResultsHeap.clear();
+
+        // S'assurer que toutes les ressources précédentes sont bien fermées
+        cleanupResources();
+
+        // Annuler toute recherche en cours via l'API:
+        await fetch(`${process.env.MAIN_API_URL}/forensics`, {
+          method: 'DELETE',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            Authorization: `X-Session-Id ${sessionId}`,
+          },
+        });
+
+        // Créer un nouvel AbortController pour cette requête
+        abortControllerRef.current = new AbortController();
+
+        // Format query and make API call
+        const queryData = formatQuery(formData);
+        console.log('queryData', queryData);
+
+        const response = await fetch(`${process.env.MAIN_API_URL}/forensics`, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            Authorization: `X-Session-Id ${sessionId}`,
+          },
+          body: JSON.stringify(queryData),
+          signal: abortControllerRef.current.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`API returned status ${response.status}`);
+        }
+
+        const data = await response.json();
+        const { guid } = data;
+
+        if (!guid) {
+          throw new Error('No job ID returned from API');
+        }
+
+        // Initialize source progress with selected sources
+        const selectedSources = formData.cameras || [];
+        initializeSourceProgress(selectedSources);
+
+        setJobId(guid);
+        // Initialiser automatiquement le WebSocket après avoir obtenu le guid
+        initWebSocket(guid);
+        return guid;
+      } catch (error) {
+        // Ne pas logger d'erreur si c'est une annulation intentionnelle
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('❌ Erreur lors du démarrage de la recherche:', error);
+        }
+        setIsSearching(false);
+        throw error;
+      }
+    },
+    [sessionId, cleanupResources, initializeSourceProgress, initWebSocket]
+  );
+
+  const stopSearch = useCallback(() => {
     // Vérifier si une annulation est déjà en cours
     if (isCancelling) {
       console.log('🔄 Une annulation est déjà en cours, ignoré');
@@ -423,13 +430,11 @@ export default function useSearch(sessionId: string) {
 
   return {
     startSearch,
-    initWebSocket,
-    closeWebSocket,
+    stopSearch,
     progress,
     results,
     isSearching,
     jobId,
     sourceProgress,
-    initializeSourceProgress,
   };
 }

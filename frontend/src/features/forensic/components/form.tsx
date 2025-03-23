@@ -8,14 +8,14 @@ import Submit from './ui/submit';
 interface ForensicFormProps {
   onSubmit: (data: ForensicFormValues) => Promise<void>;
   isSearching: boolean;
-  closeWebSocket: () => Promise<void>;
+  stopSearch: () => Promise<void>;
   isCollapsed: boolean;
 }
 
 export default function ForensicForm({
   onSubmit,
   isSearching,
-  closeWebSocket,
+  stopSearch,
   isCollapsed,
 }: ForensicFormProps) {
   const { formMethods } = useForensicForm();
@@ -27,7 +27,7 @@ export default function ForensicForm({
         className="flex flex-col h-full relative"
       >
         <Params isCollapsed={isCollapsed} />
-        <Submit isSearching={isSearching} onCancel={closeWebSocket} />
+        <Submit isSearching={isSearching} onCancel={stopSearch} />
       </form>
     </Form>
   );
