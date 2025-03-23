@@ -48,7 +48,7 @@ celery_app.conf.update(
     task_track_started=True,
     task_time_limit=3600,               # 1 hour max
     worker_prefetch_multiplier=1,       # Un worker ne prend qu'une tâche à la fois
-    worker_concurrency=2,               # Nombre de worker en parallel
+    worker_concurrency=4,               # Nombre de worker en parallel
     task_acks_late=True,                # Confirmer la tâche uniquement après exécution
     task_reject_on_worker_lost=True     # Rejeter les tâches si le worker s'arrête
 )
@@ -277,9 +277,7 @@ class TaskManager:
     @staticmethod
     def submit_job(job_type: str, job_params: Dict[str, Any]) -> str:
         try:
-            logger.info("Appel de execute_job.apply_async")
             task = execute_job.apply_async(args=[job_type, job_params])
-            logger.info(f"Job soumis avec succès, id: {task.id}")
             return task.id
         except Exception as e:
             logger.error(f"Erreur lors de la soumission du job: {e}")
@@ -289,32 +287,20 @@ class TaskManager:
     async def cancel_job(job_id: str) -> bool:
         logger.info(f"Tentative d'annulation du job {job_id}")
         try:
-            logger.info("Revoking job using celery_app.control.revoke")
             await asyncio.to_thread(celery_app.control.revoke, job_id, terminate=True)
-            logger.info(f"Job {job_id} revoked successfully")
         except Exception as rev_e:
             logger.error(f"Erreur lors de la révocation du job {job_id}: {rev_e}")
             return False
         
         try:
             logger.info("Sending cancellation notification to Redis")
-            async def send_cancellation():
-                try:
-                    logger.info("Creating cancellation JobResult")
-                    result = JobResult(
-                        job_id=job_id,
-                        metadata={"type": "cancelled", "message": "Tâche annulée manuellement"},
-                        final=True
-                    )
-                    logger.info("Adding cancellation result to Redis")
-                    await results_store.add_result(result)
-                    logger.info("Cancellation result added successfully")
-                except Exception as inner_e:
-                    logger.error(f"Erreur lors de l'ajout du résultat d'annulation pour le job {job_id}: {inner_e}")
-                    raise
-                await send_cancellation()
-                logger.info(f"Cancellation notification for job {job_id} sent successfully")
-                return True
+            result = JobResult(
+                job_id=job_id,
+                metadata={"type": "cancelled", "message": "Tâche annulée manuellement"},
+                final=True
+            )
+            await results_store.add_result(result)
+            return True
         except Exception as send_e:
             logger.error(f"Erreur lors de l'envoi de la notification d'annulation pour le job {job_id}: {send_e}")
             return False
@@ -322,7 +308,6 @@ class TaskManager:
     @staticmethod
     def get_job_status(job_id: str) -> JobStatus:
         try:
-            logger.info(f"Obtaining AsyncResult for job_id: {job_id}")
             result = AsyncResult(job_id)
         except Exception as e:
             logger.error(f"Error creating AsyncResult for job_id {job_id}: {e}")
@@ -330,19 +315,15 @@ class TaskManager:
 
         try:
             if result.failed():
-                logger.info(f"Job {job_id} has failed")
                 return JobStatus.FAILURE
             elif result.successful():
-                logger.info(f"Job {job_id} has succeeded")
                 return JobStatus.SUCCESS
         except Exception as e:
             logger.error(f"Error checking job status for job_id {job_id}: {e}")
             return JobStatus.REVOKED
 
         try:
-            logger.info(f"Job {job_id} state before conversion: {result.state}")
             state_str = result.state.upper()
-            logger.info(f"Converted state for job {job_id}: {state_str}")
             return JobStatus[state_str]
         except KeyError:
             logger.warning(f"Unknown state for job {job_id}: {result.state}")
@@ -354,33 +335,26 @@ class TaskManager:
     @staticmethod
     async def get_job_error(job_id: str) -> Tuple[Optional[str], Optional[str]]:
         try:
-            logger.info("Creating AsyncResult for job %s", job_id)
             result = AsyncResult(job_id, app=celery_app)
         except Exception as e:
             logger.error("Failed to create AsyncResult for job %s: %s", job_id, e)
             return str(e), None
         
         try:
-            logger.info("Checking if job %s failed", job_id)
             if result.failed():
-                logger.info("Job %s failed. Attempting to retrieve error data from Redis", job_id)
                 try:
-                    logger.info("Calling results_store.get_results for job %s", job_id)
                     error_data = await results_store.get_results(job_id, 0, 0)
-                    logger.info("Retrieved error data from Redis for job %s: %s", job_id, error_data)
                 except Exception as e:
                     logger.error("Error retrieving results from Redis for job %s: %s", job_id, e)
                     error_data = None
 
                 if error_data and len(error_data) > 0:
                     metadata = error_data[0].metadata
-                    logger.info("Found error metadata for job %s", job_id)
                     return metadata.get("message"), metadata.get("stacktrace")
                 
                 logger.info("No error metadata found in Redis for job %s. Using Celery error result", job_id)
                 return str(result.result), None
                 
-                logger.info("Job %s did not fail", job_id)
             return None, None
         except Exception as e:
             logger.error("Error processing job error details for job %s: %s", job_id, e)
@@ -390,65 +364,30 @@ class TaskManager:
     async def get_jobs() -> List[str]:
         all_tasks: Set[str] = set()
         try:
-            logger.info("Starting retrieval of active tasks from Celery")
-            try:
-                inspect = celery_app.control.inspect()
-                logger.info("Obtained inspect object from Celery: %s", inspect)
-            except Exception as e:
-                logger.error("Error while creating inspect object: %s", e)
-                raise
+            inspect = celery_app.control.inspect()
+            active_tasks = inspect.active() or {}
 
-            try:
-                active_tasks = inspect.active() or {}
-                logger.info("Active tasks retrieved: %s", active_tasks)
-            except Exception as e:
-                logger.error("Error while retrieving active tasks: %s", e)
-                raise
-
-            try:
-                for tasks in active_tasks.values():
-                    for task in tasks:
-                        task_id = task.get('id')
-                        logger.info("Adding active task id: %s", task_id)
-                        all_tasks.add(task_id)
-            except Exception as e:
-                logger.error("Error while iterating over active tasks: %s", e)
-                raise
+            for tasks in active_tasks.values():
+                for task in tasks:
+                    task_id = task.get('id')
+                    all_tasks.add(task_id)
         except Exception as e:
             logger.error("Erreur lors de la récupération des tâches actives: %s", e)
 
         try:
-            logger.info("Connecting to Redis to retrieve completed tasks")
-            redis_client = aioredis.Redis(connection_pool=redis_pool)
-            logger.info("Connected to Redis")
-            try:
-                keys = await redis_client.keys("task:*:results")
-                logger.info("Keys retrieved from Redis: %s", keys)
-            except Exception as e:
-                logger.error("Erreur lors de la récupération des clés Redis: %s", e)
-                keys = []
-            try:
-                for key in keys:
-                    try:
-                        key_str = key.decode('utf-8') if isinstance(key, bytes) else str(key)
-                        logger.info("Processing Redis key: %s", key_str)
-                        parts = key_str.split(':')
-                        if len(parts) >= 2:
-                            logger.info("Adding task id from key: %s", parts[1])
-                            all_tasks.add(parts[1])
-                    except Exception as e:
-                        logger.error("Error processing key %s: %s", key, e)
-            except Exception as e:
-                logger.error("Error iterating over Redis keys: %s", e)
-            try:
-                await redis_client.close()
-                logger.info("Redis connection closed successfully")
-            except Exception as e:
-                logger.error("Error closing Redis connection: %s", e)
+            redis_client = aioredis.ConnectionPool.from_url('redis://localhost:6379/0')
+            keys = await redis_client.keys("task:*:results")
+            for key in keys:
+                key_str = key.decode('utf-8') if isinstance(key, bytes) else str(key)
+                parts = key_str.split(':')
+                if len(parts) >= 2:
+                    all_tasks.add(parts[1])
         except Exception as e:
             logger.error("Erreur lors de la récupération des tâches depuis Redis: %s", e)
+        finally:
+            if redis_client:
+                await redis_client.disconnect()
 
-        logger.info("Total tasks collected: %s", all_tasks)
         return list(all_tasks)
     
     @staticmethod
@@ -467,43 +406,29 @@ class TaskManager:
 
             # Envoyer les résultats précédents
             if send_old_results:
-                logger.info(f"Envoi des résultats précédents pour le job {job_id}")
                 previous_results = await results_store.get_results(job_id)
-                logger.info(f"Résultats précédents récupérés pour le job {job_id}")
                 for result in previous_results:
                     if websocket.client_state == WebSocketState.DISCONNECTED:
-                        logger.info(f"Client WebSocket déconnecté pour le job {job_id}")
                         break
                     
                     if result.metadata:
-                        logger.info(f"Envoi des métadonnées pour le job {job_id}")
                         await websocket.send_json(result.metadata)
                     if result.frame:
-                        logger.info(f"Envoi de la frame pour le job {job_id}")
                         await websocket.send_bytes(result.frame)
-                logger.info(f"Envoi des résultats précédents terminé pour le job {job_id}")
 
             # S'abonner aux nouvelles mises à jour
-            logger.info(f"Souscription aux mises à jour pour le job {job_id}")
             async for update in results_store.subscribe_to_results(job_id):
-                logger.info(f"Envoi de la mise à jour pour le job {job_id}")
                 if websocket.client_state == WebSocketState.DISCONNECTED:
-                    logger.info(f"Client WebSocket déconnecté pour le job {job_id}")
                     break
  
                 if update.metadata:
-                    logger.info(f"Envoi des métadonnées pour le job {job_id}")
                     await websocket.send_json(update.metadata)
                 if update.frame:
-                    logger.info(f"Envoi de la frame pour le job {job_id}")
                     await websocket.send_bytes(update.frame)
                 
                 if update.final:
-                    logger.info(f"Fin de la diffusion pour le job {job_id}")
                     break
-            
-            logger.info(f"Fin de la diffusion pour le job {job_id}")
-                           
+                                   
         except WebSocketDisconnect:
             logger.info(f"Client WebSocket déconnecté pour le job {job_id}")
         except Exception as e:
@@ -511,18 +436,12 @@ class TaskManager:
             logger.error(traceback.format_exc())
             
             # Essayer d'envoyer un message d'erreur si le websocket est encore connecté
-            try:
-                if websocket.client_state != WebSocketState.DISCONNECTED:
-                    logger.info(f"Envoi d'un message d'erreur pour le job {job_id}")
-                    await websocket.send_json({
-                        "type": "error",
-                        "message": f"Erreur de streaming: {str(e)}"
-                    })
-            except:
-                logger.info(f"Erreur lors de l'envoi du message d'erreur pour le job {job_id}")
-        finally:
-            logger.info(f"Finally {job_id}")
-        logger.info("bye")
+            if websocket.client_state != WebSocketState.DISCONNECTED:
+                logger.info(f"Envoi d'un message d'erreur pour le job {job_id}")
+                await websocket.send_json({
+                    "type": "error",
+                    "message": f"Erreur de streaming: {str(e)}"
+                })
 
 class VehicleReplayJob:
     """
