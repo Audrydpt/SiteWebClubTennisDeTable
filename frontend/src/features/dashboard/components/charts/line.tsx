@@ -47,11 +47,11 @@ export default function LineComponent({
   const { t, i18n } = useTranslation();
   const { title, table, aggregation, duration, where, page } = props;
   const { groupBy } = props;
-  console.log('line page :', page);
+
   const { isLoading, isError, data } = useQuery({
-    queryKey: [table, aggregation, duration, where, groupBy],
+    queryKey: [table, aggregation, duration, where, groupBy, page],
     queryFn: () =>
-      getWidgetData({ table, aggregation, duration, where }, groupBy),
+      getWidgetData({ table, aggregation, duration, where }, groupBy, page),
     refetchInterval: Duration.fromObject(
       AggregationTypeToObject[aggregation]
     ).as('milliseconds'),

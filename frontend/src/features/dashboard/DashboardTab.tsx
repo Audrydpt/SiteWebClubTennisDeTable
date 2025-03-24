@@ -1,4 +1,4 @@
-import { JSX, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ReactSortable } from 'react-sortablejs';
 
 import LoadingSpinner from '@/components/loading';
@@ -9,7 +9,7 @@ import WidgetActions from './components/widget-actions';
 import WidgetRangeNavigation from './components/widget-range-navigation';
 import useWidgetAPI from './hooks/use-widget';
 import { ChartTypeComponents } from './lib/const';
-import { ChartSize } from './lib/props';
+import { ChartSize, ChartTiles } from './lib/props';
 
 const widthClassMap: Record<ChartSize, string> = {
   tiny: 'col-span-1 md:col-span-1 lg:col-span-1 2xl:col-span-1',
@@ -26,12 +26,6 @@ const heightClassMap: Record<ChartSize, string> = {
   large: 'row-span-2',
   big: 'row-span-2 2xl:row-span-4',
   full: 'row-span-2',
-};
-
-export type ChartTiles = {
-  id: string;
-  content: JSX.Element;
-  widget: StoredWidget;
 };
 
 interface DashboardTabProps {
@@ -119,7 +113,6 @@ export default function DashboardTab({
           }}
         >
           {item.content}
-          page: {pagesToChart[item.id]}
           <WidgetActions
             isOperator={isOperator}
             item={item}
@@ -129,9 +122,9 @@ export default function DashboardTab({
             clone={clone}
           />
           <WidgetRangeNavigation
-            item={item}
-            updateWidgetData={(c) => {
-              setPagesToChart((prev) => ({ ...prev, [item.id]: c.page }));
+            page={pagesToChart[item.id] ?? 0}
+            onPageChange={(page) => {
+              setPagesToChart((prev) => ({ ...prev, [item.id]: page }));
             }}
           />
         </div>

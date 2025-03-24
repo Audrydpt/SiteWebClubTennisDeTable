@@ -1,6 +1,8 @@
+import { JSX } from 'react';
 import { StackOffsetType } from 'recharts/types/util/types';
 
 import { WhereClause } from '@/components/where-clauses';
+import { StoredWidget } from '../components/form-widget';
 
 export enum AcicAggregation {
   OneMinute = '1 minute',
@@ -76,4 +78,10 @@ export type GroupByChartProps = ChartProps & {
 };
 export type StackedChartProps = GroupByChartProps & {
   stackOffset?: StackOffsetType;
+};
+
+export type ChartTiles = {
+  id: string;
+  content: JSX.Element;
+  widget: StoredWidget;
 };
