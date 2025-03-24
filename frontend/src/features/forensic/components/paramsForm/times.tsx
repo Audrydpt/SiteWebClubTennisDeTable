@@ -1,8 +1,10 @@
+/* eslint-disable */
+import { useState, SetStateAction, Dispatch, useEffect } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CalendarIcon, Clock } from 'lucide-react';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 
+import { cn } from '@/lib/utils.ts';
 import {
   AccordionContent,
   AccordionItem,
@@ -28,21 +30,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.tsx';
-import { cn } from '@/lib/utils.ts';
 import { useForensicForm } from '../../lib/provider/forensic-form-context.tsx';
 
 function DateTimePicker({
-  isStart,
-  selectedDate,
-  hours,
-  minutes,
-  isOpen,
-  setIsOpen,
-  handleSelect,
-  updateTimeValue,
-  timeOptions,
-  timeFrom,
-}: {
+                          isStart,
+                          selectedDate,
+                          hours,
+                          minutes,
+                          isOpen,
+                          setIsOpen,
+                          handleSelect,
+                          updateTimeValue,
+                          timeOptions,
+                          timeFrom,
+                        }: {
   isStart: boolean;
   selectedDate?: Date;
   hours: string;
@@ -144,24 +145,13 @@ export default function Times() {
   const { formMethods } = useForensicForm();
   const { control, watch, setValue, setError, clearErrors } = formMethods;
 
+  const [rerender, setRerender] = useState(0);
+
   const timerange = watch('timerange');
   const timeFrom = timerange?.time_from
     ? new Date(timerange.time_from)
     : undefined;
   const timeTo = timerange?.time_to ? new Date(timerange.time_to) : undefined;
-
-  // TODO: à enlever pour prod
-  useEffect(() => {
-    const now = new Date();
-    const oneHourAgo = new Date(now);
-    oneHourAgo.setHours(now.getHours() - 1);
-
-    // Set the initial values
-    setValue('timerange.time_to', now.toISOString());
-    setValue('timerange.time_from', oneHourAgo.toISOString());
-  }, [setValue]);
-
-  // juqu'ici
 
   const [startOpen, setStartOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
@@ -181,10 +171,10 @@ export default function Times() {
         type: 'manual',
         message: "L'heure de début doit être antérieure à l'heure de fin",
       });
-    } else {
+    } else if (timeFrom && timeTo) {
       clearErrors('timerange');
     }
-  }, [hasTimeError, setError, clearErrors]);
+  }, [hasTimeError, timeFrom, timeTo, setError, clearErrors]);
 
   const timerangeError = formMethods.formState.errors.timerange?.message;
   const hasError = !!timerangeError || hasTimeError;
@@ -211,13 +201,19 @@ export default function Times() {
       0,
       0
     );
-    setValue('timerange.time_from', newDate.toISOString());
+    setValue('timerange.time_from', newDate.toISOString(), {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
 
-    // Mise à jour de la date de fin si nécessaire
+    // Same for the end date if needed
     if (timeTo && newDate > timeTo) {
       const newEndDate = new Date(newDate);
       newEndDate.setHours(23, 59, 59, 999);
-      setValue('timerange.time_to', newEndDate.toISOString());
+      setValue('timerange.time_to', newEndDate.toISOString(), {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
     }
     setStartOpen(false);
   };
@@ -231,7 +227,10 @@ export default function Times() {
       59,
       999
     );
-    setValue('timerange.time_to', newDate.toISOString());
+    setValue('timerange.time_to', newDate.toISOString(), {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
     setEndOpen(false);
   };
 
@@ -246,7 +245,18 @@ export default function Times() {
       0
     );
 
-    setValue('timerange.time_from', newDate.toISOString());
+    setValue('timerange.time_from', newDate.toISOString(), {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+
+    // Check immediately if this fixes the error
+    if (timeTo && isSameDay && newDate.getTime() <= timeTo.getTime()) {
+      clearErrors('timerange');
+    }
+
+    // Force re-render
+    setRerender((prev) => prev + 1);
   };
 
   const updateEndTime = (hoursValue: string, minutesValue: string) => {
@@ -260,8 +270,18 @@ export default function Times() {
       999
     );
 
-    // Permettre de définir n'importe quelle heure de fin, même si elle est antérieure à l'heure de début
-    setValue('timerange.time_to', newDate.toISOString());
+    setValue('timerange.time_to', newDate.toISOString(), {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+
+    // Check immediately if this fixes the error
+    if (timeFrom && isSameDay && timeFrom.getTime() <= newDate.getTime()) {
+      clearErrors('timerange');
+    }
+
+    // Force re-render
+    setRerender((prev) => prev + 1);
   };
 
   return (

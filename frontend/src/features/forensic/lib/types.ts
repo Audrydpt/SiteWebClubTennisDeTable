@@ -22,7 +22,7 @@ export interface SourceProgress {
   sourceName?: string;
   progress: number;
   timestamp?: string;
-  startTime?: string;
+  startTime: string;
 }
 
 // Définition des schémas Zod
