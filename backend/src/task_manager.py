@@ -108,14 +108,14 @@ class ResultsStore:
     def __init__(self, max_results: int = 100):
         self.max_results = max_results
         self._redis = None
+        self._pool = None
         
     async def _get_redis(self) -> aioredis.Redis:
-        pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
-        try:
-            return aioredis.Redis(connection_pool=pool)
-        except Exception as e:
-            await pool.disconnect()
-            raise e
+        if self._pool is None:
+            self._pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
+        if self._redis is None:
+            self._redis = aioredis.Redis(connection_pool=self._pool)
+        return self._redis
         
     async def add_result(self, result: JobResult) -> None:
         redis = await self._get_redis()
@@ -131,7 +131,6 @@ class ResultsStore:
 
         # Publier le résultat sur le canal Redis
         await redis.publish(channel_name, json.dumps(result_data))
-        logger.info("Published result data on Redis channel successfully.")
 
         if result.frame and result.frame_uuid:
             # Stocker la frame séparément
@@ -144,7 +143,6 @@ class ResultsStore:
                 "frame_uuid": result.frame_uuid
             }
             await redis.publish(f"{channel_name}:frames", json.dumps(frame_notification))
-            logger.info("Published frame notification on Redis channel frames successfully.")
 
     async def get_results(self, job_id: str, start: int = 0, end: int = -1) -> List[JobResult]:
         redis = await self._get_redis()
@@ -375,7 +373,8 @@ class TaskManager:
             logger.error("Erreur lors de la récupération des tâches actives: %s", e)
 
         try:
-            redis_client = aioredis.ConnectionPool.from_url('redis://localhost:6379/0')
+            redis_pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
+            redis_client = aioredis.Redis(connection_pool=redis_pool)
             keys = await redis_client.keys("task:*:results")
             for key in keys:
                 key_str = key.decode('utf-8') if isinstance(key, bytes) else str(key)
@@ -386,7 +385,9 @@ class TaskManager:
             logger.error("Erreur lors de la récupération des tâches depuis Redis: %s", e)
         finally:
             if redis_client:
-                await redis_client.disconnect()
+                await redis_client.close()
+            if redis_pool:
+                await redis_pool.disconnect()
 
         return list(all_tasks)
     
