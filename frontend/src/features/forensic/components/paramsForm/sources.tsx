@@ -9,7 +9,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion.tsx';
 import { Checkbox } from '@/components/ui/checkbox.tsx';
-import { FormMessage } from '@/components/ui/form.tsx';
+import { FormField, FormItem, FormMessage } from '@/components/ui/form.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import {
   Popover,
@@ -38,8 +38,6 @@ export default function Sources({
 
   // Add the form context
   const formContext = useFormContext<ForensicFormValues>();
-  const sourcesError = formContext.formState.errors.sources?.message;
-  const hasError = !!sourcesError;
 
   // Get current sources from form
   const formSources = formContext.watch('sources');
@@ -75,6 +73,8 @@ export default function Sources({
     // Update form context with the selected cameras
     formContext.setValue('sources', newCameras, {
       shouldValidate: true,
+      shouldDirty: true,
+      shouldTouch: true,
     });
 
     if (onSelectedCamerasChange) {
@@ -130,7 +130,7 @@ export default function Sources({
     );
   };
 
-  const content = (
+  const renderCameraList = () => (
     <div className="space-y-4">
       <SearchInput
         value={searchTerm}
@@ -222,36 +222,48 @@ export default function Sources({
           </div>
         )}
       </div>
-
-      {sourcesError && (
-        <FormMessage className="mt-2">
-          {typeof sourcesError === 'string'
-            ? sourcesError
-            : 'Veuillez sélectionner au moins une source vidéo'}
-        </FormMessage>
-      )}
     </div>
   );
 
   return (
     <AccordionItem value="sources">
-      <AccordionTrigger
-        className={hasError ? 'text-destructive font-medium' : ''}
-      >
-        Sources vidéo
-      </AccordionTrigger>
-      <AccordionContent>
-        {useScrollArea ? (
-          <ScrollArea
-            className="pr-4 rounded-sm"
-            style={{ maxHeight: '400px', overflowY: 'auto' }}
-          >
-            {content}
-          </ScrollArea>
-        ) : (
-          content
+      <FormField
+        control={formContext.control}
+        name="sources"
+        render={({ fieldState }) => (
+          <>
+            <AccordionTrigger
+              className={fieldState.error ? 'text-destructive font-medium' : ''}
+            >
+              Sources vidéo
+              {formSources?.length > 0 && (
+                <span className="ml-2 text-xs text-muted-foreground">
+                  ({formSources.length} sélectionnées)
+                </span>
+              )}
+            </AccordionTrigger>
+            <AccordionContent>
+              <FormItem>
+                {useScrollArea ? (
+                  <ScrollArea
+                    className="pr-4 rounded-sm"
+                    style={{ maxHeight: '400px', overflowY: 'auto' }}
+                  >
+                    {renderCameraList()}
+                  </ScrollArea>
+                ) : (
+                  renderCameraList()
+                )}
+                {fieldState.error && (
+                  <FormMessage>
+                    Veuillez sélectionner au moins une source vidéo
+                  </FormMessage>
+                )}
+              </FormItem>
+            </AccordionContent>
+          </>
         )}
-      </AccordionContent>
+      />
     </AccordionItem>
   );
 }

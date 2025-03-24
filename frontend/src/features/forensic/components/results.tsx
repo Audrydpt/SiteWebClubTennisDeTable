@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier */
 import {
   ChevronDown,
   ChevronUp,
@@ -21,6 +21,10 @@ import { Toggle } from '@/components/ui/toggle';
 
 import forensicResultsHeap from '../lib/data-structure/heap';
 import { ForensicResult, SourceProgress } from '../lib/types';
+import {
+  calculateTimeRemaining,
+  formatTimeRemaining,
+} from '@/features/forensic/lib/estimation/estimation';
 
 // Enum to represent different sort types
 type SortType = 'score' | 'date';
@@ -146,121 +150,10 @@ export default function Results({
     setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
   };
 
-  /*
-  const formatTimeRemaining = (timeMs: number): string => {
-    console.log('Formatting time remaining:', timeMs);
-
-    if (timeMs < 60000) {
-      // Less than a minute
-      return "moins d'une minute";
-    }
-    if (timeMs < 3600000) {
-      // Less than an hour
-      const minutes = Math.ceil(timeMs / 60000);
-      return `environ ${minutes} minute${minutes > 1 ? 's' : ''}`;
-    }
-    // Hours and minutes
-    const hours = Math.floor(timeMs / 3600000);
-    const minutes = Math.ceil((timeMs % 3600000) / 60000);
-    return `environ ${hours} heure${hours > 1 ? 's' : ''} ${minutes > 0 ? `et ${minutes} minute${minutes > 1 ? 's' : ''}` : ''}`;
-  }; */
-
-  /* const calculateTimeRemaining = (
-    sourcesProgress: SourceProgress[]
-  ): {
-    combined: string | null;
-    individual: Record<string, string | null>;
-  } => {
-    console.log('calculateTimeRemaining called with:', sourcesProgress);
-
-    // Filter sources that have progress > 0 but < 100
-    const activeSources = sourcesProgress.filter(
-      (source) => source.progress > 0 && source.progress < 100
-    );
-
-    console.log('Active sources for time calculation:', activeSources);
-
-    const result = {
-      combined: null as string | null,
-      individual: {} as Record<string, string | null>,
-    };
-
-    if (activeSources.length === 0) {
-      console.log(
-        'No active sources with valid progress data, returning empty result'
-      );
-      return result;
-    }
-
-    // Use a fixed estimate of 5 minutes for a complete search as baseline
-    const BASELINE_COMPLETE_SEARCH_MS = 300000; // 5 minutes
-
-    // Calculate individual times first
-    activeSources.forEach((source) => {
-      if (source.progress <= 0) {
-        result.individual[source.sourceId] = null;
-        return;
-      }
-
-      // Calculate remaining time based on progress percentage
-      const remainingPercent = 100 - source.progress;
-      const estimatedRemaining =
-        (remainingPercent / source.progress) *
-        (source.startTime
-          ? Date.now() - new Date(source.startTime).getTime()
-          : BASELINE_COMPLETE_SEARCH_MS * (source.progress / 100));
-
-      console.log(
-        `Source ${source.sourceId}: progress=${source.progress}, estimated remaining=${estimatedRemaining}ms`
-      );
-
-      if (estimatedRemaining > 0 && isFinite(estimatedRemaining)) {
-        result.individual[source.sourceId] =
-          formatTimeRemaining(estimatedRemaining);
-        console.log(
-          `Source ${source.sourceId}: Formatted estimate=${result.individual[source.sourceId]}`
-        );
-      } else {
-        result.individual[source.sourceId] = null;
-      }
-    });
-
-    // For combined estimate, use the first active source's time multiplied by the number of sources
-    // This gives a better approximation of total time than averaging
-    if (activeSources.length > 0 && activeSources[0].progress > 0) {
-      const firstSourceRemainingPercent = 100 - activeSources[0].progress;
-      const firstSourceElapsedTime = activeSources[0].startTime
-        ? Date.now() - new Date(activeSources[0].startTime).getTime()
-        : BASELINE_COMPLETE_SEARCH_MS * (activeSources[0].progress / 100);
-
-      const firstSourceEstimatedRemaining =
-        (firstSourceRemainingPercent / activeSources[0].progress) *
-        firstSourceElapsedTime;
-
-      // Multiply by the number of sources to get total time
-      const totalEstimatedTime =
-        firstSourceEstimatedRemaining * activeSources.length;
-
-      if (totalEstimatedTime > 0 && isFinite(totalEstimatedTime)) {
-        result.combined = formatTimeRemaining(totalEstimatedTime);
-        console.log('Combined time estimate:', result.combined);
-      }
-    }
-
-    console.log('Final time estimates:', result);
-    return result;
-  };
-
-  // Add logs in useMemo to see when it's recalculated
-  const timeEstimates = useMemo(() => {
-    console.log(
-      'Recalculating timeEstimates with sourceProgress:',
-      sourceProgress
-    );
-    const result = calculateTimeRemaining(sourceProgress);
-    console.log('Calculated time estimates:', result);
-    return result;
-  }, [sourceProgress]); */
+  const timeEstimates = useMemo(
+    () => calculateTimeRemaining(sourceProgress),
+    [sourceProgress]
+  );
 
   // Add logs in the renderProgressSection function
   const renderProgressSection = () => {
@@ -277,7 +170,7 @@ export default function Results({
               <span className="text-primary font-semibold">
                 {progress.toFixed(0)}%
               </span>
-              {/* timeEstimates.combined ? (
+              {timeEstimates.combined ? (
                 <span className="text-muted-foreground ml-2 text-xs font-medium">
                   • Temps restant : {timeEstimates.combined}
                 </span>
@@ -285,7 +178,7 @@ export default function Results({
                 <span className="text-muted-foreground ml-2 text-xs font-medium">
                   • Calcul du temps restant...
                 </span>
-              ) */}
+              )}
             </p>
           </div>
           {sourceProgress.length > 0 && (
@@ -361,24 +254,25 @@ export default function Results({
                                 )}
                               </span>
                             )}
-                            {source.progress > 0 && source.progress < 100 && (
-                              // sourceTimeEstimate && (
-                              <span className="flex items-center">
-                                <svg
-                                  className="w-3 h-3 mr-1 inline-block"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                >
-                                  <path d="M17 8h2a2 2 0 0 1 2 2v2m-2 8H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h10" />
-                                  <path d="M22 16H13c-2 0-2-4-4-4H7" />
-                                </svg>
-                                {/* sourceTimeEstimate */}
-                              </span>
+                            {source.progress > 0 &&
+                              source.progress < 100 &&
+                              timeEstimates.individual[source.sourceId] && (
+                                <span className="flex items-center">
+                                  <svg
+                                    className="w-3 h-3 mr-1 inline-block"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <path d="M17 8h2a2 2 0 0 1 2 2v2m-2 8H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h10" />
+                                    <path d="M22 16H13c-2 0-2-4-4-4H7" />
+                                  </svg>
+                                  {timeEstimates.individual[source.sourceId]}
+                                </span>
                             )}
                           </div>
                         </div>

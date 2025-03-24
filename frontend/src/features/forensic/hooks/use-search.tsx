@@ -41,6 +41,7 @@ export default function useSearch() {
         sourceId: guid,
         sourceName: `Source ${guid.slice(0, 8)}...`,
         progress: 0,
+        startTime: new Date().toISOString(),
       }))
     );
   }, []);
