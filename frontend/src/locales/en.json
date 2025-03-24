@@ -18,6 +18,7 @@
     "description": "Enter your username and password below to login to your account",
     "username": "Username",
     "password": "Password",
+    "privilege": "Privilege",
     "submit": "Sign in",
     "error": "Invalid username or password"
   },
@@ -25,5 +26,10 @@
     "title": "Log out",
     "description": "Are you sure you want to log out?",
     "submit": "Sign out"
+  },
+  "privileges": {
+    "Operator": "Operator",
+    "Maintainer": "Maintainer",
+    "Administrator": "Administrator"
   }
 }

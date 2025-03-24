@@ -1,0 +1,77 @@
+{
+  "addUser": "Add User",
+  "userList": "User List",
+  "userListDescription": "View and manage user accounts",
+  "username": "Username",
+  "privileges": {
+    "actions": {
+      "operationalFeatures": "Operational Features",
+      "dashboardManagement": "Dashboard Management",
+      "alertManagement": "Alert Management",
+      "cameraConfiguration": "Camera Configuration",
+      "userManagement": "User Management",
+      "systemSettings": "System Settings"
+    },
+    "tooltips": {
+      "operationalFeatures": "Access to dashboards, alerts, and forensic searches",
+      "dashboardManagement": "Create, modify, and delete dashboard layouts and widgets",
+      "alertManagement": "Configure alert rules, thresholds, and notification settings",
+      "cameraConfiguration": "Manage camera settings, streaming configurations, and recording parameters",
+      "userManagement": "Create, modify, and delete user accounts and role assignments",
+      "systemSettings": "Configure system-wide settings, backup/restore, and system maintenance"
+    },
+    "functionality": "Functionality"
+  },
+  "actions": "Actions",
+  "deleteUserDescription": "This action is irreversible. {{username}} will be definitivly deleted.",
+  "add": "Add",
+  "submit": "Submit",
+  "edit": "Edit",
+  "close": "Close",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "deleteConfirmation": {
+    "title": "Are you sure?",
+    "description": "This action is irreversible and cannot be undone."
+  },
+  "headers": {
+    "systemSettings": "System Settings",
+    "usersManagement": "Users management",
+    "retentionSettings": "Retention Settings"
+  },
+  "retention": {
+    "title": "Retention",
+    "description": "Visualize and define how long your data will be retained.",
+    "fineAdjustment": "Fine adjustment",
+    "days": "days",
+    "customDays": "Custom days",
+    "storageImpact": {
+      "title": "Storage Impact",
+      "optimal": "Optimal space savings. Ideal for data with low historical value.",
+      "balanced": "Good balance between retention and space usage.",
+      "high": "Higher space usage. Recommended for critical data requiring complete history."
+    },
+    "actions": {
+      "saving": "Saving...",
+      "applyChanges": "Apply Changes"
+    },
+    "toast": {
+      "success": "Changes applied",
+      "successDescription": "Retention period successfully set to {{days}} days.",
+      "error": "Error",
+      "errorDescription": "Failed to update retention period. Please try again."
+    }
+  },
+  "updateUser": {
+    "title": "Update user",
+    "description": "Change the privilege of the user",
+    "submit": "Update Privilege",
+    "selectPrivilege": "Select a privilege"
+  },
+  "createUser": {
+    "title": "Create a new user",
+    "description": "Fill in the form below & choose a privilege to create a new user account.",
+    "submit": "Create User",
+    "selectPrivilege": "Select a privilege"
+  }
+}

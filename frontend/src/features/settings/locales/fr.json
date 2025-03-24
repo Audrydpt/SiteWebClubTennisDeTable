@@ -1,0 +1,77 @@
+{
+  "addUser": "Ajouter un utilisateur",
+  "userList": "Liste des utilisateurs",
+  "userListDescription": "Voir et gérer les comptes utilisateurs",
+  "username": "Nom d'utilisateur",
+  "privileges": {
+    "actions": {
+      "operationalFeatures": "Fonctionnalités opérationnelles",
+      "dashboardManagement": "Gestion des tableaux de bord",
+      "alertManagement": "Gestion des alertes",
+      "cameraConfiguration": "Configuration des caméras",
+      "userManagement": "Gestion des utilisateurs",
+      "systemSettings": "Paramètres système"
+    },
+    "tooltips": {
+      "operationalFeatures": "Accès aux tableaux de bord, alertes et recherches forensiques",
+      "dashboardManagement": "Créer, modifier et supprimer les dispositions et widgets des tableaux de bord",
+      "alertManagement": "Configurer les règles d'alerte, les seuils et les paramètres de notification",
+      "cameraConfiguration": "Gérer les paramètres des caméras, les configurations de streaming et les paramètres d'enregistrement",
+      "userManagement": "Créer, modifier et supprimer les comptes utilisateurs et les attributions de rôles",
+      "systemSettings": "Configurer les paramètres système, la sauvegarde/restauration et la maintenance système"
+    },
+    "functionality": "Fonctionnalité"
+  },
+  "actions": "Actions",
+  "deleteUserDescription": "Cette action est irréversible. {{username}} sera définitivement supprimé.",
+  "add": "Ajouter",
+  "submit": "Envoyer",
+  "edit": "Modifier",
+  "close": "Fermer",
+  "cancel": "Annuler",
+  "delete": "Supprimer",
+  "deleteConfirmation": {
+    "title": "Êtes-vous sûr ?",
+    "description": "Cette action est irréversible et ne peut pas être annulée."
+  },
+  "headers": {
+    "systemSettings": "Paramètres système",
+    "usersManagement": "Gestion des utilisateurs",
+    "retentionSettings": "Paramètres de rétention"
+  },
+  "retention": {
+    "title": "Rétention",
+    "description": "Visualisez et définissez la durée de conservation de vos données.",
+    "fineAdjustment": "Ajustement fin",
+    "days": "jours",
+    "customDays": "Jours personnalisés",
+    "storageImpact": {
+      "title": "Impact sur le stockage",
+      "optimal": "Économie d'espace optimale. Idéal pour les données à faible valeur historique.",
+      "balanced": "Bon équilibre entre rétention et utilisation de l'espace.",
+      "high": "Utilisation d'espace plus importante. Recommandé pour les données critiques nécessitant un historique complet."
+    },
+    "actions": {
+      "saving": "Enregistrement...",
+      "applyChanges": "Appliquer les modifications"
+    },
+    "toast": {
+      "success": "Modifications appliquées",
+      "successDescription": "Période de rétention définie avec succès à {{days}} jours.",
+      "error": "Erreur",
+      "errorDescription": "Échec de la mise à jour de la période de rétention. Veuillez réessayer."
+    }
+  },
+  "updateUser": {
+    "title": "Mettre à jour l'utilisateur",
+    "description": "Modifier les privilèges de l'utilisateur",
+    "submit": "Mettre à jour les privilèges",
+    "selectPrivilege": "Sélectionner un privilège"
+  },
+  "createUser": {
+    "title": "Créer un nouvel utilisateur",
+    "description": "Remplissez le formulaire ci-dessous et choisissez un privilège pour créer un nouveau compte utilisateur.",
+    "submit": "Créer l'utilisateur",
+    "selectPrivilege": "Sélectionner un privilège"
+  }
+}
