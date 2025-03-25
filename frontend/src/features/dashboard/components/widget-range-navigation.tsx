@@ -1,4 +1,5 @@
 import { ChevronLeftCircle, ChevronRightCircle } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 interface WidgetRangeNavigatorProps {
   page: number;
@@ -9,13 +10,37 @@ export default function WidgetRangeNavigation({
   page,
   onPageChange,
 }: WidgetRangeNavigatorProps) {
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const resetInactivityTimer = () => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+
+    inactivityTimerRef.current = setTimeout(() => {
+      onPageChange(0);
+    }, 20000);
+  };
+
+  useEffect(() => {
+    resetInactivityTimer();
+
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, []);
+
   const handlePrevious = () => {
     onPageChange(page - 1);
+    resetInactivityTimer();
   };
 
   const handleNext = () => {
     if (page === 0) return;
     onPageChange(page + 1);
+    resetInactivityTimer();
   };
 
   return (
