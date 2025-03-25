@@ -766,7 +766,8 @@ class VehicleReplayJob:
                         logger.info(f"No image processed for camera: {source_guid}")
                         yield {"type": "warning", "message": f"Pas d'image à traiter pour la caméra: {source_guid}"}, None
         except Exception as ex:
-            logger.error(f"Exception in __process_stream: {ex}")
+            stacktrace = traceback.format_exc()
+            logger.error(f"Exception in __process_stream: {stacktrace}")
             yield {"type": "error", "message": f"Exception in stream processing: {ex}"}, None
         finally:
             yield {"type": "progress", "progress": 100, "guid": source_guid, "timestamp": self.time_to.isoformat()}, None
