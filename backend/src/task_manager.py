@@ -785,7 +785,7 @@ class VehicleReplayJob:
         
         try:
             # TODO: await asyncio.gather() pour traiter plusieurs flux en parallèle
-            sequential = True
+            sequential = False
             if sequential:
                 for source_guid in self.sources:
                     if self.cancel_event.is_set():
@@ -799,16 +799,15 @@ class VehicleReplayJob:
                         
                         yield metadata, frame
             else:
-                source_stream = stream.iterate(self.sources)
 
                 xs = stream.flatmap(
-                    lambda source_guid: self.__process_stream(source_guid),
-                    source_stream,
+                    stream.iterate(self.sources),
+                    self.__process_stream,
                     task_limit=2
                 )
-                
-                async with xs.stream() as streamer:
-                    async for metadata, frame in streamer:
+
+                async with xs.stream() as result_stream:
+                    async for metadata, frame in result_stream:
                         if self.cancel_event.is_set():
                             logger.info(f"Cancellation flagged during parallel processing")
                             return

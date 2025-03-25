@@ -2,6 +2,7 @@ import os
 import threading
 import uuid
 import asyncio
+import logging
 from datetime import timedelta
 from dotenv import load_dotenv
 from functools import wraps
@@ -20,6 +21,12 @@ from alembic.autogenerate import produce_migrations
 from alembic.operations.ops import ModifyTableOps, AlterColumnOp
 
 from cron import Cron
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+file_handler = logging.FileHandler(f"/tmp/{__name__}.log")
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+logger.addHandler(file_handler)
 
 def get_database_url(use_timescaledb=True, async_driver=False):
     db_host = os.getenv("DB_HOST", "localhost")
@@ -171,13 +178,21 @@ class DashboardSettings(Database):
 class GenericDAL:
     initialized = False
     lock = threading.Lock()
+    SyncEngine = None
+    SyncSession = None
+    AsyncEngine = None
+    AsyncSession = None
 
     def __init__(self):
-        self.sync_engine  = create_engine(      get_database_url(use_timescaledb=True, async_driver=False), echo=False, connect_args={'client_encoding': 'utf8'})
-        self.async_engine = create_async_engine(get_database_url(use_timescaledb=True, async_driver=True), echo=False)
+        if not GenericDAL.SyncSession:
+            with GenericDAL.lock:
+                GenericDAL.SyncEngine  = create_engine(get_database_url(use_timescaledb=True, async_driver=False), echo=False, connect_args={'client_encoding': 'utf8'})
+                GenericDAL.SyncSession = sessionmaker(bind=GenericDAL.SyncEngine , expire_on_commit=False)
         
-        self.SyncSession = sessionmaker(       bind=self.sync_engine , expire_on_commit=False)
-        self.AsyncSession = async_sessionmaker(bind=self.async_engine, expire_on_commit=False)
+        if not GenericDAL.AsyncSession:
+            with GenericDAL.lock:
+                GenericDAL.AsyncEngine = create_async_engine(get_database_url(use_timescaledb=True, async_driver=True), echo=False)
+                GenericDAL.AsyncSession = async_sessionmaker(bind=GenericDAL.AsyncEngine, expire_on_commit=False)
         
         if not GenericDAL.initialized:
             with GenericDAL.lock:
@@ -236,15 +251,15 @@ class GenericDAL:
             else:
                 return op
 
-        with self.SyncSession() as session:
+        with GenericDAL.SyncSession() as session:
             session.execute(DDL("SET client_encoding TO 'UTF8'"))
             session.execute(DDL("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
             session.execute(DDL("CREATE EXTENSION IF NOT EXISTS timescaledb"))
             session.commit()
         
         print("Binding schema to engine...")
-        Database.metadata.reflect(self.sync_engine)
-        Database.metadata.create_all(self.sync_engine)
+        Database.metadata.reflect(GenericDAL.SyncEngine)
+        Database.metadata.create_all(GenericDAL.SyncEngine)
 
         print("Trying to update schema...")
         # got issue using the same engine, because of dialect timescaledb != postgresql
@@ -260,7 +275,7 @@ class GenericDAL:
 
                     operations = Operations(context)
 
-                    use_batch = self.sync_engine.name == "sqlite"
+                    use_batch = GenericDAL.SyncEngine.name == "sqlite"
                     stack = [migrations.upgrade_ops]
                     while stack:
                         elem = stack.pop(0)
@@ -292,7 +307,7 @@ class GenericDAL:
         print("Schema is ready")
 
     def __seed_database(self):
-        with self.SyncSession() as session:
+        with GenericDAL.SyncSession() as session:
             query = session.query(Dashboard).all()
             
             # Create a default dashboard if none exists
@@ -344,7 +359,9 @@ class GenericDAL:
         return run_async(self.async_remove)(obj)
     
     def clean(self, cls) -> bool:
-        with self.SyncSession() as session:
+        logger.info(f"Cleaning {cls}")
+
+        with GenericDAL.SyncSession() as session:
             setting = session.query(DashboardSettings).filter(DashboardSettings.key_index == "retention").first()
             days = int(setting.value_index) if setting else 90
         return run_async(self.async_clean)(cls, days)
@@ -352,14 +369,14 @@ class GenericDAL:
     # ----- Asynchronous API methods -----
 
     async def async_add(self, obj) -> uuid.UUID:
-        async with self.AsyncSession() as session:
+        async with GenericDAL.AsyncSession() as session:
             session.add(obj)
             await session.commit()
             await session.refresh(obj)
             return obj.id
 
     async def async_get(self, cls, _func=None, _group=None, _having=None, _order=None, **filters) -> List[Any]:
-        async with self.AsyncSession() as session:
+        async with GenericDAL.AsyncSession() as session:
             # Remplacement de session.query(cls)
             if _func is not None:
                 stmt = select(_func, _func.clause_expr)
@@ -390,7 +407,7 @@ class GenericDAL:
             return result
     
     async def async_get_bucket(self, cls, _func=None, _time="1 hour", _group=None, _having=None, _between=None, **filters) -> List[Any]:
-        async with self.AsyncSession() as session:
+        async with GenericDAL.AsyncSession() as session:
             # Remplacement de session.query(…)
             # Somehow, text(f"'{_time}'") get converted into ModelName.hour, instead of '1 hour'
             stmt = select(func.time_bucket_gapfill(text("'" + _time + "'"), cls.timestamp).label('_timestamp'))
@@ -429,22 +446,23 @@ class GenericDAL:
             return result
 
     async def async_update(self, obj) -> Any:
-        async with self.AsyncSession() as session:
+        async with GenericDAL.AsyncSession() as session:
             result = await session.merge(obj)
             await session.commit()
             return result
 
     async def async_remove(self, obj) -> bool:
-        async with self.AsyncSession() as session:
+        async with GenericDAL.AsyncSession() as session:
             await session.delete(obj)
             await session.commit()
             return True
     
     async def async_clean(self, cls, days=100) -> bool:
-        print("Cleaning", cls)
-        async with self.AsyncSession() as session:
+        logger.info(f"Cleaning {cls}")
+        async with GenericDAL.AsyncSession() as session:
             # Remplacement de session.query(cls).filter(...).delete() par delete(...)
             stmt = delete(cls).where(cls.timestamp < func.now() - timedelta(days=days))
             await session.execute(stmt)
             await session.commit()
+            logger.info(f"Cleaned {cls}")
             return True
