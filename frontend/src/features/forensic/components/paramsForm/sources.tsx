@@ -1,6 +1,6 @@
 import { Eye, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useFormContext } from 'react-hook-form';
+import { useWatch } from 'react-hook-form';
 
 import SearchInput from '@/components/search-input';
 import {
@@ -22,6 +22,7 @@ import { useAuth } from '@/providers/auth-context.tsx';
 
 import useSources from '../../hooks/use-sources.tsx';
 import { ForensicFormValues } from '../../lib/types.ts';
+import { useForensicForm } from '../../lib/provider/forensic-form-context.tsx';
 
 interface SourcesProps {
   useScrollArea?: boolean;
@@ -36,11 +37,15 @@ export default function Sources({
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  // Add the form context
-  const formContext = useFormContext<ForensicFormValues>();
+  // Use the forensic form context instead of direct useFormContext
+  const { formMethods } = useForensicForm();
+  const { control, setValue } = formMethods;
 
-  // Get current sources from form
-  const formSources = formContext.watch('sources');
+  // Get current sources from form using useWatch
+  const sources = useWatch<ForensicFormValues, 'sources'>({
+    control,
+    name: 'sources',
+  });
 
   const {
     cameras,
@@ -49,18 +54,18 @@ export default function Sources({
     setSelectedCameras,
     snapshots,
     snapshotLoadingStates,
-  } = useSources(sessionId, undefined, formSources);
+  } = useSources(sessionId, undefined, sources);
 
   // Sync form sources with selectedCameras when component mounts or form sources change
   useEffect(() => {
     if (
-      formSources &&
-      formSources.length > 0 &&
-      JSON.stringify(formSources) !== JSON.stringify(selectedCameras)
+      sources &&
+      sources.length > 0 &&
+      JSON.stringify(sources) !== JSON.stringify(selectedCameras)
     ) {
-      setSelectedCameras(formSources);
+      setSelectedCameras(sources);
     }
-  }, [formSources, selectedCameras, setSelectedCameras]);
+  }, [sources, selectedCameras, setSelectedCameras]);
 
   // Filter cameras based on search term
   const filteredCameras = cameras.filter((camera) =>
@@ -71,7 +76,7 @@ export default function Sources({
   const updateSelectedCameras = (newCameras: string[]) => {
     setSelectedCameras(newCameras);
     // Update form context with the selected cameras
-    formContext.setValue('sources', newCameras, {
+    setValue('sources', newCameras, {
       shouldValidate: true,
       shouldDirty: true,
       shouldTouch: true,
@@ -228,7 +233,7 @@ export default function Sources({
   return (
     <AccordionItem value="sources">
       <FormField
-        control={formContext.control}
+        control={control}
         name="sources"
         render={({ fieldState }) => (
           <>
@@ -236,9 +241,9 @@ export default function Sources({
               className={fieldState.error ? 'text-destructive font-medium' : ''}
             >
               Sources vidéo
-              {formSources?.length > 0 && (
+              {sources?.length > 0 && (
                 <span className="ml-2 text-xs text-muted-foreground">
-                  ({formSources.length} sélectionnées)
+                  ({sources.length} sélectionnées)
                 </span>
               )}
             </AccordionTrigger>

@@ -1,8 +1,9 @@
-/* eslint-disable */
-import { useState, SetStateAction, Dispatch, useEffect } from 'react';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useState, useEffect, Dispatch, SetStateAction } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CalendarIcon, Clock } from 'lucide-react';
+import { useWatch } from 'react-hook-form';
 
 import { cn } from '@/lib/utils.ts';
 import {
@@ -31,19 +32,20 @@ import {
   SelectValue,
 } from '@/components/ui/select.tsx';
 import { useForensicForm } from '../../lib/provider/forensic-form-context.tsx';
+import { ForensicFormValues } from '../../lib/types.ts';
 
 function DateTimePicker({
-                          isStart,
-                          selectedDate,
-                          hours,
-                          minutes,
-                          isOpen,
-                          setIsOpen,
-                          handleSelect,
-                          updateTimeValue,
-                          timeOptions,
-                          timeFrom,
-                        }: {
+  isStart,
+  selectedDate,
+  hours,
+  minutes,
+  isOpen,
+  setIsOpen,
+  handleSelect,
+  updateTimeValue,
+  timeOptions,
+  timeFrom,
+}: {
   isStart: boolean;
   selectedDate?: Date;
   hours: string;
@@ -143,15 +145,33 @@ function DateTimePicker({
 
 export default function Times() {
   const { formMethods } = useForensicForm();
-  const { control, watch, setValue, setError, clearErrors } = formMethods;
+  const { control, setValue, setError, clearErrors } = formMethods;
 
   const [rerender, setRerender] = useState(0);
 
-  const timerange = watch('timerange');
+  // Using useWatch instead of watch
+  const timerange = useWatch<ForensicFormValues, 'timerange'>({
+    control,
+    name: 'timerange',
+  });
+
   const timeFrom = timerange?.time_from
     ? new Date(timerange.time_from)
     : undefined;
   const timeTo = timerange?.time_to ? new Date(timerange.time_to) : undefined;
+
+  // TODO: à enlever pour prod
+  useEffect(() => {
+    const now = new Date();
+    const oneHourAgo = new Date(now);
+    oneHourAgo.setHours(now.getHours() - 1);
+
+    // Set the initial values
+    setValue('timerange.time_to', now.toISOString());
+    setValue('timerange.time_from', oneHourAgo.toISOString());
+  }, [setValue]);
+
+  // juqu'ici
 
   const [startOpen, setStartOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
