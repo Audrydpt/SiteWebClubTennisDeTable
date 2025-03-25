@@ -52,6 +52,10 @@ const Forensic = lazyLoadFeature(
   'forensic',
   () => import('./features/forensic/Forensic')
 );
+const Configuration = lazyLoadFeature(
+  'forensic',
+  () => import('./features/forensic/Configuration')
+);
 
 export default function App() {
   const { open, setOpen } = useSidebarState();
@@ -108,6 +112,7 @@ export default function App() {
               <Route path="users" element={<Users />} />
               <Route path="retention" element={<Retention />} />
             </Route>
+            <Route path="forensic/config" element={<Configuration />} />
 
             <Route path="/theme" element={<Theme />} />
           </Route>

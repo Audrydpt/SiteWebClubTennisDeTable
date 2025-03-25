@@ -97,7 +97,14 @@ const analyticsItems: SidebarItem[] = [
     ],
   },
   { title: 'Maps', url: '/maps', icon: Map },
-  { title: 'Forensic', url: '/forensic', icon: Fingerprint },
+  {
+    title: 'Forensic',
+    url: '/forensic',
+    icon: Fingerprint,
+    children: [
+      { title: 'Configuration', url: '/forensic/config', icon: FileOutput },
+    ],
+  },
 ];
 
 const getFilteredItems = (user?: UserType): SidebarItem[] => {
@@ -258,26 +265,31 @@ export default function AppSidebar() {
                     {section.children &&
                       section.children.map((item) => (
                         <SidebarMenuItem key={item.title}>
-                          <SidebarMenuButton asChild disabled={item.disabled}>
-                            <Link
-                              to={item.url || '#'}
-                              className={
-                                item.disabled
-                                  ? 'text-gray-400 pointer-events-none'
-                                  : ''
-                              }
-                            >
-                              {item.icon && <item.icon />}
-                              <span>{item.title}</span>
-                            </Link>
-                          </SidebarMenuButton>
-                          {item.children && (
-                            <>
-                              <CollapsibleTrigger asChild>
-                                <SidebarMenuAction className="group">
-                                  <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-90" />
-                                </SidebarMenuAction>
-                              </CollapsibleTrigger>
+                          {item.children ? (
+                            <Collapsible className="w-full">
+                              <div className="flex w-full">
+                                <SidebarMenuButton
+                                  asChild
+                                  disabled={item.disabled}
+                                >
+                                  <Link
+                                    to={item.url || '#'}
+                                    className={
+                                      item.disabled
+                                        ? 'text-gray-400 pointer-events-none'
+                                        : ''
+                                    }
+                                  >
+                                    {item.icon && <item.icon />}
+                                    <span>{item.title}</span>
+                                  </Link>
+                                </SidebarMenuButton>
+                                <CollapsibleTrigger asChild>
+                                  <SidebarMenuAction className="group">
+                                    <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                                  </SidebarMenuAction>
+                                </CollapsibleTrigger>
+                              </div>
                               <CollapsibleContent>
                                 <SidebarMenuSub>
                                   {item.children.map((child) => (
@@ -298,7 +310,21 @@ export default function AppSidebar() {
                                   ))}
                                 </SidebarMenuSub>
                               </CollapsibleContent>
-                            </>
+                            </Collapsible>
+                          ) : (
+                            <SidebarMenuButton asChild disabled={item.disabled}>
+                              <Link
+                                to={item.url || '#'}
+                                className={
+                                  item.disabled
+                                    ? 'text-gray-400 pointer-events-none'
+                                    : ''
+                                }
+                              >
+                                {item.icon && <item.icon />}
+                                <span>{item.title}</span>
+                              </Link>
+                            </SidebarMenuButton>
                           )}
                         </SidebarMenuItem>
                       ))}
