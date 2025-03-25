@@ -583,11 +583,14 @@ export default function Results({
           </p>
         </div>
       )}
+      <ScrollArea className="h-[calc(100%-3rem)] pb-1">
+        <div className="space-y-4">
+          {/* Progress section inside ScrollArea */}
+          {renderProgressSection()}
 
-      {renderProgressSection()}
-
-      <ScrollArea className="h-[calc(100%-3rem)] pb-9">
-        {renderSearchResults()}
+          {/* Results */}
+          {renderSearchResults()}
+        </div>
       </ScrollArea>
 
       {renderExpandedImageModal()}
