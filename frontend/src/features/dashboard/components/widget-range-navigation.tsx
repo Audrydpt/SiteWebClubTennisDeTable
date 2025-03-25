@@ -18,7 +18,6 @@ export default function WidgetRangeNavigation({
     onPageChange(page + 1);
   };
 
-  console.log('page', page);
   return (
     <div>
       <div className="absolute left-2 top-1/2 transform -translate-y-1/2 cursor-pointer">
