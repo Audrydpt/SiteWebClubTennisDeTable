@@ -20,6 +20,7 @@ interface WidgetActionsProps {
   edit: (widget: StoredWidget) => void;
   remove: (id: string) => void;
   clone: (widget: StoredWidget) => void;
+  page: number;
 }
 
 export default function WidgetActions({
@@ -29,6 +30,7 @@ export default function WidgetActions({
   edit,
   remove,
   clone,
+  page,
 }: WidgetActionsProps) {
   const { t } = useTranslation();
 
@@ -49,6 +51,7 @@ export default function WidgetActions({
         <QuickExport
           storedWidget={item.widget}
           chartContent={item.content}
+          page={page}
           getChartRef={() => chartRef}
           updateStoredWidget={(newData) => edit({ ...item.widget, ...newData })}
           setStepValidity={() => {}}

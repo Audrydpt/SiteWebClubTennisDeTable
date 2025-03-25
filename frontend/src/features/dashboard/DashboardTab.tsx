@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { JSX, useEffect, useRef, useState } from 'react';
 import { ReactSortable } from 'react-sortablejs';
 
 import LoadingSpinner from '@/components/loading';
@@ -9,7 +9,13 @@ import WidgetActions from './components/widget-actions';
 import WidgetRangeNavigation from './components/widget-range-navigation';
 import useWidgetAPI from './hooks/use-widget';
 import { ChartTypeComponents } from './lib/const';
-import { ChartSize, ChartTiles } from './lib/props';
+import { ChartSize } from './lib/props';
+
+export type ChartTiles = {
+  id: string;
+  content: JSX.Element;
+  widget: StoredWidget;
+};
 
 const widthClassMap: Record<ChartSize, string> = {
   tiny: 'col-span-1 md:col-span-1 lg:col-span-1 2xl:col-span-1',
@@ -120,6 +126,7 @@ export default function DashboardTab({
             edit={edit}
             remove={remove}
             clone={clone}
+            page={pagesToChart[item.id] ?? 0}
           />
           <WidgetRangeNavigation
             page={pagesToChart[item.id] ?? 0}

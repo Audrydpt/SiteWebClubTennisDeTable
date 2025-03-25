@@ -205,6 +205,7 @@ export async function getWidgetData(
 export async function getWidgetDataForExport(
   props: DashboardQuery,
   groupBy?: string,
+  page?: number,
   rounded = true
 ) {
   let timeFrom;
@@ -217,6 +218,14 @@ export async function getWidgetDataForExport(
 
     timeFrom = now.minus(AggregationTypeToObject[props.duration]);
     timeTo = now.minus({ millisecond: 1 });
+    if (page !== undefined && page < 0) {
+      const duration = Duration.fromObject(
+        AggregationTypeToObject[props.duration]
+      ).mapUnits((x) => x * (Math.abs(page) + 1));
+
+      timeFrom = now.minus(duration);
+      timeTo = timeFrom.plus(AggregationTypeToObject[props.duration]);
+    }
   } else if (props.range && props.range.from && props.range.to) {
     timeFrom = DateTime.fromJSDate(props.range.from);
     timeTo = DateTime.fromJSDate(props.range.to);
