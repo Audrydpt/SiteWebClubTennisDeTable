@@ -413,10 +413,12 @@ class FastAPIServer:
         
         @self.app.websocket("/forensics/{guid}")
         async def task_updates(websocket: WebSocket, guid: str):
+            logger.info(f"start of task_updates")
             try:
                 # Accepter la connexion WebSocket
                 logger.info(f"Client connecté pour la tâche {guid}")
                 await websocket.accept()
+                logger.info(f"Client accepté pour la tâche {guid}")
                 
                 # Valider que la tâche existe
                 status = TaskManager.get_job_status(guid)
@@ -430,13 +432,14 @@ class FastAPIServer:
                     await TaskManager.stream_job_results(websocket, guid, False)
                     logger.info(f"Streaming terminé pour la tâche {guid}")
                 except WebSocketDisconnect:
-                    logger.info(f"Client déconnecté pour la tâche {guid}")
+                    logger.info(f"Client déconnecté pour la tâche {guid} (WebSocketDisconnect)")
                 except asyncio.CancelledError:
-                    logger.info(f"Streaming annulé pour la tâche {guid}")
+                    logger.info(f"Streaming annulé pour la tâche {guid} (CancelledError)")
                 except Exception as e:
                     logger.error(f"Erreur pendant le streaming de la tâche {guid}: {e}")
                     logger.error(traceback.format_exc())
                     if websocket.client_state != WebSocketState.DISCONNECTED:
+                        logger.info(f"Envoi d'un message d'erreur pour la tâche {guid}")
                         await websocket.send_json({
                             "type": "error",
                             "message": f"Erreur de streaming: {str(e)}"
@@ -444,7 +447,7 @@ class FastAPIServer:
                 logger.info(f"Fin du streaming pour la tâche {guid}")
 
             except WebSocketDisconnect:
-                logger.info(f"Client déconnecté pour la tâche {guid}")
+                logger.info(f"Client déconnecté pour la tâche {guid} (WebSocketDisconnect2)")
             
             except Exception as e:
                 logger.error(f"Erreur WebSocket pour la tâche {guid}: {e}")
@@ -453,19 +456,22 @@ class FastAPIServer:
                 # Tenter d'envoyer un message d'erreur avant de fermer
                 try:
                     if websocket.client_state != WebSocketState.DISCONNECTED:
+                        logger.info(f"Envoi d'un message d'erreur pour la tâche {guid}")
                         await websocket.send_json({
                             "type": "error",
                             "message": f"Erreur: {str(e)}"
                         })
                         await websocket.close(code=1011, reason="Erreur serveur")
                 except:
-                    pass
+                    logger.info(f"Erreur lors de la fermeture de la connexion pour la tâche {guid}")
             
             finally:
                 logger.info(f"Client déconnecté pour la tâche {guid}")
                 # S'assurer que la connexion est fermée
                 if websocket.client_state != WebSocketState.DISCONNECTED:
                     await websocket.close(code=1000, reason="Streaming terminé")
+            
+            logger.info(f"end of task_updates")
 
         @self.app.delete("/forensics", tags=["forensics"])
         async def stop_all_task():

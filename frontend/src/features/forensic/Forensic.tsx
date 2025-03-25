@@ -1,19 +1,17 @@
-import { useState, useRef } from 'react';
+/* eslint-disable no-console */
+import { useRef, useState } from 'react';
+
 import { Card, CardContent } from '@/components/ui/card';
 
-import {
-  ForensicFormProvider,
-  ForensicFormValues,
-} from './lib/provider/forensic-form-context';
 import useSearch from './hooks/use-search';
-import { useAuth } from '@/providers/auth-context';
 import { createSearchFormData } from './lib/format-query';
 
 import ForensicForm from './components/form';
 import Results from './components/results';
+import ForensicFormProvider from './lib/provider/forensic-form-provider';
+import { ForensicFormValues } from './lib/types';
 
 export default function Forensic() {
-  const { sessionId = '' } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const collapsedWidth = 1;
   const expandedWidth = 350;
@@ -21,12 +19,12 @@ export default function Forensic() {
 
   const {
     startSearch,
-    initWebSocket,
-    closeWebSocket,
+    stopSearch,
     progress,
     results,
     isSearching,
-  } = useSearch(sessionId);
+    sourceProgress,
+  } = useSearch();
 
   const handleToggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
@@ -34,16 +32,12 @@ export default function Forensic() {
 
   const handleSearch = async (data: ForensicFormValues) => {
     if (isSearching) {
-      await closeWebSocket();
-      await new Promise((resolve) => {
-        setTimeout(resolve, 500);
-      });
+      return;
     }
 
     try {
       const searchFormData = createSearchFormData(data);
-      const guid = await startSearch(searchFormData, 5);
-      initWebSocket(guid);
+      await startSearch(searchFormData);
     } catch (error) {
       console.error('Failed to start search:', error);
     }
@@ -80,8 +74,7 @@ export default function Forensic() {
               <ForensicForm
                 onSubmit={handleSearch}
                 isSearching={isSearching}
-                progress={progress}
-                closeWebSocket={closeWebSocket}
+                stopSearch={stopSearch}
                 isCollapsed={isCollapsed}
               />
             </ForensicFormProvider>
@@ -114,6 +107,7 @@ export default function Forensic() {
             results={results}
             isSearching={isSearching}
             progress={progress}
+            sourceProgress={sourceProgress}
           />
         </CardContent>
       </Card>

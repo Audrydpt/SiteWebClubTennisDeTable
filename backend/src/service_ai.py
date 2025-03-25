@@ -14,30 +14,7 @@ logger.addHandler(file_handler)
 
 def bgr_to_yuv420p(bgr_image):
     """Convert BGR image to YUV420p raw format"""
-    # Convert BGR to YUV
-    yuv_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2YUV)
-    
-    height, width = yuv_image.shape[0], yuv_image.shape[1]
-    
-    # Y plane: full resolution
-    y = yuv_image[:, :, 0]
-    
-    # Downsample U and V planes (half resolution in both dimensions)
-    u = cv2.resize(yuv_image[:, :, 1], (width // 2, height // 2), interpolation=cv2.INTER_AREA)
-    v = cv2.resize(yuv_image[:, :, 2], (width // 2, height // 2), interpolation=cv2.INTER_AREA)
-        
-    return y, u, v
-
-def bgr_to_yuv420p_v2(bgr_image):
-    yuv = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2YUV).reshape(-1)
-    H, W = bgr_image.shape[:2]
-    nY = H * W
-
-    Y = yuv[:nY].reshape(H, W)
-    U = yuv[nY : nY + nY//4].reshape(H//2, W//2)
-    V = yuv[nY + nY//4 :].reshape(H//2, W//2)
-    return Y, U, V
-   
+    return cv2.cvtColor(bgr_image, cv2.COLOR_BGR2YUV_I420).astype("uint8")
 
 class ServiceAI:
     def __init__(self, analytic="192.168.20.212:53211", *args, **kwargs):
@@ -133,14 +110,8 @@ class ServiceAI:
             resized_width <<= 2
             image = cv2.resize(image, (resized_width, obj_modelHeight))
 
-       #image_raw = cv2.cvtColor(image, cv2.COLOR_BGR2YUV_I420).astype("uint8")
-
         image_raw = bgr_to_yuv420p(image)
 
-        image_jpeg = cv2.imencode(".jpg", image)[1]
-
-
-        #obj_response = await self.__detect_object(width=obj_modelWidth, height=obj_modelHeight, jpeg=image_jpeg, object_detection=True,model=obj_model)
         obj_response = await self.__detect_object(width=image.shape[1],height=image.shape[0], raw=image_raw,object_detection=True,model=obj_model)
         
         #check if obj_response is NoneType
@@ -287,10 +258,15 @@ class ServiceAI:
 
         return top, bottom, left, right
 
-    def get_thumbnail(self, frame, detection, scale=0.0):
+    def get_thumbnail(self, frame, detection, scale=1.0):
         top, bottom, left, right = self.get_pixel_bbox(frame, detection)
+
+        if scale < 0:
+            logger.error(f"thumbnail scale can't be negative. Current value is {scale}")
+            raise Exception(f"thumbnail scale can't be negative")
         
         # scale the bounding box
+        scale = scale - 1 # to normalize the scale ( scale = 1 will return the bbox unchanged)
         width = right - left
         height = bottom - top
         
@@ -308,7 +284,7 @@ class ServiceAI:
             raise Exception("You must choose between object detection or classification")
         
         ctx = {
-            "confidenceThreshold": 0.5,
+            "confidenceThreshold": 0.1,
             "overlapThreshold": 0.1,
             "bbox": True if object_detection else False,
             "classifier": True if classification else False
@@ -337,9 +313,7 @@ class ServiceAI:
           logger.info(f"Sending request: {req}")
           self.seq += 1
           await self.ws[model].send_json(req)
-          await self.ws[model].send_bytes(raw[0].tobytes())
-          await self.ws[model].send_bytes(raw[1].tobytes())
-          await self.ws[model].send_bytes(raw[2].tobytes())
+          await self.ws[model].send_bytes(raw.tobytes())
         elif jpeg is not None:
           req = {
               "image": {

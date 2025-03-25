@@ -19,3 +19,4 @@ redis~=5.2.1
 aioredis~=2.0.1
 redis[hiredis]
 python-dateutil~=2.9.0
+aiostream~=0.6.4

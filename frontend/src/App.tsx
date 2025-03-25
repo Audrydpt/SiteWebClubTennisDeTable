@@ -6,7 +6,6 @@ import useSidebarState from '@/hooks/use-sidebar-state';
 import NoSidebarLayout from '@/layouts/NoSidebarLayout';
 import { UserPrivileges } from '@/lib/authenticate';
 
-import Forensic from '@/features/forensic/Forensic.tsx';
 import CollapsedSidebarLayout from '@/layouts/CollapsedSidebarLayout';
 import LoadingSpinner from './components/loading';
 import { Toaster } from './components/ui/sonner';
@@ -48,6 +47,10 @@ const Users = lazyLoadFeature(
 const Retention = lazyLoadFeature(
   'settings',
   () => import('./features/settings/Retention')
+);
+const Forensic = lazyLoadFeature(
+  'forensic',
+  () => import('./features/forensic/Forensic')
 );
 
 export default function App() {

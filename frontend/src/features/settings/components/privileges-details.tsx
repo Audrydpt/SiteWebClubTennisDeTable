@@ -1,5 +1,6 @@
 import { EyeIcon, PencilIcon, ShieldCheckIcon, XIcon } from 'lucide-react';
 import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { AcicPrivileges } from '../lib/props';
 
@@ -11,71 +12,79 @@ interface PermissionDetail {
   tooltip: string;
 }
 
-const permissionDetails: PermissionDetail[] = [
-  {
-    action: 'Operational Features',
-    [AcicPrivileges.Operator]: <PencilIcon className="h-4 w-4 text-primary" />,
-    [AcicPrivileges.Maintainer]: (
-      <PencilIcon className="h-4 w-4 text-primary" />
-    ),
-    [AcicPrivileges.Administrator]: (
-      <ShieldCheckIcon className="h-4 w-4 text-primary" />
-    ),
-    tooltip: 'Access to dashboards, alerts, and forensic searches',
-  },
-  {
-    action: 'Dashboard Management',
-    [AcicPrivileges.Operator]: <EyeIcon className="h-4 w-4 text-primary" />,
-    [AcicPrivileges.Maintainer]: (
-      <PencilIcon className="h-4 w-4 text-primary" />
-    ),
-    [AcicPrivileges.Administrator]: (
-      <ShieldCheckIcon className="h-4 w-4 text-primary" />
-    ),
-    tooltip: 'Create, modify, and delete dashboard layouts and widgets',
-  },
-  {
-    action: 'Alert Management',
-    [AcicPrivileges.Operator]: <EyeIcon className="h-4 w-4 text-primary" />,
-    [AcicPrivileges.Maintainer]: (
-      <PencilIcon className="h-4 w-4 text-primary" />
-    ),
-    [AcicPrivileges.Administrator]: (
-      <ShieldCheckIcon className="h-4 w-4 text-primary" />
-    ),
-    tooltip: 'Configure alert rules, thresholds, and notification settings',
-  },
-  {
-    action: 'Camera Configuration',
-    [AcicPrivileges.Operator]: <XIcon className="h-4 w-4 text-destructive" />,
-    [AcicPrivileges.Maintainer]: (
-      <PencilIcon className="h-4 w-4 text-primary" />
-    ),
-    [AcicPrivileges.Administrator]: (
-      <ShieldCheckIcon className="h-4 w-4 text-primary" />
-    ),
-    tooltip:
-      'Manage camera settings, streaming configurations, and recording parameters',
-  },
-  {
-    action: 'User Management',
-    [AcicPrivileges.Operator]: <XIcon className="h-4 w-4 text-destructive" />,
-    [AcicPrivileges.Maintainer]: <XIcon className="h-4 w-4 text-destructive" />,
-    [AcicPrivileges.Administrator]: (
-      <ShieldCheckIcon className="h-4 w-4 text-primary" />
-    ),
-    tooltip: 'Create, modify, and delete user accounts and role assignments',
-  },
-  {
-    action: 'System Settings',
-    [AcicPrivileges.Operator]: <XIcon className="h-4 w-4 text-destructive" />,
-    [AcicPrivileges.Maintainer]: <XIcon className="h-4 w-4 text-destructive" />,
-    [AcicPrivileges.Administrator]: (
-      <ShieldCheckIcon className="h-4 w-4 text-primary" />
-    ),
-    tooltip:
-      'Configure system-wide settings, backup/restore, and system maintenance',
-  },
-];
+const usePermissionDetails = (): PermissionDetail[] => {
+  const { t } = useTranslation();
 
-export default permissionDetails;
+  return [
+    {
+      action: t('settings:privileges.actions.operationalFeatures'),
+      [AcicPrivileges.Operator]: (
+        <PencilIcon className="h-4 w-4 text-primary" />
+      ),
+      [AcicPrivileges.Maintainer]: (
+        <PencilIcon className="h-4 w-4 text-primary" />
+      ),
+      [AcicPrivileges.Administrator]: (
+        <ShieldCheckIcon className="h-4 w-4 text-primary" />
+      ),
+      tooltip: t('settings:privileges.tooltips.operationalFeatures'),
+    },
+    {
+      action: t('settings:privileges.actions.dashboardManagement'),
+      [AcicPrivileges.Operator]: <EyeIcon className="h-4 w-4 text-primary" />,
+      [AcicPrivileges.Maintainer]: (
+        <PencilIcon className="h-4 w-4 text-primary" />
+      ),
+      [AcicPrivileges.Administrator]: (
+        <ShieldCheckIcon className="h-4 w-4 text-primary" />
+      ),
+      tooltip: t('settings:privileges.tooltips.dashboardManagement'),
+    },
+    {
+      action: t('settings:privileges.actions.alertManagement'),
+      [AcicPrivileges.Operator]: <EyeIcon className="h-4 w-4 text-primary" />,
+      [AcicPrivileges.Maintainer]: (
+        <PencilIcon className="h-4 w-4 text-primary" />
+      ),
+      [AcicPrivileges.Administrator]: (
+        <ShieldCheckIcon className="h-4 w-4 text-primary" />
+      ),
+      tooltip: t('settings:privileges.tooltips.alertManagement'),
+    },
+    {
+      action: t('settings:privileges.actions.cameraConfiguration'),
+      [AcicPrivileges.Operator]: <XIcon className="h-4 w-4 text-destructive" />,
+      [AcicPrivileges.Maintainer]: (
+        <PencilIcon className="h-4 w-4 text-primary" />
+      ),
+      [AcicPrivileges.Administrator]: (
+        <ShieldCheckIcon className="h-4 w-4 text-primary" />
+      ),
+      tooltip: t('settings:privileges.tooltips.cameraConfiguration'),
+    },
+    {
+      action: t('settings:privileges.actions.userManagement'),
+      [AcicPrivileges.Operator]: <XIcon className="h-4 w-4 text-destructive" />,
+      [AcicPrivileges.Maintainer]: (
+        <XIcon className="h-4 w-4 text-destructive" />
+      ),
+      [AcicPrivileges.Administrator]: (
+        <ShieldCheckIcon className="h-4 w-4 text-primary" />
+      ),
+      tooltip: t('settings:privileges.tooltips.userManagement'),
+    },
+    {
+      action: t('settings:privileges.actions.systemSettings'),
+      [AcicPrivileges.Operator]: <XIcon className="h-4 w-4 text-destructive" />,
+      [AcicPrivileges.Maintainer]: (
+        <XIcon className="h-4 w-4 text-destructive" />
+      ),
+      [AcicPrivileges.Administrator]: (
+        <ShieldCheckIcon className="h-4 w-4 text-primary" />
+      ),
+      tooltip: t('settings:privileges.tooltips.systemSettings'),
+    },
+  ];
+};
+
+export default usePermissionDetails;

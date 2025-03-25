@@ -1,16 +1,30 @@
-import { Search, SortAsc, SortDesc } from 'lucide-react';
-import React, { useMemo, useState, useEffect } from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Progress } from '@/components/ui/progress';
-import { ForensicResult } from '../lib/types';
-import forensicResultsHeap from '../lib/data-structure/heap';
+/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier */
+import {
+  ChevronDown,
+  ChevronUp,
+  Search,
+  SortAsc,
+  SortDesc,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+
 import { Button } from '@/components/ui/button';
-import { Toggle } from '@/components/ui/toggle';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Toggle } from '@/components/ui/toggle';
+
+import forensicResultsHeap from '../lib/data-structure/heap';
+import { ForensicResult, SourceProgress } from '../lib/types';
+import {
+  calculateTimeRemaining,
+  formatTimeRemaining,
+} from '@/features/forensic/lib/estimation/estimation';
 
 // Enum to represent different sort types
 type SortType = 'score' | 'date';
@@ -19,6 +33,7 @@ interface ResultsProps {
   results: ForensicResult[];
   isSearching: boolean;
   progress: number | null;
+  sourceProgress: SourceProgress[];
 }
 
 // Function to generate random test data
@@ -74,12 +89,14 @@ export default function Results({
   results,
   isSearching,
   progress,
+  sourceProgress,
 }: ResultsProps) {
   const [testMode, setTestMode] = useState(false);
   const [testResults, setTestResults] = useState<ForensicResult[]>([]);
   const [sortType, setSortType] = useState<SortType>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
+  const [showSourceDetails, setShowSourceDetails] = useState(false);
 
   // Generate stable skeleton IDs
   const skeletonIds = useMemo(
@@ -131,6 +148,154 @@ export default function Results({
 
   const toggleSortOrder = () => {
     setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
+  };
+
+  const timeEstimates = useMemo(
+    () => calculateTimeRemaining(sourceProgress),
+    [sourceProgress]
+  );
+
+  // Add logs in the renderProgressSection function
+  const renderProgressSection = () => {
+    if (progress === null) {
+      return null;
+    }
+
+    return (
+      <div className="mt-2 mb-6 space-y-3">
+        <div className="flex justify-between items-center">
+          <div className="flex flex-col">
+            <p className="text-sm font-medium text-foreground">
+              Progression :{' '}
+              <span className="text-primary font-semibold">
+                {progress.toFixed(0)}%
+              </span>
+              {timeEstimates.combined ? (
+                <span className="text-muted-foreground ml-2 text-xs font-medium">
+                  • Temps restant : {timeEstimates.combined}
+                </span>
+              ) : (
+                <span className="text-muted-foreground ml-2 text-xs font-medium">
+                  • Calcul du temps restant...
+                </span>
+              )}
+            </p>
+          </div>
+          {sourceProgress.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 hover:bg-muted/80"
+              onClick={() => setShowSourceDetails(!showSourceDetails)}
+            >
+              {showSourceDetails
+                ? 'Masquer les détails'
+                : 'Afficher les détails'}
+              {showSourceDetails ? (
+                <ChevronUp className="ml-1 h-4 w-4" />
+              ) : (
+                <ChevronDown className="ml-1 h-4 w-4" />
+              )}
+            </Button>
+          )}
+        </div>
+
+        <Progress value={progress} className="w-full" />
+
+        {sourceProgress.length > 0 && (
+          <Collapsible
+            open={showSourceDetails}
+            onOpenChange={setShowSourceDetails}
+            className="space-y-3 mt-3"
+          >
+            <CollapsibleContent className="bg-muted rounded-lg p-3 transition-all">
+              <div className="grid gap-3">
+                {sourceProgress.map((source) => {
+                  // Get camera name from the sourceId using extractCameraInfo
+                  const cameraInfo = extractCameraInfo(source.sourceId);
+                  // const sourceTimeEstimate =
+                  // timeEstimates.individual[source.sourceId];
+
+                  return (
+                    <div
+                      key={source.sourceId}
+                      className="space-y-1.5 border-b border-foreground/50 pb-3 last:border-0 last:pb-0"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-sm">
+                            {cameraInfo.name}
+                          </span>
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                            {source.timestamp && (
+                              <span className="flex items-center">
+                                <svg
+                                  className="w-3 h-3 mr-1 inline-block"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <circle cx="12" cy="12" r="10" />
+                                  <polyline points="12 6 12 12 16 14" />
+                                </svg>
+                                {new Date(source.timestamp).toLocaleString(
+                                  'fr-FR',
+                                  {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  }
+                                )}
+                              </span>
+                            )}
+                            {source.progress > 0 &&
+                              source.progress < 100 &&
+                              timeEstimates.individual[source.sourceId] && (
+                                <span className="flex items-center">
+                                  <svg
+                                    className="w-3 h-3 mr-1 inline-block"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <path d="M17 8h2a2 2 0 0 1 2 2v2m-2 8H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h10" />
+                                    <path d="M22 16H13c-2 0-2-4-4-4H7" />
+                                  </svg>
+                                  {timeEstimates.individual[source.sourceId]}
+                                </span>
+                            )}
+                          </div>
+                        </div>
+                        <span
+                          className={`text-sm font-medium px-2 py-0.5 rounded-full ${
+                            source.progress >= 100
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-muted/10 text-primary/80'
+                          }`}
+                        >
+                          {source.progress.toFixed(0)}%
+                        </span>
+                      </div>
+                      <Progress value={source.progress} className="w-full" />
+                    </div>
+                  );
+                })}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+      </div>
+    );
   };
 
   // Render expanded image modal
@@ -398,8 +563,7 @@ export default function Results({
               <SortAsc className="h-4 w-4" />
             )}
           </Button>
-
-          {/* Test mode button */}
+          {/*
           <Button
             variant={testMode ? 'destructive' : 'outline'}
             size="sm"
@@ -407,17 +571,9 @@ export default function Results({
           >
             {testMode ? 'Arrêter' : 'Tester'}
           </Button>
+          */}
         </div>
       </div>
-
-      {progress !== null && progress < 100 && !testMode && (
-        <div className="mt-2 mb-4">
-          <Progress value={progress} className="h-2" />
-          <p className="text-sm text-muted-foreground mt-1">
-            Progression: {progress}%
-          </p>
-        </div>
-      )}
 
       {testMode && (
         <div className="mb-4 bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded-md">
@@ -427,6 +583,8 @@ export default function Results({
           </p>
         </div>
       )}
+
+      {renderProgressSection()}
 
       <ScrollArea className="h-[calc(100%-3rem)] pb-9">
         {renderSearchResults()}

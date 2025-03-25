@@ -1,5 +1,5 @@
-/* eslint-disable */
-import { ForensicFormValues } from './provider/forensic-form-context';
+/* eslint-disable no-console */
+import { ForensicFormValues } from './types';
 
 // Format query for forensic search API
 export interface ForensicSearchQuery {
@@ -70,7 +70,7 @@ function mapHexToColorName(hexColors: string[]): string[] {
     '#000000': 'black',
   };
 
-  return hexColors.map(hex => colorMap[hex] || hex);
+  return hexColors.map((hex) => colorMap[hex] || hex);
 }
 
 /**
@@ -80,13 +80,14 @@ function mapHexToColorName(hexColors: string[]): string[] {
  * Creates a FormData object from ForensicFormValues
  */
 export function createSearchFormData(data: ForensicFormValues): FormData {
-  console.log('Received form values:', data);  // Debug log
+  console.log('Received form values:', data); // Debug log
   console.log('Sources from form:', data.sources);
 
   // Safely access the color property based on the subject type
-  const colorNames = data.type === 'vehicle' &&
-  Array.isArray(data.appearances.color) ?
-    mapHexToColorName(data.appearances.color) : [];
+  const colorNames =
+    data.type === 'vehicle' && Array.isArray(data.appearances.color)
+      ? mapHexToColorName(data.appearances.color)
+      : [];
 
   const searchFormData: FormData = {
     cameras: Array.isArray(data.sources) ? data.sources : [],
@@ -116,9 +117,12 @@ export function createSearchFormData(data: ForensicFormValues): FormData {
     };
 
     // Convert hair colors from hex to names if present
-    const hairColors = data.appearances.hair?.color
-      ? data.appearances.hair.color.map((hex: string) => mapHexToColorName([hex])[0])
-      : [];
+    let hairColors: string[] = [];
+    if (data.appearances.hair?.color) {
+      hairColors = data.appearances.hair.color.map(
+        (hex: string) => mapHexToColorName([hex])[0]
+      );
+    }
 
     // Convert clothing colors from hex to names
     const upperColors = data.attributes.upper?.color
@@ -131,7 +135,7 @@ export function createSearchFormData(data: ForensicFormValues): FormData {
 
     // Add person-specific attributes
     searchFormData.attributes = {
-      hairColors: hairColors,
+      hairColors,
       hairLength: data.appearances.hair?.length || [],
       hairStyle: data.appearances.hair?.style || [],
       upperType: data.attributes.upper?.type || [],
@@ -153,49 +157,14 @@ export function createSearchFormData(data: ForensicFormValues): FormData {
       brands: data.attributes.mmr?.map((item) => item.brand) || [],
       models: data.attributes.mmr?.[0]?.model || [],
       plate: data.attributes.plate || '',
-      vehicleColors: vehicleAppearances.color ? mapHexToColorName(vehicleAppearances.color) : [],
+      vehicleColors: vehicleAppearances.color
+        ? mapHexToColorName(vehicleAppearances.color)
+        : [],
       distinctiveFeatures: data.attributes.other || {},
     };
   }
 
   return searchFormData;
-}
-
-export function formatQuery(formData: FormData): ForensicSearchQuery {
-  // Extract date and time range
-  const timerange = formData.date
-    ? {
-      time_from: `${formData.date}T${formData.startTime || '00:00:00'}`,
-      time_to: `${formData.endDate || formData.date}T${formData.endTime || '23:59:59'}`,
-    }
-    : {
-      time_from: new Date().toISOString(),
-      time_to: new Date().toISOString(),
-    };
-
-  // Ensure cameras is an array
-  const sources = Array.isArray(formData.cameras) ? formData.cameras : [];
-
-  // Base query structure
-  const query: ForensicSearchQuery = {
-    sources: sources,
-    timerange,
-    type: formData.subjectType as 'vehicle' | 'person',
-    appearances: {
-      confidence: formData.appearanceTolerance || 'medium',
-    },
-    attributes: {
-      confidence: formData.attributesTolerance || 'medium',
-    },
-    context: {},
-  };
-
-  // Format type-specific attributes using properly defined functions
-  if (formData.subjectType === 'vehicle') {
-    return formatVehicleQuery(formData, query);
-  }
-
-  return formatPersonQuery(formData, query);
 }
 
 /**
@@ -318,4 +287,44 @@ function formatPersonQuery(
   }
 
   return query;
+}
+
+export function formatQuery(formData: FormData): ForensicSearchQuery {
+  // Extract date and time range
+  let timerange;
+  if (formData.date) {
+    timerange = {
+      time_from: `${formData.date}T${formData.startTime || '00:00:00'}`,
+      time_to: `${formData.endDate || formData.date}T${formData.endTime || '23:59:59'}`,
+    };
+  } else {
+    timerange = {
+      time_from: new Date().toISOString(),
+      time_to: new Date().toISOString(),
+    };
+  }
+
+  // Ensure cameras is an array
+  const sources = Array.isArray(formData.cameras) ? formData.cameras : [];
+
+  // Base query structure
+  const query: ForensicSearchQuery = {
+    sources,
+    timerange,
+    type: formData.subjectType as 'vehicle' | 'person',
+    appearances: {
+      confidence: formData.appearanceTolerance || 'medium',
+    },
+    attributes: {
+      confidence: formData.attributesTolerance || 'medium',
+    },
+    context: {},
+  };
+
+  // Format type-specific attributes using properly defined functions
+  if (formData.subjectType === 'vehicle') {
+    return formatVehicleQuery(formData, query);
+  }
+
+  return formatPersonQuery(formData, query);
 }

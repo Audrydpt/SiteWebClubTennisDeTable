@@ -1,5 +1,6 @@
 import { DatabaseIcon, Recycle } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { toast } from 'sonner';
 
@@ -18,6 +19,7 @@ import { Slider } from '@/components/ui/slider';
 import useRetentionAPI from './hooks/use-retention';
 
 function Retention() {
+  const { t } = useTranslation('settings');
   const [retentionDays, setRetentionDays] = useState<number>(0);
   const [inputValue, setInputValue] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -69,14 +71,16 @@ function Retention() {
     edit(retentionDays, {
       onSuccess: () => {
         setIsSubmitting(false);
-        toast('Changes applied', {
-          description: `Retention period successfully set to ${retentionDays} days.`,
+        toast(t('retention.toast.success'), {
+          description: t('retention.toast.successDescription', {
+            days: retentionDays,
+          }),
         });
       },
       onError: () => {
         setIsSubmitting(false);
-        toast('Error', {
-          description: 'Failed to update retention period. Please try again.',
+        toast(t('retention.toast.error'), {
+          description: t('retention.toast.errorDescription'),
         });
       },
     });
@@ -88,23 +92,31 @@ function Retention() {
     return 'destructive';
   };
 
+  const getStorageImpactMessage = () => {
+    if (retentionDays <= 30) return t('retention.storageImpact.optimal');
+    if (retentionDays <= 365) return t('retention.storageImpact.balanced');
+    return t('retention.storageImpact.high');
+  };
+
   return (
     <div className="w-full">
       <Card className="w-full">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Recycle />
-            <CardTitle>Retention</CardTitle>
+            <CardTitle>{t('retention.title')}</CardTitle>
           </div>
-          <CardDescription>
-            Visualize and define how long your data will be retained.
-          </CardDescription>
+          <CardDescription>{t('retention.description')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Fine adjustment</span>
-              <Badge variant={getBadgeVariant()}>{retentionDays} days</Badge>
+              <span className="text-sm font-medium">
+                {t('retention.fineAdjustment')}
+              </span>
+              <Badge variant={getBadgeVariant()}>
+                {retentionDays} {t('retention.days')}
+              </Badge>
             </div>
 
             <Slider
@@ -120,7 +132,7 @@ function Retention() {
             <div className="flex gap-4 mt-6 items-start">
               <div className="flex-shrink-0 w-25">
                 <Input
-                  placeholder="Custom days"
+                  placeholder={t('retention.customDays')}
                   value={inputValue}
                   onChange={handleInputChange}
                   onBlur={handleInputBlur}
@@ -137,16 +149,11 @@ function Retention() {
                   <DatabaseIcon className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Storage Impact</p>
+                  <p className="text-sm font-medium">
+                    {t('retention.storageImpact.title')}
+                  </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {
-                      // eslint-disable-next-line no-nested-ternary
-                      retentionDays <= 30
-                        ? 'Optimal space savings. Ideal for data with low historical value.'
-                        : retentionDays <= 365
-                          ? 'Good balance between retention and space usage.'
-                          : 'Higher space usage. Recommended for critical data requiring complete history.'
-                    }
+                    {getStorageImpactMessage()}
                   </p>
                 </div>
               </div>
@@ -163,7 +170,9 @@ function Retention() {
               query.isLoading
             }
           >
-            {isSubmitting ? 'Saving...' : 'Apply Changes'}
+            {isSubmitting
+              ? t('retention.actions.saving')
+              : t('retention.actions.applyChanges')}
           </Button>
         </CardFooter>
       </Card>

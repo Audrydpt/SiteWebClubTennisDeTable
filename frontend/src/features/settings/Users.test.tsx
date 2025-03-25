@@ -43,26 +43,30 @@ describe('Users Component', () => {
   it('should open create user dialog', async () => {
     render(<Users />);
     await userEvent.click(screen.getByText('settings:addUser'));
-    expect(screen.getByText('Create a new user')).toBeInTheDocument();
+    expect(screen.getByText('settings:createUser.title')).toBeInTheDocument();
   });
 
   it('should create a new user', async () => {
     render(<Users />);
     await userEvent.click(screen.getByText('settings:addUser'));
-    expect(screen.getByText('Create a new user')).toBeInTheDocument();
+    expect(screen.getByText('settings:createUser.title')).toBeInTheDocument();
 
-    await userEvent.type(screen.getByLabelText('Username'), 'newUser');
-    await userEvent.type(screen.getByLabelText('Password'), 'AcicAcic1-');
+    await userEvent.type(screen.getByLabelText('login.username'), 'newUser');
+    await userEvent.type(screen.getByLabelText('login.password'), 'AcicAcic1-');
 
-    await userEvent.click(screen.getByRole('combobox', { name: 'Privileges' }));
+    await userEvent.click(
+      screen.getByRole('combobox', { name: 'login.privilege' })
+    );
 
-    const elem = screen.getByRole('option', { name: 'Maintainer' });
+    const elem = screen.getByRole('option', {
+      name: 'privileges.Maintainer',
+    });
     await userEvent.click(elem, {
       pointerState: await userEvent.pointer({ target: elem }),
     });
 
-    await userEvent.click(screen.getByText('Create User'));
-    fireEvent.click(screen.getByText('Create User'));
+    await userEvent.click(screen.getByText('settings:createUser.submit'));
+    fireEvent.click(screen.getByText('settings:createUser.submit'));
 
     await waitFor(() => {
       expect(mockHook.insert).toHaveBeenCalled();

@@ -66,19 +66,12 @@ RUN wget -O /usr/bin/dumb-init https://github.com/Yelp/dumb-init/releases/downlo
     && echo "fi" >> /start.sh \
     && echo "" >> /start.sh \
     && echo "sed -i \"s/#listen_addresses = 'localhost'/listen_addresses = '*'/\" /etc/postgresql/${PG_VERSION}/main/postgresql.conf" >> /start.sh \
+    && echo "echo 'host all all ::1/128 md5' >> /etc/postgresql/${PG_VERSION}/main/pg_hba.conf" >> /start.sh \
     && echo "echo 'host all all 127.0.0.1/32 md5' >> /etc/postgresql/${PG_VERSION}/main/pg_hba.conf" >> /start.sh \
 #    && echo "echo 'host all all 10.0.0.0/8 md5' >> /etc/postgresql/${PG_VERSION}/main/pg_hba.conf" >> /start.sh \
-#    && echo "echo 'host all all 192.168.20.0/24 md5' >> /etc/postgresql/${PG_VERSION}/main/pg_hba.conf" >> /start.sh \
+    && echo "echo 'host all all 192.168.20.0/24 md5' >> /etc/postgresql/${PG_VERSION}/main/pg_hba.conf" >> /start.sh \
     && echo "" >> /start.sh \
     && echo "exec /usr/bin/supervisord" >> /start.sh \
-    && echo "" >> /start.sh \
-    && echo "until pg_isready; do sleep 1; done" >> /start.sh \
-    && echo "" >> /start.sh \
-    && echo "gosu postgres psql -U postgres -c \"ALTER USER postgres PASSWORD 'postgres';\"" >> /start.sh \
-    && echo "gosu postgres psql -U postgres -c \"CREATE EXTENSION IF NOT EXISTS timescaledb;\"" >> /start.sh \
-    && echo "gosu postgres psql -U postgres -c \"CREATE EXTENSION IF NOT EXISTS vector;\"" >> /start.sh \
-    && echo "gosu postgres psql -U postgres -c \"CREATE EXTENSION IF NOT EXISTS pgcrypto;\"" >> /start.sh \
-    && echo "echo Server is ready!" >> /start.sh \
     && echo "" >> /start.sh \
     && chmod +x /start.sh
 

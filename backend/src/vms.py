@@ -250,11 +250,14 @@ class CameraClient:
                         if time_str else None
                     )
                     codec_format = data.get("Format").lower()
-                elif message in [MessageType.TooOld, MessageType.NotFound, MessageType.EndOfStream, MessageType.ClosingSocket]:
+                elif message in [MessageType.EndOfStream, MessageType.ClosingSocket]:
                     logger.info(f"Message: {message}")
                     break
+                elif message in [MessageType.NotFound, MessageType.TooOld]:
+                    logger.info(f"Message: {message}")
                 else:
                     logger.warning(f"Message inconnu: {message}")
+            
             elif isinstance(data, bytes):
                 try:
                     if codec is None:

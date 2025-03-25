@@ -16,12 +16,12 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/providers/auth-context';
 
-import DashboardTab from './DashboardTab';
-import TestDashboard from './TestDashboard';
 import { FormDashboard, StoredDashboard } from './components/form-dashboard';
 import { FormWidget, StoredWidget } from './components/form-widget';
+import DashboardTab from './DashboardTab';
 import useDashboardAPI from './hooks/use-dashboard';
-import PublicDashboard from '@/features/dashboard/PublicDashboard.tsx';
+import PublicDashboard from './PublicDashboard.tsx';
+import TestDashboard from './TestDashboard';
 
 function DashboardContent() {
   const { dashboardId } = useParams();

@@ -5,6 +5,7 @@ import time
 import asyncio
 import datetime
 import uuid
+from aiostream import stream
 
 from fastapi.websockets import WebSocketState
 import numpy as np
@@ -47,11 +48,10 @@ celery_app.conf.update(
     task_track_started=True,
     task_time_limit=3600,               # 1 hour max
     worker_prefetch_multiplier=1,       # Un worker ne prend qu'une tâche à la fois
+    worker_concurrency=4,               # Nombre de worker en parallel
     task_acks_late=True,                # Confirmer la tâche uniquement après exécution
     task_reject_on_worker_lost=True     # Rejeter les tâches si le worker s'arrête
 )
-
-redis_pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
 
 class JobStatus(str, Enum):
     PENDING = "PENDING"                 # Tâche créée, pas encore préparée pour l'exécution
@@ -108,173 +108,154 @@ class ResultsStore:
     def __init__(self, max_results: int = 100):
         self.max_results = max_results
         self._redis = None
+        self._pool = None
         
     async def _get_redis(self) -> aioredis.Redis:
+        if self._pool is None:
+            self._pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
         if self._redis is None:
-            self._redis = aioredis.Redis(connection_pool=redis_pool)
+            self._redis = aioredis.Redis(connection_pool=self._pool)
         return self._redis
-    
+        
     async def add_result(self, result: JobResult) -> None:
         redis = await self._get_redis()
-        
+
         # Clés Redis pour cette tâche
         result_list_key = f"task:{result.job_id}:results"
         channel_name = f"task:{result.job_id}:updates"
-        
+
         # Stocker les métadonnées du résultat (sans la frame)
         result_data = result.to_redis_message()
         await redis.lpush(result_list_key, json.dumps(result_data))
         await redis.ltrim(result_list_key, 0, self.max_results - 1)
-        
+
         # Publier le résultat sur le canal Redis
         await redis.publish(channel_name, json.dumps(result_data))
-        
-        # Si une frame est présente, la stocker séparément et notifier
+
         if result.frame and result.frame_uuid:
+            # Stocker la frame séparément
             frame_key = f"task:{result.job_id}:frame:{result.frame_uuid}"
             await redis.set(frame_key, result.frame, ex=3600)  # Expire après 1h
+
+            # Notifier que la frame a été stockée
             frame_notification = {
                 "job_id": result.job_id,
                 "frame_uuid": result.frame_uuid
             }
             await redis.publish(f"{channel_name}:frames", json.dumps(frame_notification))
-    
+
     async def get_results(self, job_id: str, start: int = 0, end: int = -1) -> List[JobResult]:
         redis = await self._get_redis()
+
         result_list_key = f"task:{job_id}:results"
-        
+
         results_json = await redis.lrange(result_list_key, start, end)
         results = []
         
         for result_json in results_json:
-            message = json.loads(result_json)
+            try:
+                message = json.loads(result_json)
+                logger.info("Parsed JSON message successfully.")
+            except Exception as e:
+                logger.error("Error parsing JSON message", exc_info=True)
+                continue
+
             result = await JobResult.from_redis_message(message, redis)
             results.append(result)
             
         return results
     
     async def subscribe_to_results(self, job_id: str):
-        """
-        Souscrit aux mises à jour et yield des JobResult.
-        """
         redis = await self._get_redis()
         pubsub = redis.pubsub()
+        
         channel_name = f"task:{job_id}:updates"
         await pubsub.subscribe(channel_name)
-
         logger.info("Souscription aux mises à jour de résultats")
-        
+
         try:
             while True:
                 message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
 
                 if message is None:
-                    # Si aucun message n'est trouvé, on vérifie si la tâche est terminée.
                     task_status = TaskManager.get_job_status(job_id)
                     if task_status in [JobStatus.SUCCESS, JobStatus.FAILURE, JobStatus.REVOKED]:
-                        # On attend quelques instants supplémentaires pour être sûr de ne rien rater.
                         for _ in range(5):
                             message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
                             if message:
                                 break
+
                         if message is None:
                             break
                     continue
                 
-                # On s'assure qu'il s'agit bien d'un message complet de type metadata.
                 try:
                     update_data = json.loads(message["data"])
                 except Exception as ex:
                     logger.error(f"Erreur lors de la désérialisation du message: {ex}")
                     continue
-                
-                # Reconstituer le JobResult complet.
-                job_result = await JobResult.from_redis_message(update_data, redis_client=redis)
 
-                logger.info("Diffusion de la mise à jour")
+                job_result = await JobResult.from_redis_message(update_data, redis_client=redis)
                 yield job_result
         
         except Exception as e:
             logger.error(f"Erreur lors de la souscription aux mises à jour de résultats: {e}")
-            logger.error(traceback.format)
+            logger.error(traceback.format_exc())
         finally:
-            logger.info("Fin de la souscription aux mises à jour de résultats")
             await pubsub.unsubscribe(channel_name)
-        logger.info("Bye bye")
 
 results_store = ResultsStore()
 
+async def run_all_tasks(jobs, max_workers=None):
+    if max_workers is None:
+        xs = stream.merge(*(job() for job in jobs))
+    else:
+        xs = stream.map(lambda job: job(), jobs, task_limit=max_workers)
+        
+    async with xs.stream() as streamer:
+        async for data in streamer:
+            yield data
+
 @celery_app.task(bind=True, name="task_manager.execute_job")
-def execute_job(self, job_type: str, job_params: Dict[str, Any]):   
+def execute_job(self, job_type: str, job_params: Dict[str, Any]):
     job_id = self.request.id
-    logger.info(f"Exécution du job {job_type} avec l'ID {job_id}")
+    logger.info(f"Starting execute_job: job_type={job_type}, job_id={job_id}")
     
-    # Publier l'état initial
     self.update_state(state=JobStatus.STARTED.value)
     
-    try:
-        if job_type == "VehicleReplayJob":
-            cancel_event = asyncio.Event()
-            job_params['job_id'] = job_id  # Transmettre l'ID de la tâche
-            job = VehicleReplayJob(job_params, cancel_event=cancel_event)
-        else:
-            raise ValueError(f"Type de job non reconnu: {job_type}")
-        
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
-        async def process_job_results():
-            try:
-                async for metadata, frame in job._execute():
-                    result = JobResult(
-                        job_id=job_id,
-                        metadata=metadata,
-                        frame=frame
-                    )
-                    await results_store.add_result(result)
-                    
-                    if cancel_event.is_set() or TaskManager.get_job_status(job_id) == JobStatus.REVOKED:
-                        logger.info(f"Job {job_id} annulé pendant l'exécution")
-                        raise TaskRevokedError()
-            except asyncio.CancelledError:
-                logger.info(f"Job {job_id} annulé")
-                cancel_event.set()
-                raise TaskRevokedError()
+    async def execute_async():
+        try:
+            if job_type == "VehicleReplayJob":
+                cancel_event = asyncio.Event()
+                job_params['job_id'] = job_id
+                job = VehicleReplayJob(job_params, cancel_event=cancel_event)
+            else:
+                raise ValueError(f"Type de job non reconnu: {job_type}")
             
-            # Notification finale
+            async for metadata, frame in job._execute():
+                result = JobResult(job_id=job_id, metadata=metadata, frame=frame)
+                await results_store.add_result(result)
+                
             final_result = JobResult(
                 job_id=job_id,
                 metadata={"type": "completed", "message": "Tâche terminée avec succès"},
                 final=True
             )
             await results_store.add_result(final_result)
-                
-        loop.run_until_complete(process_job_results())
-        loop.close()
-        
-        return {"job_id": job_id, "status": JobStatus.SUCCESS.value}
-    
-    except TaskRevokedError:
-        logger.info(f"Job {job_id} révoqué")
-        
-        # Envoyer une notification d'annulation
-        async def send_cancellation():
-            result = JobResult(
+            
+            return {"job_id": job_id, "status": JobStatus.SUCCESS.value}
+            
+        except TaskRevokedError:
+            cancel_result = JobResult(
                 job_id=job_id,
                 metadata={"type": "cancelled", "message": "Tâche annulée"},
                 final=True
             )
-            await results_store.add_result(result)
+            await results_store.add_result(cancel_result)
+            return {"job_id": job_id, "status": JobStatus.REVOKED.value}
             
-        asyncio.run(send_cancellation())
-        return {"job_id": job_id, "status": JobStatus.REVOKED.value}
-    
-    except Exception as e:
-        logger.error(f"Erreur dans le job {job_id}: {e}")
-        logger.error(traceback.format_exc())
-        
-        async def send_error():
-            result = JobResult(
+        except Exception as e:
+            error_result = JobResult(
                 job_id=job_id,
                 metadata={
                     "type": "error",
@@ -283,98 +264,130 @@ def execute_job(self, job_type: str, job_params: Dict[str, Any]):
                 },
                 final=True
             )
-            await results_store.add_result(result)
-            
-        asyncio.run(send_error())
-        return {"job_id": job_id, "status": JobStatus.FAILURE.value, "error": str(e)}
+            await results_store.add_result(error_result)
+            return {"job_id": job_id, "status": JobStatus.FAILURE.value, "error": str(e)}
+    
+    return asyncio.run(execute_async())
 
 class TaskManager:
     """Gestionnaire de tâches façade pour les opérations Celery/Redis"""
     
     @staticmethod
     def submit_job(job_type: str, job_params: Dict[str, Any]) -> str:
-        logger.info(f"Soumission d'un nouveau job de type {job_type}")
-        task = execute_job.apply_async(args=[job_type, job_params])
-        return task.id
+        try:
+            task = execute_job.apply_async(args=[job_type, job_params])
+            return task.id
+        except Exception as e:
+            logger.error(f"Erreur lors de la soumission du job: {e}")
+            raise
     
     @staticmethod
     async def cancel_job(job_id: str) -> bool:
         logger.info(f"Tentative d'annulation du job {job_id}")
         try:
             await asyncio.to_thread(celery_app.control.revoke, job_id, terminate=True)
-            
-            async def send_cancellation():
-                result = JobResult(
-                    job_id=job_id,
-                    metadata={"type": "cancelled", "message": "Tâche annulée manuellement"},
-                    final=True
-                )
-                await results_store.add_result(result)
-                
-            await send_cancellation()
+        except Exception as rev_e:
+            logger.error(f"Erreur lors de la révocation du job {job_id}: {rev_e}")
+            return False
+        
+        try:
+            logger.info("Sending cancellation notification to Redis")
+            result = JobResult(
+                job_id=job_id,
+                metadata={"type": "cancelled", "message": "Tâche annulée manuellement"},
+                final=True
+            )
+            await results_store.add_result(result)
             return True
-        except Exception as e:
-            logger.error(f"Erreur lors de l'annulation du job {job_id}: {e}")
+        except Exception as send_e:
+            logger.error(f"Erreur lors de l'envoi de la notification d'annulation pour le job {job_id}: {send_e}")
             return False
     
     @staticmethod
     def get_job_status(job_id: str) -> JobStatus:
-        result = AsyncResult(job_id)
-        
-        if result.failed():
-            return JobStatus.FAILURE
-        elif result.successful():
-            return JobStatus.SUCCESS
- 
+        try:
+            result = AsyncResult(job_id)
+        except Exception as e:
+            logger.error(f"Error creating AsyncResult for job_id {job_id}: {e}")
+            return JobStatus.REVOKED
+
+        try:
+            if result.failed():
+                return JobStatus.FAILURE
+            elif result.successful():
+                return JobStatus.SUCCESS
+        except Exception as e:
+            logger.error(f"Error checking job status for job_id {job_id}: {e}")
+            return JobStatus.REVOKED
+
         try:
             state_str = result.state.upper()
             return JobStatus[state_str]
         except KeyError:
-            logger.warning(f"État inconnu pour la tâche {job_id}: {result.state}")
+            logger.warning(f"Unknown state for job {job_id}: {result.state}")
+            return JobStatus.REVOKED
+        except Exception as e:
+            logger.error(f"Unexpected error while processing job status for job_id {job_id}: {e}")
             return JobStatus.REVOKED
     
     @staticmethod
     async def get_job_error(job_id: str) -> Tuple[Optional[str], Optional[str]]:
         try:
             result = AsyncResult(job_id, app=celery_app)
+        except Exception as e:
+            logger.error("Failed to create AsyncResult for job %s: %s", job_id, e)
+            return str(e), None
+        
+        try:
             if result.failed():
-                # Tenter de récupérer les résultats d'erreur stockés dans Redis
-                error_data = await results_store.get_results(job_id, 0, 0)
+                try:
+                    error_data = await results_store.get_results(job_id, 0, 0)
+                except Exception as e:
+                    logger.error("Error retrieving results from Redis for job %s: %s", job_id, e)
+                    error_data = None
+
                 if error_data and len(error_data) > 0:
                     metadata = error_data[0].metadata
                     return metadata.get("message"), metadata.get("stacktrace")
-                    
-                # Sinon, utiliser l'erreur Celery
+                
+                logger.info("No error metadata found in Redis for job %s. Using Celery error result", job_id)
                 return str(result.result), None
+                
             return None, None
         except Exception as e:
-            logger.error(f"Erreur lors de la récupération des détails d'erreur du job {job_id}: {e}")
+            logger.error("Error processing job error details for job %s: %s", job_id, e)
             return str(e), None
     
     @staticmethod
     async def get_jobs() -> List[str]:
         all_tasks: Set[str] = set()
         try:
-            # Récupérer les tâches actives via Celery
             inspect = celery_app.control.inspect()
             active_tasks = inspect.active() or {}
+
             for tasks in active_tasks.values():
-                all_tasks.update(task['id'] for task in tasks)
+                for task in tasks:
+                    task_id = task.get('id')
+                    all_tasks.add(task_id)
         except Exception as e:
-            logger.error(f"Erreur lors de la récupération des tâches actives: {e}")
+            logger.error("Erreur lors de la récupération des tâches actives: %s", e)
 
         try:
-            # Récupérer les tâches terminées depuis Redis à partir des clés "task:*:results"
-            redis = aioredis.Redis(connection_pool=redis_pool)
-            keys = await redis.keys("task:*:results")
+            redis_pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
+            redis_client = aioredis.Redis(connection_pool=redis_pool)
+            keys = await redis_client.keys("task:*:results")
             for key in keys:
                 key_str = key.decode('utf-8') if isinstance(key, bytes) else str(key)
                 parts = key_str.split(':')
                 if len(parts) >= 2:
                     all_tasks.add(parts[1])
-            await redis.close()
         except Exception as e:
-            logger.error(f"Erreur lors de la récupération des tâches depuis Redis: {e}")
+            logger.error("Erreur lors de la récupération des tâches depuis Redis: %s", e)
+        finally:
+            if redis_client:
+                await redis_client.close()
+            if redis_pool:
+                await redis_pool.disconnect()
 
         return list(all_tasks)
     
@@ -394,36 +407,29 @@ class TaskManager:
 
             # Envoyer les résultats précédents
             if send_old_results:
-                logger.info(f"Envoi des résultats précédents pour le job {job_id}")
                 previous_results = await results_store.get_results(job_id)
                 for result in previous_results:
+                    if websocket.client_state == WebSocketState.DISCONNECTED:
+                        break
+                    
                     if result.metadata:
                         await websocket.send_json(result.metadata)
                     if result.frame:
                         await websocket.send_bytes(result.frame)
-                logger.info(f"Envoi des résultats précédents terminé pour le job {job_id}")
 
             # S'abonner aux nouvelles mises à jour
-            logger.info(f"Souscription aux mises à jour pour le job {job_id}")
             async for update in results_store.subscribe_to_results(job_id):
-                logger.info(f"Envoi de la mise à jour pour le job {job_id}")
                 if websocket.client_state == WebSocketState.DISCONNECTED:
-                    logger.info(f"Client WebSocket déconnecté pour le job {job_id}")
                     break
  
                 if update.metadata:
-                    logger.info(f"Envoi des métadonnées pour le job {job_id}")
                     await websocket.send_json(update.metadata)
                 if update.frame:
-                    logger.info(f"Envoi de la frame pour le job {job_id}")
                     await websocket.send_bytes(update.frame)
                 
                 if update.final:
-                    logger.info(f"Fin de la diffusion pour le job {job_id}")
                     break
-            
-            logger.info(f"Fin de la diffusion pour le job {job_id}")
-                           
+                                   
         except WebSocketDisconnect:
             logger.info(f"Client WebSocket déconnecté pour le job {job_id}")
         except Exception as e:
@@ -431,16 +437,12 @@ class TaskManager:
             logger.error(traceback.format_exc())
             
             # Essayer d'envoyer un message d'erreur si le websocket est encore connecté
-            try:
-                if websocket.client_state != WebSocketState.DISCONNECTED:
-                    await websocket.send_json({
-                        "type": "error",
-                        "message": f"Erreur de streaming: {str(e)}"
-                    })
-            except:
-                pass
-        finally:
-            logger.info(f"Finally {job_id}")
+            if websocket.client_state != WebSocketState.DISCONNECTED:
+                logger.info(f"Envoi d'un message d'erreur pour le job {job_id}")
+                await websocket.send_json({
+                    "type": "error",
+                    "message": f"Erreur de streaming: {str(e)}"
+                })
 
 class VehicleReplayJob:
     """
@@ -459,7 +461,53 @@ class VehicleReplayJob:
         self.appearances = data.get("appearances", None)
         self.attributes = data.get("attributes", None)
         self.context = data.get("context", None)
+
+        # TODO: Gérer le conf d'apparance et attribut séparément
+        self.confidence = self.appearances.get("confidence","medium") if self.appearances else "medium"
+        self.class_score = data.get("class_score", None)
+        self.global_score = data.get("global_score", None)
+
+        match self.confidence :
+            case "high":
+                self.top_type = 2
+                self.top_color = 2
+                self.threshold_type = 0.40
+                self.threshold_color = 0.40
+
+                if not self.class_score:
+                     self.class_score = 0.1
+                if not self.global_score:
+                    self.global_score = 0.1
+
+            case "medium":
+                self.top_type = 3
+                self.top_color = 3
+                self.threshold_type = 0.20
+                self.threshold_color = 0.20
+
+                if not self.class_score:
+                     self.class_score = 0.05
+                if not self.global_score:
+                    self.global_score = 0.05
+
+            case "low":
+                self.top_type = 4
+                self.top_color = 4
+                self.threshold_type = 0.10
+                self.threshold_color = 0.10
+
+                if not self.class_score:
+                     self.class_score = 0.01
+                if not self.global_score:
+                    self.global_score = 0.01
+            
+            case _ : 
+                    raise ValueError("unknown confidence strategy")
         
+        #set path to save thumbnails
+        self.save_path = data.get("save_thumbnail_path", "/var/lib/postgresql/16/main")
+        self.time_format = data.get("time_format", '%Y-%m-%dT%H:%M')
+
         # Récupère l'ID de job Celery s'il est fourni, sinon génère un UUID
         self.job_id = data.get("job_id", str(uuid.uuid4()))
         
@@ -475,38 +523,42 @@ class VehicleReplayJob:
             raise ValueError("La plage temporelle (time_from et time_to) doit être spécifiée")
         
     def _calculate_progress(self, current: datetime.datetime, from_time: datetime.datetime, to_time: datetime.datetime) -> float:
-        total_duration = (to_time - from_time).total_seconds()
-        if total_duration <= 0:
-            logger.error(f"Invalid time range: {from_time} - {to_time}")
+        try:
+            total_duration = (to_time - from_time).total_seconds()
+
+            if total_duration <= 0:
+                logger.error(f"Invalid time range: {from_time} - {to_time}")
+                return 100.0
+
+            elapsed = (current - from_time).total_seconds()
+            progress = min(100.0, max(0.0, (elapsed / total_duration) * 100.0))
+            return progress
+
+        except Exception as e:
+            logger.error(f"Error in _calculate_progress: {e}")
             return 100.0
-            
-        elapsed = (current - from_time).total_seconds()
-        progress = min(100.0, max(0.0, (elapsed / total_duration) * 100.0))
-        return progress
     
     def __calculate_iou(self, box1, box2):
         top1, bottom1, left1, right1 = box1
         top2, bottom2, left2, right2 = box2
-        
+
         x_left = max(left1, left2)
         y_top = max(top1, top2)
         x_right = min(right1, right2)
         y_bottom = min(bottom1, bottom2)
-        
-        # Vérifier s'il y a intersection
+
         if x_right < x_left or y_bottom < y_top:
             return 0.0
-        
+
         intersection_area = (x_right - x_left) * (y_bottom - y_top)
-        
+
         box1_area = (right1 - left1) * (bottom1 - top1)
         box2_area = (right2 - left2) * (bottom2 - top2)
-        
+
         union_area = box1_area + box2_area - intersection_area
-        
         if union_area <= 0:
             return 0.0
-        
+
         return intersection_area / union_area
     
     def _filter_detections(self, bbox, probabilities: Dict[str, float]):
@@ -517,7 +569,7 @@ class VehicleReplayJob:
     def _filter_detections_size(self, bbox):
         top, bottom, left, right = bbox
 
-        min_size = 32 # below this size, the object is too small and the model is not reliable
+        min_size = 16 # below this size, the object is too small and the model is not reliable
         max_size = 64 # trained model size
 
         width = right - left
@@ -575,26 +627,31 @@ class VehicleReplayJob:
         return appearance * attributes
     
     def _filter_classification_appearance(self, probabilities: Dict[str, float], appearances: Dict[str, Dict[str,float]]):
-        try:
-            confidence = self.appearances.get("confidence", "medium")
-            # high, topconf = wanted stuff, otherwise 0.
-            # medium, topconf = wanted or nearby, otherwise 0.
-            # low, return max(wanted, nearby).
+        try:       
 
             # maybe the type is available also in probabilities given classes ? 
             type_score = 1.0
-            wanted_type = appearances.get("type", [])
+            wanted_type = self.appearances.get("type", [])
             if len(wanted_type) > 0:
                 type_score = 0.0
+
+                detected_type = appearances.get("type", {})
+                filtered_detected_type = {k: v for k, v in detected_type.items() if v > self.threshold_type}    #filter conf too low
+                filtered_detected_type = dict(list(filtered_detected_type.items())[:self.top_type])             # keep top x results
+
                 for t in wanted_type:
-                    type_score = max(type_score, appearances.get("type", {}).get(t, 1.0))
+                    type_score = max(type_score, filtered_detected_type.get(t, 0.0))
             
             color_score = 1.0
-            wanted_color = appearances.get("color", [])
+            wanted_color = self.appearances.get("color", [])
             if len(wanted_color) > 0:
                 color_score = 0.0
+
+                detected_color = appearances.get("color", {})
+                filtered_detected_color = {k: v for k, v in detected_color.items() if v > self.threshold_color} #filter conf too low
+                filtered_detected_color = dict(list(filtered_detected_color.items())[:self.top_color])          # keep top x results
                 for c in wanted_color:
-                    color_score = max(color_score, appearances.get("color", {}).get(c, 1.0))
+                    color_score = max(color_score, filtered_detected_color.get(c, 0.0))
 
             logger.info(f"config: {self.appearances} - found: {appearances} - wanted {wanted_type} -> {type_score} - score: {wanted_color} -> {color_score}")
             return type_score * color_score
@@ -606,117 +663,116 @@ class VehicleReplayJob:
     def _filter_classification_attributes(self, probabilities: Dict[str, float], attributes: Dict[str, Dict[str,float]]):
         return 1.0
     
-    async def __process_stream(self, source_guid) -> AsyncGenerator[Tuple[dict, Optional[bytes]], None]:
-        logger.info(f"Connecting to AI Service")
-        async with ServiceAI() as forensic:
-            logger.info(f"Connected to AI Service")
-
-            logger.info(f"Connecting to VMS")
-            async with CameraClient("192.168.20.72", 7778) as client:
-                logger.info(f"Connected to VMS")
-
-                # Vérifier si la caméra existe
-                logger.info(f"Getting system info")
-                system_info = await client.get_system_info()
-                if source_guid not in system_info:
-                    logger.info(f"GUID de caméra non trouvé: {source_guid}")
-                    yield {"type": "error", "message": f"GUID de caméra non trouvé: {source_guid}"}, None
-                    return
+    async def __process_image(self, forensic, img, time, previous_boxes, progress, source_guid):
+        detections = await forensic.detect(img)
+        current_boxes = []
+        for index, detection in enumerate(detections): #index seulement pour les tests, à virer plus tard
+            if self.cancel_event.is_set():
+                return
             
-                logger.info(f"Starting replay")
-                previous_boxes = []
-                frame_count = 0
-                
-                if self.cancel_event.is_set():
-                    return
-                
-                async for img, time in client.start_replay(
-                    source_guid, 
-                    self.time_from, 
-                    self.time_to
-                ):
+            bbox = forensic.get_pixel_bbox(img, detection)
+            probabilities = detection["bbox"]["probabilities"]
+
+            obj_score = self._filter_detections(bbox, probabilities)
+            if obj_score <= 0.1:
+                continue
+
+            current_boxes.append(bbox)
+
+            is_duplicate = False
+            for prev_box in previous_boxes:
+                iou = self.__calculate_iou(bbox, prev_box)
+                if iou > 0.2:
+                    is_duplicate = True
+                    break
+            if is_duplicate:
+                continue
+
+            thumbnail = forensic.get_thumbnail(img, detection)
+            if thumbnail is None:
+                continue
+            
+            attributes = await forensic.classify(thumbnail)
+            cls_score = self._filter_classification(probabilities, attributes, attributes)
+            if cls_score <= self.class_score:
+                continue
+
+            global_score = obj_score * cls_score
+            if global_score <= self.global_score:
+                continue
+
+            metadata = {
+                "type": "detection",
+                "progress": progress,
+                "camera": source_guid,
+                "score": global_score,
+                "timestamp": time.isoformat(),
+                "source": source_guid,
+                "attributes": attributes
+            }
+            export = forensic.get_thumbnail(img, detection, 1.1)
+            if export is None:
+                continue
+            
+            _, encoded_image = cv2.imencode('.jpg', export)
+            frame_bytes = encoded_image.tobytes()
+
+            path = "/var/lib/postgresql/16/main"
+            name = f"{source_guid}:{time.strftime('%Y-%m-%dT%H:%M')}"
+            os.makedirs(f"{path}/thumbnail/", exist_ok=True)
+            cv2.imwrite(f"{path}/thumbnail/{name}.jpg", thumbnail)
+            #cv2.imwrite(f"{ self.save_path}/thumbnail/{name}_{index}.jpg", thumbnail) #seulement pour les tests
+
+            yield metadata, frame_bytes, current_boxes
+
+    async def __process_stream(self, source_guid) -> AsyncGenerator[Tuple[dict, Optional[bytes]], None]:
+        try:
+            async with ServiceAI() as forensic:
+                logger.info("Connected to AI Service")
+
+                async with CameraClient("192.168.20.72", 7778) as client:
+                    logger.info("Connected to VMS")
+
+                    system_info = await client.get_system_info()
+                    if source_guid not in system_info:
+                        logger.info(f"GUID de caméra non trouvé: {source_guid}")
+                        yield {"type": "error", "message": f"GUID de caméra non trouvé: {source_guid}"}, None
+                        return
+
+                    previous_boxes = []
+                    frame_count = 0
+                    
                     if self.cancel_event.is_set():
                         return
                     
-                    logger.info(f"got a frame at {time}")
-                    progress = self._calculate_progress(time, self.time_from, self.time_to)
-                    frame_count += 1
-                    
-                    # Envoyer une mise à jour de progression sans image
-                    yield {"type": "progress", "progress": progress}, None
-                    
-                    # Détecter les objets
-                    detections = await forensic.detect(img)
-                    logger.debug(f"Detections: {len(detections)}")
-
-                    current_boxes = []
-                    for detection in detections:
+                    async for img, time in client.start_replay(
+                        source_guid, 
+                        self.time_from, 
+                        self.time_to
+                    ):
                         if self.cancel_event.is_set():
                             return
-                            
-                        bbox = forensic.get_pixel_bbox(img, detection)
-                        probabilities = detection["bbox"]["probabilities"]
-
-                        obj_score = self._filter_detections(bbox, probabilities)
-                        if obj_score <= 0.01:
-                            continue
-
-                        current_boxes.append(bbox)
-
-                        # Vérifier si la boîte est similaire à une boîte précédente
-                        is_duplicate = False
-                        for prev_box in previous_boxes:
-                            iou = self.__calculate_iou(bbox, prev_box)
-                            if iou > 0.2:  # Seuil plus élevé pour réduire les faux positifs
-                                logger.debug(f"Ignoring duplicate detection with IoU: {iou}")
-                                is_duplicate = True
-                                break
-                        if is_duplicate:
-                            continue
-
-                        thumbnail = forensic.get_thumbnail(img, detection)
-                        if thumbnail is None:
-                            continue
                         
-                        attributes = await forensic.classify(thumbnail)
-                        cls_score = self._filter_classification(probabilities, attributes, attributes)
-                        if cls_score <= 0.01:
-                            continue
-
-                        # Créer les métadonnées
-                        metadata = {
-                            "type": "detection",
-                            "progress": progress,
-                            "camera": source_guid,
-                            "score": obj_score * cls_score,
-                            "timestamp": time.isoformat(),
-                            "source": source_guid,
-                            "attributes": attributes
-                        }
-                        export = forensic.get_thumbnail(img, detection, 1.1)
-                        if export is None:
-                            continue
+                        progress = self._calculate_progress(time, self.time_from, self.time_to)
+                        frame_count += 1
                         
-                        _, encoded_image = cv2.imencode('.jpg', export)
-                        frame_bytes = encoded_image.tobytes()
-
-                        if True:
-                            path = "/var/lib/postgresql/16/main"
-                            #path = "/opt/ACIC/front/database"
-                            name = f"{source_guid}:{time.strftime('%Y-%m-%dT%H:%M')}"
-                            #name = uuid.uuid4()
-                            os.makedirs(f"{path}/thumbnail/", exist_ok=True)
-                            cv2.imwrite(f"{path}/thumbnail/{name}.jpg", thumbnail)
-
-                        yield metadata, frame_bytes
+                        yield {"type": "progress", "progress": progress, "guid": source_guid, "timestamp": time.isoformat()}, None
                         
-                    # Mettre à jour les boîtes précédentes
-                    previous_boxes = current_boxes
-                
-                # Si aucune image n'a été traitée
-                if frame_count == 0:
-                    logger.warning(f"Pas d'image à traiter pour: {source_guid}")
-                    yield {"type": "warning", "message": f"Pas d'image à traiter pour la caméra: {source_guid}"}, None
+                        async for metadata, frame_bytes, current_boxes in self.__process_image(forensic, img, time, previous_boxes, progress,source_guid):
+                            previous_boxes = current_boxes
+                            yield metadata, frame_bytes
+                                            
+                    if frame_count == 0:
+                        logger.info(f"No image processed for camera: {source_guid}")
+                        yield {"type": "warning", "message": f"Pas d'image à traiter pour la caméra: {source_guid}"}, None
+        except Exception as ex:
+            stacktrace = traceback.format_exc()
+            logger.error(f"Exception in __process_stream: {stacktrace}")
+            yield {"type": "error", "message": f"Exception in stream processing: {ex}"}, None
+        finally:
+            yield {"type": "progress", "progress": 100, "guid": source_guid, "timestamp": self.time_to.isoformat()}, None
+        
+        logger.info("Stream processing completed")
 
     async def _execute(self) -> AsyncGenerator[Tuple[dict, Optional[bytes]], None]:
         logger.info(f"Processing Forensic job {self.job_id}")
@@ -724,35 +780,51 @@ class VehicleReplayJob:
         logger.info(f"Time range: {self.time_from} - {self.time_to}")
         
         if not self.sources:
+            logger.error("No sources provided, yielding error result")
             yield {"type": "error", "message": "Aucune source spécifiée"}, None
             return
         
         try:
             # TODO: await asyncio.gather() pour traiter plusieurs flux en parallèle
-
-            for source_guid in self.sources:
-                if self.cancel_event.is_set():
-                    return
-                    
-                logger.info(f"Starting query for source: {source_guid}")
-                async for metadata, frame in self.__process_stream(source_guid):
+            sequential = False
+            if sequential:
+                for source_guid in self.sources:
                     if self.cancel_event.is_set():
+                        logger.info(f"Cancellation flagged before processing source: {source_guid}")
                         return
-                    
-                    yield metadata, frame
+                        
+                    async for metadata, frame in self.__process_stream(source_guid):
+                        if self.cancel_event.is_set():
+                            logger.info(f"Cancellation flagged during processing source: {source_guid}")
+                            return
+                        
+                        yield metadata, frame
+            else:
+
+                xs = stream.flatmap(
+                    stream.iterate(self.sources),
+                    self.__process_stream,
+                    task_limit=2
+                )
+
+                async with xs.stream() as result_stream:
+                    async for metadata, frame in result_stream:
+                        if self.cancel_event.is_set():
+                            logger.info(f"Cancellation flagged during parallel processing")
+                            return
+                            
+                        yield metadata, frame
             
-            yield {
-                "type": "completed", 
-                "message": "Analyse terminée avec succès",
-                "progress": 100
-            }, None
+            logger.info("All sources processed")
 
         except Exception as e:
             error_message = f"Erreur lors du traitement du flux vidéo: {str(e)}"
             stacktrace = traceback.format_exc()
+            logger.error("An exception occurred during _execute processing")
             logger.error(error_message)
             logger.error(stacktrace)
             
+            logger.info("Yielding error result due to exception")
             yield {
                 "type": "error", 
                 "message": error_message, 
@@ -761,3 +833,79 @@ class VehicleReplayJob:
             }, None
             
             raise
+
+async def test_process_stream():
+    from datetime import datetime, timezone, timedelta
+    data = {}
+
+    data["save_thumbnail_path"] = "/tmp"
+    data["time_format"] = '%Y-%m-%dT%H:%M:%S.%f'
+
+    data["sources"] = ['00000001-0000-babe-0000-00408cec7f31']
+
+    start = datetime(2025, 3, 21, 14, 0, 0, tzinfo=timezone(timedelta(hours=1)))
+    time_range = {
+        "time_from": start ,
+        "time_to": start + timedelta(minutes=5)
+    }
+    data["timerange"] = time_range
+    data["type"] = "vehicle"
+    data["appearances"] = {"confidence" : "low", "type" : ["car"], "color" : ["black"]}
+
+
+    replay = VehicleReplayJob(data=data)
+    print("Starting")
+    for source in data["sources"] :
+        async for response in replay._VehicleReplayJob__process_stream(source):
+            if response[1] :
+                print(f"\n\n response : {response[0]}")
+        
+
+async def test_process_image():
+
+    from datetime import datetime, timezone, timedelta
+    data = {}
+
+    data["save_thumbnail_path"] = "/tmp"
+    data["sources"] = 'test'
+
+    #start = datetime.now(timezone.utc)
+    start = datetime(2025, 3, 21, 14, 0, 0, tzinfo=timezone(timedelta(hours=1)))
+    time_range = {
+        "time_from": start,
+        "time_to": start + timedelta(minutes=2)
+    }
+    data["timerange"] = time_range
+    data["type"] = "vehicle"
+    data["appearances"] = {"confidence" : "low", "type" : ["motorbike"], "color" : ["black"]}
+
+
+    async with ServiceAI() as forensic :
+        replay = VehicleReplayJob(data=data)
+        print("Starting")
+        await forensic.get_version()
+
+        #params
+        current_boxes = []
+        previous_boxes = []
+        progress = 0.
+        source_guid = "test"
+        time = start
+        img_path = "test.jpg"
+
+        img = cv2.imread(img_path)
+
+        async for metadata, frame_bytes, current_boxes in replay._VehicleReplayJob__process_image(forensic, img, time, previous_boxes, progress, source_guid):
+            previous_boxes = current_boxes
+            print(f"metadata : {metadata}")
+
+"""
+def main():
+    if True:
+        asyncio.run(test_process_stream())
+    else:
+        asyncio.run(test_process_image())
+
+if __name__ == "__main__":
+    main()
+"""

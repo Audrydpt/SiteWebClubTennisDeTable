@@ -1,24 +1,21 @@
 import { Form } from '@/components/ui/form';
-import {
-  ForensicFormValues,
-  useForensicForm,
-} from '@/features/forensic/lib/provider/forensic-form-context';
+
+import { useForensicForm } from '../lib/provider/forensic-form-context';
+import { ForensicFormValues } from '../lib/types';
 import Params from './ui/params';
 import Submit from './ui/submit';
 
 interface ForensicFormProps {
   onSubmit: (data: ForensicFormValues) => Promise<void>;
   isSearching: boolean;
-  progress: number | null;
-  closeWebSocket: () => Promise<void>;
+  stopSearch: () => Promise<void>;
   isCollapsed: boolean;
 }
 
 export default function ForensicForm({
   onSubmit,
   isSearching,
-  progress,
-  closeWebSocket,
+  stopSearch,
   isCollapsed,
 }: ForensicFormProps) {
   const { formMethods } = useForensicForm();
@@ -30,11 +27,7 @@ export default function ForensicForm({
         className="flex flex-col h-full relative"
       >
         <Params isCollapsed={isCollapsed} />
-        <Submit
-          isSearching={isSearching}
-          progress={progress}
-          onCancel={closeWebSocket}
-        />
+        <Submit isSearching={isSearching} onCancel={stopSearch} />
       </form>
     </Form>
   );
