@@ -161,6 +161,16 @@ export default function Results({
       return null;
     }
 
+    // Determine the status text based on conditions
+    let statusText = '';
+    if (progress === 100) {
+      statusText = '';
+    } else if (timeEstimates.combined) {
+      statusText = `• Temps restant : ${timeEstimates.combined}`;
+    } else {
+      statusText = '• Calcul du temps restant...';
+    }
+
     return (
       <div className="mt-2 mb-6 space-y-3">
         <div className="flex justify-between items-center">
@@ -168,17 +178,11 @@ export default function Results({
             <p className="text-sm font-medium text-foreground">
               Progression :{' '}
               <span className="text-primary font-semibold">
-                {progress.toFixed(0)}%
-              </span>
-              {timeEstimates.combined ? (
-                <span className="text-muted-foreground ml-2 text-xs font-medium">
-                  • Temps restant : {timeEstimates.combined}
-                </span>
-              ) : (
-                <span className="text-muted-foreground ml-2 text-xs font-medium">
-                  • Calcul du temps restant...
-                </span>
-              )}
+              {progress.toFixed(0)}%
+            </span>
+              <span className="text-muted-foreground ml-2 text-xs font-medium">
+              {statusText}
+            </span>
             </p>
           </div>
           {sourceProgress.length > 0 && (
