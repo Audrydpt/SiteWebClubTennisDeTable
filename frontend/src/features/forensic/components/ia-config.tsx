@@ -1,4 +1,4 @@
-/* eslint-disable prettier/prettier */
+/* eslint-disable prettier/prettier,no-alert */
 import type React from 'react';
 
 import { useState } from 'react';

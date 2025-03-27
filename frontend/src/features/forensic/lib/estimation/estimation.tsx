@@ -1,5 +1,4 @@
 /* eslint-disable no-console */
-// frontend/src/features/forensic/lib/estimation/estimation.tsx
 import { SourceProgress } from '../types';
 
 /**
