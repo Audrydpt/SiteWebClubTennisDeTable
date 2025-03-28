@@ -6,6 +6,7 @@ import asyncio
 import datetime
 import uuid
 from aiostream import stream
+from functools import wraps
 
 from fastapi.websockets import WebSocketState
 import numpy as np
@@ -206,15 +207,24 @@ class ResultsStore:
 
 results_store = ResultsStore()
 
-async def run_all_tasks(jobs, max_workers=None):
-    if max_workers is None:
-        xs = stream.merge(*(job() for job in jobs))
-    else:
-        xs = stream.map(lambda job: job(), jobs, task_limit=max_workers)
-        
-    async with xs.stream() as streamer:
-        async for data in streamer:
-            yield data
+def run_async(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        if loop.is_running():
+            raise RuntimeError(
+                "Attempted to call an async function from a sync function while an event loop is running. "
+                "This can lead to deadlocks. Consider restructuring your code to use async throughout, "
+                "or use a separate thread for this operation."
+            )
+        else:
+            return loop.run_until_complete(func(*args, **kwargs))
+    return wrapper
 
 @celery_app.task(bind=True, name="task_manager.execute_job")
 def execute_job(self, job_type: str, job_params: Dict[str, Any]):
@@ -242,7 +252,6 @@ def execute_job(self, job_type: str, job_params: Dict[str, Any]):
                 final=True
             )
             await results_store.add_result(final_result)
-            
             return {"job_id": job_id, "status": JobStatus.SUCCESS.value}
             
         except TaskRevokedError:
@@ -255,6 +264,7 @@ def execute_job(self, job_type: str, job_params: Dict[str, Any]):
             return {"job_id": job_id, "status": JobStatus.REVOKED.value}
             
         except Exception as e:
+            logger.error(f"Erreur lors de l'exécution de la tâche: {traceback.format_exc()}")
             error_result = JobResult(
                 job_id=job_id,
                 metadata={
@@ -267,7 +277,9 @@ def execute_job(self, job_type: str, job_params: Dict[str, Any]):
             await results_store.add_result(error_result)
             return {"job_id": job_id, "status": JobStatus.FAILURE.value, "error": str(e)}
     
-    return asyncio.run(execute_async())
+    res = run_async(execute_async)()
+    logger.info(f"Task completed {res}")
+    return res
 
 class TaskManager:
     """Gestionnaire de tâches façade pour les opérations Celery/Redis"""
@@ -786,7 +798,7 @@ class VehicleReplayJob:
         
         try:
             # TODO: await asyncio.gather() pour traiter plusieurs flux en parallèle
-            sequential = False
+            sequential = True
             if sequential:
                 for source_guid in self.sources:
                     if self.cancel_event.is_set():
