@@ -55,7 +55,6 @@ export default function DashboardTab({
     onAddWidget(() => add);
   }, [onAddWidget, add]);
 
-  // eslint-disable-next-line consistent-return
   useEffect(() => {
     if (data && !refsUpdated) {
       const timer = setTimeout(() => {
@@ -63,6 +62,7 @@ export default function DashboardTab({
       }, 300);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [data, refsUpdated]);
 
   const handleSort = (newWidgets: ChartTiles[]) => {
@@ -94,8 +94,9 @@ export default function DashboardTab({
       return {
         id,
         widget,
-        content: <Component {...chart} page={pagesToChart[id!]} />,
-        page: 0,
+        content: (
+          <Component {...chart} page={id ? (pagesToChart[id] ?? 0) : 0} />
+        ),
       } as ChartTiles;
     }) ?? [];
 
