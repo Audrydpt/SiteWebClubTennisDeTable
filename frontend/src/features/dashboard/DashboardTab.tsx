@@ -6,9 +6,16 @@ import { useAuth } from '@/providers/auth-context';
 
 import { StoredWidget } from './components/form-widget';
 import WidgetActions from './components/widget-actions';
+import WidgetRangeNavigation from './components/widget-range-navigation';
 import useWidgetAPI from './hooks/use-widget';
 import { ChartTypeComponents } from './lib/const';
 import { ChartSize } from './lib/props';
+
+export type ChartTiles = {
+  id: string;
+  content: JSX.Element;
+  widget: StoredWidget;
+};
 
 const widthClassMap: Record<ChartSize, string> = {
   tiny: 'col-span-1 md:col-span-1 lg:col-span-1 2xl:col-span-1',
@@ -27,12 +34,6 @@ const heightClassMap: Record<ChartSize, string> = {
   full: 'row-span-2',
 };
 
-export type ChartTiles = {
-  id: string;
-  content: JSX.Element;
-  widget: StoredWidget;
-};
-
 interface DashboardTabProps {
   dashboardKey: string;
   onAddWidget?: (fn: (d: StoredWidget) => void) => void;
@@ -48,21 +49,20 @@ export default function DashboardTab({
   const isOperator = user?.privileges === 'Operator';
   const chartRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
   const [refsUpdated, setRefsUpdated] = useState(false);
+  const [pagesToChart, setPagesToChart] = useState<Record<string, number>>({});
 
   useEffect(() => {
     onAddWidget(() => add);
   }, [onAddWidget, add]);
 
-  // Force un re-render après que les refs sont mises à jour
-  // eslint-disable-next-line consistent-return
   useEffect(() => {
     if (data && !refsUpdated) {
-      // Donner un peu de temps au DOM pour se mettre à jour
       const timer = setTimeout(() => {
         setRefsUpdated(true);
       }, 300);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [data, refsUpdated]);
 
   const handleSort = (newWidgets: ChartTiles[]) => {
@@ -94,7 +94,9 @@ export default function DashboardTab({
       return {
         id,
         widget,
-        content: <Component {...chart} />,
+        content: (
+          <Component {...chart} page={id ? (pagesToChart[id] ?? 0) : 0} />
+        ),
       } as ChartTiles;
     }) ?? [];
 
@@ -125,8 +127,14 @@ export default function DashboardTab({
             edit={edit}
             remove={remove}
             clone={clone}
+            page={pagesToChart[item.id] ?? 0}
           />
-          {/* <WidgetRangeNavigation /> */}
+          <WidgetRangeNavigation
+            page={pagesToChart[item.id] ?? 0}
+            onPageChange={(page) => {
+              setPagesToChart((prev) => ({ ...prev, [item.id]: page }));
+            }}
+          />
         </div>
       ))}
     </ReactSortable>

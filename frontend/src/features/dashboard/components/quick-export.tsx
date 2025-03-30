@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { FileImage, FileSpreadsheet, FileType, Loader2 } from 'lucide-react';
-import { DateTime } from 'luxon';
 import { useEffect, useState } from 'react';
 
 import {
@@ -16,12 +15,13 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 import { ExportStep } from '../lib/export';
 import exportData, { ExportFormat } from '../lib/exportData';
-import { AcicAggregation, AggregationTypeToObject } from '../lib/props';
+import { AcicAggregation } from '../lib/props';
 import { getWidgetDataForExport } from '../lib/utils';
 
 export default function QuickExport({
   storedWidget,
   chartContent,
+  page,
   getChartRef,
   updateStoredWidget,
   setStepValidity,
@@ -46,48 +46,26 @@ export default function QuickExport({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dialogOpen]);
 
-  let timeFrom;
-  let timeTo;
-
-  if (storedWidget.aggregation && storedWidget.duration) {
-    const now = DateTime.now();
-    timeFrom = now.minus(AggregationTypeToObject[storedWidget.duration]);
-    timeTo = now.minus({ millisecond: 1 });
-    if (!storedWidget.range) {
-      // eslint-disable-next-line no-param-reassign
-      storedWidget.range = { from: timeFrom.toJSDate(), to: timeTo.toJSDate() };
-    }
-  } else if (
-    storedWidget.range &&
-    storedWidget.range.from &&
-    storedWidget.range.to
-  ) {
-    timeFrom = DateTime.fromJSDate(storedWidget.range.from);
-    timeTo = DateTime.fromJSDate(storedWidget.range.to);
-  } else {
-    throw new Error(
-      'Either aggregation and duration or range must be provided'
-    );
-  }
-
   const { data, isSuccess, isLoading } = useQuery({
     queryKey: [
       'export-options',
       storedWidget.table,
-      storedWidget.range,
       storedWidget.aggregation,
+      storedWidget.duration,
       storedWidget.where,
       groupByColumn,
+      page,
     ],
     queryFn: async () =>
       getWidgetDataForExport(
         {
           table: storedWidget.table,
           aggregation: storedWidget.aggregation || AcicAggregation.OneHour,
-          range: storedWidget.range,
+          duration: storedWidget.duration,
           where: storedWidget.where,
         },
-        groupByColumn
+        groupByColumn,
+        page
       ),
     enabled: true,
   });

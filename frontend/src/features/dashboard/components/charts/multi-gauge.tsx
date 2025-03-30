@@ -41,11 +41,11 @@ export default function MultiGaugeComponent({
   layout = 'full',
   ...props
 }: MultiGaugeComponentProps) {
-  const { title, table, aggregation, duration, where } = props;
+  const { title, table, aggregation, duration, where, page } = props;
   const { groupBy } = props;
 
   const { isLoading, isError, data } = useQuery({
-    queryKey: [table, aggregation, duration, where, groupBy],
+    queryKey: [table, aggregation, duration, where, groupBy, page],
     queryFn: () =>
       getWidgetData(
         {
@@ -54,7 +54,8 @@ export default function MultiGaugeComponent({
           duration,
           where,
         },
-        groupBy
+        groupBy,
+        page
       ),
     refetchInterval: Duration.fromObject(
       AggregationTypeToObject[aggregation]

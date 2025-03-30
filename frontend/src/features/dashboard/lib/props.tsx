@@ -69,6 +69,7 @@ export type ChartProps = {
   aggregation: AcicAggregation;
   duration: AcicAggregation;
   where?: WhereClause[];
+  page?: number;
 };
 export type GroupByChartProps = ChartProps & {
   groupBy?: string;
