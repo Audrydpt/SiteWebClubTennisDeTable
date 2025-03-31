@@ -42,11 +42,11 @@ export default function StackedGaugeComponent({
   stackOffset = 'none',
   ...props
 }: StackedGaugeComponentProps) {
-  const { title, table, aggregation, duration, where } = props;
+  const { title, table, aggregation, duration, where, page } = props;
   const { groupBy } = props;
 
   const { isLoading, isError, data } = useQuery({
-    queryKey: [table, aggregation, duration, where, groupBy],
+    queryKey: [table, aggregation, duration, where, groupBy, page],
     queryFn: () =>
       getWidgetData(
         {
@@ -55,7 +55,8 @@ export default function StackedGaugeComponent({
           duration,
           where,
         },
-        groupBy
+        groupBy,
+        page
       ),
     refetchInterval: Duration.fromObject(
       AggregationTypeToObject[aggregation]

@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { InfoIcon } from 'lucide-react';
 import { ReactNode, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
@@ -51,17 +52,14 @@ import privilegesDetails from './privileges-details.tsx';
 
 const formSchema = z
   .object({
-    user: z.string().min(3, 'User name must be at least 3 characters long'),
+    user: z.string().min(3),
     password: z
       .string()
-      .min(8, 'Password must be at least 8 characters long')
-      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-      .regex(/[0-9]/, 'Password must contain at least one number')
-      .regex(
-        /[^a-zA-Z0-9]/,
-        'Password must contain at least one special character'
-      ),
+      .min(8)
+      .regex(/[a-z]/)
+      .regex(/[A-Z]/)
+      .regex(/[0-9]/)
+      .regex(/[^a-zA-Z0-9]/),
     privileges: z.enum(Object.values(AcicPrivileges) as [string, ...string[]]),
   })
   .refine(
@@ -72,7 +70,6 @@ const formSchema = z
       return true;
     },
     {
-      message: 'Password must be at least 10 characters long for Administrator',
       path: ['password'],
     }
   );
@@ -97,6 +94,8 @@ export default function FormCreateUser({
     defaultValues: defaultValues as UserSchema,
   });
 
+  const { t } = useTranslation();
+
   useEffect(() => {
     form.reset(defaultValues);
   }, [form, defaultValues]);
@@ -116,10 +115,9 @@ export default function FormCreateUser({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>Create a new user</DialogTitle>
+          <DialogTitle>{t('settings:createUser.title')}</DialogTitle>
           <DialogDescription>
-            Fill in the form below & choose a privilege to create a new user
-            account.
+            {t('settings:createUser.description')}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -132,9 +130,9 @@ export default function FormCreateUser({
               name="user"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Username</FormLabel>
+                  <FormLabel>{t('login.username')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Username" {...field} />
+                    <Input placeholder={t('login.username')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -146,9 +144,13 @@ export default function FormCreateUser({
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>{t('login.password')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Password" type="password" {...field} />
+                    <Input
+                      placeholder={t('login.password')}
+                      type="password"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -160,7 +162,7 @@ export default function FormCreateUser({
               name="privileges"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Privileges</FormLabel>
+                  <FormLabel>{t('login.privilege')}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
@@ -168,13 +170,15 @@ export default function FormCreateUser({
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a privilege" />
+                        <SelectValue
+                          placeholder={t('settings:createUser.selectPrivilege')}
+                        />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {Object.values(AcicPrivileges).map((privilege) => (
                         <SelectItem key={privilege} value={privilege}>
-                          {privilege}
+                          {t(`privileges.${privilege}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -188,14 +192,16 @@ export default function FormCreateUser({
               <Table className="hidden xl:table">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Functionality</TableHead>
-                    <TableHead>Operator</TableHead>
-                    <TableHead>Maintainer</TableHead>
-                    <TableHead>Administrator</TableHead>
+                    <TableHead>
+                      {t('settings:privileges.functionality')}
+                    </TableHead>
+                    <TableHead>{t('privileges.Operator')}</TableHead>
+                    <TableHead>{t('privileges.Maintainer')}</TableHead>
+                    <TableHead>{t('privileges.Administrator')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {privilegesDetails.map((detail) => (
+                  {privilegesDetails().map((detail) => (
                     <TableRow key={detail.action}>
                       <TableCell className="font-medium">
                         {detail.action}
@@ -231,9 +237,9 @@ export default function FormCreateUser({
 
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline">Close</Button>
+                <Button variant="outline">{t('close')}</Button>
               </DialogClose>
-              <Button type="submit">Create User</Button>
+              <Button type="submit">{t('settings:createUser.submit')}</Button>
             </DialogFooter>
           </form>
         </Form>

@@ -59,9 +59,11 @@ function UserContent() {
           <div className="flex flex-col">
             <CardTitle className="flex items-center">
               <Users2 className="mr-2" size={20} />
-              User List
+              {t('settings:userList')}
             </CardTitle>
-            <CardDescription>View and manage user accounts</CardDescription>
+            <CardDescription>
+              {t('settings:userListDescription')}
+            </CardDescription>
           </div>
           {isAdmin && (
             <FormCreateUser onSubmit={handleAdd}>
@@ -75,16 +77,20 @@ function UserContent() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Username</TableHead>
-                <TableHead>Privileges</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
+                <TableHead>{t('settings:username')}</TableHead>
+                <TableHead>{t('login.privilege')}</TableHead>
+                <TableHead className="w-[100px]">
+                  {t('settings:actions')}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {Object.entries(data).map(([username, userData]) => (
                 <TableRow key={username}>
                   <TableCell>{userData.user}</TableCell>
-                  <TableCell>{userData.privileges}</TableCell>
+                  <TableCell>
+                    {t(`privileges.${userData.privileges}`)}
+                  </TableCell>
                   <TableCell className="flex items-center gap-2">
                     {isAdmin && (
                       <>
@@ -109,7 +115,9 @@ function UserContent() {
 
                         <DeleteConfirmation
                           onDelete={() => handleDelete(userData)}
-                          description={`This action is irreversible. ${userData.user} will be definitivly deleted.`}
+                          description={t('settings:deleteUserDescription', {
+                            username: userData.user,
+                          })}
                         >
                           <Button
                             variant="destructive"

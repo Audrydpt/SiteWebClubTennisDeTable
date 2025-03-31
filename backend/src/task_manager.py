@@ -6,6 +6,7 @@ import asyncio
 import datetime
 import uuid
 from aiostream import stream
+from functools import wraps
 
 from fastapi.websockets import WebSocketState
 import numpy as np
@@ -108,14 +109,14 @@ class ResultsStore:
     def __init__(self, max_results: int = 100):
         self.max_results = max_results
         self._redis = None
+        self._pool = None
         
     async def _get_redis(self) -> aioredis.Redis:
-        pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
-        try:
-            return aioredis.Redis(connection_pool=pool)
-        except Exception as e:
-            await pool.disconnect()
-            raise e
+        if self._pool is None:
+            self._pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
+        if self._redis is None:
+            self._redis = aioredis.Redis(connection_pool=self._pool)
+        return self._redis
         
     async def add_result(self, result: JobResult) -> None:
         redis = await self._get_redis()
@@ -131,7 +132,6 @@ class ResultsStore:
 
         # Publier le résultat sur le canal Redis
         await redis.publish(channel_name, json.dumps(result_data))
-        logger.info("Published result data on Redis channel successfully.")
 
         if result.frame and result.frame_uuid:
             # Stocker la frame séparément
@@ -144,7 +144,6 @@ class ResultsStore:
                 "frame_uuid": result.frame_uuid
             }
             await redis.publish(f"{channel_name}:frames", json.dumps(frame_notification))
-            logger.info("Published frame notification on Redis channel frames successfully.")
 
     async def get_results(self, job_id: str, start: int = 0, end: int = -1) -> List[JobResult]:
         redis = await self._get_redis()
@@ -208,15 +207,24 @@ class ResultsStore:
 
 results_store = ResultsStore()
 
-async def run_all_tasks(jobs, max_workers=None):
-    if max_workers is None:
-        xs = stream.merge(*(job() for job in jobs))
-    else:
-        xs = stream.map(lambda job: job(), jobs, task_limit=max_workers)
-        
-    async with xs.stream() as streamer:
-        async for data in streamer:
-            yield data
+def run_async(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        if loop.is_running():
+            raise RuntimeError(
+                "Attempted to call an async function from a sync function while an event loop is running. "
+                "This can lead to deadlocks. Consider restructuring your code to use async throughout, "
+                "or use a separate thread for this operation."
+            )
+        else:
+            return loop.run_until_complete(func(*args, **kwargs))
+    return wrapper
 
 @celery_app.task(bind=True, name="task_manager.execute_job")
 def execute_job(self, job_type: str, job_params: Dict[str, Any]):
@@ -244,7 +252,6 @@ def execute_job(self, job_type: str, job_params: Dict[str, Any]):
                 final=True
             )
             await results_store.add_result(final_result)
-            
             return {"job_id": job_id, "status": JobStatus.SUCCESS.value}
             
         except TaskRevokedError:
@@ -257,6 +264,7 @@ def execute_job(self, job_type: str, job_params: Dict[str, Any]):
             return {"job_id": job_id, "status": JobStatus.REVOKED.value}
             
         except Exception as e:
+            logger.error(f"Erreur lors de l'exécution de la tâche: {traceback.format_exc()}")
             error_result = JobResult(
                 job_id=job_id,
                 metadata={
@@ -269,7 +277,9 @@ def execute_job(self, job_type: str, job_params: Dict[str, Any]):
             await results_store.add_result(error_result)
             return {"job_id": job_id, "status": JobStatus.FAILURE.value, "error": str(e)}
     
-    return asyncio.run(execute_async())
+    res = run_async(execute_async)()
+    logger.info(f"Task completed {res}")
+    return res
 
 class TaskManager:
     """Gestionnaire de tâches façade pour les opérations Celery/Redis"""
@@ -375,7 +385,8 @@ class TaskManager:
             logger.error("Erreur lors de la récupération des tâches actives: %s", e)
 
         try:
-            redis_client = aioredis.ConnectionPool.from_url('redis://localhost:6379/0')
+            redis_pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
+            redis_client = aioredis.Redis(connection_pool=redis_pool)
             keys = await redis_client.keys("task:*:results")
             for key in keys:
                 key_str = key.decode('utf-8') if isinstance(key, bytes) else str(key)
@@ -386,7 +397,9 @@ class TaskManager:
             logger.error("Erreur lors de la récupération des tâches depuis Redis: %s", e)
         finally:
             if redis_client:
-                await redis_client.disconnect()
+                await redis_client.close()
+            if redis_pool:
+                await redis_pool.disconnect()
 
         return list(all_tasks)
     
@@ -765,7 +778,8 @@ class VehicleReplayJob:
                         logger.info(f"No image processed for camera: {source_guid}")
                         yield {"type": "warning", "message": f"Pas d'image à traiter pour la caméra: {source_guid}"}, None
         except Exception as ex:
-            logger.error(f"Exception in __process_stream: {ex}")
+            stacktrace = traceback.format_exc()
+            logger.error(f"Exception in __process_stream: {stacktrace}")
             yield {"type": "error", "message": f"Exception in stream processing: {ex}"}, None
         finally:
             yield {"type": "progress", "progress": 100, "guid": source_guid, "timestamp": self.time_to.isoformat()}, None
@@ -798,16 +812,15 @@ class VehicleReplayJob:
                         
                         yield metadata, frame
             else:
-                source_stream = stream.iterate(self.sources)
 
                 xs = stream.flatmap(
-                    lambda source_guid: self.__process_stream(source_guid),
-                    source_stream,
+                    stream.iterate(self.sources),
+                    self.__process_stream,
                     task_limit=2
                 )
-                
-                async with xs.stream() as streamer:
-                    async for metadata, frame in streamer:
+
+                async with xs.stream() as result_stream:
+                    async for metadata, frame in result_stream:
                         if self.cancel_event.is_set():
                             logger.info(f"Cancellation flagged during parallel processing")
                             return

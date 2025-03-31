@@ -71,6 +71,7 @@ export default function ExportStepSource({
           duration: AcicAggregation.LifeTime,
         },
         'stream_id',
+        undefined,
         false
       ),
     enabled: !!storedWidget.table,

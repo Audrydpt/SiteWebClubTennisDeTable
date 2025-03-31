@@ -18,6 +18,7 @@
     "description": "Entrez votre nom d'utilisateur et votre mot de passe ci-dessous pour vous connecter à votre compte",
     "username": "Nom d'utilisateur",
     "password": "Mot de passe",
+    "privilege": "Privilège",
     "submit": "Se connecter",
     "error": "Nom d'utilisateur ou mot de passe invalide"
   },
@@ -25,5 +26,10 @@
     "title": "Déconnexion",
     "description": "Êtes-vous sûr de vouloir vous déconnecter ?",
     "submit": "Se déconnecter"
+  },
+  "privileges": {
+    "Operator": "Opérateur",
+    "Maintainer": "Mainteneur",
+    "Administrator": "Administrateur"
   }
 }

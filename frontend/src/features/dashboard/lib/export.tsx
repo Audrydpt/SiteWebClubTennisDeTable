@@ -29,6 +29,7 @@ export interface StepperFormData {
 export interface ExportStep {
   storedWidget: StepperFormData;
   chartContent?: JSX.Element;
+  page?: number;
   getChartRef?: () => HTMLDivElement | undefined;
   updateStoredWidget: (newData: Partial<StepperFormData>) => void;
   setStepValidity: (valid: boolean) => void;
