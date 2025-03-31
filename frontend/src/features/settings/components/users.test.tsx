@@ -9,8 +9,8 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { UserPrivileges } from '@/lib/authenticate';
-import Users from './Users';
-import useUsersAPI from './hooks/use-users';
+import useUsersAPI from '../hooks/use-users';
+import Users from './users';
 
 vi.mock('./hooks/use-users');
 

@@ -42,11 +42,15 @@ const Settings = lazyLoadFeature(
 );
 const Users = lazyLoadFeature(
   'settings',
-  () => import('./features/settings/Users')
+  () => import('./features/settings/components/users')
 );
 const Retention = lazyLoadFeature(
   'settings',
-  () => import('./features/settings/Retention')
+  () => import('./features/settings/components/retention')
+);
+const ForensicSettings = lazyLoadFeature(
+  'settings',
+  () => import('./features/settings/components/forensic-settings')
 );
 const Forensic = lazyLoadFeature(
   'forensic',
@@ -107,6 +111,7 @@ export default function App() {
               <Route index element={<Settings />} />
               <Route path="users" element={<Users />} />
               <Route path="retention" element={<Retention />} />
+              <Route path="forensicSettings" element={<ForensicSettings />} />
             </Route>
 
             <Route path="/theme" element={<Theme />} />
