@@ -128,6 +128,7 @@ const getFilteredItems = (user?: UserType): SidebarItem[] => {
         title: 'Configurations',
         children: settingsItems.map((item) => ({
           ...item,
+          // TODO : disable seulement users mais laisser l'accès à settings
           disabled: item.title === 'Settings' || item.title === 'Users',
         })),
       },

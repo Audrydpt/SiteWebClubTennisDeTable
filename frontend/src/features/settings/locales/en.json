@@ -93,8 +93,12 @@
     "selectPassword": "Select password",
     "actions": {
       "saving": "Saving...",
-      "applyChanges": "Apply Changes"
+      "applyChanges": "Apply Changes",
+      "testConnection": "Test connection",
+      "connecting": "Connecting..."
     },
+    "connectionSuccess": "Successfully connected to VMS",
+    "connectionFailed": "Failed to connect to VMS",
     "toast": {
       "success": "Changes applied",
       "successDescription": "VMS settings successfully applied.",

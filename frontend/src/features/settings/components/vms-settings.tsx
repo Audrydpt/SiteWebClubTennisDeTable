@@ -1,4 +1,4 @@
-import { Video } from 'lucide-react';
+import { CheckCircle, Video, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -30,6 +30,9 @@ function VMSSettings() {
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isTesting, setIsTesting] = useState<boolean>(false);
+  const [isTestSuccessful, setIsTestSuccessful] = useState<boolean>(false);
+  const [isTestAttempted, setIsTestAttempted] = useState<boolean>(false);
 
   const handleSubmit = () => {
     setIsSubmitting(true);
@@ -65,6 +68,21 @@ function VMSSettings() {
   const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target;
     setPassword(value);
+  };
+
+  const handleTestCredentials = () => {
+    // Simulate an API call to test the credentials
+    setIsTesting(true);
+    setTimeout(() => {
+      // Simulate a successful test
+      setIsTestSuccessful(true);
+      console.log('Testing credentials:', {
+        username,
+        password,
+      });
+      setIsTestAttempted(true);
+      setIsTesting(false);
+    }, 2000);
   };
 
   return (
@@ -162,6 +180,39 @@ function VMSSettings() {
                 />
               </div>
             </div>
+          </div>
+
+          <div className="flex gap-4 mt-6 items-start">
+            <div className="flex-shrink-0 w-25">
+              <Button
+                onClick={handleTestCredentials}
+                variant="secondary"
+                className="w-full"
+              >
+                {isTesting
+                  ? t('vms-settings.actions.connecting')
+                  : t('vms-settings.actions.testConnection')}
+              </Button>
+            </div>
+
+            {isTestAttempted && (
+              <div className="flex p-3 rounded-md bg-muted flex-1">
+                <div className="mr-3 mt-1">
+                  {isTestSuccessful ? (
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-red-500" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium">
+                    {isTestSuccessful
+                      ? t('vms-settings.connectionSuccess')
+                      : t('vms-settings.connectionFailed')}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
         <CardFooter>

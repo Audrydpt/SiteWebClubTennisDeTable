@@ -93,8 +93,12 @@
     "selectPassword": "Sélectionner le mot de passe",
     "actions": {
       "saving": "Enregistrement...",
-      "applyChanges": "Appliquer les modifications"
+      "applyChanges": "Appliquer les modifications",
+      "testConnection": "Tester la connexion",
+      "connecting": "Connexion..."
     },
+    "connectionSuccess": "Connexion au VMS réussie",
+    "connectionFailed": "Connexion au VMS échouée",
     "toast": {
       "success": "Modifications appliquées",
       "successDescription": "Paramètres VMS mis à jour avec succès.",
