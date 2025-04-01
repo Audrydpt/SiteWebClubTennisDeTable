@@ -1,4 +1,5 @@
 import os
+import traceback
 import threading
 import uuid
 import asyncio
@@ -7,6 +8,7 @@ from datetime import timedelta
 from dotenv import load_dotenv
 from functools import wraps
 from typing import Type, Any, List, Dict, Union, Optional, TypeVar, Generic, Callable
+import time
 
 from sqlalchemy import JSON, column, create_engine, Column, Integer, REAL, String, Text, DateTime, DDL, PrimaryKeyConstraint, cast, func, inspect, text, literal, ForeignKey, select, delete
 from sqlalchemy.dialects.postgresql import TIMESTAMP, INTEGER, UUID
@@ -374,10 +376,37 @@ class GenericDAL:
         logger.info(f"Cleaning {cls}")
 
         with GenericDAL.SyncSession() as session:
-            setting = session.query(DashboardSettings).filter(DashboardSettings.key_index == "retention").first()
-            days = int(setting.value_index["days"]) if setting else 90
-        return run_async(self.async_clean)(cls, days)
-    
+            try:
+                setting = session.query(DashboardSettings).filter(DashboardSettings.key_index == "retention").first()
+                days = int(setting.value_index) if setting else 90
+                cutoff_date = func.now() - timedelta(days=days)
+                rows = 10000
+
+                while True:
+                    # Récupérer un lot d'ids à supprimer
+                    subquery = session.query(cls.id).filter(cls.timestamp < cutoff_date).limit(rows).subquery()
+
+                    # Supprimer les enregistrements dont les ids sont dans la sous-requête
+                    stmt = delete(cls).where(cls.id.in_(subquery))
+                    result = session.execute(stmt)
+                    session.commit()
+
+                    # Si aucun enregistrement n'a été supprimé, sortir de la boucle
+                    if result.rowcount == 0:
+                        break
+
+                    # Petite pause entre les lots
+                    time.sleep(0.1)
+
+                logger.info(f"Completed cleaning {cls} - {days} days")
+                session.commit()
+                return True
+            except Exception as e:
+                logger.error(f"Error cleaning {cls}: {e} {traceback.format_exc()}")
+                return False
+
+        return False
+
     # ----- Asynchronous API methods -----
 
     async def async_add(self, obj) -> uuid.UUID:
@@ -469,12 +498,3 @@ class GenericDAL:
             await session.commit()
             return True
     
-    async def async_clean(self, cls, days=100) -> bool:
-        logger.info(f"Cleaning {cls}")
-        async with GenericDAL.AsyncSession() as session:
-            # Remplacement de session.query(cls).filter(...).delete() par delete(...)
-            stmt = delete(cls).where(cls.timestamp < func.now() - timedelta(days=days))
-            await session.execute(stmt)
-            await session.commit()
-            logger.info(f"Cleaned {cls}")
-            return True
