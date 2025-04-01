@@ -173,7 +173,7 @@ class Widget(Database):
 
 class DashboardSettings(Database):
     key_index = Column(Text, nullable=False, index=True)
-    value_index = Column(Text, nullable=False)
+    value_index = Column(JSON, nullable=True, default=lambda: [])
 
 class GenericDAL:
     initialized = False
@@ -324,8 +324,12 @@ class GenericDAL:
             # Create default settings if needed
             settings = session.query(DashboardSettings).first()
             if settings is None:
-                default_settings = DashboardSettings(key_index="retention", value_index="90")
-                session.add(default_settings)
+                default_retention = DashboardSettings(key_index="retention", value_index={"days": "90"})
+                default_vms = DashboardSettings(key_index="vms", value_index={"type": "", "ip": "", "port": "", "username": "", "password": ""})
+                default_ai = DashboardSettings(key_index="ai", value_index={"ip": "", "type": ""})
+                session.add(default_retention)
+                session.add(default_vms)
+                session.add(default_ai)
                 session.commit()
 
     def __init_cron(self):
@@ -363,7 +367,7 @@ class GenericDAL:
 
         with GenericDAL.SyncSession() as session:
             setting = session.query(DashboardSettings).filter(DashboardSettings.key_index == "retention").first()
-            days = int(setting.value_index) if setting else 90
+            days = int(setting.value_index["days"]) if setting else 90
         return run_async(self.async_clean)(cls, days)
     
     # ----- Asynchronous API methods -----

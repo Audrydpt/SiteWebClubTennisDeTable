@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import useAIAPI from '../hooks/use-ai';
 
 type AIType = 'Car' | 'Person' | 'Object' | undefined;
 
@@ -27,6 +28,7 @@ function IASettings() {
   const [ip, setIP] = useState<string>('');
   const [selectedAI, setSelectedAI] = useState<AIType>(undefined);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const { query, edit } = useAIAPI();
 
   const handleSubmit = () => {
     setIsSubmitting(true);

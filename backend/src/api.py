@@ -778,7 +778,7 @@ class FastAPIServer:
         
         Model = create_model('SettingsModel',
             key=(str, Field(description="Setting key")),
-            value=(str, Field(description="Setting value"))
+            value=(Union[Dict[str, Any], List[Any], str, int, bool, None], Field(description="Setting value (can be any JSON value)"))
         )
 
         @self.app.get("/dashboard/settings", tags=["dashboard/settings"])
@@ -821,6 +821,41 @@ class FastAPIServer:
                 
             except ValueError as e:
                 logger.error(f"Error updating setting '{key}': {str(e)}")
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.patch("/dashboard/settings", tags=["dashboard/settings"])
+        async def patch_all_settings(data: dict):
+            try:
+                dal = GenericDAL()
+
+                # Get all settings
+                settings = await dal.async_get(DashboardSettings)
+                if not settings:
+                    raise HTTPException(status_code=404, detail="Dashboard settings not found")
+
+                # Create a dictionary for quick access
+                settings_dict = {setting.key_index: setting for setting in settings}
+                
+                # Validate all keys exist in the settings
+                invalid_keys = [key for key in data.keys() if key not in settings_dict]
+                if invalid_keys:
+                    raise HTTPException(
+                        status_code=404, 
+                        detail=f"Settings not found: {', '.join(invalid_keys)}"
+                    )
+                
+                # Update settings
+                updated_settings = []
+                for key, value in data.items():
+                    setting = settings_dict[key]
+                    setting.value_index = value
+                    updated = await dal.async_update(setting)
+                    updated_settings.append({"key": key, "value": value})
+                
+                return {"status": "success", "updated_settings": updated_settings}
+            
+            except ValueError as e:
+                logger.error(f"Error updating settings: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
         
     def __create_endpoint(self, path: str, model_class: Type, agg_func=None):
