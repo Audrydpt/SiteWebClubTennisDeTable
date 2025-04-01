@@ -21,6 +21,8 @@ file_handler = logging.FileHandler(f"/tmp/{__name__}.log")
 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 logger.addHandler(file_handler)
 
+TIMEOUT = 10.0
+
 """
  { "Message": "Time Out of stream, image too old", "Type": "INFO", "Time": "{rawDataContent.FrameTime}"}
  { "Message": "Time Out of stream", "Type": "INFO" }
@@ -48,7 +50,7 @@ class CameraClient:
     async def __aexit__(self, exc_type, exc, tb):
         if self.writer:
             self.writer.close()
-            await asyncio.wait_for(self.writer.wait_closed(), timeout=5.0)
+            await asyncio.wait_for(self.writer.wait_closed(), timeout=TIMEOUT)
     
     async def _send_request(self, xml_content: str):
         content_length = len(xml_content)
@@ -62,14 +64,14 @@ class CameraClient:
         try:
             self.reader, self.writer = await asyncio.wait_for(
                 asyncio.open_connection(self.host, self.port),
-                timeout=5.0
+                timeout=TIMEOUT
             )
             self.writer.write(http_request.encode("utf-8"))
-            await asyncio.wait_for(self.writer.drain(), timeout=5.0)
+            await asyncio.wait_for(self.writer.drain(), timeout=TIMEOUT)
 
             headers = {}
             while True:
-                line = await asyncio.wait_for(self.reader.readline(), timeout=5.0)
+                line = await asyncio.wait_for(self.reader.readline(), timeout=TIMEOUT)
                 if not line or line == b"\r\n":
                     break
                 try:
@@ -84,7 +86,7 @@ class CameraClient:
             logger.info(f"Longueur du contenu: {total_length}")
 
             if total_length > 0:
-                body = await asyncio.wait_for(self.reader.readexactly(total_length), timeout=10.0)
+                body = await asyncio.wait_for(self.reader.readexactly(total_length), timeout=TIMEOUT*2)
             else:
                 body = b""
 
@@ -111,7 +113,7 @@ class CameraClient:
         finally:
             if self.writer:
                 self.writer.close()
-                await asyncio.wait_for(self.writer.wait_closed(), timeout=5.0)
+                await asyncio.wait_for(self.writer.wait_closed(), timeout=TIMEOUT)
 
     async def _stream_request(self, xml_content: str) -> AsyncGenerator:
         content_length = len(xml_content)
@@ -125,16 +127,16 @@ class CameraClient:
         try:
             self.reader, self.writer = await asyncio.wait_for(
                 asyncio.open_connection(self.host, self.port),
-                timeout=5.0
+                timeout=TIMEOUT
             )
             self.writer.write(http_request.encode("utf-8"))
-            await asyncio.wait_for(self.writer.drain(), timeout=5.0)
+            await asyncio.wait_for(self.writer.drain(), timeout=TIMEOUT)
 
             while True:
  
                 headers = {}
                 while True:
-                    line = await asyncio.wait_for(self.reader.readline(), timeout=5.0)
+                    line = await asyncio.wait_for(self.reader.readline(), timeout=TIMEOUT)
                     if not line or line == b"\r\n":
                         break
                     try:
@@ -149,7 +151,7 @@ class CameraClient:
                 logger.info(f"Longueur du contenu: {total_length}")
 
                 if total_length > 0:
-                    body = await asyncio.wait_for(self.reader.readexactly(total_length), timeout=10.0)
+                    body = await asyncio.wait_for(self.reader.readexactly(total_length), timeout=TIMEOUT*2)
                 else:
                     body = b""
 
@@ -175,7 +177,7 @@ class CameraClient:
         finally:
             if self.writer:
                 self.writer.close()
-                await asyncio.wait_for(self.writer.wait_closed(), timeout=5.0)
+                await asyncio.wait_for(self.writer.wait_closed(), timeout=TIMEOUT)
   
     async def get_system_info(self) -> Optional[Dict[str, str]]:
         xml = """<?xml version="1.0" encoding="UTF-8"?><methodcall><requestid>0</requestid><methodname>systeminfo</methodname></methodcall>"""
