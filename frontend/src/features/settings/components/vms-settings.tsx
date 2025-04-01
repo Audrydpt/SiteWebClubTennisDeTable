@@ -1,6 +1,9 @@
 import { CheckCircle, Video, XCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import { toast } from 'sonner';
+import useVMSAPI from '../hooks/use-vms';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -29,30 +32,47 @@ function VMSSettings() {
   const [port, setPort] = useState<string>('');
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  const [isIPValid, setIsIPValid] = useState<boolean | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isTesting, setIsTesting] = useState<boolean>(false);
   const [isTestSuccessful, setIsTestSuccessful] = useState<boolean>(false);
   const [isTestAttempted, setIsTestAttempted] = useState<boolean>(false);
+  const { query, edit } = useVMSAPI();
 
-  const handleSubmit = () => {
-    setIsSubmitting(true);
-    // Simulate an API call
-    setTimeout(() => {
-      setIsSubmitting(false);
-      // Here you would typically handle the API response
-      console.log('VMS Settings:', {
-        selectedVMS,
-        ip,
-        port,
-        username,
-        password,
-      });
-    }, 2000);
+  useEffect(() => {
+    if (query.data && query.data.vms) {
+      const {
+        type,
+        ip: savedIP,
+        port: savedPort,
+        username: savedUsername,
+        password: savedPassword,
+      } = JSON.parse(query.data.vms);
+      setSelectedVMS(type);
+      setIP(savedIP);
+      setPort(savedPort);
+      setUsername(savedUsername);
+      setPassword(savedPassword);
+    }
+  }, [query.data]);
+
+  const isValidIP = (newIP: string): boolean => {
+    // IPv4 regex pattern
+    const ipv4Pattern =
+      /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    return ipv4Pattern.test(newIP);
   };
 
   const handleIPChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target;
     setIP(value);
+
+    if (value) {
+      setIsIPValid(isValidIP(value));
+      setIP(value);
+    } else {
+      setIsIPValid(undefined);
+    }
   };
 
   const handlePortChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,11 +91,10 @@ function VMSSettings() {
   };
 
   const handleTestCredentials = () => {
-    // Simulate an API call to test the credentials
     setIsTesting(true);
     setTimeout(() => {
-      // Simulate a successful test
       setIsTestSuccessful(true);
+      // eslint-disable-next-line no-console
       console.log('Testing credentials:', {
         username,
         password,
@@ -83,6 +102,39 @@ function VMSSettings() {
       setIsTestAttempted(true);
       setIsTesting(false);
     }, 2000);
+  };
+
+  const handleSubmit = () => {
+    setIsSubmitting(true);
+    edit(
+      {
+        type: selectedVMS || '',
+        ip,
+        port,
+        username,
+        password,
+      },
+      {
+        onSuccess: () => {
+          setIsSubmitting(false);
+          toast(t('vms-settings.toast.success'), {
+            description: t('vms-settings.toast.description', {
+              type: selectedVMS,
+              ip,
+              port,
+              username,
+              password,
+            }),
+          });
+        },
+        onError: () => {
+          setIsSubmitting(false);
+          toast(t('vms-settings.toast.error'), {
+            description: t('vms-settings.toast.errorDescription'),
+          });
+        },
+      }
+    );
   };
 
   return (
@@ -132,9 +184,13 @@ function VMSSettings() {
                   value={ip}
                   onChange={handleIPChange}
                   type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
+                  className={isIPValid === false ? 'border-red-500' : ''}
                 />
+                {isIPValid === false && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {t('ai-settings.invalidIP')}
+                  </p>
+                )}
               </div>
               <div className="flex-1">
                 <span className="text-sm font-medium">
@@ -219,7 +275,14 @@ function VMSSettings() {
           <Button
             onClick={handleSubmit}
             className="w-full"
-            disabled={!selectedVMS || !ip || !port || !username || !password}
+            disabled={
+              !selectedVMS ||
+              !ip ||
+              !port ||
+              !username ||
+              !password ||
+              isIPValid === false
+            }
           >
             {isSubmitting
               ? t('vms-settings.actions.saving')

@@ -3,12 +3,12 @@ import axios from 'axios';
 
 type DashboardSettings = Record<string, string>;
 
-interface VMSSettings {
+interface IVMSSettings {
   type: string;
   ip: string;
   port: string;
-  username: string;
-  password: string;
+  username?: string;
+  password?: string;
 }
 
 export default function useVMSAPI() {
@@ -31,7 +31,7 @@ export default function useVMSAPI() {
   };
 
   const { mutate: edit } = useMutation({
-    mutationFn: async (value: VMSSettings) => {
+    mutationFn: async (value: IVMSSettings) => {
       const { data: updated } = await axios.put<DashboardSettings>(
         `${baseUrl}?key=vms`,
         {
@@ -41,7 +41,7 @@ export default function useVMSAPI() {
       );
       return updated;
     },
-    onMutate: async (value: VMSSettings) => {
+    onMutate: async (value: IVMSSettings) => {
       await client.cancelQueries({ queryKey });
 
       const previous = client.getQueryData<DashboardSettings>(queryKey);
