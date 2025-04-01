@@ -171,7 +171,7 @@ class Widget(Database):
     dashboard_id = Column(UUID(as_uuid=True), ForeignKey('dashboard.id'), nullable=True)
     dashboard = relationship("Dashboard", back_populates="widgets")
 
-class DashboardSettings(Database):
+class Settings(Database):
     key_index = Column(Text, nullable=False, index=True)
     value_index = Column(JSON, nullable=True, default=lambda: [])
 
@@ -322,21 +322,21 @@ class GenericDAL:
                 session.commit()
             
             # Create default settings if needed
-            settings = session.query(DashboardSettings).filter(DashboardSettings.key_index == "retention")
+            settings = session.query(Settings).filter(Settings.key_index == "retention")
             if settings is None:
-                default_retention = DashboardSettings(key_index="retention", value_index={"days": "90"})
+                default_retention = Settings(key_index="retention", value_index={"days": "90"})
                 session.add(default_retention)
                 session.commit()
 
-            settings = session.query(DashboardSettings).filter(DashboardSettings.key_index == "vms")
+            settings = session.query(Settings).filter(Settings.key_index == "vms")
             if settings is None:
-                default_vms = DashboardSettings(key_index="vms", value_index={"type": "", "ip": "", "port": "", "username": "", "password": ""})
+                default_vms = Settings(key_index="vms", value_index={"type": "", "ip": "", "port": "", "username": "", "password": ""})
                 session.add(default_vms)
                 session.commit()
             
-            settings = session.query(DashboardSettings).filter(DashboardSettings.key_index == "ai")
+            settings = session.query(Settings).filter(Settings.key_index == "ai")
             if settings is None:
-                default_ai = DashboardSettings(key_index="ai", value_index={"ip": "", "type": ""})
+                default_ai = Settings(key_index="ai", value_index={"ip": "", "type": ""})
                 session.add(default_ai)
                 session.commit()
 
@@ -374,7 +374,7 @@ class GenericDAL:
         logger.info(f"Cleaning {cls}")
 
         with GenericDAL.SyncSession() as session:
-            setting = session.query(DashboardSettings).filter(DashboardSettings.key_index == "retention").first()
+            setting = session.query(Settings).filter(Settings.key_index == "retention").first()
             days = int(setting.value_index["days"]) if setting else 90
         return run_async(self.async_clean)(cls, days)
     
