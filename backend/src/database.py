@@ -173,9 +173,9 @@ class Widget(Database):
     dashboard_id = Column(UUID(as_uuid=True), ForeignKey('dashboard.id'), nullable=True)
     dashboard = relationship("Dashboard", back_populates="widgets")
 
-class DashboardSettings(Database):
+class Settings(Database):
     key_index = Column(Text, nullable=False, index=True)
-    value_index = Column(Text, nullable=False)
+    value_index = Column(JSON, nullable=True, default=lambda: [])
 
 class GenericDAL:
     initialized = False
@@ -324,10 +324,22 @@ class GenericDAL:
                 session.commit()
             
             # Create default settings if needed
-            settings = session.query(DashboardSettings).first()
+            settings = session.query(Settings).filter(Settings.key_index == "retention")
             if settings is None:
-                default_settings = DashboardSettings(key_index="retention", value_index="90")
-                session.add(default_settings)
+                default_retention = Settings(key_index="retention", value_index={"days": "90"})
+                session.add(default_retention)
+                session.commit()
+
+            settings = session.query(Settings).filter(Settings.key_index == "vms")
+            if settings is None:
+                default_vms = Settings(key_index="vms", value_index={"type": "", "ip": "", "port": "", "username": "", "password": ""})
+                session.add(default_vms)
+                session.commit()
+            
+            settings = session.query(Settings).filter(Settings.key_index == "ai")
+            if settings is None:
+                default_ai = Settings(key_index="ai", value_index={"ip": "", "type": ""})
+                session.add(default_ai)
                 session.commit()
 
     def __init_cron(self):
@@ -365,7 +377,7 @@ class GenericDAL:
 
         with GenericDAL.SyncSession() as session:
             try:
-                setting = session.query(DashboardSettings).filter(DashboardSettings.key_index == "retention").first()
+                setting = session.query(Settings).filter(Settings.key_index == "retention").first()
                 days = int(setting.value_index) if setting else 90
                 cutoff_date = func.now() - timedelta(days=days)
                 rows = 10000

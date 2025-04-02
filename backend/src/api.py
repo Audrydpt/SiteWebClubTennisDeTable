@@ -34,7 +34,7 @@ from enum import Enum
 
 from swagger import get_custom_swagger_ui_html
 from event_grabber import EventGrabber
-from database import Dashboard, GenericDAL, Widget, DashboardSettings
+from database import Dashboard, GenericDAL, Widget, Settings
 from database import AcicAllInOneEvent, AcicCounting, AcicEvent, AcicLicensePlate, AcicNumbering, AcicOCR, AcicOccupancy, AcicUnattendedItem
 
 from pydantic import BaseModel, Field, Extra
@@ -778,14 +778,14 @@ class FastAPIServer:
         
         Model = create_model('SettingsModel',
             key=(str, Field(description="Setting key")),
-            value=(str, Field(description="Setting value"))
+            value=(Union[Dict[str, Any], List[Any], str, int, bool, None], Field(description="Setting value (can be any JSON value)"))
         )
 
         @self.app.get("/dashboard/settings", tags=["dashboard/settings"])
         async def get_settings():
             try:
                 dal = GenericDAL()
-                settings = await dal.async_get(DashboardSettings)
+                settings = await dal.async_get(Settings)
                 
                 # Return the first settings object
                 result = {}
@@ -803,7 +803,7 @@ class FastAPIServer:
             """Update a specific setting by key"""
             try:
                 dal = GenericDAL()
-                settings = await dal.async_get(DashboardSettings)
+                settings = await dal.async_get(Settings)
                 
                 setting = next((s for s in settings if s.key_index == key), None)
                 

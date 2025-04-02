@@ -23,10 +23,10 @@ import {
 import { UserPrivileges } from '@/lib/authenticate.tsx';
 import { useAuth } from '@/providers/auth-context.tsx';
 
-import FormCreateUser from './components/form-create-user.tsx';
-import FormUpdateUser from './components/form-update-user.tsx';
-import useUsersAPI from './hooks/use-users.tsx';
-import { User } from './lib/props.tsx';
+import useUsersAPI from '../hooks/use-users.tsx';
+import { User } from '../lib/props.tsx';
+import FormCreateUser from './form-create-user.tsx';
+import FormUpdateUser from './form-update-user.tsx';
 
 function UserContent() {
   const { t } = useTranslation();
