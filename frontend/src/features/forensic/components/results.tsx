@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier,@typescript-eslint/no-explicit-any */
 import {
   ChevronDown,
   ChevronUp,
@@ -25,6 +25,7 @@ import {
   calculateTimeRemaining,
   formatTimeRemaining,
 } from '@/features/forensic/lib/estimation/estimation';
+import { useAuth } from '@/providers/auth-context.tsx';
 
 // Enum to represent different sort types
 type SortType = 'score' | 'date';
@@ -34,6 +35,8 @@ interface ResultsProps {
   isSearching: boolean;
   progress: number | null;
   sourceProgress: SourceProgress[];
+  setResults: (results: ForensicResult[]) => void;
+  setJobId?: (id: string | null) => void;
 }
 
 // Function to generate random test data
@@ -90,13 +93,89 @@ export default function Results({
   isSearching,
   progress,
   sourceProgress,
+  setResults,
+  setJobId,
 }: ResultsProps) {
+  const { sessionId = '' } = useAuth();
   const [testMode, setTestMode] = useState(false);
   const [testResults, setTestResults] = useState<ForensicResult[]>([]);
   const [sortType, setSortType] = useState<SortType>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [showSourceDetails, setShowSourceDetails] = useState(false);
+
+
+  // Récupération des résultats lors du chargement
+  useEffect(() => {
+    const fetchResultsForJob = async (jobId: string) => {
+      try {
+        console.log(`🔄 Récupération des résultats pour le jobId: ${jobId}`);
+        const response = await fetch(`${process.env.MAIN_API_URL}/forensics/${jobId}`, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            Authorization: `X-Session-Id ${sessionId}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`API a retourné le statut ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.status === 'SUCCESS') {
+          console.log(`✅ Tâche ${jobId} terminée (${data.status})`);
+          console.log(`📊 ${data.results.length} résultats récupérés`);
+
+          if (data.results && data.results.length > 0) {
+            // Vérifier que setResults est disponible avant de l'utiliser
+            if (typeof setResults === 'function') {
+              // Traiter les résultats et mettre à jour
+              forensicResultsHeap.clear();
+              data.results.forEach((result: any) => {
+                if (result && result.timestamp) {
+                  const processedResult: ForensicResult = {
+                    id: result.id || crypto.randomUUID(),
+                    imageData: result.imageData || '',
+                    timestamp: result.timestamp,
+                    score: result.score || 0,
+                    attributes: result.attributes || {},
+                    cameraId: result.cameraId || 'unknown',
+                  };
+                  forensicResultsHeap.addResult(processedResult);
+                }
+              });
+
+              setResults(forensicResultsHeap.getBestResults());
+            } else {
+              console.warn("⚠️ setResults n'est pas disponible, impossible de mettre à jour les résultats");
+            }
+          }
+        }
+      } catch (error) {
+        console.error(` ❌ Erreur lors de la récupération des résultats: ${error}`);
+      }
+    };
+
+    // Récupérer le jobId stocké dans localStorage
+    const storedJobId = localStorage.getItem('currentJobId');
+    if (storedJobId) {
+      console.log(`🔍 Reprise de la tâche avec le jobId: ${storedJobId}`);
+      if (typeof setJobId === 'function') {
+        setJobId(storedJobId);
+
+        // Déclencher un événement personnalisé pour reconnecter le WebSocket
+        const reconnectEvent = new CustomEvent('reconnect-forensic-websocket', {
+          detail: { jobId: storedJobId }
+        });
+        window.dispatchEvent(reconnectEvent);
+      }
+
+      fetchResultsForJob(storedJobId);
+    }
+  }, [sessionId]);
 
   // Generate stable skeleton IDs
   const skeletonIds = useMemo(

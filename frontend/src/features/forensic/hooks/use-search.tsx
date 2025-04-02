@@ -270,9 +270,36 @@ export default function useSearch() {
     [cleanupResources]
   );
 
+  // Dans useSearch.tsx, ajoutez ceci dans une useEffect
+  useEffect(() => {
+    const handleReconnectWebSocket = (event: CustomEvent) => {
+      // eslint-disable-next-line @typescript-eslint/no-shadow
+      const { jobId } = event.detail;
+      if (jobId) {
+        console.log(`🔄 Reconnexion au WebSocket pour le jobId: ${jobId}`);
+        setJobId(jobId);
+        setIsSearching(true);
+        initWebSocket(jobId);
+      }
+    };
+
+    // Ajouter l'écouteur d'événements
+    window.addEventListener(
+      'reconnect-forensic-websocket',
+      handleReconnectWebSocket as EventListener
+    );
+
+    return () => {
+      // Supprimer l'écouteur lors du démontage
+      window.removeEventListener(
+        'reconnect-forensic-websocket',
+        handleReconnectWebSocket as EventListener
+      );
+    };
+  }, [initWebSocket]);
+
   const startSearch = useCallback(
     async (formData: CustomFormData) => {
-      console.log('hi');
       try {
         // Reset states
         setResults([]);
@@ -298,8 +325,6 @@ export default function useSearch() {
 
         // Format query and make API call
         const queryData = formatQuery(formData);
-        console.log('queryData', queryData);
-
         const response = await fetch(`${process.env.MAIN_API_URL}/forensics`, {
           method: 'POST',
           headers: {
@@ -322,6 +347,9 @@ export default function useSearch() {
           throw new Error('No job ID returned from API');
         }
 
+        // Stocker le jobId dans le localStorage
+        localStorage.setItem('currentJobId', guid);
+
         // Initialize source progress with selected sources
         const selectedSources = formData.cameras || [];
         initializeSourceProgress(selectedSources);
@@ -331,7 +359,6 @@ export default function useSearch() {
         initWebSocket(guid);
         return guid;
       } catch (error) {
-        // Ne pas logger d'erreur si c'est une annulation intentionnelle
         if (error instanceof Error && error.name !== 'AbortError') {
           console.error('❌ Erreur lors du démarrage de la recherche:', error);
         }
