@@ -777,8 +777,7 @@ class FastAPIServer:
         """Create endpoints to manage dashboard settings"""
         
         Model = create_model('SettingsModel',
-            key=(str, Field(description="Setting key")),
-            value=(Union[Dict[str, Any], List[Any], str, int, bool, None], Field(description="Setting value (can be any JSON value)"))
+            value=Field(description="Setting value (can be any JSON value)")
         )
 
         @self.app.get("/dashboard/settings", tags=["dashboard/settings"])
@@ -798,7 +797,7 @@ class FastAPIServer:
                 logger.error(f"Error retrieving dashboard settings: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.put("/dashboard/settings", tags=["dashboard/settings"])
+        @self.app.put("/dashboard/settings/{key}", tags=["dashboard/settings"])
         async def update_settings(key: str, data: Model):
             """Update a specific setting by key"""
             try:

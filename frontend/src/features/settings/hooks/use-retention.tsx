@@ -25,10 +25,9 @@ export default function useRetentionAPI() {
   const { mutate: edit } = useMutation({
     mutationFn: async (value: number) => {
       const { data: updated } = await axios.put<DashboardSettings>(
-        `${baseUrl}?key=retention`,
+        `${baseUrl}/retention`,
         {
-          key: 'retention',
-          value: `{"days": "${value}"}`,
+          value: { days: value },
         }
       );
       return updated;
@@ -40,7 +39,7 @@ export default function useRetentionAPI() {
 
       client.setQueryData<DashboardSettings>(queryKey, (old) => ({
         ...old,
-        retention: `{"days": "${value}"}`,
+        retention: JSON.stringify({ days: value }),
       }));
 
       return { previous };
