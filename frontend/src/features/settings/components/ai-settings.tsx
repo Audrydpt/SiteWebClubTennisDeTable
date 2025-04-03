@@ -31,17 +31,18 @@ function IASettings() {
   const [selectedAI, setSelectedAI] = useState<AIType>(undefined);
   const [port, setPort] = useState<string>('');
   const [isIPValid, setIsIPValid] = useState<boolean | undefined>(undefined);
+  const [isPortValid, setIsPortValid] = useState<boolean | undefined>(
+    undefined
+  );
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const { query, edit } = useAIAPI();
 
   useEffect(() => {
     if (query.data && query.data.ai) {
-      const { ip: savedIP, type } = query.data.ai;
+      const { ip: savedIP, port: savedPort, type } = query.data.ai;
       setIP(savedIP);
+      setPort(savedPort);
       setSelectedAI(type);
-      console.log('AI query data:', query.data.ai);
-      console.log('AI type:', type);
-      console.log('AI IP:', savedIP);
     }
   }, [query.data]);
 
@@ -58,15 +59,26 @@ function IASettings() {
 
     if (value) {
       setIsIPValid(isValidIP(value));
-      setIP(value);
     } else {
       setIsIPValid(undefined);
     }
   };
 
+  const isValidPort = (newPort: string): boolean => {
+    // Port pattern: numbers only, max 4 digits
+    const portPattern = /^[0-9]{1,4}$/;
+    return portPattern.test(newPort);
+  };
+
   const handlePortChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target;
     setPort(value);
+
+    if (value) {
+      setIsPortValid(isValidPort(value));
+    } else {
+      setIsPortValid(undefined);
+    }
   };
 
   const handleSubmit = () => {
@@ -74,6 +86,7 @@ function IASettings() {
     edit(
       {
         ip,
+        port,
         type: selectedAI || '',
       },
       {
@@ -136,9 +149,13 @@ function IASettings() {
                   value={port}
                   onChange={handlePortChange}
                   type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
+                  className={isPortValid === false ? 'border-red-500' : ''}
                 />
+                {isPortValid === false && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {t('ai-settings.invalidPort')}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -170,7 +187,13 @@ function IASettings() {
           <Button
             onClick={handleSubmit}
             className="w-full"
-            disabled={!selectedAI || !ip || !port || isIPValid === false}
+            disabled={
+              !selectedAI ||
+              !ip ||
+              !port ||
+              isIPValid === false ||
+              isPortValid === false
+            }
           >
             {isSubmitting
               ? t('ai-settings.actions.saving')

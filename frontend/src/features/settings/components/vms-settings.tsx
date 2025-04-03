@@ -33,10 +33,14 @@ function VMSSettings() {
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [isIPValid, setIsIPValid] = useState<boolean | undefined>(undefined);
+  const [isPortValid, setIsPortValid] = useState<boolean | undefined>(
+    undefined
+  );
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isTesting, setIsTesting] = useState<boolean>(false);
   const [isTestSuccessful, setIsTestSuccessful] = useState<boolean>(false);
   const [isTestAttempted, setIsTestAttempted] = useState<boolean>(false);
+  const [isCredentialNeeded, setIsCredentialNeeded] = useState<boolean>(false);
   const { query, edit } = useVMSAPI();
 
   useEffect(() => {
@@ -53,12 +57,6 @@ function VMSSettings() {
       setPort(savedPort);
       setUsername(savedUsername);
       setPassword(savedPassword);
-      console.log('VMS query data:', query.data.vms);
-      console.log('VMS type:', type);
-      console.log('VMS IP:', savedIP);
-      console.log('VMS port:', savedPort);
-      console.log('VMS username:', savedUsername);
-      console.log('VMS password:', savedPassword);
     }
   }, [query.data]);
 
@@ -75,15 +73,26 @@ function VMSSettings() {
 
     if (value) {
       setIsIPValid(isValidIP(value));
-      setIP(value);
     } else {
       setIsIPValid(undefined);
     }
   };
 
+  const isValidPort = (newPort: string): boolean => {
+    // Port pattern: numbers only, max 4 digits
+    const portPattern = /^[0-9]{1,4}$/;
+    return portPattern.test(newPort);
+  };
+
   const handlePortChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target;
     setPort(value);
+
+    if (value) {
+      setIsPortValid(isValidPort(value));
+    } else {
+      setIsPortValid(undefined);
+    }
   };
 
   const handleUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,7 +168,12 @@ function VMSSettings() {
               {t('vms-settings.selectVMS')}
             </span>
             <Select
-              onValueChange={(value) => setSelectedVMS(value as VmsType)}
+              onValueChange={(value) => {
+                setSelectedVMS(value as VmsType);
+                if (value === 'Milestone') {
+                  setIsCredentialNeeded(true);
+                }
+              }}
               value={selectedVMS}
             >
               <SelectTrigger className="w-full">
@@ -207,9 +221,13 @@ function VMSSettings() {
                   value={port}
                   onChange={handlePortChange}
                   type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
+                  className={isPortValid === false ? 'border-red-500' : ''}
                 />
+                {isPortValid === false && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {t('vms-settings.invalidPort')}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -282,12 +300,19 @@ function VMSSettings() {
             onClick={handleSubmit}
             className="w-full"
             disabled={
-              !selectedVMS ||
-              !ip ||
-              !port ||
-              !username ||
-              !password ||
-              isIPValid === false
+              isCredentialNeeded
+                ? !selectedVMS ||
+                  !ip ||
+                  !port ||
+                  !username ||
+                  !password ||
+                  isIPValid === false ||
+                  isPortValid === false
+                : !selectedVMS ||
+                  !ip ||
+                  !port ||
+                  isIPValid === false ||
+                  isPortValid === false
             }
           >
             {isSubmitting
