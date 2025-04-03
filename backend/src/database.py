@@ -324,19 +324,19 @@ class GenericDAL:
                 session.commit()
             
             # Create default settings if needed
-            settings_retention = session.query(Settings).filter(Settings.key_index == "retention")
+            settings_retention = session.query(Settings).filter(Settings.key_index == "retention").first()
             if settings_retention is None:
                 default_retention = Settings(key_index="retention", value_index={"days": "90"})
                 session.add(default_retention)
                 session.commit()
 
-            settings_vms = session.query(Settings).filter(Settings.key_index == "vms")
+            settings_vms = session.query(Settings).filter(Settings.key_index == "vms").first()
             if settings_vms is None:
                 default_vms = Settings(key_index="vms", value_index={"type": "", "ip": "", "port": "", "username": "", "password": ""})
                 session.add(default_vms)
                 session.commit()
             
-            settings_ai = session.query(Settings).filter(Settings.key_index == "ai")
+            settings_ai = session.query(Settings).filter(Settings.key_index == "ai").first()
             if settings_ai is None:
                 default_ai = Settings(key_index="ai", value_index={"ip": "", "type": ""})
                 session.add(default_ai)
