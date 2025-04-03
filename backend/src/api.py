@@ -777,7 +777,7 @@ class FastAPIServer:
         """Create endpoints to manage dashboard settings"""
         
         Model = create_model('SettingsModel',
-            value=Field(description="Setting value (can be any JSON value)")
+            value=Field(JSON ,description="Setting value (can be any JSON value)")
         )
 
         @self.app.get("/dashboard/settings", tags=["dashboard/settings"])
