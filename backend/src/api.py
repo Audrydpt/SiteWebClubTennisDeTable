@@ -533,7 +533,16 @@ class FastAPIServer:
                 logger.error(f"Erreur lors de la récupération des résultats de la tâche {guid}: {e}")
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
-        
+
+        @self.app.get("/forensics/{guid}/frames/{frameId}", tags=["forensics"])
+        async def get_frame(guid: str, frameId: str):
+            try:
+
+            except Exception as e:
+                logger.error(f"Erreur lors de la récupération du cadre {frameId} pour la tâche {guid}: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=traceback.format_exc())
+
     def __create_vms(self):
         @self.app.get("/vms/{ip}/cameras", tags=["vms"])
         async def get_cameras(ip: str):

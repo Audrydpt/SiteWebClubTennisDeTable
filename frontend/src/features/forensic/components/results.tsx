@@ -23,10 +23,8 @@ import forensicResultsHeap from '../lib/data-structure/heap';
 import { ForensicResult, SourceProgress } from '../lib/types';
 import {
   calculateTimeRemaining,
-  formatTimeRemaining,
 } from '@/features/forensic/lib/estimation/estimation';
-import { useAuth } from '@/providers/auth-context.tsx';
-
+import useSearch from '../hooks/use-search.tsx';
 // Enum to represent different sort types
 type SortType = 'score' | 'date';
 
@@ -35,8 +33,6 @@ interface ResultsProps {
   isSearching: boolean;
   progress: number | null;
   sourceProgress: SourceProgress[];
-  setResults: (results: ForensicResult[]) => void;
-  setJobId?: (id: string | null) => void;
 }
 
 // Function to generate random test data
@@ -93,89 +89,23 @@ export default function Results({
   isSearching,
   progress,
   sourceProgress,
-  setResults,
-  setJobId,
 }: ResultsProps) {
-  const { sessionId = '' } = useAuth();
   const [testMode, setTestMode] = useState(false);
   const [testResults, setTestResults] = useState<ForensicResult[]>([]);
   const [sortType, setSortType] = useState<SortType>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [showSourceDetails, setShowSourceDetails] = useState(false);
+  const { resumeJob } = useSearch();
 
-
-  // Récupération des résultats lors du chargement
-  useEffect(() => {
-    const fetchResultsForJob = async (jobId: string) => {
-      try {
-        console.log(`🔄 Récupération des résultats pour le jobId: ${jobId}`);
-        const response = await fetch(`${process.env.MAIN_API_URL}/forensics/${jobId}`, {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            Authorization: `X-Session-Id ${sessionId}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`API a retourné le statut ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.status === 'SUCCESS') {
-          console.log(`✅ Tâche ${jobId} terminée (${data.status})`);
-          console.log(`📊 ${data.results.length} résultats récupérés`);
-
-          if (data.results && data.results.length > 0) {
-            // Vérifier que setResults est disponible avant de l'utiliser
-            if (typeof setResults === 'function') {
-              // Traiter les résultats et mettre à jour
-              forensicResultsHeap.clear();
-              data.results.forEach((result: any) => {
-                if (result && result.timestamp) {
-                  const processedResult: ForensicResult = {
-                    id: result.id || crypto.randomUUID(),
-                    imageData: result.imageData || '',
-                    timestamp: result.timestamp,
-                    score: result.score || 0,
-                    attributes: result.attributes || {},
-                    cameraId: result.cameraId || 'unknown',
-                  };
-                  forensicResultsHeap.addResult(processedResult);
-                }
-              });
-
-              setResults(forensicResultsHeap.getBestResults());
-            } else {
-              console.warn("⚠️ setResults n'est pas disponible, impossible de mettre à jour les résultats");
-            }
-          }
-        }
-      } catch (error) {
-        console.error(` ❌ Erreur lors de la récupération des résultats: ${error}`);
-      }
-    };
-
-    // Récupérer le jobId stocké dans localStorage
-    const storedJobId = localStorage.getItem('currentJobId');
-    if (storedJobId) {
-      console.log(`🔍 Reprise de la tâche avec le jobId: ${storedJobId}`);
-      if (typeof setJobId === 'function') {
-        setJobId(storedJobId);
-
-        // Déclencher un événement personnalisé pour reconnecter le WebSocket
-        const reconnectEvent = new CustomEvent('reconnect-forensic-websocket', {
-          detail: { jobId: storedJobId }
-        });
-        window.dispatchEvent(reconnectEvent);
-      }
-
-      fetchResultsForJob(storedJobId);
+  const handleResumeLastSearch = () => {
+    const lastJobId = localStorage.getItem('currentJobId');
+    if (lastJobId) {
+      resumeJob(lastJobId);
     }
-  }, [sessionId]);
+  };
+
+
 
   // Generate stable skeleton IDs
   const skeletonIds = useMemo(
@@ -432,89 +362,52 @@ export default function Results({
 
   // Results are already sorted by the heap in useSearch, so we can use them directly
   const renderSearchResults = () => {
-    if (displayResults.length > 0) {
+    // Ajouter un log pour déboguer
+    console.log('Affichage des résultats:', {
+      displayResults: displayResults.length,
+      isSearching,
+      progress
+    });
+    if (displayResults && displayResults.length > 0) {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {sortedResults.map((result: ForensicResult) => {
             const timestamp = new Date(result.timestamp);
-
             return (
               <Popover key={result.id}>
                 <PopoverTrigger asChild>
                   <div className="border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-card cursor-pointer relative group">
                     <div className="relative">
-                      <img
-                        src={result.imageData}
-                        alt="Forensic result"
-                        className="w-full h-auto object-cover aspect-[16/9]"
-                      />
+                      {result.imageData ? (
+                        <img
+                          src={result.imageData}
+                          alt="Forensic result"
+                          className="w-full h-auto object-cover aspect-[16/9]"
+                        />
+                      ) : (
+                        <div className="w-full aspect-[16/9] bg-muted flex items-center justify-center">
+                        <span className="text-muted-foreground text-sm">
+                          Pas d&#39;image
+                        </span>
+                        </div>
+                      )}
                       <div
                         className="absolute top-2 right-2 text-white rounded-full px-2 py-0.5 text-xs font-medium"
                         style={{
-                          backgroundColor: getScoreBackgroundColor(
-                            result.score
-                          ),
+                          backgroundColor: getScoreBackgroundColor(result.score),
                         }}
                       >
                         {(result.score * 100).toFixed(1)}%
                       </div>
-
-                      {/* Add expand button */}
-                      <button
-                        className="absolute bottom-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setExpandedImage(result.imageData);
-                        }}
-                        aria-label="Agrandir l'image"
-                        type="button"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <polyline points="15 3 21 3 21 9" />
-                          <polyline points="9 21 3 21 3 15" />
-                          <line x1="21" y1="3" x2="14" y2="10" />
-                          <line x1="3" y1="21" x2="10" y2="14" />
-                        </svg>
-                      </button>
                     </div>
-                    <div className="p-4 space-y-2">
-                      <div className="flex items-center text-xs text-muted-foreground">
-                        <svg
-                          className="w-3.5 h-3.5 mr-1.5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        {timestamp.toLocaleString('fr-FR', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                    <div className="p-4">
+                      <div className="text-xs text-muted-foreground">
+                        {timestamp.toLocaleString('fr-FR')}
                       </div>
                     </div>
                   </div>
                 </PopoverTrigger>
-                <PopoverContent className="w-80">
+                <PopoverContent>
                   <div className="space-y-2">
                     <h3 className="font-medium text-sm">Métadonnées</h3>
                     <div className="grid grid-cols-2 gap-1 text-sm">
@@ -655,6 +548,9 @@ export default function Results({
             {testMode ? 'Arrêter' : 'Tester'}
           </Button>
           */}
+          <Button onClick={handleResumeLastSearch}>
+            Reprendre
+          </Button>
         </div>
       </div>
 
