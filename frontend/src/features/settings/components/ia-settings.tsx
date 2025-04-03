@@ -36,9 +36,12 @@ function IASettings() {
 
   useEffect(() => {
     if (query.data && query.data.ai) {
-      const { ip: savedIP, type } = JSON.parse(query.data.ai);
+      const { ip: savedIP, type } = query.data.ai;
       setIP(savedIP);
       setSelectedAI(type);
+      console.log('AI query data:', query.data.ai);
+      console.log('AI type:', type);
+      console.log('AI IP:', savedIP);
     }
   }, [query.data]);
 

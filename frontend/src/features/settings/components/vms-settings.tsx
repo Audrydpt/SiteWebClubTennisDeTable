@@ -47,12 +47,18 @@ function VMSSettings() {
         port: savedPort,
         username: savedUsername,
         password: savedPassword,
-      } = JSON.parse(query.data.vms);
+      } = query.data.vms;
       setSelectedVMS(type);
       setIP(savedIP);
       setPort(savedPort);
       setUsername(savedUsername);
       setPassword(savedPassword);
+      console.log('VMS query data:', query.data.vms);
+      console.log('VMS type:', type);
+      console.log('VMS IP:', savedIP);
+      console.log('VMS port:', savedPort);
+      console.log('VMS username:', savedUsername);
+      console.log('VMS password:', savedPassword);
     }
   }, [query.data]);
 

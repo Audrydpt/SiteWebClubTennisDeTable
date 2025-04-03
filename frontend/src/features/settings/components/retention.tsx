@@ -27,7 +27,7 @@ function Retention() {
 
   useEffect(() => {
     if (query.data && query.data.retention) {
-      const days = Number(query.data.retention);
+      const days = Number(query.data.retention.days);
       setRetentionDays(days);
     }
   }, [query.data]);
