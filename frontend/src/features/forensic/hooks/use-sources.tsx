@@ -8,7 +8,6 @@ interface Camera {
 }
 
 const BASE_URL = process.env.MAIN_API_URL || '';
-const DEFAULT_VMS_IP = '192.168.20.72'; // Default VMS IP
 
 // Helper function to get auth header if needed
 const getAuthHeader = (sessionId: string) => ({
@@ -17,7 +16,6 @@ const getAuthHeader = (sessionId: string) => ({
 
 export default function useSources(
   sessionId: string,
-  vmsIp: string = DEFAULT_VMS_IP, // n'a pas de sens de venir de l'extérieur, ta classe Source devrait être "self-contained" pour gérer ça
   initialSelectedCameras: string[] = [] // idem non? pourquoi t'as besoin de ça ?
 ) {
   const [selectedCameras, setSelectedCameras] = useState<string[]>(
@@ -29,9 +27,9 @@ export default function useSources(
 
   // Fetch all available cameras from the VMS
   const camerasQuery = useQuery({
-    queryKey: ['vms-cameras', vmsIp, sessionId],
+    queryKey: ['vms-cameras', sessionId],
     queryFn: async () => {
-      const response = await fetch(`${BASE_URL}/vms/${vmsIp}/cameras`, {
+      const response = await fetch(`${BASE_URL}/vms/cameras`, {
         headers: getAuthHeader(sessionId),
       });
 
@@ -54,7 +52,7 @@ export default function useSources(
 
   // Fetch snapshots for all cameras
   const snapshotsQuery = useQuery({
-    queryKey: ['vms-snapshots', vmsIp, cameras],
+    queryKey: ['vms-snapshots', cameras],
     queryFn: async () => {
       if (!cameras || cameras.length === 0) return {};
 
@@ -74,7 +72,7 @@ export default function useSources(
         cameras.map(async (camera) => {
           try {
             const response = await fetch(
-              `${BASE_URL}/vms/${vmsIp}/cameras/${camera.id}/live`,
+              `${BASE_URL}/vms/cameras/${camera.id}/live`,
               { headers: getAuthHeader(sessionId) }
             );
 
