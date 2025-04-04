@@ -343,6 +343,7 @@ class MilestoneCameraClient(CameraClient):
         else:
             raise ValueError(f"Méthode d'authentification invalide: {auth_method}")
         self.__token = None
+        self.__token_expiration = None
         self.requestid = 1
 
         self.__is_fallback = is_fallback
@@ -442,6 +443,10 @@ class MilestoneCameraClient(CameraClient):
 
         data = self._send_request(header, body)
         self.__token = data.find(".//ns:Token", {"ns": self.__namespace}).text
+
+        TTL = int(data.find(".//ns:TimeToLive/ns:MicroSeconds", {"ns": self.__namespace}).text)/1000000 - 30
+        self.__token_expiration = datetime.datetime.now() + datetime.timedelta(seconds=TTL)
+
         return self.__token
     
     def _logout(self):
@@ -463,6 +468,13 @@ class MilestoneCameraClient(CameraClient):
 
         data = self._send_request(header, body)
 
+    def _refresh_token(self):
+        if self.__token_expiration < datetime.datetime.now():
+            self._login()
+            return True
+        else:
+            return False
+    
     def _parse_stream_packet(self, data: bytes):
         format_str = '>HIHHHQQI'
         expected_size = struct.calcsize(format_str)
@@ -602,6 +614,19 @@ class MilestoneCameraClient(CameraClient):
             else:
                 print(data)
                 break # ??? end of stream ?
+
+            if self._refresh_token():
+                connectupdate = (
+                    f'<?xml version="1.0" encoding="UTF-8"?>'
+                    f"<methodcall>"
+                    f"<requestid>{self.requestid}</requestid>"
+                    f"<methodname>connectupdate</methodname>"
+                    f"<connectparam>id={camera_guid}&amp;connectiontoken={self.__token}</connectparam>"
+                    f"</methodcall>\r\n\r\n"
+                ).encode("utf-8")
+                self.requestid += 1
+                self.writer.write(connectupdate)
+                await asyncio.wait_for(self.writer.drain(), timeout=TIMEOUT)
         
     async def start_replay(self, camera_guid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0) -> AsyncGenerator[Tuple[np.ndarray, str], None]:
         if not self.__token:
@@ -622,7 +647,6 @@ class MilestoneCameraClient(CameraClient):
         recorder = system_info[camera_guid]
         host = Resolver().resolve(recorder["HostName"])
         port = int(recorder["WebServerUri"].split("/")[2].split(":")[1])
-        print(recorder, port)
 
         self.requestid = 1
         self.reader, self.writer = await asyncio.wait_for(
@@ -753,6 +777,19 @@ class MilestoneCameraClient(CameraClient):
             else:
                 print("hmmm? ", data)
                 break # ??? end of stream ?
+
+            if self._refresh_token():
+                connectupdate = (
+                    f'<?xml version="1.0" encoding="UTF-8"?>'
+                    f"<methodcall>"
+                    f"<requestid>{self.requestid}</requestid>"
+                    f"<methodname>connectupdate</methodname>"
+                    f"<connectparam>id={camera_guid}&amp;connectiontoken={self.__token}</connectparam>"
+                    f"</methodcall>\r\n\r\n"
+                ).encode("utf-8")
+                self.requestid += 1
+                self.writer.write(connectupdate)
+                await asyncio.wait_for(self.writer.drain(), timeout=TIMEOUT)
 
 
 async def process_replay_stream(client, camera_guid, from_time, to_time, gap, name):
