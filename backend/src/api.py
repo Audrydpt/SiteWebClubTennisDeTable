@@ -26,7 +26,7 @@ from starlette.requests import Request
 
 from gunicorn.app.base import BaseApplication
 
-
+from backend.src.task_manager import JobResult, ResultsStore
 from task_manager import JobStatus, TaskManager
 
 from typing import Annotated, Literal, Optional, Type, Union, List, Dict, Any
@@ -534,6 +534,20 @@ class FastAPIServer:
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
         
+        @self.app.get("/forensics/{guid}/frames/{frameId}", tags=["forensics"])
+        async def get_frame(guid: str, frameId: str):
+            try:
+                frame = await ResultsStore.get_frame(guid, frameId)
+
+                if frame is None:
+                    raise HTTPException(status_code=404, detail="Frame not found")
+
+                return Response(content=frame, status_code=200, headers={"Content-Type": "image/jpeg"})
+            except Exception as e:
+                logger.error(f"Erreur lors de la récupération de la frame {frameId} pour la tâche {guid}: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=traceback.format_exc())
+
     async def __get_vms_config(self):
         """get configuration for VMS"""
         dal = GenericDAL()
@@ -549,7 +563,7 @@ class FastAPIServer:
         port = vms_config.get("port", None)
         
         return ip, port
-    
+
     def __create_vms(self):
 
         @self.app.get("/vms/cameras", tags=["vms"])

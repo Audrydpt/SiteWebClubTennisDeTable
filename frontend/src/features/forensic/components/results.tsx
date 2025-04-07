@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier,@typescript-eslint/no-explicit-any,no-console */
 import {
   ChevronDown,
   ChevronUp,
@@ -23,9 +23,8 @@ import forensicResultsHeap from '../lib/data-structure/heap';
 import { ForensicResult, SourceProgress } from '../lib/types';
 import {
   calculateTimeRemaining,
-  formatTimeRemaining,
 } from '@/features/forensic/lib/estimation/estimation';
-
+import useSearch from '../hooks/use-search.tsx';
 // Enum to represent different sort types
 type SortType = 'score' | 'date';
 
@@ -85,8 +84,9 @@ const extractCameraInfo = (cameraId: string) => {
   };
 };
 
+// eslint-disable-next-line no-empty-pattern
 export default function Results({
-  results,
+  results: propsResults,
   isSearching,
   progress,
   sourceProgress,
@@ -97,6 +97,25 @@ export default function Results({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [showSourceDetails, setShowSourceDetails] = useState(false);
+  const { resumeJob, displayResults } = useSearch();
+
+  const resultsToDisplay = useMemo(() => {
+    // Si une recherche est en cours, afficher les résultats des props
+    if (isSearching) {
+      return propsResults;
+    }
+
+    // Sinon, afficher les résultats du hook useSearch
+    return displayResults;
+  }, [displayResults, propsResults, isSearching]);
+
+  const handleResumeLastSearch = async () => {
+    const lastJobId = localStorage.getItem('currentJobId');
+    if (lastJobId) {
+      await resumeJob(lastJobId);
+      // Les résultats seront déjà mis à jour dans displayResults
+    }
+  };
 
   // Generate stable skeleton IDs
   const skeletonIds = useMemo(
@@ -124,14 +143,11 @@ export default function Results({
     return () => clearInterval(intervalId);
   }, [testMode]);
 
-  // Use either real results or test results based on test mode
-  const displayResults = testMode ? testResults : results;
-
   // Sort results based on current sort type and order
   const sortedResults = useMemo(() => {
-    if (!displayResults.length) return [];
+    if (!resultsToDisplay.length) return [];
 
-    return [...displayResults].sort((a, b) => {
+    return [...resultsToDisplay].sort((a, b) => {
       if (sortType === 'score') {
         return sortOrder === 'desc' ? b.score - a.score : a.score - b.score;
       }
@@ -140,7 +156,7 @@ export default function Results({
       const dateB = new Date(b.timestamp).getTime();
       return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
-  }, [displayResults, sortType, sortOrder]);
+  }, [resultsToDisplay, sortType, sortOrder]);
 
   const toggleSortType = () => {
     setSortType(sortType === 'score' ? 'date' : 'score');
@@ -161,6 +177,16 @@ export default function Results({
       return null;
     }
 
+    // Determine the status text based on conditions
+    let statusText = '';
+    if (progress === 100) {
+      statusText = '';
+    } else if (timeEstimates.combined) {
+      statusText = `• Temps restant : ${timeEstimates.combined}`;
+    } else {
+      statusText = '• Calcul du temps restant...';
+    }
+
     return (
       <div className="mt-2 mb-6 space-y-3">
         <div className="flex justify-between items-center">
@@ -168,17 +194,11 @@ export default function Results({
             <p className="text-sm font-medium text-foreground">
               Progression :{' '}
               <span className="text-primary font-semibold">
-                {progress.toFixed(0)}%
-              </span>
-              {timeEstimates.combined ? (
-                <span className="text-muted-foreground ml-2 text-xs font-medium">
-                  • Temps restant : {timeEstimates.combined}
-                </span>
-              ) : (
-                <span className="text-muted-foreground ml-2 text-xs font-medium">
-                  • Calcul du temps restant...
-                </span>
-              )}
+              {progress.toFixed(0)}%
+            </span>
+              <span className="text-muted-foreground ml-2 text-xs font-medium">
+              {statusText}
+            </span>
             </p>
           </div>
           {sourceProgress.length > 0 && (
@@ -349,89 +369,53 @@ export default function Results({
 
   // Results are already sorted by the heap in useSearch, so we can use them directly
   const renderSearchResults = () => {
-    if (displayResults.length > 0) {
+    console.log('Affichage des résultats:', {
+      resultsProp: propsResults.length,
+      displayResults: displayResults.length,
+      isSearching,
+      progress
+    });
+
+    if (resultsToDisplay && resultsToDisplay.length > 0) {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {sortedResults.map((result: ForensicResult) => {
             const timestamp = new Date(result.timestamp);
-
             return (
               <Popover key={result.id}>
                 <PopoverTrigger asChild>
                   <div className="border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-card cursor-pointer relative group">
                     <div className="relative">
-                      <img
-                        src={result.imageData}
-                        alt="Forensic result"
-                        className="w-full h-auto object-cover aspect-[16/9]"
-                      />
+                      {result.imageData ? (
+                        <img
+                          src={result.imageData}
+                          alt="Forensic result"
+                          className="w-full h-auto object-cover aspect-[16/9]"
+                        />
+                      ) : (
+                        <div className="w-full aspect-[16/9] bg-muted flex items-center justify-center">
+                        <span className="text-muted-foreground text-sm">
+                          Pas d&#39;image
+                        </span>
+                        </div>
+                      )}
                       <div
                         className="absolute top-2 right-2 text-white rounded-full px-2 py-0.5 text-xs font-medium"
                         style={{
-                          backgroundColor: getScoreBackgroundColor(
-                            result.score
-                          ),
+                          backgroundColor: getScoreBackgroundColor(result.score),
                         }}
                       >
                         {(result.score * 100).toFixed(1)}%
                       </div>
-
-                      {/* Add expand button */}
-                      <button
-                        className="absolute bottom-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setExpandedImage(result.imageData);
-                        }}
-                        aria-label="Agrandir l'image"
-                        type="button"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <polyline points="15 3 21 3 21 9" />
-                          <polyline points="9 21 3 21 3 15" />
-                          <line x1="21" y1="3" x2="14" y2="10" />
-                          <line x1="3" y1="21" x2="10" y2="14" />
-                        </svg>
-                      </button>
                     </div>
-                    <div className="p-4 space-y-2">
-                      <div className="flex items-center text-xs text-muted-foreground">
-                        <svg
-                          className="w-3.5 h-3.5 mr-1.5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        {timestamp.toLocaleString('fr-FR', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                    <div className="p-4">
+                      <div className="text-xs text-muted-foreground">
+                        {timestamp.toLocaleString('fr-FR')}
                       </div>
                     </div>
                   </div>
                 </PopoverTrigger>
-                <PopoverContent className="w-80">
+                <PopoverContent>
                   <div className="space-y-2">
                     <h3 className="font-medium text-sm">Métadonnées</h3>
                     <div className="grid grid-cols-2 gap-1 text-sm">
@@ -572,6 +556,9 @@ export default function Results({
             {testMode ? 'Arrêter' : 'Tester'}
           </Button>
           */}
+          <Button onClick={handleResumeLastSearch}>
+            Reprendre
+          </Button>
         </div>
       </div>
 
@@ -583,11 +570,14 @@ export default function Results({
           </p>
         </div>
       )}
+      <ScrollArea className="h-[calc(100%-3rem)] pb-1">
+        <div className="space-y-4">
+          {/* Progress section inside ScrollArea */}
+          {renderProgressSection()}
 
-      {renderProgressSection()}
-
-      <ScrollArea className="h-[calc(100%-3rem)] pb-9">
-        {renderSearchResults()}
+          {/* Results */}
+          {renderSearchResults()}
+        </div>
       </ScrollArea>
 
       {renderExpandedImageModal()}
