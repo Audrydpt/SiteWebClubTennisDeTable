@@ -84,7 +84,6 @@ const extractCameraInfo = (cameraId: string) => {
   };
 };
 
-// eslint-disable-next-line no-empty-pattern
 export default function Results({
   results: propsResults,
   isSearching,

@@ -26,7 +26,6 @@ from starlette.requests import Request
 
 from gunicorn.app.base import BaseApplication
 
-from backend.src.task_manager import JobResult, ResultsStore
 from task_manager import JobStatus, TaskManager
 
 from typing import Annotated, Literal, Optional, Type, Union, List, Dict, Any
@@ -537,7 +536,7 @@ class FastAPIServer:
         @self.app.get("/forensics/{guid}/frames/{frameId}", tags=["forensics"])
         async def get_frame(guid: str, frameId: str):
             try:
-                frame = await ResultsStore.get_frame(guid, frameId)
+                frame = await TaskManager.get_frame(guid, frameId)
 
                 if frame is None:
                     raise HTTPException(status_code=404, detail="Frame not found")

@@ -411,6 +411,10 @@ class TaskManager:
     @staticmethod
     async def get_job_results(job_id: str) -> List[JobResult]:
         return await results_store.get_results(job_id)
+
+    @staticmethod
+    async def get_frame(job_id: str, frame_uuid: str) -> Optional[bytes]:
+        return await results_store.get_frame(job_id, frame_uuid)
     
     @staticmethod
     async def stream_job_results(websocket: WebSocket, job_id: str, send_old_results: bool = True):
