@@ -54,7 +54,7 @@ export default function Sources({
     setSelectedCameras,
     snapshots,
     snapshotLoadingStates,
-  } = useSources(sessionId, undefined, sources);
+  } = useSources(sources);
 
   // Sync form sources with selectedCameras when component mounts or form sources change
   useEffect(() => {
