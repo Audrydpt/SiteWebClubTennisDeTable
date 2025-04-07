@@ -534,22 +534,23 @@ class FastAPIServer:
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
         
+    async def __get_vms_config(self):
+        """get configuration for VMS"""
+        dal = GenericDAL()
+        settings = await dal.async_get(Settings)
+
+        settings_dict = {}
+        for setting in settings:
+            settings_dict[setting.key_index] = setting.value_index
+
+        vms_config = settings_dict.get("vms", {})
+        #type = vms_config.get("type", None)
+        ip = vms_config.get("ip", None)
+        port = vms_config.get("port", None)
+        
+        return ip, port
+    
     def __create_vms(self):
-        async def __get_vms_config(self):
-            """get configuration for VMS"""
-            dal = GenericDAL()
-            settings = await dal.async_get(Settings)
-
-            settings_dict = {}
-            for setting in settings:
-                settings_dict[setting.key_index] = setting.value_index
-
-            vms_config = settings_dict.get("vms", {})
-            #type = vms_config.get("type", None)
-            ip = vms_config.get("ip", None)
-            port = vms_config.get("port", None)
-            
-            return ip, port
 
         @self.app.get("/vms/cameras", tags=["vms"])
         async def get_cameras():
