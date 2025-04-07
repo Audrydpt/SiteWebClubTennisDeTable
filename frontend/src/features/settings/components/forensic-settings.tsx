@@ -1,4 +1,4 @@
-import IASettings from './ia-settings';
+import IASettings from './ai-settings';
 import VMSSettings from './vms-settings';
 
 function ForensicSettings() {

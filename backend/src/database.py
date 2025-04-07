@@ -338,7 +338,7 @@ class GenericDAL:
             
             settings_ai = session.query(Settings).filter(Settings.key_index == "ai").first()
             if settings_ai is None:
-                default_ai = Settings(key_index="ai", value_index={"ip": "", "type": ""})
+                default_ai = Settings(key_index="ai", value_index={"ip": "", "port": "", "type": ""})
                 session.add(default_ai)
                 session.commit()
 

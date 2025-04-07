@@ -6,7 +6,7 @@ type DashboardSettings = Record<string, string>;
 interface IVMSSettings {
   type: string;
   ip: string;
-  port: string;
+  port: number;
   username?: string;
   password?: string;
 }
@@ -33,10 +33,9 @@ export default function useVMSAPI() {
   const { mutate: edit } = useMutation({
     mutationFn: async (value: IVMSSettings) => {
       const { data: updated } = await axios.put<DashboardSettings>(
-        `${baseUrl}?key=vms`,
+        `${baseUrl}/vms`,
         {
-          key: 'vms',
-          value: JSON.stringify(value),
+          value,
         }
       );
       return updated;

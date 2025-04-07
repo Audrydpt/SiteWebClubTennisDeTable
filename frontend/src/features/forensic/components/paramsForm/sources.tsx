@@ -21,8 +21,8 @@ import { Skeleton } from '@/components/ui/skeleton.tsx';
 import { useAuth } from '@/providers/auth-context.tsx';
 
 import useSources from '../../hooks/use-sources.tsx';
-import { ForensicFormValues } from '../../lib/types.ts';
 import { useForensicForm } from '../../lib/provider/forensic-form-context.tsx';
+import { ForensicFormValues } from '../../lib/types.ts';
 
 interface SourcesProps {
   useScrollArea?: boolean;

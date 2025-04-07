@@ -5,6 +5,7 @@ type DashboardSettings = Record<string, string>;
 
 interface AISettings {
   ip: string;
+  port: string;
   type: string;
 }
 
@@ -30,10 +31,9 @@ export default function useAIAPI() {
   const { mutate: edit } = useMutation({
     mutationFn: async (value: AISettings) => {
       const { data: updated } = await axios.put<DashboardSettings>(
-        `${baseUrl}?key=ai`,
+        `${baseUrl}/ai`,
         {
-          key: 'ai',
-          value: JSON.stringify(value),
+          value,
         }
       );
       return updated;
