@@ -549,7 +549,7 @@ class FastAPIServer:
             ip = vms_config.get("ip", None)
             port = vms_config.get("port", None)
             
-            return type, ip, port
+            return ip, port
 
         @self.app.get("/vms/cameras", tags=["vms"])
         async def get_cameras():
