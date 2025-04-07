@@ -65,9 +65,8 @@ function IASettings() {
   };
 
   const isValidPort = (newPort: string): boolean => {
-    // Port pattern: numbers only, max 4 digits
-    const portPattern = /^[0-9]{1,4}$/;
-    return portPattern.test(newPort);
+    const p = parseInt(newPort, 10);
+    return !Number.isNaN(p) && p >= 1 && p <= 65535;
   };
 
   const handlePortChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,10 +131,10 @@ function IASettings() {
                   value={ip}
                   onChange={handleIPChange}
                   type="text"
-                  className={isIPValid === false ? 'border-red-500' : ''}
+                  className={isIPValid === false ? 'border-destructive' : ''}
                 />
                 {isIPValid === false && (
-                  <p className="text-sm text-red-500 mt-1">
+                  <p className="text-sm text-destructive mt-1">
                     {t('ai-settings.invalidIP')}
                   </p>
                 )}
@@ -149,10 +148,10 @@ function IASettings() {
                   value={port}
                   onChange={handlePortChange}
                   type="text"
-                  className={isPortValid === false ? 'border-red-500' : ''}
+                  className={isPortValid === false ? 'border-destructive' : ''}
                 />
                 {isPortValid === false && (
-                  <p className="text-sm text-red-500 mt-1">
+                  <p className="text-sm text-destructive mt-1">
                     {t('ai-settings.invalidPort')}
                   </p>
                 )}
