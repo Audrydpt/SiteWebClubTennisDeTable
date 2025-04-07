@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier,@typescript-eslint/no-explicit-any,no-console */
+/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier,@typescript-eslint/no-explicit-any,no-console,no-else-return */
 import {
   ChevronDown,
   ChevronUp,
@@ -99,14 +99,14 @@ export default function Results({
   const { resumeJob, displayResults } = useSearch();
 
   const resultsToDisplay = useMemo(() => {
-    // Si une recherche est en cours, afficher les résultats des props
-    if (isSearching) {
+    // Toujours afficher propsResults s'ils sont disponibles
+    if (propsResults && propsResults.length > 0) {
       return propsResults;
+    } else {
+      return displayResults;
     }
-
-    // Sinon, afficher les résultats du hook useSearch
-    return displayResults;
-  }, [displayResults, propsResults, isSearching]);
+    
+  }, [displayResults, propsResults]);
 
   const handleResumeLastSearch = async () => {
     const lastJobId = localStorage.getItem('currentJobId');
@@ -375,6 +375,7 @@ export default function Results({
       progress
     });
 
+    // Si nous avons des résultats à afficher, on les montre quelle que soit la progression
     if (resultsToDisplay && resultsToDisplay.length > 0) {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -485,7 +486,9 @@ export default function Results({
       );
     }
 
-    if (progress === 100) {
+    if (progress === 100 && !isSearching &&
+      (!propsResults || propsResults.length === 0) &&
+      (!displayResults || displayResults.length === 0)) {
       return (
         <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
           Aucun résultat trouvé

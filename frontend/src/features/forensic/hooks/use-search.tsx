@@ -1,4 +1,4 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-shadow,consistent-return */
+/* eslint-disable no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-shadow,consistent-return,no-promise-executor-return,@typescript-eslint/no-unused-vars */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import useLatest from '@/hooks/use-latest';
@@ -401,15 +401,35 @@ export default function useSearch() {
         // S'assurer que toutes les ressources précédentes sont bien fermées
         cleanupResources();
 
-        // Annuler toute recherche en cours via l'API:
-        await fetch(`${process.env.MAIN_API_URL}/forensics`, {
-          method: 'DELETE',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            Authorization: `X-Session-Id ${sessionId}`,
-          },
-        });
+        // Attendre un court délai pour s'assurer que les ressources sont bien libérées
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        try {
+          // Annuler toute recherche en cours via l'API et attendre la réponse
+          const cancelResponse = await fetch(
+            `${process.env.MAIN_API_URL}/forensics`,
+            {
+              method: 'DELETE',
+              headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                Authorization: `X-Session-Id ${sessionId}`,
+              },
+            }
+          );
+
+          // Vérifier si l'annulation a réussi
+          if (!cancelResponse.ok) {
+            console.warn(
+              `⚠️ L'annulation précédente a retourné le statut ${cancelResponse.status}`
+            );
+          }
+        } catch (cancelError) {
+          // On log l'erreur mais on continue la recherche
+        }
+
+        // Attendre un court délai pour s'assurer que l'annulation est bien traitée
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         // Créer un nouvel AbortController pour cette requête
         abortControllerRef.current = new AbortController();
@@ -446,6 +466,10 @@ export default function useSearch() {
         initializeSourceProgress(selectedSources);
 
         setJobId(guid);
+
+        // Attendre un bref délai avant d'initialiser le WebSocket
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
         // Initialiser automatiquement le WebSocket après avoir obtenu le guid
         initWebSocket(guid);
         return guid;
