@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier,@typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier,@typescript-eslint/no-explicit-any,no-console */
 import {
   ChevronDown,
   ChevronUp,
@@ -84,8 +84,9 @@ const extractCameraInfo = (cameraId: string) => {
   };
 };
 
+// eslint-disable-next-line no-empty-pattern
 export default function Results({
-  results,
+  results: propsResults,
   isSearching,
   progress,
   sourceProgress,
@@ -96,16 +97,25 @@ export default function Results({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [showSourceDetails, setShowSourceDetails] = useState(false);
-  const { resumeJob } = useSearch();
+  const { resumeJob, displayResults } = useSearch();
 
-  const handleResumeLastSearch = () => {
+  const resultsToDisplay = useMemo(() => {
+    // Si une recherche est en cours, afficher les résultats des props
+    if (isSearching) {
+      return propsResults;
+    }
+
+    // Sinon, afficher les résultats du hook useSearch
+    return displayResults;
+  }, [displayResults, propsResults, isSearching]);
+
+  const handleResumeLastSearch = async () => {
     const lastJobId = localStorage.getItem('currentJobId');
     if (lastJobId) {
-      resumeJob(lastJobId);
+      await resumeJob(lastJobId);
+      // Les résultats seront déjà mis à jour dans displayResults
     }
   };
-
-
 
   // Generate stable skeleton IDs
   const skeletonIds = useMemo(
@@ -133,14 +143,11 @@ export default function Results({
     return () => clearInterval(intervalId);
   }, [testMode]);
 
-  // Use either real results or test results based on test mode
-  const displayResults = testMode ? testResults : results;
-
   // Sort results based on current sort type and order
   const sortedResults = useMemo(() => {
-    if (!displayResults.length) return [];
+    if (!resultsToDisplay.length) return [];
 
-    return [...displayResults].sort((a, b) => {
+    return [...resultsToDisplay].sort((a, b) => {
       if (sortType === 'score') {
         return sortOrder === 'desc' ? b.score - a.score : a.score - b.score;
       }
@@ -149,7 +156,7 @@ export default function Results({
       const dateB = new Date(b.timestamp).getTime();
       return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
-  }, [displayResults, sortType, sortOrder]);
+  }, [resultsToDisplay, sortType, sortOrder]);
 
   const toggleSortType = () => {
     setSortType(sortType === 'score' ? 'date' : 'score');
@@ -362,13 +369,14 @@ export default function Results({
 
   // Results are already sorted by the heap in useSearch, so we can use them directly
   const renderSearchResults = () => {
-    // Ajouter un log pour déboguer
     console.log('Affichage des résultats:', {
+      resultsProp: propsResults.length,
       displayResults: displayResults.length,
       isSearching,
       progress
     });
-    if (displayResults && displayResults.length > 0) {
+
+    if (resultsToDisplay && resultsToDisplay.length > 0) {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {sortedResults.map((result: ForensicResult) => {

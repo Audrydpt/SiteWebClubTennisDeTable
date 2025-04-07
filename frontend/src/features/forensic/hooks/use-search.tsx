@@ -27,6 +27,8 @@ export default function useSearch() {
   const wsRef = useRef<WebSocket | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  const [displayResults, setDisplayResults] = useState<ForensicResult[]>([]);
+
   const metadataQueue = useRef<{
     timestamp?: string;
     score?: number;
@@ -229,6 +231,7 @@ export default function useSearch() {
             // Add to heap and get sorted results
             forensicResultsHeap.addResult(newResult);
             setResults(forensicResultsHeap.getBestResults());
+            setDisplayResults(forensicResultsHeap.getBestResults());
           }
         };
 
@@ -269,97 +272,24 @@ export default function useSearch() {
     },
     [cleanupResources]
   );
-  const fetchStoredResults = async (currentjobId: string) => {
-    try {
-      setIsSearching(true);
-
-      // Récupérer les résultats stockés pour l'ID de tâche
-      const response = await fetch(
-        `${process.env.MAIN_API_URL}/forensics/${currentjobId}`
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Erreur lors de la récupération des résultats: ${errorText}`
-        );
-      }
-
-      const data = await response.json();
-
-      // Traiter les résultats de détection
-      const detectionResults = data.results
-        .filter((result: any) => result.type === 'detection')
-        .map((result: any) => ({
-          id: crypto.randomUUID(),
-          imageData: `data:image/jpeg;base64,${result.frame || ''}`, // Si frame est null, utiliser une chaîne vide
-          timestamp: result.timestamp,
-          score: result.score,
-          camera: result.source,
-          attributes: result.attributes,
-          progress: result.progress,
-        }));
-
-      // Traiter les informations de progression pour chaque source
-      const sourcesProgress = data.results
-        .filter((result: any) => result.type === 'progress')
-        .reduce((acc: any, curr: any) => {
-          if (!acc[curr.guid]) {
-            acc[curr.guid] = {
-              sourceId: curr.guid,
-              progress: curr.progress,
-              timestamp: curr.timestamp,
-            };
-          } else if (curr.progress > acc[curr.guid].progress) {
-            acc[curr.guid].progress = curr.progress;
-            acc[curr.guid].timestamp = curr.timestamp;
-          }
-          return acc;
-        }, {});
-
-      setSourceProgress(Object.values(sourcesProgress));
-
-      // Ajouter les résultats au tas (heap)
-      detectionResults.forEach((result: ForensicResult) => {
-        forensicResultsHeap.addResult(result);
-      });
-
-      // Mettre à jour les résultats affichés
-      setResults(forensicResultsHeap.getBestResults());
-
-      // Stocker l'ID de la tâche dans le localStorage pour permettre de la reprendre plus tard
-      localStorage.setItem('currentJobId', currentjobId);
-
-      return true;
-    } catch (err: any) {
-      console.error('Erreur lors de la récupération des résultats:', err);
-      setIsSearching(false);
-      return false;
-    }
-  };
-
-  // Dans use-search.tsx, modifions la fonction resumeJob
   const resumeJob = async (jobId: string) => {
     try {
       setIsSearching(true);
-      setJobId(jobId); // Définir le jobId immédiatement
+      setJobId(jobId);
+      localStorage.setItem('currentJobId', jobId);
       forensicResultsHeap.clear();
 
       const resultsResponse = await fetch(
         `${process.env.MAIN_API_URL}/forensics/${jobId}`
       );
-
-      if (!resultsResponse.ok) {
+      if (!resultsResponse.ok)
         throw new Error(`Erreur API: ${resultsResponse.status}`);
-      }
 
       const resultsData = await resultsResponse.json();
-      console.log('Données reçues:', resultsData);
 
       if (resultsData?.results) {
-        // Initialisation des sources
         const sourcesProgress = resultsData.results
-          .filter((result: any) => result.type === 'progress')
+          .filter((r: { type: string }) => r.type === 'progress')
           .reduce((acc: any, curr: any) => {
             if (!acc[curr.guid]) {
               acc[curr.guid] = {
@@ -379,62 +309,82 @@ export default function useSearch() {
 
         setSourceProgress(Object.values(sourcesProgress));
 
-        // Traiter les résultats de détection avec des images
-        const detectionResults = resultsData.results
-          .filter((result: any) => result.type === 'detection' && result.frame)
-          .map((result: any) => ({
-            id: result.frame_uuid || crypto.randomUUID(),
-            imageData: result.frame
-              ? `data:image/jpeg;base64,${result.frame}`
-              : '',
-            timestamp: result.metadata?.timestamp || new Date().toISOString(),
-            score: result.metadata?.score || 0,
-            cameraId:
-              result.metadata?.camera || result.metadata?.source || 'unknown',
-            type: 'detection',
-            attributes: result.metadata?.attributes || {},
-            progress: result.metadata?.progress || 0,
-          }));
+        const detectionResults = await Promise.all(
+          resultsData.results
+            .filter((r: any) => r.metadata?.type === 'detection')
+            .map(async (result: any) => {
+              const frameId = result.frame_uuid;
+              const imageResponse = await fetch(
+                `${process.env.MAIN_API_URL}/forensics/${jobId}/frames/${frameId}`
+              );
 
-        // Mise à jour du heap et des résultats
-        forensicResultsHeap.clear();
+              if (!imageResponse.ok) {
+                console.error(
+                  `Erreur lors du chargement de l'image pour ${frameId}`
+                );
+                return null;
+              }
 
-        if (detectionResults.length > 0) {
-          detectionResults
-            .filter((result: { score: number }) => result.score > 0)
-            .forEach((result: ForensicResult) =>
-              forensicResultsHeap.addResult(result)
-            );
+              const imageBlob = await imageResponse.blob();
+              const imageUrl = URL.createObjectURL(imageBlob);
 
-          // Mise à jour synchrone des résultats
-          setResults(forensicResultsHeap.getBestResults());
-        }
+              return {
+                id: frameId,
+                imageData: imageUrl, // Utilisation de l'URL blob
+                timestamp:
+                  result.metadata?.timestamp || new Date().toISOString(),
+                score: result.metadata?.score || 0,
+                cameraId:
+                  result.metadata?.camera ||
+                  result.metadata?.source ||
+                  'unknown',
+                type: 'detection',
+                attributes: result.metadata?.attributes || {},
+                progress: result.metadata?.progress || 0,
+              };
+            })
+        );
 
-        // Mise à jour de la progression
+        // Filtrer les nulls résultant de l'échec de chargement d'images
+        const validDetectionResults = detectionResults.filter(
+          (result) => result !== null
+        );
+
+        validDetectionResults.forEach((res: ForensicResult) =>
+          forensicResultsHeap.addResult(res)
+        );
+
+        console.log(
+          '🧠 Détections valides récupérées:',
+          validDetectionResults.length
+        );
+
+        setResults(validDetectionResults);
+        setDisplayResults(validDetectionResults);
         const maxProgress = Math.max(
           ...Object.values(sourcesProgress).map((s: any) => s.progress || 0),
           0
         );
         setProgress(maxProgress);
 
-        // Mettre à jour le jobId dans le localStorage
         localStorage.setItem('currentJobId', jobId);
 
-        return forensicResultsHeap.getBestResults();
+        console.log('🔄 Job repris avec succès:', jobId);
+        console.log(resultsData);
+
+        return validDetectionResults;
       }
 
       return [];
     } catch (error) {
       console.error('Erreur lors de la reprise du job:', error);
       setResults([]);
+      setDisplayResults([]);
       setProgress(null);
       setSourceProgress([]);
       return [];
     } finally {
-      // Même en cas d'erreur, on veut que l'état indique qu'on n'est plus en recherche
-      if (!progress || progress >= 100) {
-        setIsSearching(false);
-      }
+      setIsSearching(false);
     }
   };
 
@@ -443,6 +393,7 @@ export default function useSearch() {
       try {
         // Reset states
         setResults([]);
+        setDisplayResults([]);
         setIsSearching(true);
         setIsCancelling(false);
         forensicResultsHeap.clear();
@@ -604,7 +555,7 @@ export default function useSearch() {
     isSearching,
     jobId,
     sourceProgress,
+    displayResults,
     resumeJob,
-    fetchStoredResults,
   };
 }
