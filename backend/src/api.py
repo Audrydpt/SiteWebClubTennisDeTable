@@ -541,8 +541,8 @@ class FastAPIServer:
 
                 if frame is None:
                     raise HTTPException(status_code=404, detail="Frame not found")
-                _, bytes = cv2.imencode('.jpg', frame)
-                return Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
+
+                return Response(content=frame, status_code=200, headers={"Content-Type": "image/jpeg"})
             except Exception as e:
                 logger.error(f"Erreur lors de la récupération de la frame {frameId} pour la tâche {guid}: {e}")
                 logger.error(traceback.format_exc())

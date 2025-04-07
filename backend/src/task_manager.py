@@ -118,18 +118,10 @@ class ResultsStore:
             self._redis = aioredis.Redis(connection_pool=self._pool)
         return self._redis
 
-    async def get_frame(self, job_id: str, frame_uuid: str) -> Optional[np.ndarray]:
+    async def get_frame(self, job_id: str, frame_uuid: str) -> Optional[bytes]:
         redis = await self._get_redis()
         frame_key = f"task:{job_id}:frame:{frame_uuid}"
-        frame_data = await redis.get(frame_key)
-
-        if not frame_data:
-            logger.error(f"Frame not found in Redis for key {frame_key}")
-            return None
-
-        nparr = np.frombuffer(frame_data, np.uint8)
-        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        return frame
+        return await redis.get(frame_key)
 
     async def add_result(self, result: JobResult) -> None:
         redis = await self._get_redis()
