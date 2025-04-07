@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
-import useRetentionAPI from './hooks/use-retention';
+import useRetentionAPI from '../hooks/use-retention';
 
 function Retention() {
   const { t } = useTranslation('settings');
@@ -27,7 +27,7 @@ function Retention() {
 
   useEffect(() => {
     if (query.data && query.data.retention) {
-      const days = Number(query.data.retention);
+      const days = Number(query.data.retention.days);
       setRetentionDays(days);
     }
   }, [query.data]);

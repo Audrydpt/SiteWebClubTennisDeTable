@@ -3,8 +3,16 @@ import axios from 'axios';
 
 type DashboardSettings = Record<string, string>;
 
-export default function useRetentionAPI() {
-  const queryKey = ['retention'];
+interface IVMSSettings {
+  type: string;
+  ip: string;
+  port: number;
+  username?: string;
+  password?: string;
+}
+
+export default function useVMSAPI() {
+  const queryKey = ['vms'];
   const client = useQueryClient();
   const baseUrl = `${process.env.MAIN_API_URL}/dashboard/settings`;
 
@@ -23,23 +31,23 @@ export default function useRetentionAPI() {
   };
 
   const { mutate: edit } = useMutation({
-    mutationFn: async (value: number) => {
+    mutationFn: async (value: IVMSSettings) => {
       const { data: updated } = await axios.put<DashboardSettings>(
-        `${baseUrl}/retention`,
+        `${baseUrl}/vms`,
         {
-          value: { days: value },
+          value,
         }
       );
       return updated;
     },
-    onMutate: async (value: number) => {
+    onMutate: async (value: IVMSSettings) => {
       await client.cancelQueries({ queryKey });
 
       const previous = client.getQueryData<DashboardSettings>(queryKey);
 
       client.setQueryData<DashboardSettings>(queryKey, (old) => ({
         ...old,
-        retention: JSON.stringify({ days: value }),
+        vms: JSON.stringify(value),
       }));
 
       return { previous };

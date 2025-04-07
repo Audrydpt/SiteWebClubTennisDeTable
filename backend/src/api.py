@@ -34,7 +34,7 @@ from enum import Enum
 
 from swagger import get_custom_swagger_ui_html
 from event_grabber import EventGrabber
-from database import Dashboard, GenericDAL, Widget, DashboardSettings
+from database import Dashboard, GenericDAL, Widget, Settings
 from database import AcicAllInOneEvent, AcicCounting, AcicEvent, AcicLicensePlate, AcicNumbering, AcicOCR, AcicOccupancy, AcicUnattendedItem
 
 from pydantic import BaseModel, Field, Extra
@@ -551,19 +551,45 @@ class FastAPIServer:
 
 
     def __create_vms(self):
-        @self.app.get("/vms/{ip}/cameras", tags=["vms"])
-        async def get_cameras(ip: str):
+        async def __get_vms_config(self):
+            """get configuration for VMS"""
+            dal = GenericDAL()
+            settings = await dal.async_get(Settings)
+
+            settings_dict = {}
+            for setting in settings:
+                settings_dict[setting.key_index] = setting.value_index
+
+            vms_config = settings_dict.get("vms", {})
+            type = vms_config.get("type", None)
+            ip = vms_config.get("ip", None)
+            port = vms_config.get("port", None)
+            
+            return type, ip, port
+
+        @self.app.get("/vms/cameras", tags=["vms"])
+        async def get_cameras():
             try:
-                async with CameraClient(ip, 7778) as client:
+                ip, port = await self.__get_vms_config()
+
+                if ip is None or port is None:
+                    raise HTTPException(status_code=400, detail="VMS IP or port not configured. Please configure VMS settings before trying to access cameras.")
+                
+                async with CameraClient(ip, port) as client:
                     return await client.get_system_info()
             except Exception as e:
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
 
-        @self.app.get("/vms/{ip}/cameras/{guuid}/live", tags=["vms"])
-        async def get_live(ip: str, guuid: str):
+        @self.app.get("/vms/cameras/{guuid}/live", tags=["vms"])
+        async def get_live(guuid: str):
+            ip, port = await self.__get_vms_config()
+
+            if ip is None or port is None:
+                raise HTTPException(status_code=400, detail="VMS IP or port not configured. Please configure VMS settings before trying to access live camera.")
+            
             return HTTPException(status_code=501, detail="Not implemented")
             try:
-                async with CameraClient(ip, 7778) as client:
+                async with CameraClient(ip, port) as client:
                     streams = client.start_live(guuid)
                     img = await anext(streams)
                     _, bytes = cv2.imencode('.jpg', img)
@@ -572,10 +598,15 @@ class FastAPIServer:
             except Exception as e:
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
 
-        @self.app.get("/vms/{ip}/cameras/{guuid}/replay", tags=["vms"])
-        async def get_replay(ip: str, guuid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0):
+        @self.app.get("/vms/cameras/{guuid}/replay", tags=["vms"])
+        async def get_replay(guuid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0):
             try:
-                async with CameraClient(ip, 7778) as client:
+                ip, port = await self.__get_vms_config()
+
+                if ip is None or port is None:
+                    raise HTTPException(status_code=400, detail="VMS IP or port not configured. Please configure VMS settings before trying to access replay.")
+                
+                async with CameraClient(ip, port) as client:
                     streams = client.start_replay(guuid, from_time, to_time, gap)
                     img, _ = await anext(streams)
                     _, bytes = cv2.imencode('.jpg', img)
@@ -793,15 +824,14 @@ class FastAPIServer:
         """Create endpoints to manage dashboard settings"""
         
         Model = create_model('SettingsModel',
-            key=(str, Field(description="Setting key")),
-            value=(str, Field(description="Setting value"))
+            value=(Union[Dict[str, Any], List[Any], str, int, bool, None], Field(description="Setting value (can be any JSON value)"))
         )
 
         @self.app.get("/dashboard/settings", tags=["dashboard/settings"])
         async def get_settings():
             try:
                 dal = GenericDAL()
-                settings = await dal.async_get(DashboardSettings)
+                settings = await dal.async_get(Settings)
                 
                 # Return the first settings object
                 result = {}
@@ -814,12 +844,12 @@ class FastAPIServer:
                 logger.error(f"Error retrieving dashboard settings: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.put("/dashboard/settings", tags=["dashboard/settings"])
+        @self.app.put("/dashboard/settings/{key}", tags=["dashboard/settings"])
         async def update_settings(key: str, data: Model):
             """Update a specific setting by key"""
             try:
                 dal = GenericDAL()
-                settings = await dal.async_get(DashboardSettings)
+                settings = await dal.async_get(Settings)
                 
                 setting = next((s for s in settings if s.key_index == key), None)
                 

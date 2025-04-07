@@ -49,8 +49,10 @@ class ServiceAI:
     async def get_models(self):
         await asyncio.wait_for(self.__describe(), timeout=5)
         copy = self.describe.copy()
-        del copy["version"]
-        del copy["msg"]
+        if "version" in copy:
+           del copy["version"]
+        if "msg" in copy:
+           del copy["msg"]
         return copy
     
     async def __parse_classif_response(self, classif_response,sort=False):

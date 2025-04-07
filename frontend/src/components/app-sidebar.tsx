@@ -9,8 +9,10 @@ import {
   Gauge,
   LogOut,
   Map,
+  Recycle,
   Server,
   Settings,
+  Upload,
   User2,
   Wrench,
 } from 'lucide-react';
@@ -77,8 +79,13 @@ const settingsItems: SidebarItem[] = [
     url: '/settings',
     icon: Settings,
     children: [
-      { title: 'Users', url: '/settings/users' },
-      { title: 'Retention', url: '/settings/retention' },
+      { title: 'Users', url: '/settings/users', icon: User2 },
+      { title: 'Retention', url: '/settings/retention', icon: Recycle },
+      {
+        title: 'Forensic',
+        url: '/settings/forensicSettings',
+        icon: Fingerprint,
+      },
     ],
   },
 ];
@@ -92,7 +99,7 @@ const analyticsItems: SidebarItem[] = [
       {
         title: 'Export data',
         url: '/dashboard/export',
-        icon: FileOutput,
+        icon: Upload,
       },
     ],
   },
@@ -128,6 +135,7 @@ const getFilteredItems = (user?: UserType): SidebarItem[] => {
         title: 'Configurations',
         children: settingsItems.map((item) => ({
           ...item,
+          // TODO : disable seulement users mais laisser l'accès à settings
           disabled: item.title === 'Settings' || item.title === 'Users',
         })),
       },
