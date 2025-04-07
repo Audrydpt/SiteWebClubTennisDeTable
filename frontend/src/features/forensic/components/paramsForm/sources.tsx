@@ -18,8 +18,6 @@ import {
 } from '@/components/ui/popover.tsx';
 import { ScrollArea } from '@/components/ui/scroll-area.tsx';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
-import { useAuth } from '@/providers/auth-context.tsx';
-
 import useSources from '../../hooks/use-sources.tsx';
 import { useForensicForm } from '../../lib/provider/forensic-form-context.tsx';
 import { ForensicFormValues } from '../../lib/types.ts';
@@ -33,7 +31,6 @@ export default function Sources({
   useScrollArea = false,
   onSelectedCamerasChange,
 }: SourcesProps) {
-  const { sessionId = '' } = useAuth();
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
 
@@ -54,7 +51,7 @@ export default function Sources({
     setSelectedCameras,
     snapshots,
     snapshotLoadingStates,
-  } = useSources(sessionId, undefined, sources);
+  } = useSources(sources);
 
   // Sync form sources with selectedCameras when component mounts or form sources change
   useEffect(() => {
