@@ -6,7 +6,7 @@ type DashboardSettings = Record<string, string>;
 interface IVMSSettings {
   type: string;
   ip: string;
-  port: string;
+  port: number;
   username?: string;
   password?: string;
 }

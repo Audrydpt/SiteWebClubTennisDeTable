@@ -1,9 +1,11 @@
 import { CheckCircle, Video, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { z } from 'zod';
 
 import { toast } from 'sonner';
 import useVMSAPI from '../hooks/use-vms';
+import { VMSFormValues, vmsSchema } from '../lib/types';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -23,15 +25,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-type VmsType = 'Milestone' | 'Genetec' | undefined;
-
 function VMSSettings() {
   const { t } = useTranslation('settings');
-  const [selectedVMS, setSelectedVMS] = useState<VmsType>(undefined);
-  const [ip, setIP] = useState<string>('');
-  const [port, setPort] = useState<string>('');
-  const [username, setUsername] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
+  const [formData, setFormData] = useState<Partial<VMSFormValues>>({});
   const [isIPValid, setIsIPValid] = useState<boolean | undefined>(undefined);
   const [isPortValid, setIsPortValid] = useState<boolean | undefined>(
     undefined
@@ -40,36 +36,37 @@ function VMSSettings() {
   const [isTesting, setIsTesting] = useState<boolean>(false);
   const [isTestSuccessful, setIsTestSuccessful] = useState<boolean>(false);
   const [isTestAttempted, setIsTestAttempted] = useState<boolean>(false);
-  const [isCredentialNeeded, setIsCredentialNeeded] = useState<boolean>(false);
   const { query, edit } = useVMSAPI();
 
   useEffect(() => {
     if (query.data && query.data.vms) {
-      const {
-        type,
-        ip: savedIP,
-        port: savedPort,
-        username: savedUsername,
-        password: savedPassword,
-      } = query.data.vms;
-      setSelectedVMS(type);
-      setIP(savedIP);
-      setPort(savedPort);
-      setUsername(savedUsername);
-      setPassword(savedPassword);
+      const vmsData = query.data.vms;
+      setFormData(vmsData);
     }
   }, [query.data]);
 
-  const isValidIP = (newIP: string): boolean => {
-    // IPv4 regex pattern
-    const ipv4Pattern =
-      /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-    return ipv4Pattern.test(newIP);
+  const handleVMSTypeChange = (value: string) => {
+    if (value === 'Milestone') {
+      setFormData({
+        ...formData,
+        type: 'Milestone',
+      });
+    } else if (value === 'Genetec') {
+      setFormData({
+        ...formData,
+        type: 'Genetec',
+      });
+    }
+  };
+
+  const isValidIP = (ip: string) => {
+    const result = z.string().ip().safeParse(ip);
+    return result.success;
   };
 
   const handleIPChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target;
-    setIP(value);
+    setFormData({ ...formData, ip: value });
 
     if (value) {
       setIsIPValid(isValidIP(value));
@@ -78,14 +75,18 @@ function VMSSettings() {
     }
   };
 
-  const isValidPort = (newPort: string): boolean => {
-    const p = parseInt(newPort, 10);
-    return !Number.isNaN(p) && p >= 1 && p <= 65535;
+  const isValidPort = (port: string) => {
+    const portNumber = parseInt(port, 10);
+    if (Number.isNaN(portNumber)) return false;
+    return z.number().int().min(1).max(65535).safeParse(portNumber).success;
   };
 
   const handlePortChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target;
-    setPort(value);
+    const portNumber = parseInt(value, 10);
+    if (!Number.isNaN(portNumber)) {
+      setFormData({ ...formData, port: portNumber });
+    }
 
     if (value) {
       setIsPortValid(isValidPort(value));
@@ -96,12 +97,16 @@ function VMSSettings() {
 
   const handleUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target;
-    setUsername(value);
+    if (formData.type === 'Milestone') {
+      setFormData((prev) => ({ ...prev, username: value }));
+    }
   };
 
   const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target;
-    setPassword(value);
+    if (formData.type === 'Milestone') {
+      setFormData((prev) => ({ ...prev, password: value }));
+    }
   };
 
   const handleTestCredentials = () => {
@@ -110,46 +115,61 @@ function VMSSettings() {
       setIsTestSuccessful(true);
       // eslint-disable-next-line no-console
       console.log('Testing credentials:', {
-        username,
-        password,
+        username: formData.type === 'Milestone' ? formData.username : '',
+        password: formData.type === 'Milestone' ? formData.password : '',
       });
       setIsTestAttempted(true);
       setIsTesting(false);
     }, 2000);
   };
 
-  const handleSubmit = () => {
-    setIsSubmitting(true);
-    edit(
-      {
-        type: selectedVMS || '',
-        ip,
-        port,
-        username,
-        password,
-      },
-      {
-        onSuccess: () => {
-          setIsSubmitting(false);
-          toast(t('vms-settings.toast.success'), {
-            description: t('vms-settings.toast.description', {
-              type: selectedVMS,
-              ip,
-              port,
-              username,
-              password,
-            }),
-          });
-        },
-        onError: () => {
-          setIsSubmitting(false);
-          toast(t('vms-settings.toast.error'), {
-            description: t('vms-settings.toast.errorDescription'),
-          });
-        },
-      }
-    );
+  const validateForm = () => {
+    try {
+      if (!formData.type) return false;
+      vmsSchema.parse(formData);
+      return true;
+    } catch (error) {
+      console.error('Form validation error:', error);
+      return false;
+    }
   };
+
+  const handleSubmit = () => {
+    if (!validateForm() || !formData.type) return;
+
+    setIsSubmitting(true);
+    edit(formData as VMSFormValues, {
+      onSuccess: () => {
+        setIsSubmitting(false);
+        toast(t('vms-settings.toast.success'), {
+          description: t('vms-settings.toast.description', {
+            type: formData.type,
+            ip: formData.ip,
+            port: formData.port,
+            username: formData.type === 'Milestone' ? formData.username : '',
+            password: formData.type === 'Milestone' ? formData.password : '',
+          }),
+        });
+      },
+      onError: () => {
+        setIsSubmitting(false);
+        toast(t('vms-settings.toast.error'), {
+          description: t('vms-settings.toast.errorDescription'),
+        });
+      },
+    });
+  };
+
+  const isMilestone = formData.type === 'Milestone';
+  const isCredentialsRequired = isMilestone;
+
+  const isDisabled =
+    !formData.type ||
+    !formData.ip ||
+    !formData.port ||
+    isIPValid === false ||
+    isPortValid === false ||
+    (isCredentialsRequired && (!formData.username || !formData.password));
 
   return (
     <div className="w-full">
@@ -166,15 +186,7 @@ function VMSSettings() {
             <span className="text-sm font-medium">
               {t('vms-settings.selectVMS')}
             </span>
-            <Select
-              onValueChange={(value) => {
-                setSelectedVMS(value as VmsType);
-                if (value === 'Milestone') {
-                  setIsCredentialNeeded(true);
-                }
-              }}
-              value={selectedVMS}
-            >
+            <Select onValueChange={handleVMSTypeChange} value={formData.type}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder={t('vms-settings.selectVMS')} />
               </SelectTrigger>
@@ -200,7 +212,7 @@ function VMSSettings() {
                 </span>
                 <Input
                   placeholder={t('vms-settings.selectIP')}
-                  value={ip}
+                  value={formData.ip || ''}
                   onChange={handleIPChange}
                   type="text"
                   className={isIPValid === false ? 'border-destructive' : ''}
@@ -217,7 +229,7 @@ function VMSSettings() {
                 </span>
                 <Input
                   placeholder={t('vms-settings.selectPort')}
-                  value={port}
+                  value={formData.port?.toString() || ''}
                   onChange={handlePortChange}
                   type="text"
                   className={isPortValid === false ? 'border-destructive' : ''}
@@ -242,7 +254,7 @@ function VMSSettings() {
                 </span>
                 <Input
                   placeholder={t('vms-settings.selectUsername')}
-                  value={username}
+                  value={formData.type === 'Milestone' ? formData.username : ''}
                   onChange={handleUsernameChange}
                   type="text"
                 />
@@ -253,7 +265,7 @@ function VMSSettings() {
                 </span>
                 <Input
                   placeholder={t('vms-settings.selectPassword')}
-                  value={password}
+                  value={formData.type === 'Milestone' ? formData.password : ''}
                   onChange={handlePasswordChange}
                   type="password"
                 />
@@ -298,21 +310,7 @@ function VMSSettings() {
           <Button
             onClick={handleSubmit}
             className="w-full"
-            disabled={
-              isCredentialNeeded
-                ? !selectedVMS ||
-                  !ip ||
-                  !port ||
-                  !username ||
-                  !password ||
-                  isIPValid === false ||
-                  isPortValid === false
-                : !selectedVMS ||
-                  !ip ||
-                  !port ||
-                  isIPValid === false ||
-                  isPortValid === false
-            }
+            disabled={isDisabled}
           >
             {isSubmitting
               ? t('vms-settings.actions.saving')

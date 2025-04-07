@@ -2,6 +2,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
+import { useAuth } from '@/providers/auth-context';
+
 interface Camera {
   id: string;
   name: string;
@@ -9,15 +11,10 @@ interface Camera {
 
 const BASE_URL = process.env.MAIN_API_URL || '';
 
-// Helper function to get auth header if needed
-const getAuthHeader = (sessionId: string) => ({
-  Authorization: sessionId ? `X-Session-Id ${sessionId}` : '',
-});
-
 export default function useSources(
-  sessionId: string,
   initialSelectedCameras: string[] = [] // idem non? pourquoi t'as besoin de ça ?
 ) {
+  const { sessionId = '' } = useAuth();
   const [selectedCameras, setSelectedCameras] = useState<string[]>(
     initialSelectedCameras
   );
@@ -30,7 +27,7 @@ export default function useSources(
     queryKey: ['vms-cameras', sessionId],
     queryFn: async () => {
       const response = await fetch(`${BASE_URL}/vms/cameras`, {
-        headers: getAuthHeader(sessionId),
+        headers: { Authorization: sessionId },
       });
 
       if (!response.ok) {
@@ -73,7 +70,7 @@ export default function useSources(
           try {
             const response = await fetch(
               `${BASE_URL}/vms/cameras/${camera.id}/live`,
-              { headers: getAuthHeader(sessionId) }
+              { headers: { Authorization: sessionId } }
             );
 
             if (response.ok) {

@@ -545,10 +545,11 @@ class FastAPIServer:
                 settings_dict[setting.key_index] = setting.value_index
 
             vms_config = settings_dict.get("vms", {})
+            type = vms_config.get("type", None)
             ip = vms_config.get("ip", None)
             port = vms_config.get("port", None)
             
-            return ip, port
+            return type, ip, port
 
         @self.app.get("/vms/cameras", tags=["vms"])
         async def get_cameras():
