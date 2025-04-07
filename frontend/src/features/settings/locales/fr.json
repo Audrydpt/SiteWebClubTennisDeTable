@@ -37,7 +37,8 @@
   "headers": {
     "systemSettings": "Paramètres système",
     "usersManagement": "Gestion des utilisateurs",
-    "retentionSettings": "Paramètres de rétention"
+    "retentionSettings": "Paramètres de rétention",
+    "forensicSettings": "Paramètres de forensic"
   },
   "retention": {
     "title": "Rétention",
@@ -73,5 +74,63 @@
     "description": "Remplissez le formulaire ci-dessous et choisissez un privilège pour créer un nouveau compte utilisateur.",
     "submit": "Créer l'utilisateur",
     "selectPrivilege": "Sélectionner un privilège"
+  },
+  "vms-settings": {
+    "title": "Paramètres VMS",
+    "description": "Configurer les paramètres de votre système de gestion vidéo.",
+    "selectVMS": "Sélectionner le VMS",
+    "genetec": "Genetec",
+    "milestone": "Milestone",
+    "host": "Hôte",
+    "ipAddress": "Adresse IP",
+    "selectIP": "Sélectionner l'adresse IP",
+    "port": "Port",
+    "selectPort": "Sélectionner le port",
+    "invalidPort": "Port invalide",
+    "credentials": "Identifiants",
+    "username": "Nom d'utilisateur",
+    "selectUsername": "Sélectionner le nom d'utilisateur",
+    "password": "Mot de passe",
+    "selectPassword": "Sélectionner le mot de passe",
+    "actions": {
+      "saving": "Enregistrement...",
+      "applyChanges": "Appliquer les modifications",
+      "testConnection": "Tester la connexion",
+      "connecting": "Connexion..."
+    },
+    "connectionSuccess": "Connexion au VMS réussie",
+    "connectionFailed": "Connexion au VMS échouée",
+    "toast": {
+      "success": "Modifications appliquées",
+      "successDescription": "Paramètres VMS mis à jour avec succès.",
+      "error": "Erreur",
+      "errorDescription": "Échec de la mise à jour des paramètres VMS. Veuillez réessayer."
+    }
+  },
+  "ai-settings": {
+    "title": "Paramètres IA",
+    "description": "Configurer les paramètres de l'IA de votre système de getsion vidéo.",
+    "host": "Hôte",
+    "ipAddress": "Adresse IP",
+    "selectIP": "Sélectionner l'adresse IP",
+    "invalidIP": "Adresse IP invalide",
+    "port": "Port",
+    "selectPort": "Sélectionner le port",
+    "invalidPort": "Port invalide",
+    "AI": "IA",
+    "selectAI": "Sélectionner l'IA",
+    "car": "Véhicule",
+    "person": "Personne",
+    "object": "Objet",
+    "actions": {
+      "saving": "Enregistrement...",
+      "applyChanges": "Appliquer les modifications"
+    },
+    "toast": {
+      "success": "Modifications appliquées",
+      "successDescription": "Paramètres IA mis à jour avec succès.",
+      "error": "Erreur",
+      "errorDescription": "Échec de la mise à jour des paramètres IA. Veuillez réessayer."
+    }
   }
 }

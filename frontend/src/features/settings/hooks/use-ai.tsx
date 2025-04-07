@@ -3,8 +3,14 @@ import axios from 'axios';
 
 type DashboardSettings = Record<string, string>;
 
-export default function useRetentionAPI() {
-  const queryKey = ['retention'];
+interface AISettings {
+  ip: string;
+  port: string;
+  type: string;
+}
+
+export default function useAIAPI() {
+  const queryKey = ['ai'];
   const client = useQueryClient();
   const baseUrl = `${process.env.MAIN_API_URL}/dashboard/settings`;
 
@@ -23,23 +29,23 @@ export default function useRetentionAPI() {
   };
 
   const { mutate: edit } = useMutation({
-    mutationFn: async (value: number) => {
+    mutationFn: async (value: AISettings) => {
       const { data: updated } = await axios.put<DashboardSettings>(
-        `${baseUrl}/retention`,
+        `${baseUrl}/ai`,
         {
-          value: { days: value },
+          value,
         }
       );
       return updated;
     },
-    onMutate: async (value: number) => {
+    onMutate: async (value: AISettings) => {
       await client.cancelQueries({ queryKey });
 
       const previous = client.getQueryData<DashboardSettings>(queryKey);
 
       client.setQueryData<DashboardSettings>(queryKey, (old) => ({
         ...old,
-        retention: JSON.stringify({ days: value }),
+        ai: JSON.stringify(value),
       }));
 
       return { previous };
