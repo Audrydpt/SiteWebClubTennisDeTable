@@ -575,5 +575,6 @@ export default function useSearch() {
     sourceProgress,
     displayResults,
     resumeJob,
+    setDisplayResults,
   };
 }
