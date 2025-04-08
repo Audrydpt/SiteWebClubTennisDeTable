@@ -759,15 +759,16 @@ class VehicleReplayJob:
                 if not settings or len(settings) != 1:
                     raise Exception("VMS settings not found")
                 
-                settings = settings[0].value_index
+                settings_dict = settings[0].value_index
                 logger.info(f"Settings: {settings}")
-                vms_host = settings.get("ip", None)
-                vms_port = settings.get("port", None)
-                vms_username = settings.get("username", None)
-                vms_password = settings.get("password", None)
-                vms_type = settings.get("type", None)
+                vms_host = settings_dict.get("ip", None)
+                vms_port = settings_dict.get("port", None)
+                vms_username = settings_dict.get("username", None)
+                vms_password = settings_dict.get("password", None)
+                vms_type = settings_dict.get("type", None)
 
-                async with CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type) as client:
+                VMS = CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type)
+                async with VMS() as client:
                     logger.info("Connected to VMS")
 
                     system_info = await client.get_system_info()

@@ -115,7 +115,7 @@ class CameraClient(ABC):
         pass
 
     @staticmethod
-    async def create(host: str, port: int, username: str, password: str, type: str):
+    def create(host: str, port: int, username: str, password: str, type: str):
         if not type:
             raise Exception("VMS type is required")
         if not host or not port:
@@ -125,9 +125,9 @@ class CameraClient(ABC):
         if type == "milestone":
             if not username or not password:
                 raise Exception("Username and password are required")
-            return MilestoneCameraClient(host, port, username, password)
+            return lambda: MilestoneCameraClient(host, port, username, password)
         elif type == "genetec":
-            return GenetecCameraClient(host, port)
+            return lambda: GenetecCameraClient(host, port)
         else:
             raise Exception("Unknown VMS type")
 
