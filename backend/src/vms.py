@@ -114,6 +114,23 @@ class CameraClient(ABC):
     async def start_replay(self, camera_guid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0) -> AsyncGenerator[Tuple[np.ndarray, str], None]:
         pass
 
+    @staticmethod
+    async def create(host: str, port: int, username: str, password: str, type: str):
+        if not type:
+            raise Exception("VMS type is required")
+        if not host or not port:
+            raise Exception("Host and port are required")
+
+        type = type.lower()
+        if type == "milestone":
+            if not username or not password:
+                raise Exception("Username and password are required")
+            return MilestoneCameraClient(host, port, username, password)
+        elif type == "genetec":
+            return GenetecCameraClient(host, port)
+        else:
+            raise Exception("Unknown VMS type")
+
 class GenetecCameraClient(CameraClient):
     
     async def _send_request(self, xml_content: str):

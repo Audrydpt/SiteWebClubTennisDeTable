@@ -25,8 +25,9 @@ from dataclasses import dataclass, field
 
 from fastapi import WebSocket, WebSocketDisconnect
 
+from database import GenericDAL, Settings
 from service_ai import ServiceAI
-from vms import CameraClient
+from vms import CameraClient, GenetecCameraClient, MilestoneCameraClient
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -742,7 +743,18 @@ class VehicleReplayJob:
             async with ServiceAI() as forensic:
                 logger.info("Connected to AI Service")
 
-                async with CameraClient("192.168.20.72", 7778) as client:
+                dal = GenericDAL()
+                settings = await dal.async_get(Settings, key_index= "vms")
+                if not settings:
+                    raise Exception("VMS settings not found")
+                
+                vms_host = settings.get("ip", None)
+                vms_port = settings.get("port", None)
+                vms_username = settings.get("username", None)
+                vms_password = settings.get("password", None)
+                vms_type = settings.get("type", None)
+
+                async with CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type) as client:
                     logger.info("Connected to VMS")
 
                     system_info = await client.get_system_info()
