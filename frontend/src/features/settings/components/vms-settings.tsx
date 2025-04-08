@@ -290,9 +290,9 @@ function VMSSettings() {
               <div className="flex p-3 rounded-md bg-muted flex-1">
                 <div className="mr-3 mt-1">
                   {isTestSuccessful ? (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-primary" />
                   ) : (
-                    <XCircle className="h-4 w-4 text-red-500" />
+                    <XCircle className="h-4 w-4 text-destructive" />
                   )}
                 </div>
                 <div>
