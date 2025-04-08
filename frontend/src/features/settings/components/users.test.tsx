@@ -12,7 +12,7 @@ import { UserPrivileges } from '@/lib/authenticate';
 import useUsersAPI from '../hooks/use-users';
 import Users from './users';
 
-vi.mock('./hooks/use-users');
+vi.mock('../hooks/use-users');
 
 describe('Users Component', () => {
   const mockHook = {
