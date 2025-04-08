@@ -759,7 +759,8 @@ class VehicleReplayJob:
                 if not settings or len(settings) != 1:
                     raise Exception("VMS settings not found")
                 
-                settings = settings[0]
+                settings = settings[0].value_index
+                logger.info(f"Settings: {settings}")
                 vms_host = settings.get("ip", None)
                 vms_port = settings.get("port", None)
                 vms_username = settings.get("username", None)
