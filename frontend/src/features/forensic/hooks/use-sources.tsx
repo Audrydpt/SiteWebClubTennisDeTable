@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars,@typescript-eslint/no-explicit-any */
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
@@ -7,13 +7,13 @@ import { useAuth } from '@/providers/auth-context';
 interface Camera {
   id: string;
   name: string;
+  hostName?: string;
+  webServerUri?: string;
 }
 
 const BASE_URL = process.env.MAIN_API_URL || '';
 
-export default function useSources(
-  initialSelectedCameras: string[] = [] // idem non? pourquoi t'as besoin de Ã§a ?
-) {
+export default function useSources(initialSelectedCameras: string[] = []) {
   const { sessionId = '' } = useAuth();
   const [selectedCameras, setSelectedCameras] = useState<string[]>(
     initialSelectedCameras
@@ -36,10 +36,14 @@ export default function useSources(
 
       const data = await response.json();
 
-      const cameras: Camera[] = Object.entries(data).map(([id, name]) => ({
-        id,
-        name: name as string,
-      }));
+      const cameras: Camera[] = Object.entries(data).map(
+        ([id, details]: [string, any]) => ({
+          id,
+          name: details.name,
+          hostName: details.hostName,
+          webServerUri: details.webServerUri,
+        })
+      );
 
       return cameras;
     },
