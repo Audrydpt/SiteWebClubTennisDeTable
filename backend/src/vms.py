@@ -1,6 +1,5 @@
 from enum import Enum
 import logging
-import socket
 import traceback
 import xml.etree.ElementTree as ET
 import asyncio
@@ -12,9 +11,10 @@ import av
 import io
 import uuid
 import datetime
-import requests
-from requests.auth import HTTPBasicAuth, HTTPDigestAuth
-from requests_ntlm import HttpNtlmAuth
+import httpx
+from abc import ABC, abstractmethod
+from httpx import BasicAuth, DigestAuth
+from httpx_ntlm import HttpNtlmAuth
 
 import numpy as np
 
@@ -87,14 +87,13 @@ class VideoDecoder:
             self.__codec = None
             self.__pts_counter = 0
     
-
-class CameraClient:
+class CameraClient(ABC):
     def __init__(self, host: str, port: int):
         self.host = host
         self.port = port
         self.reader = None
         self.writer = None
-    
+
     async def __aenter__(self):
         return self
     
@@ -102,6 +101,20 @@ class CameraClient:
         if self.writer:
             self.writer.close()
             await asyncio.wait_for(self.writer.wait_closed(), timeout=TIMEOUT)
+
+    @abstractmethod
+    async def get_system_info(self) -> Optional[Dict[str, str]]:
+        pass
+    
+    @abstractmethod
+    async def start_live(self, camera_guid: str) -> AsyncGenerator[np.ndarray, None]:
+        pass
+
+    @abstractmethod
+    async def start_replay(self, camera_guid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0) -> AsyncGenerator[Tuple[np.ndarray, str], None]:
+        pass
+
+class GenetecCameraClient(CameraClient):
     
     async def _send_request(self, xml_content: str):
         content_length = len(xml_content)
@@ -235,12 +248,13 @@ class CameraClient:
         response = await self._send_request(xml)
         return response
 
+    def _parse_data(self, data: bytes):
+        format_str = '>HIHHHQIIIII'
+        expected_size = struct.calcsize(format_str)
+        bytes = struct.unpack(format_str, data[:expected_size])
+        return bytes, data[expected_size:]
+    
     async def start_live(self, camera_guid: str) -> AsyncGenerator[np.ndarray, None]:
-        def parse_data(data: bytes):
-            format_str = '>HIHHHQIIIII'
-            expected_size = struct.calcsize(format_str)
-            bytes = struct.unpack(format_str, data[:expected_size])
-            return bytes, data[expected_size:]
 
         xml = (
             f'<?xml version="1.0" encoding="UTF-8"?>'
@@ -254,7 +268,7 @@ class CameraClient:
 
         _ = await anext(stream)
         async for data in stream:
-            headers, frame = parse_data(data)
+            headers, frame = self._parse_data(data)
 
             image_format = headers[2]
             width, height = headers[6], headers[7]
@@ -321,54 +335,41 @@ class CameraClient:
                 for img in decoder.decode(data):
                     yield img, time_frame
                 
-
-class GenetecCameraClient(CameraClient):
-    pass
-
 class MilestoneCameraClient(CameraClient):
 
-    def __init__(self, host: str, port: int, username: str, password: str, is_fallback: bool = True, auth_method: str = "basic"):
+    def __init__(self, host: str, port: int, username: str, password: str, is_fallback: bool = True, auth_method: str = None):
         super().__init__(host, port)
         self.__username = username
         self.__password = password
         self.__protocol = "https" if port == 443 else "http"
         self.__uuid = uuid.uuid4().hex.upper()
+        self.__is_fallback = is_fallback
+        self.__set_namespace()
+
         self.__auth = None
         if auth_method == "ntlm":
             self.__auth = HttpNtlmAuth(self.__username, self.__password)
         elif auth_method == "basic":
-            self.__auth = HTTPBasicAuth(self.__username, self.__password)
+            self.__auth = BasicAuth(self.__username, self.__password)
         elif auth_method == "digest":
-            self.__auth = HTTPDigestAuth(self.__username, self.__password)
-        else:
-            raise ValueError(f"Méthode d'authentification invalide: {auth_method}")
+            self.__auth = DigestAuth(self.__username, self.__password)
+
         self.__token = None
         self.__token_expiration = None
         self.requestid = 1
+        
+    async def __aenter__(self):
+        if not self.__auth:
+            self.__auth = await self.__guess_auth_method()
 
-        self.__is_fallback = is_fallback
-        self.__namespace = "http://videoos.net/2/XProtectCSServerCommand"
-        if not self.__is_fallback:
-            self.__endpoint = "/ManagementServer/ServerCommandService.svc"        # basic sur 76
-            self.__login = f"{self.__namespace}/IServerCommandService/Login"
-            self.__logout = f"{self.__namespace}/IServerCommandService/Logout"
-            self.__config = f"{self.__namespace}/IServerCommandService/GetConfiguration"
-            self.__recorder = f"{self.__namespace}/IServerCommandService/GetConfigurationRecorders"
-        else:
-            self.__endpoint = "/ServerAPI/ServerCommandService.asmx"              # ntlm sur 76
-            self.__login = f"{self.__namespace}/Login"
-            self.__logout = f"{self.__namespace}/Logout"
-            self.__config = f"{self.__namespace}/GetConfiguration"
-            self.__recorder = f"{self.__namespace}/GetRecorder"
-
-    def __enter__(self):
-        self._login()
-        return self
+        await self._login()
+        return await super().__aenter__()
     
-    def __exit__(self, exc_type, exc_value, traceback):
-        self._logout()
-
-    def get_system_info(self) -> Optional[Dict[str, str]]:
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        await self._logout()
+        return await super().__aexit__(exc_type, exc_value, traceback)
+    
+    async def get_system_info(self) -> Optional[Dict[str, str]]:
         if not self.__token:
             raise Exception("Not logged in")
         
@@ -387,7 +388,7 @@ class MilestoneCameraClient(CameraClient):
             f'</soap:Envelope>'
         )
         
-        data = self._send_request(header, body)
+        data = await self._send_request(header, body)
 
         res = {}
         recorders = data.findall(".//ns:RecorderInfo", {"ns": self.__namespace})
@@ -408,23 +409,28 @@ class MilestoneCameraClient(CameraClient):
 
         return res
 
-    def _send_request(self, header: str, body: str) -> Optional[str]:
+    async def _send_request(self, header: str, body: str) -> Optional[str]:
         url = f"{self.__protocol}://{self.host}:{self.port}{self.__endpoint}"
-        response = requests.post(url, headers=header, data=body, auth=self.__auth, verify=False)
         
-        if response.status_code == 200:
-            mime = response.headers.get("Content-Type", "").lower()
-            body = response.content
-            if "text/xml" in mime or "application/xml" in mime:
-                text = body.decode("utf-8")
-                data = ET.fromstring(text)
-                return data
+        async with httpx.AsyncClient(verify=False) as client:
+            response = await client.post(
+                url,
+                headers=header,
+                content=body,
+                auth=self.__auth
+            )
+            
+            if response.status_code == 200:
+                mime = response.headers.get("Content-Type", "").lower()
+                if "text/xml" in mime or "application/xml" in mime:
+                    data = ET.fromstring(response.text)
+                    return data
+                else:
+                    raise Exception(f"Failed to login: undefined mime type {mime}")
             else:
-                raise Exception(f"Failed to login: undefined mime type {mime}")
-        else:
-            raise Exception(f"Failed to login")
+                raise Exception(f"Failed to login: HTTP {response.status_code}")
 
-    def _login(self) -> Optional[str]:
+    async def _login(self) -> Optional[str]:
         header = {
             "Content-Type": "text/xml; charset=utf-8",
             "SOAPAction": self.__login
@@ -441,7 +447,7 @@ class MilestoneCameraClient(CameraClient):
             f'</soap:Envelope>'
         )
 
-        data = self._send_request(header, body)
+        data = await self._send_request(header, body)
         self.__token = data.find(".//ns:Token", {"ns": self.__namespace}).text
 
         TTL = int(data.find(".//ns:TimeToLive/ns:MicroSeconds", {"ns": self.__namespace}).text)/1000000 - 30
@@ -449,7 +455,7 @@ class MilestoneCameraClient(CameraClient):
 
         return self.__token
     
-    def _logout(self):
+    async def _logout(self):
         header = {
             "Content-Type": "text/xml; charset=utf-8",
             "SOAPAction": self.__logout
@@ -466,11 +472,77 @@ class MilestoneCameraClient(CameraClient):
             f'</soap:Envelope>'
         )
 
-        data = self._send_request(header, body)
+        data = await self._send_request(header, body)
+        return data
 
-    def _refresh_token(self):
+    async def __guess_auth_method(self):
+        self.__is_fallback = True
+        self.__set_namespace()
+        self.__auth = HttpNtlmAuth(self.__username, self.__password)
+        try:
+            await self._login()
+            return self.__auth
+        except Exception as e:
+            pass
+
+        self.__auth = BasicAuth(self.__username, self.__password)
+        try:
+            await self._login()
+            return self.__auth
+        except Exception as e:
+            pass
+
+        self.__auth = DigestAuth(self.__username, self.__password)
+        try:
+            await self._login()
+            return self.__auth
+        except Exception as e:
+            pass
+
+        self.__is_fallback = False
+        self.__set_namespace()
+        self.__auth = HttpNtlmAuth(self.__username, self.__password)
+        try:
+            await self._login()
+            return self.__auth
+        except Exception as e:
+            pass
+
+        self.__auth = BasicAuth(self.__username, self.__password)
+        try:
+            await self._login()
+            return self.__auth
+        except Exception as e:
+            pass
+
+        self.__auth = DigestAuth(self.__username, self.__password)
+        try:
+            await self._login()
+            return self.__auth
+        except Exception as e:
+            pass
+
+        raise Exception("Failed to guess auth method")
+    
+    def __set_namespace(self):
+        
+        self.__namespace = "http://videoos.net/2/XProtectCSServerCommand"
+        if not self.__is_fallback:
+            self.__endpoint = "/ManagementServer/ServerCommandService.svc"        # basic sur 76
+            self.__login = f"{self.__namespace}/IServerCommandService/Login"
+            self.__logout = f"{self.__namespace}/IServerCommandService/Logout"
+            self.__config = f"{self.__namespace}/IServerCommandService/GetConfiguration"
+            self.__recorder = f"{self.__namespace}/IServerCommandService/GetConfigurationRecorders"
+        else:
+            self.__endpoint = "/ServerAPI/ServerCommandService.asmx"              # ntlm sur 76
+            self.__login = f"{self.__namespace}/Login"
+            self.__logout = f"{self.__namespace}/Logout"
+            self.__config = f"{self.__namespace}/GetConfiguration"
+            self.__recorder = f"{self.__namespace}/GetRecorder"
+
+    async def _refresh_token(self):
         if self.__token_expiration < datetime.datetime.now():
-            self._login()
+            await self._login()
             return True
         else:
             return False
@@ -497,8 +569,17 @@ class MilestoneCameraClient(CameraClient):
         if not self.__token:
             raise Exception("Not logged in")
 
-        host = self.host
-        port = 7563
+        system_info = await self.get_system_info()
+        if not system_info:
+            raise Exception("Failed to get system info")
+        if camera_guid not in system_info:
+            raise Exception(f"Camera {camera_guid} not found")
+        
+        recorder = system_info[camera_guid]
+        host = Resolver().resolve(recorder["HostName"])
+        port = int(recorder["WebServerUri"].split("/")[2].split(":")[1])
+
+        print(host, port, self.host, recorder["HostName"])
         self.requestid = 1
         self.reader, self.writer = await asyncio.wait_for(
             asyncio.open_connection(host, port),
@@ -615,7 +696,7 @@ class MilestoneCameraClient(CameraClient):
                 print(data)
                 break # ??? end of stream ?
 
-            if self._refresh_token():
+            if await self._refresh_token():
                 connectupdate = (
                     f'<?xml version="1.0" encoding="UTF-8"?>'
                     f"<methodcall>"
@@ -638,7 +719,7 @@ class MilestoneCameraClient(CameraClient):
         if to_time > datetime.datetime.now().astimezone(datetime.timezone.utc):
             raise ValueError("to_time must be in the past")
         
-        system_info = self.get_system_info()
+        system_info = await self.get_system_info()
         if not system_info:
             raise Exception("Failed to get system info")
         if camera_guid not in system_info:
@@ -778,7 +859,7 @@ class MilestoneCameraClient(CameraClient):
                 print("hmmm? ", data)
                 break # ??? end of stream ?
 
-            if self._refresh_token():
+            if await self._refresh_token():
                 connectupdate = (
                     f'<?xml version="1.0" encoding="UTF-8"?>'
                     f"<methodcall>"
@@ -845,29 +926,27 @@ async def main():
     except Exception as e:
         print(f"Erreur lors de l'exécution: {e}")
 
-
 async def test():
     #client = MilestoneCameraClient("10.39.0.50", 80, "AcicMilestoneGrab", "UhH66PjFSTWrrbiH2RiM--")
     #client = MilestoneCameraClient("192.168.20.232", 443, 'Admininstrator', "7ednHuLXNThoQg5p--", is_fallback=True, auth_method="ntlm")
     #client = MilestoneCameraClient("192.168.20.76", 443, 'bb', "Acicacic1-", is_fallback=False, auth_method="basic")
     #client = MilestoneCameraClient("192.168.20.76", 443, 'bbarrie', "RedHeel44+", is_fallback=True, auth_method="ntlm")
-
-    with MilestoneCameraClient("192.168.20.232", 443, 'sbakkouche', 'YxCt4gLEHB758F', True, "ntlm") as client:
-
-        cameras = client.get_system_info()
+    #client = MilestoneCameraClient("192.168.20.232", 443, 'sbakkouche', 'YxCt4gLEHB758F', True, "ntlm")
+    async with MilestoneCameraClient("192.168.20.76", 443, 'bbarrie', "RedHeel44+", is_fallback=True) as client:
+        cameras = await client.get_system_info()
         first_guid = next(iter(cameras))
-        first_guid = "3f75a083-f685-4c09-8f70-c71dfc3db055"
 
-        #streams = client.start_live(first_guid)
-        now = datetime.datetime.now()
+        streams = client.start_live(first_guid)
+        #now = datetime.datetime.now()
         
-        from_time = now.replace(hour=7, minute=10, second=0).astimezone(datetime.timezone.utc)
-        to_time = now.replace(hour=8, minute=10, second=0).astimezone(datetime.timezone.utc)
+        #from_time = now.replace(hour=7, minute=10, second=0).astimezone(datetime.timezone.utc)
+        #to_time = now.replace(hour=8, minute=10, second=0).astimezone(datetime.timezone.utc)
 
-        streams = client.start_replay(first_guid, from_time, to_time, 0)
+        #streams = client.start_replay(first_guid, from_time, to_time, 0)
         async for img, time_frame in streams:
-            print(time_frame)
+            #print(time_frame)
             cv2.imwrite("test.jpg", img)
+            break
 
 if __name__ == "__main__":
 
