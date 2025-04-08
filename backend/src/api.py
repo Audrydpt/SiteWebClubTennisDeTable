@@ -26,8 +26,7 @@ from starlette.requests import Request
 
 from gunicorn.app.base import BaseApplication
 
-from backend.src.task_manager import JobResult, ResultsStore
-from task_manager import JobStatus, TaskManager
+from task_manager import JobResult, ResultsStore, JobStatus, TaskManager
 
 from typing import Annotated, Literal, Optional, Type, Union, List, Dict, Any
 from enum import Enum
