@@ -510,27 +510,21 @@ export default function Results({
         <h2 className="text-lg font-semibold">Résultats de recherche</h2>
         <div className="flex gap-2">
           {/* Sort controls */}
-          <div className="flex items-center gap-1 mr-2 border rounded-lg overflow-hidden">
-            <Toggle
-              pressed={sortType === 'score'}
-              onPressedChange={() => sortType !== 'score' && toggleSortType()}
+          <div className="flex items-center gap-1 mr-2">
+            <Button
+              variant={sortType === 'score' ? 'default' : 'outline'}
               size="sm"
-              className="rounded-none border-r data-[state=on]:bg-accent"
-              aria-label="Trier par score"
-              title="Trier par score"
+              onClick={() => setSortType('score')}
             >
               Score
-            </Toggle>
-            <Toggle
-              pressed={sortType === 'date'}
-              onPressedChange={() => sortType !== 'date' && toggleSortType()}
+            </Button>
+            <Button
+              variant={sortType === 'date' ? 'default' : 'outline'}
               size="sm"
-              className="rounded-none data-[state=on]:bg-accent"
-              aria-label="Trier par date"
-              title="Trier par date"
+              onClick={() => setSortType('date')}
             >
               Date
-            </Toggle>
+            </Button>
           </div>
 
           {/* Order toggle */}
@@ -549,15 +543,6 @@ export default function Results({
               <SortAsc className="h-4 w-4" />
             )}
           </Button>
-          {/*
-          <Button
-            variant={testMode ? 'destructive' : 'outline'}
-            size="sm"
-            onClick={() => setTestMode(!testMode)}
-          >
-            {testMode ? 'Arrêter' : 'Tester'}
-          </Button>
-          */}
           <Button onClick={handleResumeLastSearch}>
             Reprendre
           </Button>
