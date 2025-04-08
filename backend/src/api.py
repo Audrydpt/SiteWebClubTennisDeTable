@@ -549,45 +549,41 @@ class FastAPIServer:
 
 
     def __create_vms(self):
-        async def __get_vms_config(self):
-            """get configuration for VMS"""
+        async def get_vms_config():
             dal = GenericDAL()
-            settings = await dal.async_get(Settings)
-
-            settings_dict = {}
-            for setting in settings:
-                settings_dict[setting.key_index] = setting.value_index
-
-            vms_config = settings_dict.get("vms", {})
-            #type = vms_config.get("type", None)
-            ip = vms_config.get("ip", None)
-            port = vms_config.get("port", None)
+            settings = await dal.async_get(Settings, key_index= "vms")
+            if not settings:
+                raise Exception("VMS settings not found")
             
-            return ip, port
+            vms_host = settings.get("ip", None)
+            vms_port = settings.get("port", None)
+            vms_username = settings.get("username", None)
+            vms_password = settings.get("password", None)
+            vms_type = settings.get("type", None)
+            
+            return vms_host, vms_port, vms_username, vms_password, vms_type
 
         @self.app.get("/vms/cameras", tags=["vms"])
         async def get_cameras():
             try:
-                ip, port = await self.__get_vms_config()
-
-                if ip is None or port is None:
+                vms_host, vms_port, vms_username, vms_password, vms_type = await get_vms_config()
+                if vms_host is None or vms_port is None:
                     raise HTTPException(status_code=400, detail="VMS IP or port not configured. Please configure VMS settings before trying to access cameras.")
                 
-                async with CameraClient(ip, port) as client:
+                async with CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type) as client:
                     return await client.get_system_info()
             except Exception as e:
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
 
         @self.app.get("/vms/cameras/{guuid}/live", tags=["vms"])
         async def get_live(guuid: str):
-            ip, port = await self.__get_vms_config()
-
-            if ip is None or port is None:
-                raise HTTPException(status_code=400, detail="VMS IP or port not configured. Please configure VMS settings before trying to access live camera.")
+            vms_host, vms_port, vms_username, vms_password, vms_type = await get_vms_config()
+            if vms_host is None or vms_port is None:
+                raise HTTPException(status_code=400, detail="VMS IP or port not configured. Please configure VMS settings before trying to access cameras.")
             
             return HTTPException(status_code=501, detail="Not implemented")
             try:
-                async with CameraClient(ip, port) as client:
+                async with CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type) as client:
                     streams = client.start_live(guuid)
                     img = await anext(streams)
                     _, bytes = cv2.imencode('.jpg', img)
@@ -599,12 +595,11 @@ class FastAPIServer:
         @self.app.get("/vms/cameras/{guuid}/replay", tags=["vms"])
         async def get_replay(guuid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0):
             try:
-                ip, port = await self.__get_vms_config()
-
-                if ip is None or port is None:
-                    raise HTTPException(status_code=400, detail="VMS IP or port not configured. Please configure VMS settings before trying to access replay.")
+                vms_host, vms_port, vms_username, vms_password, vms_type = await get_vms_config()
+                if vms_host is None or vms_port is None:
+                    raise HTTPException(status_code=400, detail="VMS IP or port not configured. Please configure VMS settings before trying to access cameras.")
                 
-                async with CameraClient(ip, port) as client:
+                async with CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type) as client:
                     streams = client.start_replay(guuid, from_time, to_time, gap)
                     img, _ = await anext(streams)
                     _, bytes = cv2.imencode('.jpg', img)
