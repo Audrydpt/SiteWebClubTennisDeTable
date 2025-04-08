@@ -3,8 +3,6 @@ import { Sparkles } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { z } from 'zod';
-
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -32,49 +30,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import useAIAPI from '../hooks/use-ai';
 
-// Schéma de validation
-const aiSchema = z.object({
-  ip: z.string().min(7).ip(),
-  port: z.number().int().min(1).max(65535),
-  object: z.string(),
-  vehicle: z.string(),
-  person: z.string(),
-});
+import { aiSchema, AISettings, useAIAPI } from '../hooks/use-ai';
 
-type AIFormValues = z.infer<typeof aiSchema>;
-
-function AISettings() {
+export default function IASettings() {
   const { t } = useTranslation('settings');
   const { query, edit } = useAIAPI();
 
-  const form = useForm<AIFormValues>({
+  const form = useForm<AISettings>({
     resolver: zodResolver(aiSchema),
     defaultValues: {
       ip: '',
-      port: 1,
+      port: 0,
       object: '',
+      vehicle: '',
+      person: '',
     },
   });
 
-  // Charger les données existantes
   useEffect(() => {
     if (query.data && query.data.ai) {
-      try {
-        const aiData = JSON.parse(query.data.ai);
-        form.reset({
-          ip: aiData.ip || '',
-          port: aiData.port || '',
-          object: aiData.type || '',
-        });
-      } catch (error) {
-        console.error('Erreur lors du traitement des données AI:', error);
-      }
+      form.reset(query.data.ai);
     }
   }, [query.data, form]);
 
-  const onSubmit = (data: AIFormValues) => {
+  const onSubmit = (data: AISettings) => {
     edit(data, {
       onSuccess: () => {
         toast(t('ai-settings.toast.success'), {
@@ -133,8 +113,12 @@ function AISettings() {
                         <FormLabel>{t('ai-settings.port')}</FormLabel>
                         <FormControl>
                           <Input
+                            type="number"
                             placeholder={t('ai-settings.selectPort')}
                             {...field}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value))
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -257,5 +241,3 @@ function AISettings() {
     </div>
   );
 }
-
-export default AISettings;
