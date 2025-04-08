@@ -428,9 +428,6 @@ export default function useSearch() {
           // On log l'erreur mais on continue la recherche
         }
 
-        // Attendre un court délai pour s'assurer que l'annulation est bien traitée
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
         // Créer un nouvel AbortController pour cette requête
         abortControllerRef.current = new AbortController();
 
@@ -466,9 +463,6 @@ export default function useSearch() {
         initializeSourceProgress(selectedSources);
 
         setJobId(guid);
-
-        // Attendre un bref délai avant d'initialiser le WebSocket
-        await new Promise((resolve) => setTimeout(resolve, 50));
 
         // Initialiser automatiquement le WebSocket après avoir obtenu le guid
         initWebSocket(guid);
