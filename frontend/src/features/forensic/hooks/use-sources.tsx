@@ -12,7 +12,7 @@ interface Camera {
 const BASE_URL = process.env.MAIN_API_URL || '';
 
 export default function useSources(
-  initialSelectedCameras: string[] = [] // idem non? pourquoi t'as besoin de ça ?
+  initialSelectedCameras: string[] = [] // idem non? pourquoi t'as besoin de Ã§a ?
 ) {
   const { sessionId = '' } = useAuth();
   const [selectedCameras, setSelectedCameras] = useState<string[]>(

@@ -111,14 +111,19 @@ class ResultsStore:
         self.max_results = max_results
         self._redis = None
         self._pool = None
-        
+
     async def _get_redis(self) -> aioredis.Redis:
         if self._pool is None:
             self._pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
         if self._redis is None:
             self._redis = aioredis.Redis(connection_pool=self._pool)
         return self._redis
-        
+
+    async def get_frame(self, job_id: str, frame_uuid: str) -> Optional[bytes]:
+        redis = await self._get_redis()
+        frame_key = f"task:{job_id}:frame:{frame_uuid}"
+        return await redis.get(frame_key)
+
     async def add_result(self, result: JobResult) -> None:
         redis = await self._get_redis()
 

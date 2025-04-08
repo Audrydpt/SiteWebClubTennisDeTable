@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+/* eslint-disable no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-shadow,consistent-return */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import useLatest from '@/hooks/use-latest';
@@ -26,6 +26,8 @@ export default function useSearch() {
   // Références pour WebSocket et AbortController
   const wsRef = useRef<WebSocket | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const [displayResults, setDisplayResults] = useState<ForensicResult[]>([]);
 
   const metadataQueue = useRef<{
     timestamp?: string;
@@ -229,6 +231,7 @@ export default function useSearch() {
             // Add to heap and get sorted results
             forensicResultsHeap.addResult(newResult);
             setResults(forensicResultsHeap.getBestResults());
+            setDisplayResults(forensicResultsHeap.getBestResults());
           }
         };
 
@@ -269,13 +272,128 @@ export default function useSearch() {
     },
     [cleanupResources]
   );
+  const resumeJob = async (jobId: string) => {
+    try {
+      setIsSearching(true);
+      setJobId(jobId);
+      localStorage.setItem('currentJobId', jobId);
+      forensicResultsHeap.clear();
+
+      const resultsResponse = await fetch(
+        `${process.env.MAIN_API_URL}/forensics/${jobId}`
+      );
+      if (!resultsResponse.ok)
+        throw new Error(`Erreur API: ${resultsResponse.status}`);
+
+      const resultsData = await resultsResponse.json();
+
+      if (resultsData?.results) {
+        const sourcesProgress = resultsData.results
+          .filter((r: { type: string }) => r.type === 'progress')
+          .reduce((acc: any, curr: any) => {
+            if (!acc[curr.guid]) {
+              acc[curr.guid] = {
+                sourceId: curr.guid,
+                sourceName:
+                  curr.source_name || `Source ${curr.guid.slice(0, 8)}...`,
+                progress: curr.progress,
+                timestamp: curr.timestamp || new Date().toISOString(),
+                startTime: curr.start_time || new Date().toISOString(),
+              };
+            } else if (curr.progress > acc[curr.guid].progress) {
+              acc[curr.guid].progress = curr.progress;
+              acc[curr.guid].timestamp = curr.timestamp;
+            }
+            return acc;
+          }, {});
+
+        setSourceProgress(Object.values(sourcesProgress));
+
+        const detectionResults = await Promise.all(
+          resultsData.results
+            .filter((r: any) => r.metadata?.type === 'detection')
+            .map(async (result: any) => {
+              const frameId = result.frame_uuid;
+              const imageResponse = await fetch(
+                `${process.env.MAIN_API_URL}/forensics/${jobId}/frames/${frameId}`
+              );
+
+              if (!imageResponse.ok) {
+                console.error(
+                  `Erreur lors du chargement de l'image pour ${frameId}`
+                );
+                return null;
+              }
+
+              const imageBlob = await imageResponse.blob();
+              const imageUrl = URL.createObjectURL(imageBlob);
+
+              return {
+                id: frameId,
+                imageData: imageUrl, // Utilisation de l'URL blob
+                timestamp:
+                  result.metadata?.timestamp || new Date().toISOString(),
+                score: result.metadata?.score || 0,
+                cameraId:
+                  result.metadata?.camera ||
+                  result.metadata?.source ||
+                  'unknown',
+                type: 'detection',
+                attributes: result.metadata?.attributes || {},
+                progress: result.metadata?.progress || 0,
+              };
+            })
+        );
+
+        // Filtrer les nulls résultant de l'échec de chargement d'images
+        const validDetectionResults = detectionResults.filter(
+          (result) => result !== null
+        );
+
+        validDetectionResults.forEach((res: ForensicResult) =>
+          forensicResultsHeap.addResult(res)
+        );
+
+        console.log(
+          '🧠 Détections valides récupérées:',
+          validDetectionResults.length
+        );
+
+        setResults(validDetectionResults);
+        setDisplayResults(validDetectionResults);
+        const maxProgress = Math.max(
+          ...Object.values(sourcesProgress).map((s: any) => s.progress || 0),
+          0
+        );
+        setProgress(maxProgress);
+
+        localStorage.setItem('currentJobId', jobId);
+
+        console.log('🔄 Job repris avec succès:', jobId);
+        console.log(resultsData);
+
+        return validDetectionResults;
+      }
+
+      return [];
+    } catch (error) {
+      console.error('Erreur lors de la reprise du job:', error);
+      setResults([]);
+      setDisplayResults([]);
+      setProgress(null);
+      setSourceProgress([]);
+      return [];
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const startSearch = useCallback(
     async (formData: CustomFormData) => {
-      console.log('hi');
       try {
         // Reset states
         setResults([]);
+        setDisplayResults([]);
         setIsSearching(true);
         setIsCancelling(false);
         forensicResultsHeap.clear();
@@ -298,8 +416,6 @@ export default function useSearch() {
 
         // Format query and make API call
         const queryData = formatQuery(formData);
-        console.log('queryData', queryData);
-
         const response = await fetch(`${process.env.MAIN_API_URL}/forensics`, {
           method: 'POST',
           headers: {
@@ -322,6 +438,9 @@ export default function useSearch() {
           throw new Error('No job ID returned from API');
         }
 
+        // Stocker le jobId dans le localStorage
+        localStorage.setItem('currentJobId', guid);
+
         // Initialize source progress with selected sources
         const selectedSources = formData.cameras || [];
         initializeSourceProgress(selectedSources);
@@ -331,7 +450,6 @@ export default function useSearch() {
         initWebSocket(guid);
         return guid;
       } catch (error) {
-        // Ne pas logger d'erreur si c'est une annulation intentionnelle
         if (error instanceof Error && error.name !== 'AbortError') {
           console.error('❌ Erreur lors du démarrage de la recherche:', error);
         }
@@ -437,5 +555,7 @@ export default function useSearch() {
     isSearching,
     jobId,
     sourceProgress,
+    displayResults,
+    resumeJob,
   };
 }

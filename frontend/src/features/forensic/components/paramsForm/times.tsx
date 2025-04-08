@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
+import { useState, useEffect, Dispatch, SetStateAction } from 'react';
+
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CalendarIcon, Clock } from 'lucide-react';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useWatch } from 'react-hook-form';
 
 import {
