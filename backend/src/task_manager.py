@@ -132,11 +132,13 @@ class ResultsStore:
 
         # Stocker les métadonnées du résultat (sans la frame)
         result_data = result.to_redis_message()
-        await redis.lpush(result_list_key, json.dumps(result_data))
-        await redis.ltrim(result_list_key, 0, self.max_results - 1)
 
         # Publier le résultat sur le canal Redis
         await redis.publish(channel_name, json.dumps(result_data))
+
+        if result.frame_uuid:
+            await redis.lpush(result_list_key, json.dumps(result_data))
+            await redis.ltrim(result_list_key, 0, self.max_results - 1)
 
         if result.frame and result.frame_uuid:
             # Stocker la frame séparément
