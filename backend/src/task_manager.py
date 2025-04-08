@@ -755,10 +755,11 @@ class VehicleReplayJob:
                 logger.info("Connected to AI Service")
 
                 dal = GenericDAL()
-                settings = await dal.async_get(Settings, key_index= "vms").first()
+                settings = await dal.async_get(Settings, key_index= "vms")
                 if not settings:
                     raise Exception("VMS settings not found")
                 
+                settings = settings.first()
                 vms_host = settings.get("ip", None)
                 vms_port = settings.get("port", None)
                 vms_username = settings.get("username", None)
