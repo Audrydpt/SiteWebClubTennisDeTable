@@ -263,7 +263,12 @@ class GenetecCameraClient(CameraClient):
     async def get_system_info(self) -> Optional[Dict[str, str]]:
         xml = """<?xml version="1.0" encoding="UTF-8"?><methodcall><requestid>0</requestid><methodname>systeminfo</methodname></methodcall>"""
         response = await self._send_request(xml)
-        return response
+        res = {}
+        for item in response:
+            res[item] = {
+                "name": response[item],
+            }
+        return res
 
     def _parse_data(self, data: bytes):
         format_str = '>HIHHHQIIIII'
@@ -420,8 +425,8 @@ class MilestoneCameraClient(CameraClient):
                 uuid = camera.find(".//ns:DeviceId", {"ns": self.__namespace}).text
                 res[uuid] = {
                     "name": name,
-                    "HostName": HostName,
-                    "WebServerUri": WebServerUri
+                    "hostName": HostName,
+                    "webServerUri": WebServerUri
                 }
 
         return res
@@ -924,21 +929,18 @@ async def main():
 
     args = parser.parse_args()
 
-    client = CameraClient(args.host, args.port)
+    client = GenetecCameraClient(args.host, args.port)
     try:
-        if False:
-            await test_dual_stream(args.host, args.port)
-        else:
-            cameras = await client.get_system_info()
-            print("Informations système:", cameras)
+        cameras = await client.get_system_info()
+        print("Informations système:", cameras)
 
-            if cameras:
-                first_guid = next(iter(cameras))
-                print("GUID de la première caméra:", first_guid)
+        if cameras:
+            first_guid = next(iter(cameras))
+            print("GUID de la première caméra:", first_guid)
 
-                streams = client.start_live(first_guid)
-                img = await anext(streams)
-                cv2.imwrite("test.jpg", img)
+            streams = client.start_live(first_guid)
+            img = await anext(streams)
+            cv2.imwrite("test.jpg", img)
 
     except Exception as e:
         print(f"Erreur lors de l'exécution: {e}")
@@ -967,6 +969,6 @@ async def test():
 
 if __name__ == "__main__":
 
-    asyncio.run(test())
+    #asyncio.run(test())
     # 7653 server d'image
-    #asyncio.run(main())
+    asyncio.run(main())
