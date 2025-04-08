@@ -133,11 +133,13 @@ class ResultsStore:
 
         # Stocker les métadonnées du résultat (sans la frame)
         result_data = result.to_redis_message()
-        await redis.lpush(result_list_key, json.dumps(result_data))
-        await redis.ltrim(result_list_key, 0, self.max_results - 1)
 
         # Publier le résultat sur le canal Redis
         await redis.publish(channel_name, json.dumps(result_data))
+
+        if result.frame_uuid:
+            await redis.lpush(result_list_key, json.dumps(result_data))
+            await redis.ltrim(result_list_key, 0, self.max_results - 1)
 
         if result.frame and result.frame_uuid:
             # Stocker la frame séparément
@@ -412,6 +414,10 @@ class TaskManager:
     @staticmethod
     async def get_job_results(job_id: str) -> List[JobResult]:
         return await results_store.get_results(job_id)
+
+    @staticmethod
+    async def get_frame(job_id: str, frame_uuid: str) -> Optional[bytes]:
+        return await results_store.get_frame(job_id, frame_uuid)
     
     @staticmethod
     async def stream_job_results(websocket: WebSocket, job_id: str, send_old_results: bool = True):
