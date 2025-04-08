@@ -551,10 +551,10 @@ class FastAPIServer:
         async def get_vms_config():
             dal = GenericDAL()
             settings = await dal.async_get(Settings, key_index= "vms")
-            if not settings:
+            if not settings or len(settings) != 1:
                 raise Exception("VMS settings not found")
                 
-            settings = settings.first()
+            settings = settings[0]
             vms_host = settings.get("ip", None)
             vms_port = settings.get("port", None)
             vms_username = settings.get("username", None)
