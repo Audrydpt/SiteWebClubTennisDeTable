@@ -551,7 +551,7 @@ class FastAPIServer:
     def __create_vms(self):
         async def get_vms_config():
             dal = GenericDAL()
-            settings = await dal.async_get(Settings, key_index= "vms")
+            settings = await dal.async_get(Settings, key_index= "vms").first()
             if not settings:
                 raise Exception("VMS settings not found")
             
