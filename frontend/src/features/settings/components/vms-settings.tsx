@@ -1,11 +1,9 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle, Video, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { z } from 'zod';
-
 import { toast } from 'sonner';
-import useVMSAPI from '../hooks/use-vms';
-import { VMSFormValues, vmsSchema } from '../lib/types';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +14,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -25,91 +31,39 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-function VMSSettings() {
+import useVMSAPI from '../hooks/use-vms';
+import { VMSFormValues, vmsSchema } from '../lib/types';
+
+export default function VMSSettings() {
   const { t } = useTranslation('settings');
-  const [formData, setFormData] = useState<Partial<VMSFormValues>>({});
-  const [isIPValid, setIsIPValid] = useState<boolean | undefined>(undefined);
-  const [isPortValid, setIsPortValid] = useState<boolean | undefined>(
-    undefined
-  );
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const { query, edit } = useVMSAPI();
   const [isTesting, setIsTesting] = useState<boolean>(false);
   const [isTestSuccessful, setIsTestSuccessful] = useState<boolean>(false);
   const [isTestAttempted, setIsTestAttempted] = useState<boolean>(false);
-  const { query, edit } = useVMSAPI();
 
+  const form = useForm<VMSFormValues>({
+    resolver: zodResolver(vmsSchema),
+    defaultValues: {
+      type: undefined,
+      ip: '',
+      port: 0,
+      username: '',
+      password: '',
+    },
+    mode: 'onChange',
+  });
+
+  const vmsType = form.watch('type');
+
+  // Charger les données existantes
   useEffect(() => {
     if (query.data && query.data.vms) {
-      const vmsData = query.data.vms;
-      setFormData(vmsData);
+      form.reset(query.data.vms);
     }
-  }, [query.data]);
-
-  const handleVMSTypeChange = (value: string) => {
-    if (value === 'Milestone') {
-      setFormData({
-        ...formData,
-        type: 'Milestone',
-      });
-    } else if (value === 'Genetec') {
-      setFormData({
-        ...formData,
-        type: 'Genetec',
-      });
-    }
-  };
-
-  const isValidIP = (ip: string) => {
-    const result = z.string().ip().safeParse(ip);
-    return result.success;
-  };
-
-  const handleIPChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = event.target;
-    setFormData({ ...formData, ip: value });
-
-    if (value) {
-      setIsIPValid(isValidIP(value));
-    } else {
-      setIsIPValid(undefined);
-    }
-  };
-
-  const isValidPort = (port: string) => {
-    const portNumber = parseInt(port, 10);
-    if (Number.isNaN(portNumber)) return false;
-    return z.number().int().min(1).max(65535).safeParse(portNumber).success;
-  };
-
-  const handlePortChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = event.target;
-    const portNumber = parseInt(value, 10);
-    if (!Number.isNaN(portNumber)) {
-      setFormData({ ...formData, port: portNumber });
-    }
-
-    if (value) {
-      setIsPortValid(isValidPort(value));
-    } else {
-      setIsPortValid(undefined);
-    }
-  };
-
-  const handleUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = event.target;
-    if (formData.type === 'Milestone') {
-      setFormData((prev) => ({ ...prev, username: value }));
-    }
-  };
-
-  const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = event.target;
-    if (formData.type === 'Milestone') {
-      setFormData((prev) => ({ ...prev, password: value }));
-    }
-  };
+  }, [query.data, form]);
 
   const handleTestCredentials = () => {
+    const formData = form.getValues();
     setIsTesting(true);
     setTimeout(() => {
       setIsTestSuccessful(true);
@@ -123,53 +77,26 @@ function VMSSettings() {
     }, 2000);
   };
 
-  const validateForm = () => {
-    try {
-      if (!formData.type) return false;
-      vmsSchema.parse(formData);
-      return true;
-    } catch (error) {
-      console.error('Form validation error:', error);
-      return false;
-    }
-  };
-
-  const handleSubmit = () => {
-    if (!validateForm() || !formData.type) return;
-
-    setIsSubmitting(true);
-    edit(formData as VMSFormValues, {
+  const onSubmit = (data: VMSFormValues) => {
+    edit(data, {
       onSuccess: () => {
-        setIsSubmitting(false);
         toast(t('vms-settings.toast.success'), {
           description: t('vms-settings.toast.description', {
-            type: formData.type,
-            ip: formData.ip,
-            port: formData.port,
-            username: formData.type === 'Milestone' ? formData.username : '',
-            password: formData.type === 'Milestone' ? formData.password : '',
+            type: data.type,
+            ip: data.ip,
+            port: data.port,
+            username: data.type === 'Milestone' ? data.username : '',
+            password: data.type === 'Milestone' ? data.password : '',
           }),
         });
       },
       onError: () => {
-        setIsSubmitting(false);
         toast(t('vms-settings.toast.error'), {
           description: t('vms-settings.toast.errorDescription'),
         });
       },
     });
   };
-
-  const isMilestone = formData.type === 'Milestone';
-  const isCredentialsRequired = isMilestone;
-
-  const isDisabled =
-    !formData.type ||
-    !formData.ip ||
-    !formData.port ||
-    isIPValid === false ||
-    isPortValid === false ||
-    (isCredentialsRequired && (!formData.username || !formData.password));
 
   return (
     <div className="w-full">
@@ -181,145 +108,191 @@ function VMSSettings() {
           </div>
           <CardDescription>{t('vms-settings.description')}</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <span className="text-sm font-medium">
-              {t('vms-settings.selectVMS')}
-            </span>
-            <Select onValueChange={handleVMSTypeChange} value={formData.type}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('vms-settings.selectVMS')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Genetec">
-                  {t('vms-settings.genetec')}
-                </SelectItem>
-                <SelectItem value="Milestone">
-                  {t('vms-settings.milestone')}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
-          <div className="space-y-2">
-            <span className="text-sm font-medium">
-              {t('vms-settings.host')}
-            </span>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <span className="text-sm font-medium">
-                  {t('vms-settings.ipAddress')}
-                </span>
-                <Input
-                  placeholder={t('vms-settings.selectIP')}
-                  value={formData.ip || ''}
-                  onChange={handleIPChange}
-                  type="text"
-                  className={isIPValid === false ? 'border-destructive' : ''}
-                />
-                {isIPValid === false && (
-                  <p className="text-sm text-destructive mt-1">
-                    {t('ai-settings.invalidIP')}
-                  </p>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <CardContent className="space-y-6">
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('vms-settings.selectVMS')}</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        if (value === 'Genetec') {
+                          // Réinitialiser les champs de Milestone si on change pour Genetec
+                          form.setValue('username', '');
+                          form.setValue('password', '');
+                        }
+                      }}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={t('vms-settings.selectVMS')}
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Genetec">
+                          {t('vms-settings.genetec')}
+                        </SelectItem>
+                        <SelectItem value="Milestone">
+                          {t('vms-settings.milestone')}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">
+                  {t('vms-settings.host')}
+                </h3>
+                <div className="flex gap-4">
+                  <FormField
+                    control={form.control}
+                    name="ip"
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormLabel>{t('vms-settings.ipAddress')}</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder={t('vms-settings.selectIP')}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="port"
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormLabel>{t('vms-settings.port')}</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder={t('vms-settings.selectPort')}
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value))
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {vmsType === 'Milestone' && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium">
+                    {t('vms-settings.credentials')}
+                  </h3>
+                  <div className="flex gap-4">
+                    <FormField
+                      control={form.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>{t('vms-settings.username')}</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder={t('vms-settings.selectUsername')}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>{t('vms-settings.password')}</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="password"
+                              placeholder={t('vms-settings.selectPassword')}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-4 mt-6 items-start">
+                <div className="flex-shrink-0 w-25">
+                  <Button
+                    onClick={handleTestCredentials}
+                    variant="secondary"
+                    className="w-full"
+                    type="button"
+                    disabled={
+                      !form.formState.isValid || vmsType !== 'Milestone'
+                    }
+                  >
+                    {isTesting
+                      ? t('vms-settings.actions.connecting')
+                      : t('vms-settings.actions.testConnection')}
+                  </Button>
+                </div>
+
+                {isTestAttempted && (
+                  <div className="flex p-3 rounded-md bg-muted flex-1">
+                    <div className="mr-3 mt-1">
+                      {isTestSuccessful ? (
+                        <CheckCircle className="h-4 w-4 text-primary" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-destructive" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">
+                        {isTestSuccessful
+                          ? t('vms-settings.connectionSuccess')
+                          : t('vms-settings.connectionFailed')}
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
-              <div className="flex-1">
-                <span className="text-sm font-medium">
-                  {t('vms-settings.port')}
-                </span>
-                <Input
-                  placeholder={t('vms-settings.selectPort')}
-                  value={formData.port?.toString() || ''}
-                  onChange={handlePortChange}
-                  type="text"
-                  className={isPortValid === false ? 'border-destructive' : ''}
-                />
-                {isPortValid === false && (
-                  <p className="text-sm text-destructive mt-1">
-                    {t('vms-settings.invalidPort')}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+            </CardContent>
 
-          <div className="space-y-2">
-            <span className="text-sm font-medium">
-              {t('vms-settings.credentials')}
-            </span>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <span className="text-sm font-medium">
-                  {t('vms-settings.username')}
-                </span>
-                <Input
-                  placeholder={t('vms-settings.selectUsername')}
-                  value={formData.type === 'Milestone' ? formData.username : ''}
-                  onChange={handleUsernameChange}
-                  type="text"
-                />
-              </div>
-              <div className="flex-1">
-                <span className="text-sm font-medium">
-                  {t('vms-settings.password')}
-                </span>
-                <Input
-                  placeholder={t('vms-settings.selectPassword')}
-                  value={formData.type === 'Milestone' ? formData.password : ''}
-                  onChange={handlePasswordChange}
-                  type="password"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-4 mt-6 items-start">
-            <div className="flex-shrink-0 w-25">
+            <CardFooter>
               <Button
-                onClick={handleTestCredentials}
-                variant="secondary"
+                type="submit"
                 className="w-full"
+                disabled={
+                  !form.formState.isValid || form.formState.isSubmitting
+                }
               >
-                {isTesting
-                  ? t('vms-settings.actions.connecting')
-                  : t('vms-settings.actions.testConnection')}
+                {form.formState.isSubmitting
+                  ? t('vms-settings.actions.saving')
+                  : t('vms-settings.actions.applyChanges')}
               </Button>
-            </div>
-
-            {isTestAttempted && (
-              <div className="flex p-3 rounded-md bg-muted flex-1">
-                <div className="mr-3 mt-1">
-                  {isTestSuccessful ? (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <XCircle className="h-4 w-4 text-red-500" />
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm font-medium">
-                    {isTestSuccessful
-                      ? t('vms-settings.connectionSuccess')
-                      : t('vms-settings.connectionFailed')}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button
-            onClick={handleSubmit}
-            className="w-full"
-            disabled={isDisabled}
-          >
-            {isSubmitting
-              ? t('vms-settings.actions.saving')
-              : t('vms-settings.actions.applyChanges')}
-          </Button>
-        </CardFooter>
+            </CardFooter>
+          </form>
+        </Form>
       </Card>
     </div>
   );
 }
-
-export default VMSSettings;

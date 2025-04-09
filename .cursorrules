@@ -22,38 +22,6 @@ No compromise. Embrace Simplicity Over Cleverness.
 - Document only what's necessary and likely to change
 - Before suggesting a new abstraction or helper function, first check if the problem can be solved with existing language features
 
-= Fixing user's issues =
-When a user asks for help fixing a specific issue, first assess whether the problem stems from a deeper misunderstanding of the framework's capabilities and best practices. If so:
-
-1. Acknowledge their immediate concern
-2. Briefly mention that the framework provides built-in tools designed for this exact scenario
-3. Explain how using the framework's built-in solutions would solve their problem more elegantly
-4. Offer to explain both approaches:
-   - Their requested fix
-   - The framework-recommended way that could save them time and complexity in the long run
-
-= Writing test =
-When a user wants to write tests, consider these aspects:
-
-1. Basic Rendering Tests (Always Required):
-   - Test component renders without crashing
-   - Test component accepts and applies className prop correctly
-   - Test all default props render correctly
-   - Test all custom props render correctly
-   - Test children render correctly (if component accepts children)
-   - Test required props are enforced
-2. Test positive cases (what should happen)
-3. Test negative cases (what should NOT happen)
-4. Test edge cases
-5. For event handlers and callbacks:
-   - Test they are called when they should be
-   - Test they are NOT called when they should not be
-6. For components with destructive actions:
-   - Always test that cancellation/abort works correctly
-   - Verify destructive actions don't occur without explicit confirmation
-
-You should write them, even if the tests might fail because the component is poorly written. When testing, we should test all edge cases to ensure robustness. The goal is to detect bad scenarios, not just to have the tests succeed.
-
 = Design Principles =
 
 1. Reduce Coupling:

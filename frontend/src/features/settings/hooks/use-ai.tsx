@@ -1,15 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
+import { z } from 'zod';
 
 type DashboardSettings = Record<string, string>;
 
-interface AISettings {
-  ip: string;
-  port: string;
-  type: string;
-}
+export const aiSchema = z.object({
+  ip: z.string().min(7).ip(),
+  port: z.number().int().min(1).max(65535),
+  object: z.string().min(1),
+  vehicle: z.string().min(1),
+  person: z.string().min(1),
+});
 
-export default function useAIAPI() {
+export type AISettings = z.infer<typeof aiSchema>;
+
+export function useAIAPI() {
   const queryKey = ['ai'];
   const client = useQueryClient();
   const baseUrl = `${process.env.MAIN_API_URL}/dashboard/settings`;

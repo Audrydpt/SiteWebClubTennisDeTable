@@ -115,7 +115,7 @@ class CameraClient(ABC):
         pass
 
     @staticmethod
-    async def create(host: str, port: int, username: str, password: str, type: str):
+    def create(host: str, port: int, username: str, password: str, type: str):
         if not type:
             raise Exception("VMS type is required")
         if not host or not port:
@@ -125,9 +125,9 @@ class CameraClient(ABC):
         if type == "milestone":
             if not username or not password:
                 raise Exception("Username and password are required")
-            return MilestoneCameraClient(host, port, username, password)
+            return lambda: MilestoneCameraClient(host, port, username, password)
         elif type == "genetec":
-            return GenetecCameraClient(host, port)
+            return lambda: GenetecCameraClient(host, port)
         else:
             raise Exception("Unknown VMS type")
 
@@ -263,7 +263,12 @@ class GenetecCameraClient(CameraClient):
     async def get_system_info(self) -> Optional[Dict[str, str]]:
         xml = """<?xml version="1.0" encoding="UTF-8"?><methodcall><requestid>0</requestid><methodname>systeminfo</methodname></methodcall>"""
         response = await self._send_request(xml)
-        return response
+        res = {}
+        for item in response:
+            res[item] = {
+                "name": response[item],
+            }
+        return res
 
     def _parse_data(self, data: bytes):
         format_str = '>HIHHHQIIIII'
@@ -420,8 +425,8 @@ class MilestoneCameraClient(CameraClient):
                 uuid = camera.find(".//ns:DeviceId", {"ns": self.__namespace}).text
                 res[uuid] = {
                     "name": name,
-                    "HostName": HostName,
-                    "WebServerUri": WebServerUri
+                    "hostName": HostName,
+                    "webServerUri": WebServerUri
                 }
 
         return res
@@ -593,8 +598,11 @@ class MilestoneCameraClient(CameraClient):
             raise Exception(f"Camera {camera_guid} not found")
         
         recorder = system_info[camera_guid]
+        logger.info(f"Recorder: {recorder}")
         host = Resolver().resolve(recorder["HostName"])
+        logger.info(f"Host: {host}")
         port = int(recorder["WebServerUri"].split("/")[2].split(":")[1])
+        logger.info(f"Port: {port}")
 
         print(host, port, self.host, recorder["HostName"])
         self.requestid = 1
@@ -743,8 +751,11 @@ class MilestoneCameraClient(CameraClient):
             raise Exception(f"Camera {camera_guid} not found")
         
         recorder = system_info[camera_guid]
+        logger.info(f"Recorder: {recorder}")
         host = Resolver().resolve(recorder["HostName"])
+        logger.info(f"Host: {host}")
         port = int(recorder["WebServerUri"].split("/")[2].split(":")[1])
+        logger.info(f"Port: {port}")
 
         self.requestid = 1
         self.reader, self.writer = await asyncio.wait_for(
@@ -924,21 +935,18 @@ async def main():
 
     args = parser.parse_args()
 
-    client = CameraClient(args.host, args.port)
+    client = GenetecCameraClient(args.host, args.port)
     try:
-        if False:
-            await test_dual_stream(args.host, args.port)
-        else:
-            cameras = await client.get_system_info()
-            print("Informations système:", cameras)
+        cameras = await client.get_system_info()
+        print("Informations système:", cameras)
 
-            if cameras:
-                first_guid = next(iter(cameras))
-                print("GUID de la première caméra:", first_guid)
+        if cameras:
+            first_guid = next(iter(cameras))
+            print("GUID de la première caméra:", first_guid)
 
-                streams = client.start_live(first_guid)
-                img = await anext(streams)
-                cv2.imwrite("test.jpg", img)
+            streams = client.start_live(first_guid)
+            img = await anext(streams)
+            cv2.imwrite("test.jpg", img)
 
     except Exception as e:
         print(f"Erreur lors de l'exécution: {e}")
@@ -967,6 +975,6 @@ async def test():
 
 if __name__ == "__main__":
 
-    asyncio.run(test())
+    #asyncio.run(test())
     # 7653 server d'image
-    #asyncio.run(main())
+    asyncio.run(main())
