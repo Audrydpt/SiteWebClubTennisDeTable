@@ -322,7 +322,32 @@ class TaskManager:
         except Exception as send_e:
             logger.error(f"Erreur lors de l'envoi de la notification d'annulation pour le job {job_id}: {send_e}")
             return False
-    
+
+    @staticmethod
+    def get_job_created(job_id: str) -> Optional[datetime.datetime]:
+
+        try:
+            return datetime.datetime.now(datetime.timezone.utc)
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération de la date de création du job {job_id}: {e}")
+            return None
+
+    @staticmethod
+    def get_job_type(job_id: str) -> Optional[str]:
+
+        try:
+            return "VehicleReplayJob"
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération du type du job {job_id}: {e}")
+            return None
+
+    @staticmethod
+    def get_job_size(job_id: str) -> Optional[int]:
+        try:
+            return 0
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération de la taille du job {job_id}: {e}")
+            return None
     @staticmethod
     def get_job_status(job_id: str) -> JobStatus:
         try:
