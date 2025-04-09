@@ -1,0 +1,71 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+= Writing test =
+When a user wants to write tests, consider these aspects:
+
+
+1. Basic Rendering Tests (Always Required):
+   - Test component renders without crashing
+   - Test component accepts and applies className prop correctly
+   - Test all default props render correctly
+   - Test all custom props render correctly
+   - Test children render correctly (if component accepts children)
+   - Test required props are enforced
+2. Test positive cases (what should happen)
+3. Test negative cases (what should NOT happen)
+4. Test edge cases
+5. For event handlers and callbacks:
+   - Test they are called when they should be
+   - Test they are NOT called when they should not be
+6. For components with destructive actions:
+   - Always test that cancellation/abort works correctly
+   - Verify destructive actions don't occur without explicit confirmation
+
+You should write them, even if the tests might fail because the component is poorly written. When testing, we should test all edge cases to ensure robustness. The goal is to detect bad scenarios, not just to have the tests succeed.
+
+After writing a test, run it ! 
+
+= Test template =
+describe('TestTemplate', () => {
+
+  const renderComponent = (props = {}) => {
+    const defaultProps = {
+      onValueChange: vi.fn(),
+    };
+
+   // ... COMPLETE HERE
+  };
+
+  describe('Basic Rendering', () => {
+   // ... COMPLETE HERE
+  });
+
+  describe('Interaction Tests', () => {
+   // ... COMPLETE HERE
+  });
+
+  describe('Edge Cases', () => {
+   // ... COMPLETE HERE
+  });
+});
+
+= Running test =
+To run a test, you must move to the main project directory "frontend". 
+Then you have to select correct node version using nvm use --lts.
+After all, you can safely run the wanted file using npm.
+
+Quick go: "cd frontend ; nvm use --lts && npm test src/examples/examples.test.tsx"
+
+= JSDOM & NextJS problem =
+ NextJS use portal, so it's might be difficult to write test correctly.
+ Consider using "screen.getByxxx" to target specific element. Use role, label, than text if previous was not possible.
+ Consider using "fireEvent.xxxx" to mimick user input.
+ NEVER USE "data-testid" or similar to target elements.
+
+  You have example of good JSDOM/NextJS test here:
+  - components/where-clauses.test.tsx
+  - features/settings/components/users.test.tsx
+

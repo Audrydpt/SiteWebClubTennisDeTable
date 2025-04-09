@@ -3,14 +3,17 @@ import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 interface ClearableSelectProps extends React.ComponentProps<typeof Select> {
   onValueChange: (value: string | null) => void;
+  className?: string;
 }
 
 export default function ClearableSelect({
   onValueChange,
   children,
+  className,
   ...props
 }: ClearableSelectProps) {
   const [value, setValue] = React.useState<string | null>();
@@ -26,7 +29,7 @@ export default function ClearableSelect({
   };
 
   return (
-    <div className="flex items-center space-x-2">
+    <div className={cn('flex items-center space-x-2', className)}>
       <Select value={value ?? ''} onValueChange={handleSelect} {...props}>
         {children}
       </Select>

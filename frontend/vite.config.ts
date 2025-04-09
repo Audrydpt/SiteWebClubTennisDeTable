@@ -32,6 +32,11 @@ export default defineConfig(({ mode }) => {
       exclude: ['**/node_modules/**', '**/dist/**', '**/src/components/ui/**'],
       globals: true,
       setupFiles: './vitest-setup.ts',
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'json', 'json-summary'],
+        reportsDirectory: './coverage',
+      },
     },
     server: {
       watch: {

@@ -66,6 +66,8 @@ export default function MultiSelect({
                 e.stopPropagation();
                 onChange([]);
               }}
+              role="button"
+              aria-label="Clear selection"
             />
           )}
         </Button>

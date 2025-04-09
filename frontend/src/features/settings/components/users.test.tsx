@@ -34,53 +34,119 @@ describe('Users Component', () => {
     (useUsersAPI as ReturnType<typeof vi.fn>).mockReturnValue(mockHook);
   });
 
-  it('should render user list', () => {
-    render(<Users />);
-    expect(screen.getByText('testUser1')).toBeInTheDocument();
-    expect(screen.getByText('testUser2')).toBeInTheDocument();
-  });
+  const renderComponent = (props = {}) => render(<Users {...props} />);
 
-  it('should open create user dialog', async () => {
-    render(<Users />);
-    await userEvent.click(screen.getByText('settings:addUser'));
-    expect(screen.getByText('settings:createUser.title')).toBeInTheDocument();
-  });
-
-  it('should create a new user', async () => {
-    render(<Users />);
-    await userEvent.click(screen.getByText('settings:addUser'));
-    expect(screen.getByText('settings:createUser.title')).toBeInTheDocument();
-
-    await userEvent.type(screen.getByLabelText('login.username'), 'newUser');
-    await userEvent.type(screen.getByLabelText('login.password'), 'AcicAcic1-');
-
-    await userEvent.click(
-      screen.getByRole('combobox', { name: 'login.privilege' })
-    );
-
-    const elem = screen.getByRole('option', {
-      name: 'privileges.Maintainer',
-    });
-    await userEvent.click(elem, {
-      pointerState: await userEvent.pointer({ target: elem }),
+  describe('Basic Rendering', () => {
+    it('should render user list', () => {
+      renderComponent();
+      expect(screen.getByText('testUser1')).toBeInTheDocument();
+      expect(screen.getByText('testUser2')).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByText('settings:createUser.submit'));
-    fireEvent.click(screen.getByText('settings:createUser.submit'));
-
-    await waitFor(() => {
-      expect(mockHook.insert).toHaveBeenCalled();
+    it('should render add user button', () => {
+      renderComponent();
+      expect(screen.getByText('settings:addUser')).toBeInTheDocument();
     });
   });
 
-  it('should delete a user', async () => {
-    render(<Users />);
+  describe('Interaction Tests', () => {
+    it('should open create user dialog', async () => {
+      renderComponent();
+      await userEvent.click(screen.getByText('settings:addUser'));
+      expect(screen.getByText('settings:createUser.title')).toBeInTheDocument();
+    });
 
-    await userEvent.click(screen.getAllByLabelText('Delete')[0]);
+    it('should create a new user', async () => {
+      renderComponent();
+      await userEvent.click(screen.getByText('settings:addUser'));
 
-    const dialog = screen.getByRole('alertdialog');
-    within(dialog).getByRole('button', { name: 'delete' }).click();
+      await userEvent.type(screen.getByLabelText('login.username'), 'newUser');
+      await userEvent.type(
+        screen.getByLabelText('login.password'),
+        'AcicAcic1-'
+      );
 
-    expect(mockHook.remove).toHaveBeenCalled();
+      await userEvent.click(
+        screen.getByRole('combobox', { name: 'login.privilege' })
+      );
+
+      const elem = screen.getByRole('option', {
+        name: 'privileges.Maintainer',
+      });
+      await userEvent.click(elem, {
+        pointerState: await userEvent.pointer({ target: elem }),
+      });
+
+      await userEvent.click(screen.getByText('settings:createUser.submit'));
+      fireEvent.click(screen.getByText('settings:createUser.submit'));
+
+      await waitFor(() => {
+        expect(mockHook.insert).toHaveBeenCalled();
+      });
+    });
+
+    it('should delete a user', async () => {
+      renderComponent();
+      await userEvent.click(screen.getAllByLabelText('Delete')[0]);
+
+      const dialog = screen.getByRole('alertdialog');
+      within(dialog).getByRole('button', { name: 'delete' }).click();
+
+      expect(mockHook.remove).toHaveBeenCalled();
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle empty user list', () => {
+      const emptyMockHook = {
+        ...mockHook,
+        query: {
+          ...mockHook.query,
+          data: [],
+        },
+        getAll: () => [],
+      };
+      (useUsersAPI as ReturnType<typeof vi.fn>).mockReturnValue(emptyMockHook);
+
+      renderComponent();
+      expect(screen.queryByText('testUser1')).not.toBeInTheDocument();
+      expect(screen.queryByText('testUser2')).not.toBeInTheDocument();
+      expect(screen.getByRole('table')).toBeInTheDocument();
+      expect(
+        screen.queryByRole('row', { name: /testUser/ })
+      ).not.toBeInTheDocument();
+    });
+
+    it('should handle loading state', () => {
+      const loadingMockHook = {
+        ...mockHook,
+        query: {
+          ...mockHook.query,
+          isLoading: true,
+        },
+      };
+      (useUsersAPI as ReturnType<typeof vi.fn>).mockReturnValue(
+        loadingMockHook
+      );
+
+      renderComponent();
+      expect(document.querySelector('.animate-spin')).toBeInTheDocument();
+      expect(screen.queryByText('testUser1')).not.toBeInTheDocument();
+    });
+
+    it('should handle error state', () => {
+      const errorMockHook = {
+        ...mockHook,
+        query: {
+          ...mockHook.query,
+          isError: true,
+        },
+      };
+      (useUsersAPI as ReturnType<typeof vi.fn>).mockReturnValue(errorMockHook);
+
+      renderComponent();
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+      expect(screen.queryByText('testUser1')).not.toBeInTheDocument();
+    });
   });
 });
