@@ -373,12 +373,15 @@ class FastAPIServer:
                     created = TaskManager.get_job_created(job_id)
                     job_type = TaskManager.get_job_type(job_id)
                     size = TaskManager.get_job_size(job_id)
+                    count = TaskManager.get_job_count(job_id)
 
                     task_info = {
                         "status": status,
                         "type": job_type,
                         "created": created,
-                        "size": size,
+                        "count": count,
+                        "size (ko)": size,
+
                     }
                     
                     if status == JobStatus.FAILURE:
