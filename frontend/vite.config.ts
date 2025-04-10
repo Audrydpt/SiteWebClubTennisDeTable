@@ -34,7 +34,7 @@ export default defineConfig(({ mode }) => {
       setupFiles: './vitest-setup.ts',
       coverage: {
         provider: 'v8',
-        reporter: ['text', 'json', 'json-summary'],
+        reporter: ['json-summary', 'text-summary', 'html'],
         reportsDirectory: './coverage',
       },
     },
