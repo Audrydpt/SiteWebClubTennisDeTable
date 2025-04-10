@@ -601,7 +601,7 @@ class MilestoneCameraClient(CameraClient):
         logger.info(f"Recorder: {recorder}")
         host = Resolver().resolve(recorder["hostName"])
         logger.info(f"Host: {host}")
-        port = int(recorder["WebServerUri"].split("/")[2].split(":")[1])
+        port = int(recorder["webServerUri"].split("/")[2].split(":")[1])
         logger.info(f"Port: {port}")
 
         self.requestid = 1
@@ -755,6 +755,8 @@ class MilestoneCameraClient(CameraClient):
         logger.info(f"Host: {host}")
         port = int(recorder["WebServerUri"].split("/")[2].split(":")[1])
         logger.info(f"Port: {port}")
+        host = Resolver().resolve(recorder["hostName"])
+        port = int(recorder["webServerUri"].split("/")[2].split(":")[1])
 
         self.requestid = 1
         self.reader, self.writer = await asyncio.wait_for(
