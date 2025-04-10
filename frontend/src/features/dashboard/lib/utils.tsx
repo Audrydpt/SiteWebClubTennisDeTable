@@ -165,7 +165,7 @@ export async function getWidgetData(
     );
   }
 
-  const query = `${process.env.MAIN_API_URL}/dashboard/widgets/${props.table}`;
+  const query = `${process.env.MAIN_API_URL}/dashboard/widgets/${props.table}`; // props.table => props.idWidget;
 
   let params = '?';
   params += `&aggregate=${props.aggregation}`;

@@ -296,7 +296,17 @@ class TaskManager:
     def submit_job(job_type: str, job_params: Dict[str, Any]) -> str:
         try:
             task = execute_job.apply_async(args=[job_type, job_params])
-            return task.id
+            job_id = task.id
+
+            redis_sync = redis.Redis(host='localhost', port=6379, db=1)
+            job_key = f"task:{job_id}"
+            created_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+            redis_sync.hset(job_key, "created_at", created_at)
+            redis_sync.hset(job_key, "job_type", job_type)
+
+            return job_id
+
         except Exception as e:
             logger.error(f"Erreur lors de la soumission du job: {e}")
             raise
@@ -322,7 +332,86 @@ class TaskManager:
         except Exception as send_e:
             logger.error(f"Erreur lors de l'envoi de la notification d'annulation pour le job {job_id}: {send_e}")
             return False
-    
+
+    @staticmethod
+    def get_job_created(job_id: str) -> Optional[datetime.datetime]:
+        try:
+            redis_client = redis.Redis(host='localhost', port=6379, db=1)
+            job_key = f"task:{job_id}"
+            created_at = redis_client.hget(job_key, "created_at")
+            if created_at:
+                return datetime.datetime.fromisoformat(created_at.decode('utf-8'))
+            return None
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération de la date de création du job {job_id}: {e}")
+            return None
+
+    @staticmethod
+    def get_job_type(job_id: str) -> Optional[str]:
+        try:
+            # Utiliser Redis pour stocker et récupérer le type de job
+            redis_client = redis.Redis(host='localhost', port=6379, db=1)
+            job_key = f"task:{job_id}"
+            job_type = redis_client.hget(job_key, "job_type")
+
+            if job_type:
+                return job_type.decode('utf-8')
+
+            results = run_async(results_store.get_results)(job_id)
+            if results:
+                for result in results:
+                    if "type" in result.metadata:
+                        if result.metadata.get("type") == "person":
+                            return "PersonReplayJob"
+                        else:
+                            return "VehicleReplayJob"
+
+            return "UnknownJobType"
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération du type du job {job_id}: {e}")
+            return None
+
+    @staticmethod
+    def get_job_size(job_id: str) -> Optional[int]:
+        try:
+            # Connexion à Redis pour récupérer les données
+            redis_client = redis.Redis(host='localhost', port=6379, db=1)
+            result_list_key = f"task:{job_id}:results"
+
+            # Récupérer le nombre de résultats
+            nb_results = redis_client.llen(result_list_key)
+
+            # Estimer la taille des métadonnées (approximation)
+            metadata_size = 0
+            results_json = redis_client.lrange(result_list_key, 0, min(5, nb_results-1))
+            if results_json:
+                # Calculer la taille moyenne des métadonnées sur les premiers résultats
+                avg_size = sum(len(r) for r in results_json) / len(results_json)
+                metadata_size = int(avg_size * nb_results)
+
+            # Estimer la taille des frames (en supposant une taille moyenne de 50Ko par frame)
+            frame_pattern = f"task:{job_id}:frame:*"
+            frame_keys = redis_client.keys(frame_pattern)
+            frame_size = 0
+
+            if frame_keys:
+                # Échantillonner quelques frames pour obtenir une taille moyenne
+                sample_size = min(5, len(frame_keys))
+                sample_keys = frame_keys[:sample_size]
+                sample_frames = [redis_client.get(key) for key in sample_keys]
+                avg_frame_size = sum(len(frame) if frame else 0 for frame in sample_frames) / sample_size
+                frame_size = int(avg_frame_size * len(frame_keys))
+
+            # Taille totale estimée en kilooctets
+            total_size_kb = (metadata_size + frame_size) // 1024
+
+            return total_size_kb if total_size_kb > 0 else 1  # Retourner au moins 1Ko
+
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération de la taille du job {job_id}: {e}")
+            logger.error(traceback.format_exc())
+            return None
+
     @staticmethod
     def get_job_status(job_id: str) -> JobStatus:
         try:

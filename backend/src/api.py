@@ -16,7 +16,7 @@ import logging
 
 from pydantic import Field, create_model
 
-from sqlalchemy import func, JSON
+from sqlalchemy import func, JSON, text
 from sqlalchemy.inspection import inspect
 
 from fastapi.staticfiles import StaticFiles
@@ -372,8 +372,15 @@ class FastAPIServer:
                 tasks = {}
                 for job_id in await TaskManager.get_jobs():
                     status = TaskManager.get_job_status(job_id)
+                    created = TaskManager.get_job_created(job_id)
+                    job_type = TaskManager.get_job_type(job_id)
+                    size = TaskManager.get_job_size(job_id)
+
                     task_info = {
-                        "status": status
+                        "status": status,
+                        "type": job_type,
+                        "created": created,
+                        "size": size,
                     }
                     
                     if status == JobStatus.FAILURE:
@@ -674,6 +681,42 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
 
+    async def create_materialized_view(self, widget_id: str, table: str, aggregation: str, group_by: str = None):
+        """Create a materialized view for a widget"""
+        try:
+            #Build the SQL query based on widget config
+            group_clause = f", {group_by}" if group_by else ""
+            group_by_clause = f"GROUP BY bucket{group_clause}" if group_by else "GROUP BY bucket"
+
+            #Construct the SQL query
+            sql = f"""
+            CREATE MATERIALIZED VIEW "widget_{widget_id}" WITH (timescaledb.continuous) AS
+            SELECT time_bucket('{aggregation}', timestamp) AS bucket,
+                   count(timestamp) as counts
+                   {group_by if group_by else ''}
+            FROM {table.lower()}
+            {group_by_clause};
+            """
+
+            sql2 = f"""
+            SELECT add_continuous_aggregate_policy('widget_{widget_id}'::regclass,
+              start_offset => NULL, 
+              end_offset => '{aggregation}'::interval,
+              schedule_interval => '{aggregation}'::interval);
+            """
+            # Execute the statement using SQLAlchemy
+            session = GenericDAL.AsyncSession()
+            conn = await session.connection()
+            await conn.execution_options(isolation_level="AUTOCOMMIT").execute(text(sql))
+            await conn.execution_options(isolation_level="AUTOCOMMIT").execute(text(sql2))
+
+            logger.info(f"Create materialized view {widget_id} with aggregation {aggregation} for widget {widget_id}")
+            return True
+        except Exception as e:
+            logger.error(f'Failed to create materialized view for widget {widget_id}: {e}')
+            logger.error(traceback.format_exc())
+            return False
+        
     def __create_widgets(self):
         fields = {}
         for column in inspect(Widget).mapper.column_attrs:
@@ -711,6 +754,15 @@ class FastAPIServer:
                 )
                 guid = await dal.async_add(widget)
                 widget.id = guid
+
+                # creation de la vue matérialisée
+                await self.create_materialized_view(
+                    str(guid),
+                    widget.table,
+                    widget.aggregation,
+                    widget.groupBy if hasattr(widget, "groupBy") else None
+                )
+
                 return widget
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))

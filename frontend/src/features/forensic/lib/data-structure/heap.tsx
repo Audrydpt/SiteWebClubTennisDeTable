@@ -61,9 +61,18 @@ class ForensicResultsHeap {
         results.push(item);
       }
     }
+    // Si les scores sont identiques, trier par date la plus récente
+    return results.sort((a, b) => {
+      if (Math.abs(b.score - a.score) < 0.0000001) {
+        const dateA =
+          typeof a.timestamp === 'string' ? new Date(a.timestamp).getTime() : 0;
+        const dateB =
+          typeof b.timestamp === 'string' ? new Date(b.timestamp).getTime() : 0;
 
-    // Sort in descending order (highest score first)
-    return results.sort((a, b) => b.score - a.score);
+        return dateB - dateA;
+      }
+      return b.score - a.score;
+    });
   }
 
   clear(): void {

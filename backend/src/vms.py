@@ -598,7 +598,6 @@ class MilestoneCameraClient(CameraClient):
             raise Exception(f"Camera {camera_guid} not found")
         
         recorder = system_info[camera_guid]
-        logger.info(f"Recorder: {recorder}")
         host = Resolver().resolve(recorder["hostName"])
         logger.info(f"Host: {host}")
         port = int(recorder["webServerUri"].split("/")[2].split(":")[1])
@@ -750,7 +749,6 @@ class MilestoneCameraClient(CameraClient):
             raise Exception(f"Camera {camera_guid} not found")
         
         recorder = system_info[camera_guid]
-        logger.info(f"Recorder: {recorder}")
         host = Resolver().resolve(recorder["hostName"])
         logger.info(f"Host: {host}")
         port = int(recorder["WebServerUri"].split("/")[2].split(":")[1])
