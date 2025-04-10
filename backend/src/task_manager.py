@@ -301,7 +301,9 @@ class TaskManager:
             redis_sync = redis.Redis(host='localhost', port=6379, db=1)
             job_key = f"task:{job_id}"
             created_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
             redis_sync.hset(job_key, "created_at", created_at)
+            redis_sync.hset(job_key, "job_type", job_type)
 
             return job_id
 
@@ -346,9 +348,25 @@ class TaskManager:
 
     @staticmethod
     def get_job_type(job_id: str) -> Optional[str]:
-
         try:
-            return "VehicleReplayJob"
+            # Utiliser Redis pour stocker et récupérer le type de job
+            redis_client = redis.Redis(host='localhost', port=6379, db=1)
+            job_key = f"task:{job_id}"
+            job_type = redis_client.hget(job_key, "job_type")
+
+            if job_type:
+                return job_type.decode('utf-8')
+
+            results = run_async(results_store.get_results)(job_id)
+            if results:
+                for result in results:
+                    if "type" in result.metadata:
+                        if result.metadata.get("type") == "person":
+                            return "PersonReplayJob"
+                        else:
+                            return "VehicleReplayJob"
+
+            return "UnknownJobType"
         except Exception as e:
             logger.error(f"Erreur lors de la récupération du type du job {job_id}: {e}")
             return None
