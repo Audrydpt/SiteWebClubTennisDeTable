@@ -900,8 +900,10 @@ class FastAPIServer:
             try:
                 dal = GenericDAL()
                 settings = await dal.async_get(Settings, key_index=key)
+                if not settings or len(settings) != 1:
+                    raise HTTPException(status_code=404, detail="Setting not found")
                 
-                return settings
+                return settings[0].value_index
 
             except ValueError as e:
                 logger.error(f"Error retrieving dashboard settings: {str(e)}")
@@ -912,21 +914,15 @@ class FastAPIServer:
             """Update a specific setting by key"""
             try:
                 dal = GenericDAL()
-                settings = await dal.async_get(Settings)
-                
-                setting = next((s for s in settings if s.key_index == key), None)
-                
-                if not setting:
-                    logger.error(f"Setting parameter '{key}' not found")
-                    raise HTTPException(
-                        status_code=404, 
-                        detail=f"Setting '{key}' not found"
-                    )
-                
-                setting.value_index = data.value
-                await dal.async_update(setting)
-            
-                return {"status": "success", "key": key, "value": data.value}
+                settings = await dal.async_get(Settings, key_index=key)
+
+                if not settings or len(settings) != 1:
+                    raise HTTPException(status_code=404, detail="Setting not found")
+
+                data = settings[0]
+                data.value_index = data.value
+                await dal.async_update(data)
+                return data
                 
             except ValueError as e:
                 logger.error(f"Error updating setting '{key}': {str(e)}")
