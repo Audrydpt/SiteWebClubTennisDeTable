@@ -372,6 +372,31 @@ class TaskManager:
             return None
 
     @staticmethod
+    def get_job_count(job_id: str) -> Optional[int]:
+        try:
+            # Connexion à Redis pour récupérer les données
+            redis_client = redis.Redis(host='localhost', port=6379, db=1)
+            result_list_key = f"task:{job_id}:results"
+
+            # Compter le nombre de résultats dans la liste
+            count = redis_client.llen(result_list_key)
+
+            # Si un compte existe déjà dans les métadonnées du job, le retourner
+            job_key = f"task:{job_id}"
+            stored_count = redis_client.hget(job_key, "job_count")
+
+            if stored_count:
+                return int(stored_count.decode('utf-8'))
+
+            # Sinon retourner le nombre de résultats dans la liste
+            return int(count) if count > 0 else 0
+
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération du nombre de résultats du job {job_id}: {e}")
+            logger.error(traceback.format_exc())
+            return None
+
+    @staticmethod
     def get_job_size(job_id: str) -> Optional[int]:
         try:
             # Connexion à Redis pour récupérer les données
