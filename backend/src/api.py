@@ -380,7 +380,7 @@ class FastAPIServer:
                         "type": job_type,
                         "created": created,
                         "count": count,
-                        "size (ko)": size,
+                        "size": size,
 
                     }
                     
