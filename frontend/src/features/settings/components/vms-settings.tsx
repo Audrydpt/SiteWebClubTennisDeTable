@@ -58,7 +58,12 @@ export default function VMSSettings() {
   // Charger les données existantes
   useEffect(() => {
     if (query.data && query.data.vms) {
-      form.reset(query.data.vms);
+      const vmsData =
+        typeof query.data.vms === 'string'
+          ? JSON.parse(query.data.vms)
+          : query.data.vms;
+
+      form.reset(vmsData);
     }
   }, [query.data, form]);
 
