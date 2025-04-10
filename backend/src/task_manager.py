@@ -119,6 +119,14 @@ class ResultsStore:
             self._redis = aioredis.Redis(connection_pool=self._pool)
         return self._redis
 
+    async def get_datetime(self, job_id: str) -> Optional[datetime.datetime]:
+        redis = await self._get_redis()
+        job_key = f"task:{job_id}"
+        created_at = await redis.hget(job_key, "created_at")
+        if created_at:
+            return datetime.datetime.fromisoformat(created_at.decode('utf-8'))
+        return None
+
     async def get_frame(self, job_id: str, frame_uuid: str) -> Optional[bytes]:
         redis = await self._get_redis()
         frame_key = f"task:{job_id}:frame:{frame_uuid}"
@@ -296,7 +304,15 @@ class TaskManager:
     def submit_job(job_type: str, job_params: Dict[str, Any]) -> str:
         try:
             task = execute_job.apply_async(args=[job_type, job_params])
-            return task.id
+            job_id = task.id
+
+            redis_sync = redis.Redis(host='localhost', port=6379, db=1)
+            job_key = f"task:{job_id}"
+            created_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            redis_sync.hset(job_key, "created_at", created_at)
+
+            return job_id
+
         except Exception as e:
             logger.error(f"Erreur lors de la soumission du job: {e}")
             raise
@@ -325,9 +341,8 @@ class TaskManager:
 
     @staticmethod
     def get_job_created(job_id: str) -> Optional[datetime.datetime]:
-
         try:
-            return datetime.datetime.now(datetime.timezone.utc)
+            return run_async(results_store.get_datetime)(job_id)
         except Exception as e:
             logger.error(f"Erreur lors de la récupération de la date de création du job {job_id}: {e}")
             return None
