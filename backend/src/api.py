@@ -872,12 +872,6 @@ class FastAPIServer:
                 raise HTTPException(status_code=500, detail=str(e))
 
     def __create_settings(self):
-        """Create endpoints to manage dashboard settings"""
-        
-        Model = create_model('SettingsModel',
-            value=(Union[Dict[str, Any], List[Any], str, int, bool, None], Field(description="Setting value (can be any JSON value)"))
-        )
-
         @self.app.get("/dashboard/settings", tags=["settings"])
         async def get_settings():
             try:
@@ -910,8 +904,10 @@ class FastAPIServer:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.put("/dashboard/settings/{key}", tags=["settings"])
-        async def update_settings(key: str, data: Model):
+        async def update_settings(request: Request, key: str):
             """Update a specific setting by key"""
+
+            body = await request.json()
             try:
                 dal = GenericDAL()
                 settings = await dal.async_get(Settings, key_index=key)
@@ -920,7 +916,7 @@ class FastAPIServer:
                     raise HTTPException(status_code=404, detail="Setting not found")
 
                 data = settings[0]
-                data.value_index = data.value
+                data.value_index = body
                 await dal.async_update(data)
                 return data
                 
