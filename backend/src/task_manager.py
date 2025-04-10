@@ -438,6 +438,41 @@ class TaskManager:
             return None
 
     @staticmethod
+    def get_job_updated(job_id: str) -> Optional[datetime.datetime]:
+        try:
+            # Essayer d'abord de récupérer via Celery qui a l'information la plus précise
+            task_result = AsyncResult(job_id)
+            if hasattr(task_result, 'date_done') and task_result.date_done:
+                return task_result.date_done
+
+            # Si pas trouvé dans Celery, vérifier Redis pour les derniers résultats
+            redis_client = redis.Redis(host='localhost', port=6379, db=1)
+            result_list_key = f"task:{job_id}:results"
+
+            # Récupérer le dernier résultat de la liste (le plus récent)
+            last_result = redis_client.lindex(result_list_key, 0)
+
+            if last_result:
+                try:
+                    result_data = json.loads(last_result)
+                    if "metadata" in result_data and "timestamp" in result_data["metadata"]:
+                        return datetime.datetime.fromisoformat(result_data["metadata"]["timestamp"])
+                except (json.JSONDecodeError, ValueError):
+                    pass
+
+            # Sinon, utiliser la date de création comme fallback
+            created_at = TaskManager.get_job_created(job_id)
+            if created_at:
+                return created_at
+
+            return datetime.datetime.now(datetime.timezone.utc)
+
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération de la date de mise à jour du job {job_id}: {e}")
+            logger.error(traceback.format_exc())
+            return None
+
+    @staticmethod
     def get_job_status(job_id: str) -> JobStatus:
         try:
             result = AsyncResult(job_id)
