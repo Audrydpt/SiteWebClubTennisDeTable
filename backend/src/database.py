@@ -498,3 +498,17 @@ class GenericDAL:
             await session.commit()
             return True
     
+    async def async_raw(self, sql: str, params: Optional[Dict[str, Any]] = None, without_transaction: bool = False) -> Any:
+
+          if without_transaction:
+              async with GenericDAL.AsyncEngine.connect() as conn:
+                  conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
+                  result = await conn.execute(text(sql), params or {})
+                  return result
+          else:
+              async with GenericDAL.AsyncSession() as session:
+                  result = await session.execute(text(sql), params or {})
+                  await session.commit()
+                  return result
+
+    
