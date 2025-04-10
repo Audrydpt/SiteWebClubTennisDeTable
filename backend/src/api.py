@@ -690,7 +690,7 @@ class FastAPIServer:
             sql = f"""
             CREATE MATERIALIZED VIEW "widget_{widget_id}" WITH (timescaledb.continuous) AS
             SELECT time_bucket('{aggregation}', timestamp) AS bucket,
-                   count(id) as count,
+                   count(timestamp) as counts
                    {group_by if group_by else ''}
             FROM {table.lower()}
             {group_by_clause};
@@ -703,10 +703,10 @@ class FastAPIServer:
               schedule_interval => '{aggregation}'::interval);
             """
             # Execute the statement using SQLAlchemy
-            async with GenericDAL.AsyncSession() as session:
-                await session.execute(text(sql))
-                await session.execute(text(sql2))
-                await session.commit()
+            session = GenericDAL.AsyncSession()
+            conn = await session.connection()
+            await conn.execution_options(isolation_level="AUTOCOMMIT").execute(text(sql))
+            await conn.execution_options(isolation_level="AUTOCOMMIT").execute(text(sql2))
 
             logger.info(f"Create materialized view {widget_id} with aggregation {aggregation} for widget {widget_id}")
             return True
