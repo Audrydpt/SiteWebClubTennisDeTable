@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Video } from 'lucide-react';
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -31,12 +31,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+import { Badge } from '@/components/ui/badge';
 import useVMSAPI from '../hooks/use-vms';
 import { VMSFormValues, vmsSchema } from '../lib/types';
 
 export default function VMSSettings() {
   const { t } = useTranslation('settings');
-  const { query, edit } = useVMSAPI();
 
   const form = useForm<VMSFormValues>({
     resolver: zodResolver(vmsSchema),
@@ -48,6 +48,14 @@ export default function VMSSettings() {
       password: '',
     },
     mode: 'onChange',
+  });
+
+  const customValue = useWatch({ control: form.control });
+  const { query, describeQuery, edit } = useVMSAPI({
+    customValue:
+      customValue.ip && customValue.port
+        ? (customValue as VMSFormValues)
+        : undefined,
   });
 
   const vmsType = form.watch('type');
@@ -76,6 +84,20 @@ export default function VMSSettings() {
         });
       },
     });
+  };
+
+  // Function to render connection status badge
+  const renderConnectionStatus = () => {
+    if (describeQuery.isLoading) {
+      return <Badge variant="outline">Checking connection...</Badge>;
+    }
+    if (describeQuery.data) {
+      return <Badge variant="default">Connection successful</Badge>;
+    }
+    if (!describeQuery.data && describeQuery.isFetched) {
+      return <Badge variant="destructive">Connection failed</Badge>;
+    }
+    return null;
   };
 
   return (
@@ -131,8 +153,9 @@ export default function VMSSettings() {
               />
 
               <div className="space-y-2">
-                <h3 className="text-sm font-medium">
+                <h3 className="text-sm font-medium flex justify-between items-center">
                   {t('vms-settings.host')}
+                  {renderConnectionStatus()}
                 </h3>
                 <div className="flex gap-4">
                   <FormField

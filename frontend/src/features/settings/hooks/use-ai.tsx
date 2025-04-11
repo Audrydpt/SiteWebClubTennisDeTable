@@ -15,7 +15,7 @@ export type AISettings = z.infer<typeof aiSchema>;
 export function useAIAPI(options?: { customIP?: string; customPort?: number }) {
   const queryKey = ['ai'];
   const client = useQueryClient();
-  const baseUrl = `${process.env.MAIN_API_URL}/dashboard/settings/ai`;
+  const baseUrl = `${process.env.MAIN_API_URL}/settings/ai`;
 
   const query = useQuery({
     // eslint-disable-next-line @tanstack/query/exhaustive-deps

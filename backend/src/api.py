@@ -892,7 +892,7 @@ class FastAPIServer:
                 raise HTTPException(status_code=500, detail=str(e))
 
     def __create_settings(self):
-        @self.app.get("/dashboard/settings", tags=["settings"])
+        @self.app.get("/settings", tags=["settings"])
         async def get_settings():
             try:
                 dal = GenericDAL()
@@ -909,7 +909,7 @@ class FastAPIServer:
                 logger.error(f"Error retrieving dashboard settings: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.get("/dashboard/settings/{key}", tags=["settings"])
+        @self.app.get("/settings/{key}", tags=["settings"])
         async def get_settings_key(key: str):
             try:
                 dal = GenericDAL()
@@ -923,7 +923,7 @@ class FastAPIServer:
                 logger.error(f"Error retrieving dashboard settings: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.put("/dashboard/settings/{key}", tags=["settings"])
+        @self.app.put("/settings/{key}", tags=["settings"])
         async def update_settings(request: Request, key: str):
             """Update a specific setting by key"""
 

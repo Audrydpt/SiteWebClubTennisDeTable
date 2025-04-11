@@ -11,7 +11,7 @@ export type FormValues = z.infer<typeof formSchema>;
 export function useRetentionAPI() {
   const queryKey = ['retention'];
   const client = useQueryClient();
-  const baseUrl = `${process.env.MAIN_API_URL}/dashboard/settings/retention`;
+  const baseUrl = `${process.env.MAIN_API_URL}/settings/retention`;
 
   const query = useQuery({
     // eslint-disable-next-line @tanstack/query/exhaustive-deps
