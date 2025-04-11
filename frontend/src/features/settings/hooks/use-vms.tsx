@@ -1,20 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-
-type DashboardSettings = Record<string, string>;
-
-interface IVMSSettings {
-  type: string;
-  ip: string;
-  port: number;
-  username?: string;
-  password?: string;
-}
+import { VMSFormValues } from '../lib/types';
 
 export default function useVMSAPI() {
   const queryKey = ['vms'];
   const client = useQueryClient();
-  const baseUrl = `${process.env.MAIN_API_URL}/dashboard/settings`;
+  const baseUrl = `${process.env.MAIN_API_URL}/dashboard/settings/vms`;
 
   const query = useQuery({
     // eslint-disable-next-line @tanstack/query/exhaustive-deps
@@ -23,7 +14,7 @@ export default function useVMSAPI() {
   });
 
   const handleMutationError = (
-    context: { previous: DashboardSettings } | undefined
+    context: { previous: VMSFormValues } | undefined
   ) => {
     if (context?.previous) {
       client.setQueryData(queryKey, context.previous);
@@ -31,24 +22,16 @@ export default function useVMSAPI() {
   };
 
   const { mutate: edit } = useMutation({
-    mutationFn: async (value: IVMSSettings) => {
-      const { data: updated } = await axios.put<DashboardSettings>(
-        `${baseUrl}/vms`,
-        {
-          value,
-        }
-      );
+    mutationFn: async (value: VMSFormValues) => {
+      const { data: updated } = await axios.put<VMSFormValues>(baseUrl, value);
       return updated;
     },
-    onMutate: async (value: IVMSSettings) => {
+    onMutate: async (value: VMSFormValues) => {
       await client.cancelQueries({ queryKey });
 
-      const previous = client.getQueryData<DashboardSettings>(queryKey);
+      const previous = client.getQueryData<VMSFormValues>(queryKey);
 
-      client.setQueryData<DashboardSettings>(queryKey, (old) => ({
-        ...old,
-        vms: JSON.stringify(value),
-      }));
+      client.setQueryData<VMSFormValues>(queryKey, () => value);
 
       return { previous };
     },

@@ -118,10 +118,6 @@
     "selectPort": "Sélectionner le port",
     "invalidPort": "Port invalide",
     "AI": "IA",
-    "selectAI": "Sélectionner l'IA",
-    "car": "Véhicule",
-    "person": "Personne",
-    "object": "Objet",
     "actions": {
       "saving": "Enregistrement...",
       "applyChanges": "Appliquer les modifications"
