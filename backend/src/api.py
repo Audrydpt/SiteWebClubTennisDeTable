@@ -595,7 +595,6 @@ class FastAPIServer:
             if vms_host is None or vms_port is None:
                 raise HTTPException(status_code=400, detail="VMS IP or port not configured. Please configure VMS settings before trying to access cameras.")
             
-            return HTTPException(status_code=501, detail="Not implemented")
             try:
                 VMS = CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type)
                 async with VMS() as client:
