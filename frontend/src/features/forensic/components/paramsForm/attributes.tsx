@@ -213,7 +213,7 @@ export default function Attributes() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Couleur haut</Label>
+                  <Label className="text-sm font-medium">Couleur haut*</Label>
                   <ColorPicker
                     colors={colors}
                     name="attributes.upper.color"
@@ -239,7 +239,7 @@ export default function Attributes() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Couleur bas</Label>
+                  <Label className="text-sm font-medium">Couleur bas*</Label>
                   <ColorPicker
                     colors={colors}
                     name="attributes.lower.color"
@@ -252,7 +252,7 @@ export default function Attributes() {
               {/* Distinctive features section */}
               <div className="space-y-4">
                 <Label className="text-sm font-medium">
-                  Signes distinctifs
+                  Signes distinctifs*
                 </Label>
                 <div className="grid grid-cols-2 gap-2">
                   {distinctiveItems.person.map((item) => (
@@ -274,7 +274,7 @@ export default function Attributes() {
             <div className="space-y-6">
               {/* Brand and model section */}
               <div className="space-y-4">
-                <Label className="text-sm font-medium">Marque</Label>
+                <Label className="text-sm font-medium">Marque*</Label>
                 <div className="h-10 max-w-[250px]">
                   <MultiSelect
                     options={optionMaps.brands}
@@ -289,7 +289,7 @@ export default function Attributes() {
 
               {/* Model selection - only show if brand is selected */}
               <div className="space-y-4">
-                <Label className="text-sm font-medium">Modèle</Label>
+                <Label className="text-sm font-medium">Modèle*</Label>
                 <div className="h-10 max-w-[250px]">
                   <MultiSelect
                     options={getAvailableModels()}
@@ -303,7 +303,7 @@ export default function Attributes() {
               {/* License plate field */}
               <div className="space-y-4">
                 <Label className="text-sm font-medium">
-                  Plaque d&#39;immatriculation
+                  Plaque d&#39;immatriculation*
                 </Label>
                 <Input
                   placeholder="AB-123-CD"
@@ -316,7 +316,7 @@ export default function Attributes() {
               {/* Vehicle distinctive features */}
               <div className="space-y-4">
                 <Label className="text-sm font-medium">
-                  Caractéristiques distinctives
+                  Caractéristiques distinctives*
                 </Label>
                 <div className="grid grid-cols-2 gap-2">
                   {distinctiveItems.vehicle.map((item) => (
@@ -337,7 +337,7 @@ export default function Attributes() {
               {/* Contextual situation */}
               <div className="space-y-4">
                 <Label className="text-sm font-medium">
-                  Situation contextuelle
+                  Situation contextuelle*
                 </Label>
                 <div className="grid grid-cols-2 gap-2">
                   {contextualItems.vehicle.map((item) => (

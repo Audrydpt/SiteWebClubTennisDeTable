@@ -766,40 +766,111 @@ class VehicleReplayJob:
     
     def _filter_classification_appearance(self, probabilities: Dict[str, float], appearances: Dict[str, Dict[str,float]]):
         try:       
+            if self.type == "vehicle":
+                # maybe the type is available also in probabilities given classes ? 
+                type_score = 1.0
+                wanted_type = self.appearances.get("type", [])
+                if len(wanted_type) > 0:
+                    type_score = 0.0
 
-            # maybe the type is available also in probabilities given classes ? 
-            type_score = 1.0
-            wanted_type = self.appearances.get("type", [])
-            if len(wanted_type) > 0:
-                type_score = 0.0
+                    detected_type = appearances.get("type", {})
+                    filtered_detected_type = {k: v for k, v in detected_type.items() if v > self.threshold_type}    #filter conf too low
+                    filtered_detected_type = dict(list(filtered_detected_type.items())[:self.top_type])             # keep top x results
 
-                detected_type = appearances.get("type", {})
-                filtered_detected_type = {k: v for k, v in detected_type.items() if v > self.threshold_type}    #filter conf too low
-                filtered_detected_type = dict(list(filtered_detected_type.items())[:self.top_type])             # keep top x results
+                    for t in wanted_type:
+                        type_score = max(type_score, filtered_detected_type.get(t, 0.0))
+                
+                color_score = 1.0
+                wanted_color = self.appearances.get("color", [])
+                if len(wanted_color) > 0:
+                    color_score = 0.0
 
-                for t in wanted_type:
-                    type_score = max(type_score, filtered_detected_type.get(t, 0.0))
-            
-            color_score = 1.0
-            wanted_color = self.appearances.get("color", [])
-            if len(wanted_color) > 0:
-                color_score = 0.0
+                    detected_color = appearances.get("color", {})
+                    filtered_detected_color = {k: v for k, v in detected_color.items() if v > self.threshold_color} #filter conf too low
+                    filtered_detected_color = dict(list(filtered_detected_color.items())[:self.top_color])          # keep top x results
+                    for c in wanted_color:
+                        color_score = max(color_score, filtered_detected_color.get(c, 0.0))
 
-                detected_color = appearances.get("color", {})
-                filtered_detected_color = {k: v for k, v in detected_color.items() if v > self.threshold_color} #filter conf too low
-                filtered_detected_color = dict(list(filtered_detected_color.items())[:self.top_color])          # keep top x results
-                for c in wanted_color:
-                    color_score = max(color_score, filtered_detected_color.get(c, 0.0))
+                logger.info(f"config: {self.appearances} - found: {appearances} - wanted {wanted_type} -> {type_score} - score: {wanted_color} -> {color_score}")
+                return type_score * color_score
+            elif self.type == "mobility":
+                return 1.0
+            elif self.type == "person":
+                
+                gender_score = 1.0
+                wanted_gender = self.appearances.get("gender", [])
+                if len(wanted_gender) > 0:
+                    gender_score = 0.0
 
-            logger.info(f"config: {self.appearances} - found: {appearances} - wanted {wanted_type} -> {type_score} - score: {wanted_color} -> {color_score}")
-            return type_score * color_score
+                    # TODO: Samy, plz only use gender and not gender_attr
+                    detected_gender = {}
+                    if "gender_attr" in appearances:
+                        detected_gender = appearances.get("gender_attr", {})
+                    else:
+                        detected_gender = appearances.get("gender", {})
+                    
+                    # if only one gender is detected, set the other to 1 - the detected gender
+                    if "male" in detected_gender and not "female" in detected_gender:
+                        detected_gender["female"] = 1 - detected_gender["male"]
+                    if "female" in detected_gender and not "male" in detected_gender:
+                        detected_gender["male"] = 1 - detected_gender["female"]
+                        
+                    for g in wanted_gender:
+                        gender_score = max(gender_score, gender_score.get(g, 0.0))
+                
+                age_score = 1.0
+                wanted_age = self.appearances.get("age", [])
+                if len(wanted_age) > 0:
+                    age_score = 0.0
+
+                    # TODO: Samy, plz only use age and not age_attr
+                    detected_age = {}
+                    if "age_attr" in appearances:
+                        detected_age = appearances.get("age_attr", {})
+                    else:
+                        detected_age = appearances.get("age", {})
+
+                    for c in wanted_age:
+                        age_score = max(age_score, age_score.get(c, 0.0))
+
+                return gender_score * age_score
+            else:
+                logger.error(f"Unknown type: {self.type}")
+                return 0.0
         
         except Exception as e:
             logger.error(f"Error in appearance filter: {e}")
             return 1.0
     
     def _filter_classification_attributes(self, probabilities: Dict[str, float], attributes: Dict[str, Dict[str,float]]):
-        return 1.0
+        try:
+            if self.type == "vehicle":
+                return 1.0
+            elif self.type == "mobility":
+                return 1.0
+            elif self.type == "person":
+                upper_score = 1.0
+                wanted_upper = self.attributes.get("upper", {}).get("type", [])
+                if len(wanted_upper) > 0:
+                    upper_score = 0.0
+                    detected_upper = attributes.get("upper", {}).get("type", {})
+                    for u in wanted_upper:
+                        upper_score = max(upper_score, detected_upper.get(u, 0.0))
+
+                lower_score = 1.0
+                wanted_lower = self.attributes.get("lower", {}).get("type", [])
+                if len(wanted_lower) > 0:
+                    lower_score = 0.0
+                    detected_lower = attributes.get("lower", {}).get("type", {})
+                    for l in wanted_lower:
+                        lower_score = max(lower_score, detected_lower.get(l, 0.0))
+                return upper_score * lower_score
+            else:
+                logger.error(f"Unknown type: {self.type}")
+                return 0.0
+        except Exception as e:
+            logger.error(f"Error in attributes filter: {e}")
+            return 1.0
     
     async def __process_image(self, forensic, img, time, previous_boxes, progress, source_guid):
         detections = await forensic.detect(img)

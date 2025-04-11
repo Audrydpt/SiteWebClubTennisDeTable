@@ -348,11 +348,11 @@ class FastAPIServer:
         
         class UpperPersonAttributes(BaseModel):
             color: Optional[List[Color]] = None
-            type: Optional[List[Literal["shirt", "jacket", "coat", "sweater", "dress", "other"]]] = None
+            type: Optional[List[str]] = None
         
         class LowerPersonAttributes(BaseModel):
             color: Optional[List[Color]] = None
-            type: Optional[List[Literal["pants", "shorts", "skirt", "dress", "other"]]] = None
+            type: Optional[List[str]] = None
             
         class PersonAttributes(BaseModel):
             upper: UpperPersonAttributes
