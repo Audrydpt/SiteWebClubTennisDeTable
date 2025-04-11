@@ -830,7 +830,7 @@ class VehicleReplayJob:
             if thumbnail is None:
                 continue
             
-            attributes = await forensic.classify(thumbnail)
+            attributes = await forensic.classify(thumbnail, self.type)
             cls_score = self._filter_classification(probabilities, attributes, attributes)
             if cls_score <= self.class_score:
                 continue
@@ -865,16 +865,30 @@ class VehicleReplayJob:
 
     async def __process_stream(self, source_guid) -> AsyncGenerator[Tuple[dict, Optional[bytes]], None]:
         try:
-            async with ServiceAI() as forensic:
+
+            dal = GenericDAL()
+            ai_settings = await dal.async_get(Settings, key_index= "ai")
+            if not ai_settings or len(ai_settings) != 1:
+                raise Exception("AI settings not found")
+            
+            settings_dict = ai_settings[0].value_index
+            ai_host = settings_dict.get("ip", None)
+            ai_port = settings_dict.get("port", None)
+            ai_object = settings_dict.get("object", None)
+            ai_vehicle = settings_dict.get("vehicle", None)
+            ai_person = settings_dict.get("person", None)
+            
+
+            async with ServiceAI(ai_host, ai_port, ai_object, ai_vehicle, ai_person) as forensic:
                 logger.info("Connected to AI Service")
 
-                dal = GenericDAL()
-                settings = await dal.async_get(Settings, key_index= "vms")
-                if not settings or len(settings) != 1:
+                
+                vms_settings = await dal.async_get(Settings, key_index= "vms")
+                if not vms_settings or len(vms_settings) != 1:
                     raise Exception("VMS settings not found")
                 
-                settings_dict = settings[0].value_index
-                logger.info(f"Settings: {settings}")
+                settings_dict = vms_settings[0].value_index
+                logger.info(f"Settings: {vms_settings}")
                 vms_host = settings_dict.get("ip", None)
                 vms_port = settings_dict.get("port", None)
                 vms_username = settings_dict.get("username", None)
