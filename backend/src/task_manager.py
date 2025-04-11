@@ -816,7 +816,7 @@ class VehicleReplayJob:
                         detected_gender["male"] = 1 - detected_gender["female"]
                         
                     for g in wanted_gender:
-                        gender_score = max(gender_score, gender_score.get(g, 0.0))
+                        gender_score = max(gender_score, detected_gender.get(g, 0.0))
                 
                 age_score = 1.0
                 wanted_age = self.appearances.get("age", [])
@@ -831,7 +831,7 @@ class VehicleReplayJob:
                         detected_age = appearances.get("age", {})
 
                     for c in wanted_age:
-                        age_score = max(age_score, age_score.get(c, 0.0))
+                        age_score = max(age_score, detected_age.get(c, 0.0))
 
                 return gender_score * age_score
             else:
