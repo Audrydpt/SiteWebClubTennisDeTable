@@ -1,12 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
+import { z } from 'zod';
 
-type DashboardSettings = Record<string, string>;
+export const formSchema = z.object({
+  days: z.number().min(1).max(3650),
+});
 
-export default function useRetentionAPI() {
+export type FormValues = z.infer<typeof formSchema>;
+
+export function useRetentionAPI() {
   const queryKey = ['retention'];
   const client = useQueryClient();
-  const baseUrl = `${process.env.MAIN_API_URL}/dashboard/settings`;
+  const baseUrl = `${process.env.MAIN_API_URL}/dashboard/settings/retention`;
 
   const query = useQuery({
     // eslint-disable-next-line @tanstack/query/exhaustive-deps
@@ -15,7 +20,7 @@ export default function useRetentionAPI() {
   });
 
   const handleMutationError = (
-    context: { previous: DashboardSettings } | undefined
+    context: { previous: FormValues } | undefined
   ) => {
     if (context?.previous) {
       client.setQueryData(queryKey, context.previous);
@@ -23,24 +28,15 @@ export default function useRetentionAPI() {
   };
 
   const { mutate: edit } = useMutation({
-    mutationFn: async (value: number) => {
-      const { data: updated } = await axios.put<DashboardSettings>(
-        `${baseUrl}/retention`,
-        {
-          value: { days: value },
-        }
-      );
+    mutationFn: async (value: FormValues) => {
+      const { data: updated } = await axios.put<FormValues>(baseUrl, value);
       return updated;
     },
-    onMutate: async (value: number) => {
+    onMutate: async (value: FormValues) => {
       await client.cancelQueries({ queryKey });
 
-      const previous = client.getQueryData<DashboardSettings>(queryKey);
-
-      client.setQueryData<DashboardSettings>(queryKey, (old) => ({
-        ...old,
-        retention: JSON.stringify({ days: value }),
-      }));
+      const previous = client.getQueryData<FormValues>(queryKey);
+      client.setQueryData<FormValues>(queryKey, value);
 
       return { previous };
     },
