@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier,@typescript-eslint/no-explicit-any,no-console,no-else-return */
+/* eslint-disable no-console */
 import {
   ChevronDown,
   ChevronUp,
@@ -17,13 +17,11 @@ import {
 } from '@/components/ui/popover';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ForensicResult, SourceProgress } from '../lib/types';
-import {
-  calculateTimeRemaining,
-} from '@/features/forensic/lib/estimation/estimation';
-import useSearch from '../hooks/use-search.tsx';
 import MultiProgress from '@/features/forensic/components/ui/multi-progress';
 import forensicResultsHeap from '@/features/forensic/lib/data-structure/heap.tsx';
+import { calculateTimeRemaining } from '@/features/forensic/lib/estimation/estimation';
+import useSearch from '../hooks/use-search.tsx';
+import { ForensicResult, SourceProgress } from '../lib/types';
 
 // Enum to represent different sort types
 type SortType = 'score' | 'date';
@@ -88,10 +86,8 @@ export default function Results({
     // Toujours afficher propsResults s'ils sont disponibles
     if (propsResults && propsResults.length > 0) {
       return propsResults;
-    } else {
-      return displayResults;
     }
-    
+    return displayResults;
   }, [displayResults, propsResults]);
 
   const handleResumeLastSearch = async () => {
@@ -158,11 +154,11 @@ export default function Results({
             <p className="text-sm font-medium text-foreground">
               Progression :{' '}
               <span className="text-primary font-semibold">
-              {progress.toFixed(0)}%
-            </span>
+                {progress.toFixed(0)}%
+              </span>
               <span className="text-muted-foreground ml-2 text-xs font-medium">
-              {statusText}
-            </span>
+                {statusText}
+              </span>
             </p>
           </div>
           {sourceProgress.length > 0 && (
@@ -250,7 +246,7 @@ export default function Results({
       resultsProp: propsResults.length,
       displayResults: displayResults.length,
       isSearching,
-      progress
+      progress,
     });
 
     // Si nous avons des résultats à afficher, on les montre quelle que soit la progression
@@ -269,7 +265,7 @@ export default function Results({
                           <img
                             src={result.imageData}
                             alt="Forensic result"
-                            className="w-full h-auto object-cover aspect-[16/9]"
+                            className="w-full h-auto object-cover object-[center_10%] aspect-[16/9]"
                           />
                           <button
                             className="absolute bottom-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1"
@@ -300,15 +296,17 @@ export default function Results({
                         </div>
                       ) : (
                         <div className="w-full aspect-[16/9] bg-muted flex items-center justify-center">
-                        <span className="text-muted-foreground text-sm">
-                          Pas d&#39;image
-                        </span>
+                          <span className="text-muted-foreground text-sm">
+                            Pas d&#39;image
+                          </span>
                         </div>
                       )}
                       <div
                         className="absolute top-2 right-2 text-white rounded-full px-2 py-0.5 text-xs font-medium"
                         style={{
-                          backgroundColor: getScoreBackgroundColor(result.score),
+                          backgroundColor: getScoreBackgroundColor(
+                            result.score
+                          ),
                         }}
                       >
                         {(result.score * 100).toFixed(1)}%
@@ -359,9 +357,9 @@ export default function Results({
                           Données brutes
                         </summary>
                         <div className="text-xs bg-muted p-2 mt-2 rounded-md overflow-auto max-h-48">
-                        <pre className="whitespace-pre-wrap">
-                          {JSON.stringify(result, null, 2)}
-                        </pre>
+                          <pre className="whitespace-pre-wrap">
+                            {JSON.stringify(result, null, 2)}
+                          </pre>
                         </div>
                       </details>
                     </div>
@@ -392,9 +390,12 @@ export default function Results({
       );
     }
 
-    if (progress === 100 && !isSearching &&
+    if (
+      progress === 100 &&
+      !isSearching &&
       (!propsResults || propsResults.length === 0) &&
-      (!displayResults || displayResults.length === 0)) {
+      (!displayResults || displayResults.length === 0)
+    ) {
       return (
         <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
           Aucun résultat trouvé
@@ -451,9 +452,7 @@ export default function Results({
               <SortAsc className="h-4 w-4" />
             )}
           </Button>
-          <Button onClick={handleResumeLastSearch}>
-            Reprendre
-          </Button>
+          <Button onClick={handleResumeLastSearch}>Reprendre</Button>
           <Button
             variant="ghost"
             size="icon"
