@@ -708,15 +708,31 @@ class FastAPIServer:
               schedule_interval => '{aggregation}'::interval);
             """
             # Execute the statement using SQLAlchemy
-            session = GenericDAL.AsyncSession()
-            conn = await session.connection()
-            await conn.execution_options(isolation_level="AUTOCOMMIT").execute(text(sql))
-            await conn.execution_options(isolation_level="AUTOCOMMIT").execute(text(sql2))
+            dal = GenericDAL()
+            await dal.async_raw(sql, without_transaction=True)
+            await dal.async_raw(sql2, without_transaction=True)
 
             logger.info(f"Create materialized view {widget_id} with aggregation {aggregation} for widget {widget_id}")
             return True
         except Exception as e:
             logger.error(f'Failed to create materialized view for widget {widget_id}: {e}')
+            logger.error(traceback.format_exc())
+            return False
+    
+    async def drop_materialized_view(self, widget_id: str):
+        """Drop a materialized view for a widget"""
+        try:
+            #Build the SQL query based on widget config
+            sql = f"""
+            DROP MATERIALIZED VIEW IF EXISTS "widget_{widget_id}";
+            """
+            # Execute the statement using SQLAlchemy
+            dal = GenericDAL()
+            await dal.async_raw(sql, without_transaction=True)
+            logger.info(f"Drop materialized view {widget_id}")
+            return True
+        except Exception as e:
+            logger.error(f'Failed to drop materialized view for widget {widget_id}: {e}')
             logger.error(traceback.format_exc())
             return False
         
@@ -870,6 +886,8 @@ class FastAPIServer:
                 obj = await dal.async_get(Widget, id=widget_id)
                 if obj is None or len(obj) != 1:
                     raise HTTPException(status_code=404, detail="Widget not found")
+                
+                await self.drop_materialized_view(str(widget_id))
                 return await dal.async_remove(obj[0])
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
