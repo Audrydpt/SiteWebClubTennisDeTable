@@ -576,6 +576,25 @@ class FastAPIServer:
             
             return vms_host, vms_port, vms_username, vms_password, vms_type
 
+        @self.app.post("/vms/test", tags=["vms"])
+        async def test_vms(request: Request):
+            try:
+                data = await request.json()
+                vms_host = data.get("ip", None)
+                vms_port = data.get("port", None)
+                vms_username = data.get("username", None)
+                vms_password = data.get("password", None)
+                vms_type = data.get("type", None)
+
+                if vms_host is None or vms_port is None:
+                    raise HTTPException(status_code=400, detail="VMS IP or port not configured. Please configure VMS settings before trying to access cameras.")
+                
+                VMS = CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type)
+                async with VMS() as client:
+                    return await client.get_system_info()
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=traceback.format_exc())
+        
         @self.app.get("/vms/cameras", tags=["vms"])
         async def get_cameras():
             try:
@@ -599,7 +618,7 @@ class FastAPIServer:
                 VMS = CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type)
                 async with VMS() as client:
                     streams = client.start_live(guuid)
-                    img = await anext(streams)
+                    img, time_frame = await anext(streams)
                     _, bytes = cv2.imencode('.jpg', img)
                     return Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
 
