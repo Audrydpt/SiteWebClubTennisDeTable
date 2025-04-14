@@ -5,6 +5,7 @@ import json
 import uuid
 from fastapi.websockets import WebSocketState
 import gunicorn
+import httpx
 import uvicorn
 import datetime
 import time
@@ -147,6 +148,7 @@ class FastAPIServer:
         self.__create_health()
         self.__create_forensic()
         self.__create_vms()
+        self.__create_proxy()
 
     def __create_health(self):
         @self.app.get("/health", tags=["health"], include_in_schema=False)
@@ -384,6 +386,7 @@ class FastAPIServer:
                         "count": count,
                         "size": size,
 
+
                     }
                     
                     if status == JobStatus.FAILURE:
@@ -408,7 +411,7 @@ class FastAPIServer:
                 if data.type == "vehicle":
                     job_id = TaskManager.submit_job("VehicleReplayJob", job_params)
                 elif data.type == "person":
-                    raise HTTPException(status_code=400, detail="Person not supported yet")
+                    job_id = TaskManager.submit_job("VehicleReplayJob", job_params)
                 else:
                     raise HTTPException(status_code=400, detail="Type non supporté")
                     
@@ -708,15 +711,31 @@ class FastAPIServer:
               schedule_interval => '{aggregation}'::interval);
             """
             # Execute the statement using SQLAlchemy
-            session = GenericDAL.AsyncSession()
-            conn = await session.connection()
-            await conn.execution_options(isolation_level="AUTOCOMMIT").execute(text(sql))
-            await conn.execution_options(isolation_level="AUTOCOMMIT").execute(text(sql2))
+            dal = GenericDAL()
+            await dal.async_raw(sql, without_transaction=True)
+            await dal.async_raw(sql2, without_transaction=True)
 
             logger.info(f"Create materialized view {widget_id} with aggregation {aggregation} for widget {widget_id}")
             return True
         except Exception as e:
             logger.error(f'Failed to create materialized view for widget {widget_id}: {e}')
+            logger.error(traceback.format_exc())
+            return False
+    
+    async def drop_materialized_view(self, widget_id: str):
+        """Drop a materialized view for a widget"""
+        try:
+            #Build the SQL query based on widget config
+            sql = f"""
+            DROP MATERIALIZED VIEW IF EXISTS "widget_{widget_id}";
+            """
+            # Execute the statement using SQLAlchemy
+            dal = GenericDAL()
+            await dal.async_raw(sql, without_transaction=True)
+            logger.info(f"Drop materialized view {widget_id}")
+            return True
+        except Exception as e:
+            logger.error(f'Failed to drop materialized view for widget {widget_id}: {e}')
             logger.error(traceback.format_exc())
             return False
         
@@ -870,18 +889,14 @@ class FastAPIServer:
                 obj = await dal.async_get(Widget, id=widget_id)
                 if obj is None or len(obj) != 1:
                     raise HTTPException(status_code=404, detail="Widget not found")
+                
+                await self.drop_materialized_view(str(widget_id))
                 return await dal.async_remove(obj[0])
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
     def __create_settings(self):
-        """Create endpoints to manage dashboard settings"""
-        
-        Model = create_model('SettingsModel',
-            value=(Union[Dict[str, Any], List[Any], str, int, bool, None], Field(description="Setting value (can be any JSON value)"))
-        )
-
-        @self.app.get("/dashboard/settings", tags=["dashboard/settings"])
+        @self.app.get("/dashboard/settings", tags=["settings"])
         async def get_settings():
             try:
                 dal = GenericDAL()
@@ -897,27 +912,37 @@ class FastAPIServer:
             except ValueError as e:
                 logger.error(f"Error retrieving dashboard settings: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
-
-        @self.app.put("/dashboard/settings/{key}", tags=["dashboard/settings"])
-        async def update_settings(key: str, data: Model):
-            """Update a specific setting by key"""
+        
+        @self.app.get("/dashboard/settings/{key}", tags=["settings"])
+        async def get_settings_key(key: str):
             try:
                 dal = GenericDAL()
-                settings = await dal.async_get(Settings)
+                settings = await dal.async_get(Settings, key_index=key)
+                if not settings or len(settings) != 1:
+                    raise HTTPException(status_code=404, detail="Setting not found")
                 
-                setting = next((s for s in settings if s.key_index == key), None)
-                
-                if not setting:
-                    logger.error(f"Setting parameter '{key}' not found")
-                    raise HTTPException(
-                        status_code=404, 
-                        detail=f"Setting '{key}' not found"
-                    )
-                
-                setting.value_index = data.value
-                await dal.async_update(setting)
-            
-                return {"status": "success", "key": key, "value": data.value}
+                return settings[0].value_index
+
+            except ValueError as e:
+                logger.error(f"Error retrieving dashboard settings: {str(e)}")
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.put("/dashboard/settings/{key}", tags=["settings"])
+        async def update_settings(request: Request, key: str):
+            """Update a specific setting by key"""
+
+            body = await request.json()
+            try:
+                dal = GenericDAL()
+                settings = await dal.async_get(Settings, key_index=key)
+
+                if not settings or len(settings) != 1:
+                    raise HTTPException(status_code=404, detail="Setting not found")
+
+                data = settings[0]
+                data.value_index = body
+                await dal.async_update(data)
+                return data
                 
             except ValueError as e:
                 logger.error(f"Error updating setting '{key}': {str(e)}")
@@ -969,6 +994,107 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
+    def __create_proxy(self):
+        @self.app.get("/proxy/{host}/{subpath:path}", tags=["proxy"])
+        async def get_proxy(request: Request, host: str, subpath: str = ""):
+            base_url = f"http://{host}"
+            target_url = f"{base_url}/{subpath}" if subpath else base_url
+            logger.info(f"GET Proxy to: {target_url} with params: {request.query_params}")
+            
+            # Préparer les en-têtes à transférer, exclure 'host'
+            forward_headers = {k: v for k, v in request.headers.items() if k.lower() != 'host'}
+            
+            async with httpx.AsyncClient(verify=False) as client:
+                try:
+                    response = await client.get(
+                        target_url, 
+                        params=request.query_params,
+                        headers=forward_headers
+                    )
+                    return Response(
+                        content=response.content, 
+                        status_code=response.status_code, 
+                        headers=dict(response.headers)
+                    )
+                except httpx.RequestError as exc:
+                    logger.error(f"Proxy GET request failed: {exc}")
+                    raise HTTPException(status_code=502, detail=f"Bad Gateway: {exc}")
+
+        @self.app.post("/proxy/{host}/{subpath:path}", tags=["proxy"])
+        async def post_proxy(request: Request, host: str, subpath: str = ""):
+            base_url = f"http://{host}"
+            target_url = f"{base_url}/{subpath}" if subpath else base_url
+            logger.info(f"POST Proxy to: {target_url} with params: {request.query_params}")
+            body = await request.body()
+            forward_headers = {k: v for k, v in request.headers.items() if k.lower() not in ['host', 'content-length']}
+            
+            async with httpx.AsyncClient(verify=False) as client:
+                try:
+                    response = await client.post(
+                        target_url, 
+                        content=body, 
+                        params=request.query_params, 
+                        headers=forward_headers
+                    )
+                    return Response(
+                        content=response.content, 
+                        status_code=response.status_code, 
+                        headers=dict(response.headers)
+                    )
+                except httpx.RequestError as exc:
+                    logger.error(f"Proxy POST request failed: {exc}")
+                    raise HTTPException(status_code=502, detail=f"Bad Gateway: {exc}")
+
+        @self.app.put("/proxy/{host}/{subpath:path}", tags=["proxy"])
+        async def put_proxy(request: Request, host: str, subpath: str = ""):
+            base_url = f"http://{host}"
+            target_url = f"{base_url}/{subpath}" if subpath else base_url
+            logger.info(f"PUT Proxy to: {target_url} with params: {request.query_params}")
+            body = await request.body()
+            forward_headers = {k: v for k, v in request.headers.items() if k.lower() not in ['host', 'content-length']}
+
+            async with httpx.AsyncClient(verify=False) as client:
+                try:
+                    response = await client.put(
+                        target_url, 
+                        content=body, 
+                        params=request.query_params, 
+                        headers=forward_headers
+                    )
+                    return Response(
+                        content=response.content, 
+                        status_code=response.status_code, 
+                        headers=dict(response.headers)
+                    )
+                except httpx.RequestError as exc:
+                    logger.error(f"Proxy PUT request failed: {exc}")
+                    raise HTTPException(status_code=502, detail=f"Bad Gateway: {exc}")
+        
+        @self.app.delete("/proxy/{host}/{subpath:path}", tags=["proxy"])
+        async def delete_proxy(request: Request, host: str, subpath: str = ""):
+            base_url = f"http://{host}"
+            target_url = f"{base_url}/{subpath}" if subpath else base_url
+            logger.info(f"DELETE Proxy to: {target_url} with params: {request.query_params}")
+            body = await request.body()
+            forward_headers = {k: v for k, v in request.headers.items() if k.lower() not in ['host', 'content-length']}
+
+            async with httpx.AsyncClient(verify=False) as client:
+                try:
+                    response = await client.delete(
+                        target_url, 
+                        content=body if body else None, 
+                        params=request.query_params, 
+                        headers=forward_headers
+                    )
+                    return Response(
+                        content=response.content, 
+                        status_code=response.status_code, 
+                        headers=dict(response.headers)
+                    )
+                except httpx.RequestError as exc:
+                    logger.error(f"Proxy DELETE request failed: {exc}")
+                    raise HTTPException(status_code=502, detail=f"Bad Gateway: {exc}")
+    
     def start(self, host="0.0.0.0", port=5020):
         uvicorn.run(self.app, host=host, port=port, root_path="/front-api", ws_ping_interval=30, ws_ping_timeout=30)
 

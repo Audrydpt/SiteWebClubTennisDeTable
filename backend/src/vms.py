@@ -599,7 +599,9 @@ class MilestoneCameraClient(CameraClient):
         
         recorder = system_info[camera_guid]
         host = Resolver().resolve(recorder["hostName"])
+        logger.info(f"Host: {host}")
         port = int(recorder["webServerUri"].split("/")[2].split(":")[1])
+        logger.info(f"Port: {port}")
 
         self.requestid = 1
         self.reader, self.writer = await asyncio.wait_for(
@@ -747,6 +749,10 @@ class MilestoneCameraClient(CameraClient):
             raise Exception(f"Camera {camera_guid} not found")
         
         recorder = system_info[camera_guid]
+        host = Resolver().resolve(recorder["hostName"])
+        logger.info(f"Host: {host}")
+        port = int(recorder["webServerUri"].split("/")[2].split(":")[1])
+        logger.info(f"Port: {port}")
         host = Resolver().resolve(recorder["hostName"])
         port = int(recorder["webServerUri"].split("/")[2].split(":")[1])
 
