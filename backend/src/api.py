@@ -696,7 +696,7 @@ class FastAPIServer:
             CREATE MATERIALIZED VIEW "widget_{widget_id}" WITH (timescaledb.continuous) AS
             SELECT time_bucket('{aggregation}', timestamp) AS bucket,
                    count(timestamp) as counts
-                   {group_by if group_by else ''}
+                   {group_clause}
             FROM {table.lower()}
             {group_by_clause};
             """
@@ -874,6 +874,14 @@ class FastAPIServer:
                     setattr(widget, field, value)
 
                 res = await dal.async_update(widget)
+
+                await self.drop_materialized_view(str(widget_id))
+                await self.create_materialized_view(
+                    str(widget_id),
+                    widget.table,
+                    widget.aggregation,
+                    widget.groupBy if hasattr(widget, "groupBy") else None
+                )
                 return res
 
             except ValueError as e:
