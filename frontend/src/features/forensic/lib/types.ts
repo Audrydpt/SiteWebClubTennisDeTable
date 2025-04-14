@@ -149,11 +149,7 @@ export const personForensicSchema = baseForensicSchema.extend({
             ])
           )
           .default([]),
-        type: z
-          .array(
-            z.enum(['shirt', 'jacket', 'coat', 'sweater', 'dress', 'other'])
-          )
-          .default([]),
+        type: z.array(z.string()).nullable().optional(),
       })
       .default({
         color: [],
@@ -179,9 +175,7 @@ export const personForensicSchema = baseForensicSchema.extend({
             ])
           )
           .default([]),
-        type: z
-          .array(z.enum(['pants', 'shorts', 'skirt', 'dress', 'other']))
-          .default([]),
+        type: z.array(z.string()).nullable().optional(),
       })
       .default({
         color: [],

@@ -17,9 +17,14 @@ def bgr_to_yuv420p(bgr_image):
     return cv2.cvtColor(bgr_image, cv2.COLOR_BGR2YUV_I420).astype("uint8")
 
 class ServiceAI:
-    def __init__(self, analytic="192.168.20.212:53211", *args, **kwargs):
-        self.analytic = "192.168.20.212:53211"
-        self.analytic = analytic
+    def __init__(self, host: str, port: int, object: str = None, vehicle: str = None, person: str = None):
+        if not host or not port:
+            raise Exception("Host and port are required")
+        
+        self.analytic = f"{host}:{port}"
+        self.object = object if object else "/object"
+        self.vehicle = vehicle if vehicle else "/vehicule"
+        self.person = person if person else "/person"
         self.describe = None
         self.ws = {}
         self.session = {}
@@ -163,11 +168,11 @@ class ServiceAI:
         
         models = await self.get_models()
 
-        if "/object" not in models:
+        if self.object not in models:
             logger.error(f"No object detection model found")
             raise Exception("No object detection model found")
         
-        model = "/object"
+        model = self.object
         modelWidth = models[model]["networkWidth"]
         modelHeight = models[model]["networkHeight"]
 
@@ -178,7 +183,7 @@ class ServiceAI:
         logger.info(f"Detections: {detections}")
         return detections
     
-    async def classify(self, frame):
+    async def classify(self, frame, type: str = "vehicle"):
         async def get_classes(model):
             modelWidth = models[model]["networkWidth"]
             modelHeight = models[model]["networkHeight"]
@@ -216,17 +221,12 @@ class ServiceAI:
         models = await self.get_models()
 
         attributes = {}
-        if "/vehicule" in models or "/vehicule_attributes" in models:
-            model = "/vehicule" if "/vehicule" in models else "/vehicule_attributes"
-            attributes = await get_classes(model)
+        if self.object not in models:
+            logger.error(f"No object detection model found")
+            raise Exception("No object detection model found")
         
-        if "/color" in models or "/vehicule_color" in models:
-            model = "/color" if "/color" in models else "/vehicule_color"
-            attributes["color"] = await get_classes(model)
-        
-        if "/type" in models or "/vehicule_type" in models:
-            model = "/type" if "/type" in models else "/vehicule_type"
-            attributes["type"] = await get_classes(model)
+        model = self.vehicle if type == "vehicle" else self.person
+        attributes = await get_classes(model)
 
         return attributes
     

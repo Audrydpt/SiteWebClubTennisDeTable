@@ -135,7 +135,7 @@ export default function Appearances() {
 
               {/* Build section */}
               <div className="space-y-4">
-                <Label className="text-sm font-medium">Corpulence</Label>
+                <Label className="text-sm font-medium">Corpulence*</Label>
                 <div className="h-10 max-w-[250px]">
                   <MultiSelect
                     options={optionMaps.build}
@@ -153,7 +153,7 @@ export default function Appearances() {
 
               {/* Height section */}
               <div className="space-y-4">
-                <Label className="text-sm font-medium">Taille</Label>
+                <Label className="text-sm font-medium">Taille*</Label>
                 <div className="h-10 max-w-[250px]">
                   <MultiSelect
                     options={optionMaps.height}
@@ -171,7 +171,7 @@ export default function Appearances() {
 
               {/* Hair section */}
               <div className="space-y-4">
-                <Label className="text-sm font-medium">Cheveux</Label>
+                <Label className="text-sm font-medium">Cheveux*</Label>
                 <div className="grid grid-cols-2 gap-4">
                   {/* Hair Length */}
                   <div className="space-y-2">
@@ -218,7 +218,7 @@ export default function Appearances() {
                   {/* Hair Color */}
                   <div className="space-y-2 col-span-2">
                     <Label className="text-xs text-muted-foreground">
-                      Couleur
+                      Couleur*
                     </Label>
                     <ColorPicker
                       colors={colors}

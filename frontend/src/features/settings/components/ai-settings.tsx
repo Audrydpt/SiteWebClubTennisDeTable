@@ -1,10 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Sparkles } from 'lucide-react';
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -35,8 +36,6 @@ import { aiSchema, AISettings, useAIAPI } from '../hooks/use-ai';
 
 export default function IASettings() {
   const { t } = useTranslation('settings');
-  const { query, edit } = useAIAPI();
-
   const form = useForm<AISettings>({
     resolver: zodResolver(aiSchema),
     defaultValues: {
@@ -48,10 +47,18 @@ export default function IASettings() {
     },
   });
 
+  // Watch IP and port values from the form
+  const watchedIP = useWatch({ control: form.control, name: 'ip' });
+  const watchedPort = useWatch({ control: form.control, name: 'port' });
+
+  // Pass current form values to the hook
+  const { query, describeQuery, edit } = useAIAPI({
+    customIP: watchedIP,
+    customPort: watchedPort && watchedPort > 0 ? watchedPort : undefined,
+  });
+
   useEffect(() => {
-    if (query.data && query.data.ai) {
-      form.reset(query.data.ai);
-    }
+    form.reset(query.data);
   }, [query.data, form]);
 
   const onSubmit = (data: AISettings) => {
@@ -72,6 +79,21 @@ export default function IASettings() {
     });
   };
 
+  // Function to render connection status badge
+  const renderConnectionStatus = () => {
+    if (!watchedIP || watchedPort <= 0) return null;
+    if (describeQuery.isLoading) {
+      return <Badge variant="outline">Checking connection...</Badge>;
+    }
+    if (describeQuery.data) {
+      return <Badge variant="default">Connection successful</Badge>;
+    }
+    if (!describeQuery.data && describeQuery.isFetched) {
+      return <Badge variant="destructive">Connection failed</Badge>;
+    }
+    return null;
+  };
+
   return (
     <div className="w-full">
       <Card className="w-full h-full">
@@ -87,7 +109,10 @@ export default function IASettings() {
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <h3 className="text-sm font-medium">{t('ai-settings.host')}</h3>
+                <h3 className="text-sm font-medium flex justify-between items-center">
+                  {t('ai-settings.host')}
+                  {renderConnectionStatus()}
+                </h3>
                 <div className="flex gap-4">
                   <FormField
                     control={form.control}
@@ -134,7 +159,11 @@ export default function IASettings() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Select AI Detector</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={!describeQuery.data?.detector}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue
@@ -143,15 +172,11 @@ export default function IASettings() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Car">
-                          {t('ai-settings.car')}
-                        </SelectItem>
-                        <SelectItem value="Person">
-                          {t('ai-settings.person')}
-                        </SelectItem>
-                        <SelectItem value="Object">
-                          {t('ai-settings.object')}
-                        </SelectItem>
+                        {describeQuery.data?.detector?.map((item) => (
+                          <SelectItem key={item.model} value={item.model}>
+                            {item.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -165,7 +190,11 @@ export default function IASettings() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Select Vehicle Classifier</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={!describeQuery.data?.classifier}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue
@@ -174,15 +203,11 @@ export default function IASettings() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Car">
-                          {t('ai-settings.car')}
-                        </SelectItem>
-                        <SelectItem value="Person">
-                          {t('ai-settings.person')}
-                        </SelectItem>
-                        <SelectItem value="Object">
-                          {t('ai-settings.object')}
-                        </SelectItem>
+                        {describeQuery.data?.classifier?.map((item) => (
+                          <SelectItem key={item.model} value={item.model}>
+                            {item.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -196,7 +221,11 @@ export default function IASettings() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Select Person Classifier</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={!describeQuery.data?.classifier}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue
@@ -205,15 +234,11 @@ export default function IASettings() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Car">
-                          {t('ai-settings.car')}
-                        </SelectItem>
-                        <SelectItem value="Person">
-                          {t('ai-settings.person')}
-                        </SelectItem>
-                        <SelectItem value="Object">
-                          {t('ai-settings.object')}
-                        </SelectItem>
+                        {describeQuery.data?.classifier?.map((item) => (
+                          <SelectItem key={item.model} value={item.model}>
+                            {item.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />

@@ -66,6 +66,7 @@ RUN wget -O /usr/bin/dumb-init https://github.com/Yelp/dumb-init/releases/downlo
     && echo "fi" >> /start.sh \
     && echo "" >> /start.sh \
     && echo "sed -i \"s/#listen_addresses = 'localhost'/listen_addresses = '*'/\" /etc/postgresql/${PG_VERSION}/main/postgresql.conf" >> /start.sh \
+    && echo "sed -i \"s/#idle_in_transaction_session_timeout = 0/idle_in_transaction_session_timeout = 3600000/\" /etc/postgresql/${PG_VERSION}/main/postgresql.conf" >> /start.sh \
     && echo "echo 'host all all ::1/128 md5' >> /etc/postgresql/${PG_VERSION}/main/pg_hba.conf" >> /start.sh \
     && echo "echo 'host all all 127.0.0.1/32 md5' >> /etc/postgresql/${PG_VERSION}/main/pg_hba.conf" >> /start.sh \
 #    && echo "echo 'host all all 10.0.0.0/8 md5' >> /etc/postgresql/${PG_VERSION}/main/pg_hba.conf" >> /start.sh \

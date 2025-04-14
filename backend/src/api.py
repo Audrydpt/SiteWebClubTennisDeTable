@@ -348,11 +348,11 @@ class FastAPIServer:
         
         class UpperPersonAttributes(BaseModel):
             color: Optional[List[Color]] = None
-            type: Optional[List[Literal["shirt", "jacket", "coat", "sweater", "dress", "other"]]] = None
+            type: Optional[List[str]] = None
         
         class LowerPersonAttributes(BaseModel):
             color: Optional[List[Color]] = None
-            type: Optional[List[Literal["pants", "shorts", "skirt", "dress", "other"]]] = None
+            type: Optional[List[str]] = None
             
         class PersonAttributes(BaseModel):
             upper: UpperPersonAttributes
@@ -576,6 +576,25 @@ class FastAPIServer:
             
             return vms_host, vms_port, vms_username, vms_password, vms_type
 
+        @self.app.post("/vms/test", tags=["vms"])
+        async def test_vms(request: Request):
+            try:
+                data = await request.json()
+                vms_host = data.get("ip", None)
+                vms_port = data.get("port", None)
+                vms_username = data.get("username", None)
+                vms_password = data.get("password", None)
+                vms_type = data.get("type", None)
+
+                if vms_host is None or vms_port is None:
+                    raise HTTPException(status_code=400, detail="VMS IP or port not configured. Please configure VMS settings before trying to access cameras.")
+                
+                VMS = CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type)
+                async with VMS() as client:
+                    return await client.get_system_info()
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=traceback.format_exc())
+        
         @self.app.get("/vms/cameras", tags=["vms"])
         async def get_cameras():
             try:
@@ -595,12 +614,11 @@ class FastAPIServer:
             if vms_host is None or vms_port is None:
                 raise HTTPException(status_code=400, detail="VMS IP or port not configured. Please configure VMS settings before trying to access cameras.")
             
-            return HTTPException(status_code=501, detail="Not implemented")
             try:
                 VMS = CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type)
                 async with VMS() as client:
                     streams = client.start_live(guuid)
-                    img = await anext(streams)
+                    img, time_frame = await anext(streams)
                     _, bytes = cv2.imencode('.jpg', img)
                     return Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
 
@@ -901,7 +919,7 @@ class FastAPIServer:
                 raise HTTPException(status_code=500, detail=str(e))
 
     def __create_settings(self):
-        @self.app.get("/dashboard/settings", tags=["settings"])
+        @self.app.get("/settings", tags=["settings"])
         async def get_settings():
             try:
                 dal = GenericDAL()
@@ -918,7 +936,7 @@ class FastAPIServer:
                 logger.error(f"Error retrieving dashboard settings: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.get("/dashboard/settings/{key}", tags=["settings"])
+        @self.app.get("/settings/{key}", tags=["settings"])
         async def get_settings_key(key: str):
             try:
                 dal = GenericDAL()
@@ -932,7 +950,7 @@ class FastAPIServer:
                 logger.error(f"Error retrieving dashboard settings: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.put("/dashboard/settings/{key}", tags=["settings"])
+        @self.app.put("/settings/{key}", tags=["settings"])
         async def update_settings(request: Request, key: str):
             """Update a specific setting by key"""
 
