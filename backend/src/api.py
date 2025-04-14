@@ -373,6 +373,7 @@ class FastAPIServer:
                 for job_id in await TaskManager.get_jobs():
                     status = TaskManager.get_job_status(job_id)
                     created = TaskManager.get_job_created(job_id)
+                    updated = TaskManager.get_job_updated(job_id)
                     job_type = TaskManager.get_job_type(job_id)
                     size = TaskManager.get_job_size(job_id)
                     count = TaskManager.get_job_count(job_id)
@@ -381,8 +382,10 @@ class FastAPIServer:
                         "status": status,
                         "type": job_type,
                         "created": created,
+                        "updated": updated,
                         "count": count,
-                        "size (ko)": size,
+                        "size": size,
+
 
                     }
                     
