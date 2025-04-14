@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier,@typescript-eslint/no-explicit-any,no-console,no-else-return */
+/* eslint-disable no-console,react-hooks/exhaustive-deps */
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -32,7 +32,8 @@ export default function Results({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSourceDetails, setShowSourceDetails] = useState(false);
   const { resumeJob, displayResults, setDisplayResults } = useSearch();
-  const { tabJobs, activeTabIndex, handleTabChange } = useJobs();
+  const { tabJobs, activeTabIndex, handleTabChange, resumeActiveJob } =
+    useJobs();
 
   // Clear results function
   const clearResults = () => {
@@ -40,8 +41,7 @@ export default function Results({
 
     // Pour les résultats de recherche en cours
     if (displayResults.length > 0) {
-      // Réinitialiser l'état local des résultats affichés via setDisplayResults
-      // qui provient du hook useSearch
+      // Réinitialiser l'état local des résultats affichés
       setDisplayResults([]);
     }
   };
@@ -50,16 +50,52 @@ export default function Results({
     // Toujours afficher propsResults s'ils sont disponibles
     if (propsResults && propsResults.length > 0) {
       return propsResults;
-    } else {
-      return displayResults;
     }
+    return displayResults;
   }, [displayResults, propsResults]);
+
+  // Effet pour reprendre la tâche lorsque l'onglet actif change
+  useEffect(() => {
+    const activeJob = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
+
+    // Si un job est associé à l'onglet et qu'on n'est pas déjà en recherche
+    if (activeJob?.jobId && !isSearching) {
+      console.log(
+        `Onglet ${activeTabIndex} sélectionné avec le job ${activeJob.jobId}`
+      );
+
+      // Si le job est en cours, on reprend la recherche en direct
+      if (activeJob.status === 'running') {
+        console.log("Reprise d'une recherche en cours...");
+        resumeActiveJob(resumeJob);
+        // eslint-disable-next-line @stylistic/brace-style
+      }
+      // Si le job est terminé et qu'il n'y a pas de résultats affichés, on charge simplement les résultats
+      else if (
+        activeJob.status === 'completed' &&
+        displayResults.length === 0
+      ) {
+        console.log("Chargement des résultats d'une recherche terminée...");
+        resumeActiveJob(resumeJob);
+      }
+    } else if (!activeJob?.jobId) {
+      // Si pas de job associé, on nettoie les résultats
+      clearResults();
+    }
+  }, [
+    activeTabIndex,
+    isSearching,
+    tabJobs,
+    displayResults.length,
+    resumeActiveJob,
+    resumeJob,
+    clearResults,
+  ]);
 
   const handleResumeLastSearch = async () => {
     const lastJobId = localStorage.getItem('currentJobId');
     if (lastJobId) {
       await resumeJob(lastJobId);
-      // Les résultats seront déjà mis à jour dans displayResults
     }
   };
 
@@ -156,7 +192,9 @@ export default function Results({
             results={resultsToDisplay}
             isSearching={isSearching}
             progress={progress}
-            jobId={tabJobs.find(tab => tab.tabIndex === activeTabIndex)?.jobId}
+            jobId={
+              tabJobs.find((tab) => tab.tabIndex === activeTabIndex)?.jobId
+            }
             sortType={sortType}
             sortOrder={sortOrder}
           />

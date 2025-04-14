@@ -276,7 +276,6 @@ export default function useSearch() {
     try {
       setIsSearching(true);
       setJobId(jobId);
-      localStorage.setItem('currentJobId', jobId);
       forensicResultsHeap.clear();
 
       const resultsResponse = await fetch(
@@ -367,8 +366,6 @@ export default function useSearch() {
         );
         setProgress(maxProgress);
 
-        localStorage.setItem('currentJobId', jobId);
-
         console.log('🔄 Job repris avec succès:', jobId);
         console.log(resultsData);
 
@@ -454,9 +451,6 @@ export default function useSearch() {
         if (!guid) {
           throw new Error('No job ID returned from API');
         }
-
-        // Stocker le jobId dans le localStorage
-        localStorage.setItem('currentJobId', guid);
 
         // Initialize source progress with selected sources
         const selectedSources = formData.cameras || [];
