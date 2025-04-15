@@ -1,4 +1,4 @@
-/* eslint-disable no-console,react-hooks/exhaustive-deps */
+/* eslint-disable no-console,react-hooks/exhaustive-deps,@typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 
 export interface ForensicTask {
@@ -43,6 +43,7 @@ export default function useJobs() {
       case 'SUCCESS':
         return 'completed';
       case 'PENDING':
+      case 'STARTED':
         return 'running';
       case 'REVOKED':
       case 'FAILURE':
@@ -113,6 +114,19 @@ export default function useJobs() {
   // Changement d'onglet actif
   const handleTabChange = (tabIndex: number) => {
     setActiveTabIndex(tabIndex);
+
+    // Récupérer le jobId correspondant au nouvel onglet
+    const selectedTab = tabJobs.find((tab) => tab.tabIndex === tabIndex);
+
+    // Mettre à jour le localStorage avec le nouveau jobId
+    if (selectedTab?.jobId) {
+      localStorage.setItem('currentJobId', selectedTab.jobId);
+      console.log(`JobId mis à jour dans localStorage: ${selectedTab.jobId}`);
+    } else {
+      // Si l'onglet n'a pas de jobId associé, effacer le localStorage
+      localStorage.removeItem('currentJobId');
+      console.log('JobId supprimé du localStorage (onglet sans job associé)');
+    }
   };
 
   // Récupération d'une tâche par ID
@@ -138,6 +152,24 @@ export default function useJobs() {
     return () => clearInterval(interval);
   }, []);
 
+  const resumeActiveJob = async (
+    resumeCallback: (id: string) => Promise<any>
+  ) => {
+    const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
+
+    if (!activeTab?.jobId) {
+      console.log('Aucun job associé à cet onglet');
+      return null;
+    }
+
+    console.log(
+      `Reprise du job ${activeTab.jobId} avec statut ${activeTab.status}`
+    );
+
+    // Appeler resumeJob avec le jobId de l'onglet actif
+    return resumeCallback(activeTab.jobId);
+  };
+
   return {
     tasks,
     tabJobs,
@@ -148,5 +180,7 @@ export default function useJobs() {
     getTaskById,
     getActiveTask,
     handleTabChange,
+    resumeActiveJob,
+    setTabJobs,
   };
 }
