@@ -91,11 +91,16 @@ export default function DashboardTab({
     data.map((widget: StoredWidget) => {
       const { id, size, type, ...chart } = widget;
       const Component = ChartTypeComponents[type];
+      console.log('DashboardTab : WidgetId : ', id);
       return {
         id,
         widget,
         content: (
-          <Component {...chart} page={id ? (pagesToChart[id] ?? 0) : 0} />
+          <Component
+            widgetId={id!}
+            {...chart}
+            page={id ? (pagesToChart[id] ?? 0) : 0}
+          />
         ),
       } as ChartTiles;
     }) ?? [];

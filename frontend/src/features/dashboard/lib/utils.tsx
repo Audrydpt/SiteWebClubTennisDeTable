@@ -70,6 +70,7 @@ export function getTimeFormattingConfig(
 }
 
 type DashboardQuery = {
+  widgetId: string;
   table: string;
   aggregation: AcicAggregation;
   duration?: AcicAggregation;
@@ -164,8 +165,8 @@ export async function getWidgetData(
       'Either aggregation and duration or range must be provided'
     );
   }
-
-  const query = `${process.env.MAIN_API_URL}/dashboard/widgets/${props.table}`; // props.table => props.idWidget;
+  console.log('widget id : ', props.widgetId);
+  const query = `${process.env.MAIN_API_URL}/dashboard/widgets/${props.widgetId}/${props.table}`;
 
   let params = '?';
   params += `&aggregate=${props.aggregation}`;

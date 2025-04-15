@@ -990,20 +990,23 @@ class FastAPIServer:
         date = (datetime.datetime, Field(default=None, description="The timestamp to filter by"))
 
         AggregateParam = create_model(f"{model_class.__name__}Aggregate", aggregate=aggregate, group_by=group, time_from=date, time_to=date, **query)
-        @self.app.get("/dashboard/widgets/" + path, tags=["dashboard"])
-        async def get_bucket(kwargs: Annotated[AggregateParam, Query()]):
+        @self.app.get("/dashboard/widgets/{guid}/" + path, tags=["dashboard"])
+        async def get_bucket(guid: str, kwargs: Annotated[AggregateParam, Query()]):
             try:
                 time = kwargs.aggregate
                 between = kwargs.time_from, kwargs.time_to
                 group_by = kwargs.group_by.split(",") if kwargs.group_by is not None else None
                 where = {k: v for k, v in kwargs if v is not None and k in query}
+                matView = f"widget_{guid}"
 
                 dal = GenericDAL()
 
                 aggregation = agg_func if agg_func is not None else func.count(model_class.id)
-
-                cursor = await dal.async_get_bucket(model_class, _func=aggregation, _time=time, _group=group_by, _between=between, **where)
-
+                
+                #cursor = await dal.async_get_bucket(matView, _func=aggregation, _time=time, _group=group_by, _between=between, **where)
+                if cursor is None:
+                    cursor = await dal.async_get_bucket(model_class, _func=aggregation, _time=time, _group=group_by, _between=between, **where)
+                
                 ret = []
                 for row in cursor:
                     data = {
@@ -1019,7 +1022,37 @@ class FastAPIServer:
                 return ret
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.get("/dashboard/widgets/" + path, tags=["dashboard"])
+        async def get_bucket(kwargs: Annotated[AggregateParam, Query()]):
+            try:
+                time = kwargs.aggregate
+                between = kwargs.time_from, kwargs.time_to
+                group_by = kwargs.group_by.split(",") if kwargs.group_by is not None else None
+                where = {k: v for k, v in kwargs if v is not None and k in query}
 
+                dal = GenericDAL()
+
+                aggregation = agg_func if agg_func is not None else func.count(model_class.id)
+                
+                cursor = await dal.async_get_bucket(model_class, _func=aggregation, _time=time, _group=group_by, _between=between, **where)
+                
+                ret = []
+                for row in cursor:
+                    data = {
+                        "timestamp": row[0],
+                        "count": row[1]
+                    }
+                    if group_by is not None:
+                        for idx, group in enumerate(group_by):
+                            data[group] = row[idx + 2]
+
+                    ret.append(data)
+
+                return ret
+            except ValueError as e:
+                raise HTTPException(status_code=500, detail=str(e))
+            
     def __create_proxy(self):
         @self.app.get("/proxy/{host}/{subpath:path}", tags=["proxy"])
         async def get_proxy(request: Request, host: str, subpath: str = ""):
