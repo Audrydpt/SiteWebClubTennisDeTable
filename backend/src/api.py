@@ -382,7 +382,7 @@ class FastAPIServer:
                         "type": job_type,
                         "created": created,
                         "count": count,
-                        "size (ko)": size,
+                        "size": size,
 
                     }
                     
@@ -408,7 +408,9 @@ class FastAPIServer:
                 if data.type == "vehicle":
                     job_id = TaskManager.submit_job("VehicleReplayJob", job_params)
                 elif data.type == "person":
-                    job_id = TaskManager.submit_job("VehicleReplayJob", job_params)
+                    job_id = TaskManager.submit_job("PersonReplayJob", job_params)
+                elif data.type == "mobility":
+                    job_id = TaskManager.submit_job("MobilityReplayJob", job_params)
                 else:
                     raise HTTPException(status_code=400, detail="Type non supporté")
                     

@@ -243,7 +243,7 @@ def execute_job(self, job_type: str, job_params: Dict[str, Any]):
     
     async def execute_async():
         try:
-            if job_type == "VehicleReplayJob":
+            if job_type == "VehicleReplayJob" or job_type == "PersonReplayJob" or job_type == "MobilityReplayJob":
                 cancel_event = asyncio.Event()
                 job_params['job_id'] = job_id
                 job = VehicleReplayJob(job_params, cancel_event=cancel_event)
