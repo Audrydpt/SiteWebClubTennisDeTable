@@ -272,13 +272,29 @@ export default function useSearch() {
     },
     [cleanupResources]
   );
-  const resumeJob = async (jobId: string) => {
+
+  const cleanupWebSocket = useCallback(() => {
+    // Fermer WebSocket s'il existe
+    if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
+      console.log(
+        '🔒 Fermeture de la connexion WebSocket sans annuler la recherche'
+      );
+      wsRef.current.close(1000, "Changement d'onglet");
+      wsRef.current = null;
+    }
+  }, []);
+
+  const resumeJob = async (jobId: string, skipHistory: boolean = false) => {
     try {
-      setIsSearching(true);
       setJobId(jobId);
       localStorage.setItem('currentJobId', jobId);
-      forensicResultsHeap.clear();
 
+      // Ne pas effacer le heap si on veut simplement changer d'onglet
+      if (!skipHistory) {
+        forensicResultsHeap.clear();
+      }
+
+      // Récupérer les informations de la tâche
       const resultsResponse = await fetch(
         `${process.env.MAIN_API_URL}/forensics/${jobId}`
       );
@@ -288,6 +304,15 @@ export default function useSearch() {
       const resultsData = await resultsResponse.json();
 
       if (resultsData?.results) {
+        // Vérifier l'état de la tâche pour déterminer le comportement
+        const taskStatus = resultsData.status || 'PENDING';
+        const isCompleted = ['SUCCESS', 'FAILURE', 'REVOKED'].includes(
+          taskStatus
+        );
+
+        console.log(`🔍 État de la tâche ${jobId}: ${taskStatus}`);
+
+        // Traitement des données de progression des sources
         const sourcesProgress = resultsData.results
           .filter((r: { type: string }) => r.type === 'progress')
           .reduce((acc: any, curr: any) => {
@@ -307,72 +332,103 @@ export default function useSearch() {
             return acc;
           }, {});
 
+        // Forcer la progression à 100% pour toutes les sources si la tâche est terminée
+        if (isCompleted) {
+          Object.keys(sourcesProgress).forEach((key) => {
+            sourcesProgress[key].progress = 100;
+          });
+        }
+
         setSourceProgress(Object.values(sourcesProgress));
 
-        const detectionResults = await Promise.all(
-          resultsData.results
-            .filter((r: any) => r.metadata?.type === 'detection')
-            .map(async (result: any) => {
-              const frameId = result.frame_uuid;
-              const imageResponse = await fetch(
-                `${process.env.MAIN_API_URL}/forensics/${jobId}/frames/${frameId}`
-              );
+        let validDetectionResults: ForensicResult[] = [];
 
-              if (!imageResponse.ok) {
-                console.error(
-                  `Erreur lors du chargement de l'image pour ${frameId}`
+        // Charger les résultats si skipHistory=false OU si la tâche est terminée
+        if (!skipHistory || isCompleted) {
+          // Récupérer les résultats de détection avec leurs images
+          const detectionResults = await Promise.all(
+            resultsData.results
+              .filter((r: any) => r.metadata?.type === 'detection')
+              .map(async (result: any) => {
+                const frameId = result.frame_uuid;
+                const imageResponse = await fetch(
+                  `${process.env.MAIN_API_URL}/forensics/${jobId}/frames/${frameId}`
                 );
-                return null;
-              }
 
-              const imageBlob = await imageResponse.blob();
-              const imageUrl = URL.createObjectURL(imageBlob);
+                if (!imageResponse.ok) {
+                  console.error(
+                    `Erreur lors du chargement de l'image pour ${frameId}`
+                  );
+                  return null;
+                }
 
-              return {
-                id: frameId,
-                imageData: imageUrl, // Utilisation de l'URL blob
-                timestamp:
-                  result.metadata?.timestamp || new Date().toISOString(),
-                score: result.metadata?.score || 0,
-                cameraId:
-                  result.metadata?.camera ||
-                  result.metadata?.source ||
-                  'unknown',
-                type: 'detection',
-                attributes: result.metadata?.attributes || {},
-                progress: result.metadata?.progress || 0,
-              };
-            })
-        );
+                const imageBlob = await imageResponse.blob();
+                const imageUrl = URL.createObjectURL(imageBlob);
 
-        // Filtrer les nulls résultant de l'échec de chargement d'images
-        const validDetectionResults = detectionResults.filter(
-          (result) => result !== null
-        );
+                return {
+                  id: frameId,
+                  imageData: imageUrl,
+                  timestamp:
+                    result.metadata?.timestamp || new Date().toISOString(),
+                  score: result.metadata?.score || 0,
+                  cameraId:
+                    result.metadata?.camera ||
+                    result.metadata?.source ||
+                    'unknown',
+                  type: 'detection',
+                  attributes: result.metadata?.attributes || {},
+                  progress: result.metadata?.progress || 0,
+                };
+              })
+          );
 
-        validDetectionResults.forEach((res: ForensicResult) =>
-          forensicResultsHeap.addResult(res)
-        );
+          // Filtrer les nulls résultant de l'échec de chargement d'images
+          validDetectionResults = detectionResults.filter(
+            (result) => result !== null
+          ) as ForensicResult[];
 
-        console.log(
-          '🧠 Détections valides récupérées:',
-          validDetectionResults.length
-        );
+          validDetectionResults.forEach((res: ForensicResult) =>
+            forensicResultsHeap.addResult(res)
+          );
 
-        setResults(validDetectionResults);
-        setDisplayResults(validDetectionResults);
-        const maxProgress = Math.max(
-          ...Object.values(sourcesProgress).map((s: any) => s.progress || 0),
-          0
-        );
-        setProgress(maxProgress);
+          console.log(
+            '🧠 Détections valides récupérées:',
+            validDetectionResults.length
+          );
 
-        localStorage.setItem('currentJobId', jobId);
+          setResults(validDetectionResults);
+          setDisplayResults(validDetectionResults);
+        } else {
+          // En mode skipHistory pour tâches en cours uniquement, ne pas charger les images
+          console.log(
+            '⏭️ Chargement des résultats historiques ignoré (mode skipHistory, tâche en cours)'
+          );
+          setResults([]);
+          setDisplayResults([]);
+        }
 
-        console.log('🔄 Job repris avec succès:', jobId);
-        console.log(resultsData);
+        // Définir la progression à 100% si la tâche est terminée
+        if (isCompleted) {
+          setProgress(100);
+        } else {
+          const maxProgress = Math.max(
+            ...Object.values(sourcesProgress).map((s: any) => s.progress || 0),
+            0
+          );
+          setProgress(maxProgress);
+        }
 
-        return validDetectionResults;
+        // Si la tâche n'est pas terminée, relancer le WebSocket
+        if (!isCompleted) {
+          console.log('🔄 Tâche en cours, initialisation du WebSocket...');
+          setIsSearching(true);
+          initWebSocket(jobId);
+        } else {
+          console.log('✅ Tâche terminée, affichage des résultats uniquement');
+          setIsSearching(false);
+        }
+
+        return skipHistory && !isCompleted ? [] : validDetectionResults;
       }
 
       return [];
@@ -382,9 +438,8 @@ export default function useSearch() {
       setDisplayResults([]);
       setProgress(null);
       setSourceProgress([]);
-      return [];
-    } finally {
       setIsSearching(false);
+      return [];
     }
   };
 
@@ -568,6 +623,8 @@ export default function useSearch() {
   return {
     startSearch,
     stopSearch,
+    cleanupResources,
+    cleanupWebSocket,
     progress,
     results,
     isSearching,

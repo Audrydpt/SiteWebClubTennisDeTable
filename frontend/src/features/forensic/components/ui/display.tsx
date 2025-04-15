@@ -38,7 +38,6 @@ interface DisplayProps {
   results: ForensicResult[];
   isSearching: boolean;
   progress: number | null;
-  jobId?: string;
   sortType: SortType;
   sortOrder: 'asc' | 'desc';
 }
@@ -47,7 +46,6 @@ export default function Display({
   results,
   isSearching,
   progress,
-  jobId,
   sortType,
   sortOrder,
 }: DisplayProps) {
@@ -125,13 +123,6 @@ export default function Display({
       </div>
     );
   };
-
-  console.log('Display - Affichage des résultats:', {
-    results: results.length,
-    jobId,
-    isSearching,
-    progress,
-  });
 
   // Si nous avons des résultats à afficher, on les montre quelle que soit la progression
   if (results && results.length > 0) {

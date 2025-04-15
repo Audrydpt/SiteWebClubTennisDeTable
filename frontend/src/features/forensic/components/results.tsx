@@ -20,6 +20,8 @@ interface ResultsProps {
   isSearching: boolean;
   progress: number | null;
   sourceProgress: SourceProgress[];
+  onTabChange?: (tabIndex: number) => void;
+  activeTabIndex?: number;
 }
 
 export default function Results({
@@ -27,13 +29,15 @@ export default function Results({
   isSearching,
   progress,
   sourceProgress,
+  onTabChange,
+  activeTabIndex,
 }: ResultsProps) {
   const [sortType, setSortType] = useState<SortType>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSourceDetails, setShowSourceDetails] = useState(false);
   const { resumeJob, displayResults, setDisplayResults } = useSearch();
-  const { tabJobs, activeTabIndex, handleTabChange } = useJobs();
-
+  const { tabJobs, handleTabChange: defaultHandleTabChange } = useJobs();
+  const handleTabChange = onTabChange || defaultHandleTabChange;
   // Clear results function
   const clearResults = () => {
     forensicResultsHeap.clear();
@@ -140,7 +144,7 @@ export default function Results({
         setSortType={setSortType}
         sortOrder={sortOrder}
         toggleSortOrder={toggleSortOrder}
-        handleResumeLastSearch={handleResumeLastSearch}
+        // handleResumeLastSearch={handleResumeLastSearch}
         clearResults={clearResults}
         tabJobs={tabJobs}
         activeTabIndex={activeTabIndex}
@@ -156,7 +160,6 @@ export default function Results({
             results={resultsToDisplay}
             isSearching={isSearching}
             progress={progress}
-            jobId={tabJobs.find(tab => tab.tabIndex === activeTabIndex)?.jobId}
             sortType={sortType}
             sortOrder={sortOrder}
           />

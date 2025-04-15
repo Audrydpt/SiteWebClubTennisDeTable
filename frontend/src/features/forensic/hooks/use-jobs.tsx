@@ -98,14 +98,6 @@ export default function useJobs() {
 
       setTabJobs(newTabJobs);
 
-      // Logs pour vérifier l'association des jobs aux tabs
-      console.log('Tâches forensics chargées:', tasksArray.length);
-      newTabJobs.forEach((tab) => {
-        console.log(
-          `Tab ${tab.tabIndex}: Job ID = ${tab.jobId || 'aucun'}, Status = ${tab.status}`
-        );
-      });
-
       setError(null);
     } catch (err) {
       console.error(
@@ -140,8 +132,8 @@ export default function useJobs() {
     // Chargement initial
     fetchTasks();
 
-    // Rafraîchissement toutes les 30 secondes
-    const interval = setInterval(fetchTasks, 30000);
+    // Rafraîchissement toutes les 3 secondes
+    const interval = setInterval(fetchTasks, 3000);
 
     return () => clearInterval(interval);
   }, []);

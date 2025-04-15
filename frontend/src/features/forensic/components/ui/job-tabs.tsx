@@ -31,17 +31,21 @@ export default function JobTabs({
       ? activeTabs
       : [{ tabIndex: 1, status: 'idle' } as TabJob];
 
-  // Fonction pour générer une couleur d'arrière-plan basée sur le statut
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'running':
-        return 'bg-blue-100 text-blue-800';
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'error':
-        return 'bg-red-100 text-red-800';
+  // Nouvelle fonction pour obtenir la classe de grille appropriée
+  const getGridClass = (count: number) => {
+    switch (count) {
+      case 1:
+        return 'grid-cols-1';
+      case 2:
+        return 'grid-cols-2';
+      case 3:
+        return 'grid-cols-3';
+      case 4:
+        return 'grid-cols-4';
+      case 5:
+        return 'grid-cols-5';
       default:
-        return '';
+        return 'grid-cols-1';
     }
   };
 
@@ -58,13 +62,9 @@ export default function JobTabs({
         className="w-full"
         onValueChange={(value) => onTabChange(parseInt(value, 10))}
       >
-        <TabsList
-          className={`grid w-full ${displayTabs.length > 0 ? `grid-cols-${displayTabs.length}` : 'grid-cols-1'}`}
-        >
+        <TabsList className={`grid w-full ${getGridClass(displayTabs.length)}`}>
           {displayTabs.map((tab) => {
             const hasJob = 'jobId' in tab && !!tab.jobId;
-            const isActive = activeTabIndex === tab.tabIndex;
-
             // Générer l'affichage de l'onglet en fonction de son état
             let tabDisplay = `Recherche ${tab.tabIndex}`;
             let statusIndicator = null;
@@ -88,10 +88,7 @@ export default function JobTabs({
               <TabsTrigger
                 key={tab.tabIndex}
                 value={tab.tabIndex.toString()}
-                className={`
-                  ${hasJob ? 'font-medium' : ''}
-                  ${isActive && hasJob ? getStatusColor(tab.status) : ''}
-                `}
+                className={hasJob ? 'font-medium' : ''}
               >
                 {tabDisplay}
                 {statusIndicator}

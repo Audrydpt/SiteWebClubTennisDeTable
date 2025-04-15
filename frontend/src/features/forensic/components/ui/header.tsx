@@ -6,7 +6,7 @@ interface HeaderProps {
   setSortType: (type: SortType) => void;
   sortOrder: 'asc' | 'desc';
   toggleSortOrder: () => void;
-  handleResumeLastSearch: () => Promise<void>;
+  // handleResumeLastSearch: () => Promise<void>;
   clearResults: () => void;
   tabJobs?: TabJob[];
   activeTabIndex?: number;
@@ -18,7 +18,7 @@ export default function ForensicHeader({
   setSortType,
   sortOrder,
   toggleSortOrder,
-  handleResumeLastSearch,
+  // handleResumeLastSearch,
   clearResults,
   tabJobs = [],
   activeTabIndex = 1,
@@ -41,7 +41,7 @@ export default function ForensicHeader({
             setSortType={setSortType}
             sortOrder={sortOrder}
             toggleSortOrder={toggleSortOrder}
-            handleResumeLastSearch={handleResumeLastSearch}
+            // handleResumeLastSearch={handleResumeLastSearch}
             clearResults={clearResults}
           />
         </div>

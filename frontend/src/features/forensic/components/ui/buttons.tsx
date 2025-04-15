@@ -9,7 +9,7 @@ interface SortButtonsProps {
   setSortType: (type: SortType) => void;
   sortOrder: 'asc' | 'desc';
   toggleSortOrder: () => void;
-  handleResumeLastSearch: () => Promise<void>;
+  // handleResumeLastSearch: () => Promise<void>;
   clearResults: () => void;
 }
 
@@ -18,7 +18,7 @@ export function SortButtons({
   setSortType,
   sortOrder,
   toggleSortOrder,
-  handleResumeLastSearch,
+  // handleResumeLastSearch,
   clearResults,
 }: SortButtonsProps) {
   return (
@@ -56,8 +56,9 @@ export function SortButtons({
         )}
       </Button>
 
-      {/* Bouton pour reprendre la recherche */}
+      {/* Bouton pour reprendre la recherche
       <Button onClick={handleResumeLastSearch}>Reprendre</Button>
+      */}
 
       {/* Bouton pour vider les résultats */}
       <Button

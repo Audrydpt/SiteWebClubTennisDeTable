@@ -1,15 +1,16 @@
 /* eslint-disable no-console */
 import { useRef, useState } from 'react';
-
 import { Card, CardContent } from '@/components/ui/card';
 
 import useSearch from './hooks/use-search';
+import useJobs from './hooks/use-jobs';
 import { createSearchFormData } from './lib/format-query';
 
 import ForensicForm from './components/form';
 import Results from './components/results';
 import ForensicFormProvider from './lib/provider/forensic-form-provider';
 import { ForensicFormValues } from './lib/types';
+import forensicResultsHeap from './lib/data-structure/heap.tsx';
 
 export default function Forensic() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -24,7 +25,16 @@ export default function Forensic() {
     results,
     isSearching,
     sourceProgress,
+    resumeJob,
+    setDisplayResults,
+    cleanupWebSocket,
   } = useSearch();
+
+  const {
+    tabJobs,
+    handleTabChange: jobsHandleTabChange,
+    activeTabIndex,
+  } = useJobs();
 
   const handleToggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
@@ -43,6 +53,32 @@ export default function Forensic() {
     }
   };
 
+  const handleTabChange = async (tabIndex: number) => {
+    // 1. Fermer proprement la connexion WebSocket du job actuel sans l'annuler
+    cleanupWebSocket();
+
+    // 2. Mettre à jour l'onglet actif
+    jobsHandleTabChange(tabIndex);
+
+    // 3. Vider le heap pour éviter le mélange des résultats
+    forensicResultsHeap.clear();
+
+    // 4. Réinitialiser l'affichage pour le nouvel onglet
+    setDisplayResults([]);
+
+    // 5. Récupérer le jobId associé au nouvel onglet
+    const selectedTab = tabJobs.find((tab) => tab.tabIndex === tabIndex);
+
+    if (selectedTab?.jobId) {
+      console.log(
+        `Chargement des résultats pour l'onglet ${tabIndex}, job ${selectedTab.jobId}`
+      );
+
+      // 6. Reprendre le job en chargeant TOUJOURS les résultats historiques, chnagerai plus tard
+      await resumeJob(selectedTab.jobId, false);
+    }
+  };
+
   const currentWidth = isCollapsed ? collapsedWidth : expandedWidth;
 
   return (
@@ -55,7 +91,7 @@ export default function Forensic() {
           flexShrink: 0,
         }}
       >
-        {/* Form Panel with dynamic width */}
+        {/* Panneau du formulaire */}
         <Card className="h-[calc(100vh-2rem)] overflow-hidden flex flex-col">
           <CardContent
             className={`${isCollapsed ? 'p-2' : 'p-4'} h-full flex flex-col`}
@@ -81,7 +117,7 @@ export default function Forensic() {
           </CardContent>
         </Card>
 
-        {/* Vertical handle that toggles collapse on click */}
+        {/* Poignée pour réduire/agrandir le panneau */}
         <button
           className="absolute top-0 right-0 w-4 h-full cursor-pointer z-30 bg-transparent border-none p-0"
           type="button"
@@ -100,7 +136,7 @@ export default function Forensic() {
         </button>
       </div>
 
-      {/* Results Panel */}
+      {/* Panneau des résultats */}
       <Card className="h-[calc(100vh-2rem)] overflow-hidden flex-1 ml-2">
         <CardContent className="p-10 pb-8 h-full">
           <Results
@@ -108,6 +144,8 @@ export default function Forensic() {
             isSearching={isSearching}
             progress={progress}
             sourceProgress={sourceProgress}
+            onTabChange={handleTabChange}
+            activeTabIndex={activeTabIndex}
           />
         </CardContent>
       </Card>
