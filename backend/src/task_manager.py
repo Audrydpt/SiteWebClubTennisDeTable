@@ -926,11 +926,12 @@ class VehicleReplayJob:
             _, encoded_image = cv2.imencode('.jpg', export)
             frame_bytes = encoded_image.tobytes()
 
-            path = "/var/lib/postgresql/16/main"
-            name = f"{source_guid}:{time.strftime('%Y-%m-%dT%H:%M')}"
-            os.makedirs(f"{path}/thumbnail/", exist_ok=True)
-            cv2.imwrite(f"{path}/thumbnail/{name}.jpg", thumbnail)
-            #cv2.imwrite(f"{ self.save_path}/thumbnail/{name}_{index}.jpg", thumbnail) #seulement pour les tests
+            if False:
+                path = "/var/lib/postgresql/16/main"
+                name = f"{source_guid}:{time.strftime('%Y-%m-%dT%H:%M')}"
+                os.makedirs(f"{path}/thumbnail/", exist_ok=True)
+                cv2.imwrite(f"{path}/thumbnail/{name}.jpg", thumbnail)
+                #cv2.imwrite(f"{ self.save_path}/thumbnail/{name}_{index}.jpg", thumbnail) #seulement pour les tests
 
             yield metadata, frame_bytes, current_boxes
 
