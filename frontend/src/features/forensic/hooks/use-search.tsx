@@ -453,35 +453,12 @@ export default function useSearch() {
         setIsCancelling(false);
         forensicResultsHeap.clear();
 
-        // S'assurer que toutes les ressources précédentes sont bien fermées
-        cleanupResources();
+        // Au lieu d'annuler la recherche précédente via DELETE,
+        // simplement nettoyer le WebSocket
+        cleanupWebSocket();
 
         // Attendre un court délai pour s'assurer que les ressources sont bien libérées
         await new Promise((resolve) => setTimeout(resolve, 100));
-
-        try {
-          // Annuler toute recherche en cours via l'API et attendre la réponse
-          const cancelResponse = await fetch(
-            `${process.env.MAIN_API_URL}/forensics`,
-            {
-              method: 'DELETE',
-              headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                Authorization: `X-Session-Id ${sessionId}`,
-              },
-            }
-          );
-
-          // Vérifier si l'annulation a réussi
-          if (!cancelResponse.ok) {
-            console.warn(
-              `⚠️ L'annulation précédente a retourné le statut ${cancelResponse.status}`
-            );
-          }
-        } catch (cancelError) {
-          // On log l'erreur mais on continue la recherche
-        }
 
         // Créer un nouvel AbortController pour cette requête
         abortControllerRef.current = new AbortController();
@@ -530,7 +507,7 @@ export default function useSearch() {
         throw error;
       }
     },
-    [sessionId, cleanupResources, initializeSourceProgress, initWebSocket]
+    [sessionId, cleanupWebSocket, initializeSourceProgress, initWebSocket]
   );
 
   const stopSearch = useCallback(() => {

@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export interface TabJob {
@@ -11,6 +12,7 @@ interface JobTabsProps {
   activeTabIndex: number; // Onglet actuellement actif (1-5)
   onTabChange: (tabIndex: number) => void; // Callback lors du changement d'onglet
   hideTitle?: boolean;
+  isLoading?: boolean; // Nouvel état pour montrer un chargement global
 }
 
 export default function JobTabs({
@@ -18,6 +20,7 @@ export default function JobTabs({
   activeTabIndex = 1,
   onTabChange,
   hideTitle = false,
+  isLoading = false,
 }: JobTabsProps) {
   // Filtrer les tabJobs pour ne garder que ceux avec un jobId ou limiter à 5 maximum
   const activeTabs = tabJobs
@@ -49,11 +52,24 @@ export default function JobTabs({
     }
   };
 
+  // Afficher un état de chargement global
+  if (isLoading && tabJobs.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 space-y-4">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="text-lg">Chargement des tâches...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col">
       {!hideTitle && (
         <div className="flex items-center gap-2 mb-2">
           <h2 className="text-lg font-semibold">Résultats de recherche</h2>
+          {isLoading && (
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          )}
         </div>
       )}
 
@@ -75,20 +91,30 @@ export default function JobTabs({
               // Ajouter un indicateur visuel pour le statut
               if (tab.status === 'running') {
                 statusIndicator = (
-                  <span className="ml-1 animate-pulse">⌛</span>
+                  <Loader2 className="ml-1 h-3 w-3 animate-spin" />
                 );
               } else if (tab.status === 'completed') {
-                statusIndicator = <span className="ml-1">✓</span>;
+                statusIndicator = <span className="ml-1 text-primary">✓</span>;
               } else if (tab.status === 'error') {
-                statusIndicator = <span className="ml-1">⚠️</span>;
+                statusIndicator = (
+                  <span className="ml-1 text-destructive">⚠️</span>
+                );
               }
             }
+
+            // Appliquer une classe spéciale pour les onglets actifs et en cours d'exécution
+            const activeTabClass =
+              activeTabIndex === tab.tabIndex ? 'ring-1 ring-primary' : '';
+
+            const runningClass =
+              tab.status === 'running' ? 'bg-muted/50 animate-pulse' : '';
 
             return (
               <TabsTrigger
                 key={tab.tabIndex}
                 value={tab.tabIndex.toString()}
-                className={hasJob ? 'font-medium' : ''}
+                className={`${hasJob ? 'font-medium' : ''} ${activeTabClass} ${runningClass} transition-all`}
+                disabled={isLoading}
               >
                 {tabDisplay}
                 {statusIndicator}
@@ -100,6 +126,11 @@ export default function JobTabs({
         {/* Les contenus des onglets - ils seront vides car le contenu sera injecté par le parent */}
         {displayTabs.map((tab) => (
           <TabsContent key={tab.tabIndex} value={tab.tabIndex.toString()}>
+            {isLoading && (
+              <div className="flex justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            )}
             {/* Le contenu sera injecté par le composant parent */}
           </TabsContent>
         ))}

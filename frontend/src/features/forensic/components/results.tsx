@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier,@typescript-eslint/no-explicit-any,no-console,no-else-return */
+/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier,@typescript-eslint/no-explicit-any,no-console,no-else-return,consistent-return */
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -22,6 +22,7 @@ interface ResultsProps {
   sourceProgress: SourceProgress[];
   onTabChange?: (tabIndex: number) => void;
   activeTabIndex?: number;
+  isTabLoading?: boolean;
 }
 
 export default function Results({
@@ -31,13 +32,39 @@ export default function Results({
   sourceProgress,
   onTabChange,
   activeTabIndex,
+  isTabLoading,
 }: ResultsProps) {
   const [sortType, setSortType] = useState<SortType>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSourceDetails, setShowSourceDetails] = useState(false);
   const { resumeJob, displayResults, setDisplayResults } = useSearch();
   const { tabJobs, handleTabChange: defaultHandleTabChange } = useJobs();
+  const initialLoadComplete = useRef(false);
+  const previousTabIndex = useRef<number | undefined>(activeTabIndex);
+  const isLoadingRef = useRef(false); // Pour éviter les chargements multiples
+  const requestTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const handleTabChange = onTabChange || defaultHandleTabChange;
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  // Modifier l'useEffect existant pour le chargement initial
+  useEffect(() => {
+    // Activer le skeleton au chargement initial
+    setIsInitialLoading(true);
+  }, []);
+
+  // Ajouter un nouvel useEffect qui observe les résultats
+  useEffect(() => {
+    // Si nous avons des résultats (soit depuis props, soit depuis displayResults)
+    // alors nous pouvons désactiver le skeleton loader
+    if ((propsResults && propsResults.length > 0) ||
+      (displayResults && displayResults.length > 0)) {
+      // Ajouter un petit délai pour une transition plus fluide
+      const timer = setTimeout(() => {
+        setIsInitialLoading(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [propsResults, displayResults]);
   // Clear results function
   const clearResults = () => {
     forensicResultsHeap.clear();
@@ -49,6 +76,56 @@ export default function Results({
       setDisplayResults([]);
     }
   };
+
+  useEffect(() => {
+    // Fonction pour charger automatiquement les résultats avec mécanisme anti-rebond
+    const autoLoadResults = async () => {
+      // Si déjà en cours de chargement, on ignore
+      if (isLoadingRef.current || isSearching || isTabLoading) {
+        return;
+      }
+
+      const lastJobId = localStorage.getItem('currentJobId');
+      if (!lastJobId) return;
+
+      const shouldLoad = !initialLoadComplete.current ||
+        previousTabIndex.current !== activeTabIndex;
+
+      if (shouldLoad) {
+        // Annuler tout timeout en attente
+        if (requestTimeoutRef.current) {
+          clearTimeout(requestTimeoutRef.current);
+        }
+
+        // Configurer un nouveau timeout pour regrouper les demandes rapprochées
+        requestTimeoutRef.current = setTimeout(async () => {
+          try {
+            isLoadingRef.current = true; // Verrouiller pour éviter les appels multiples
+            console.log('Chargement automatique des résultats...');
+            await resumeJob(lastJobId);
+            initialLoadComplete.current = true;
+          } catch (error) {
+            console.error('Erreur lors du chargement automatique:', error);
+          } finally {
+            isLoadingRef.current = false;  // Déverrouiller
+            requestTimeoutRef.current = null;
+          }
+        }, 300); // Délai de regroupement (300ms)
+      }
+
+      // Toujours mettre à jour la référence de l'onglet actif
+      previousTabIndex.current = activeTabIndex;
+    };
+
+    autoLoadResults();
+
+    // Nettoyage du timeout en cas de démontage du composant
+    return () => {
+      if (requestTimeoutRef.current) {
+        clearTimeout(requestTimeoutRef.current);
+      }
+    };
+  }, [resumeJob, isSearching, activeTabIndex, isTabLoading]);
 
   const resultsToDisplay = useMemo(() => {
     // Toujours afficher propsResults s'ils sont disponibles
@@ -77,9 +154,9 @@ export default function Results({
     [sourceProgress]
   );
 
-  // Add logs in the renderProgressSection function
   const renderProgressSection = () => {
-    if (progress === null) {
+    // Ne pas afficher la barre de progression normale si l'onglet est en cours de chargement
+    if (progress === null || isTabLoading) {
       return null;
     }
 
@@ -100,11 +177,11 @@ export default function Results({
             <p className="text-sm font-medium text-foreground">
               Progression :{' '}
               <span className="text-primary font-semibold">
-                {progress.toFixed(0)}%
-              </span>
+              {progress.toFixed(0)}%
+            </span>
               <span className="text-muted-foreground ml-2 text-xs font-medium">
-                {statusText}
-              </span>
+              {statusText}
+            </span>
             </p>
           </div>
           {sourceProgress.length > 0 && (
@@ -144,7 +221,7 @@ export default function Results({
         setSortType={setSortType}
         sortOrder={sortOrder}
         toggleSortOrder={toggleSortOrder}
-        // handleResumeLastSearch={handleResumeLastSearch}
+        handleResumeLastSearch={handleResumeLastSearch}
         clearResults={clearResults}
         tabJobs={tabJobs}
         activeTabIndex={activeTabIndex}
@@ -162,6 +239,7 @@ export default function Results({
             progress={progress}
             sortType={sortType}
             sortOrder={sortOrder}
+            isTabLoading={isTabLoading || isInitialLoading}
           />
         </div>
       </ScrollArea>

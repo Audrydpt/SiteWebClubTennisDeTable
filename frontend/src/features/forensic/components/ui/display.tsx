@@ -40,6 +40,7 @@ interface DisplayProps {
   progress: number | null;
   sortType: SortType;
   sortOrder: 'asc' | 'desc';
+  isTabLoading?: boolean;
 }
 
 export default function Display({
@@ -48,6 +49,7 @@ export default function Display({
   progress,
   sortType,
   sortOrder,
+  isTabLoading = false,
 }: DisplayProps) {
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
 
@@ -123,6 +125,72 @@ export default function Display({
       </div>
     );
   };
+
+  // Afficher un skeleton loader amélioré pendant le chargement de l'onglet
+  if (isTabLoading) {
+    return (
+      <div className="space-y-6">
+        {/* Barre de progression pulsante */}
+        <div className="space-y-2 mb-6">
+          <div className="flex justify-between items-center">
+            <div className="h-4 bg-muted/80 rounded w-32 animate-pulse" />
+            <div className="h-3 bg-muted/60 rounded w-24 animate-pulse" />
+          </div>
+          <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted/40">
+            <div
+              className="absolute inset-y-0 left-0 w-1/3 bg-primary/50 rounded-full"
+              style={{
+                animation: 'pulse 1.5s infinite ease-in-out',
+                opacity: 0.7,
+              }}
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            {[1, 2, 3].map((n) => (
+              <div key={`source-${n}`} className="flex flex-col space-y-1">
+                <div className="h-3 bg-muted/60 rounded w-3/4 animate-pulse" />
+                <div className="h-2 bg-muted/40 rounded w-full animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Skeletons avec animations */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {skeletonIds.map((id, index) => (
+            <div
+              key={`skeleton-${id}`}
+              className="border rounded-md overflow-hidden shadow-sm animate-pulse"
+              style={{
+                animationDelay: `${index * 80}ms`,
+                animationDuration: '2s',
+              }}
+            >
+              <div className="bg-muted/80 w-full aspect-[16/9] relative">
+                {/* Effet de balayage sur l'image */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <div
+                    className="h-full w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent absolute"
+                    style={{
+                      left: '-100%',
+                      animationName: 'shimmer',
+                      animationDuration: '2s',
+                      animationIterationCount: 'infinite',
+                    }}
+                  />
+                </div>
+                <div className="absolute bottom-2 right-2 h-5 w-12 bg-muted/60 rounded-full" />
+              </div>
+              <div className="p-3">
+                <div className="h-4 bg-muted/70 rounded w-3/4 mb-2" />
+                <div className="h-3 bg-muted/50 rounded w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   // Si nous avons des résultats à afficher, on les montre quelle que soit la progression
   if (results && results.length > 0) {
@@ -261,6 +329,7 @@ export default function Display({
             <div className="bg-muted w-full aspect-[16/9] animate-pulse" />
             <div className="p-3">
               <div className="h-4 bg-muted rounded w-3/4 mb-1 animate-pulse" />
+              <div className="h-3 bg-muted rounded w-1/2 animate-pulse" />
             </div>
           </div>
         ))}

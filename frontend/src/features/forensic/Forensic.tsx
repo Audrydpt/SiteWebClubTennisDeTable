@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+/* eslint-disable no-console,@typescript-eslint/no-unused-vars */
 import { useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -17,6 +17,7 @@ export default function Forensic() {
   const collapsedWidth = 1;
   const expandedWidth = 350;
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isTabLoading, setIsTabLoading] = useState(false);
 
   const {
     startSearch,
@@ -54,6 +55,9 @@ export default function Forensic() {
   };
 
   const handleTabChange = async (tabIndex: number) => {
+    // Activer l'état de chargement
+    setIsTabLoading(true);
+
     // 1. Fermer proprement la connexion WebSocket du job actuel sans l'annuler
     cleanupWebSocket();
 
@@ -74,8 +78,21 @@ export default function Forensic() {
         `Chargement des résultats pour l'onglet ${tabIndex}, job ${selectedTab.jobId}`
       );
 
-      // 6. Reprendre le job en chargeant TOUJOURS les résultats historiques, chnagerai plus tard
-      await resumeJob(selectedTab.jobId, false);
+      try {
+        // 6. Reprendre le job en chargeant les résultats historiques
+        await resumeJob(selectedTab.jobId, false);
+      } catch (error) {
+        console.error(
+          `Erreur lors du chargement du job ${selectedTab.jobId}:`,
+          error
+        );
+      } finally {
+        // Désactiver l'état de chargement une fois terminé
+        setIsTabLoading(false);
+      }
+    } else {
+      // Pas de job pour cet onglet, désactiver l'état de chargement
+      setIsTabLoading(false);
     }
   };
 
@@ -146,6 +163,7 @@ export default function Forensic() {
             sourceProgress={sourceProgress}
             onTabChange={handleTabChange}
             activeTabIndex={activeTabIndex}
+            isTabLoading={isTabLoading}
           />
         </CardContent>
       </Card>
