@@ -137,6 +137,7 @@ class FastAPIServer:
         self.__create_endpoint("AcicOCR", AcicOCR)
         self.__create_endpoint("AcicAllInOneEvent", AcicAllInOneEvent)
         self.__create_endpoint("AcicEvent", AcicEvent)
+        self.__create_endpoint2()
 
         @self.app.get("/dashboard/widgets", tags=["dashboard"])
         async def get_dashboard():
@@ -975,6 +976,7 @@ class FastAPIServer:
                 raise HTTPException(status_code=500, detail=str(e))
         
     def __create_endpoint(self, path: str, model_class: Type, agg_func=None):
+        logger.info(f"__create_endpoint called with path={path}, model_class={model_class} & agg_func={agg_func}")
         query = {}
         for column in inspect(model_class).mapper.column_attrs:
             if column.key not in ['id', 'timestamp'] and 'url' not in column.key:
@@ -988,54 +990,78 @@ class FastAPIServer:
         aggregate = (ModelName, Field(default=ModelName.hour, description="The time interval to aggregate the data"))
         group = (str, Field(default=None, description="The column to group by"))
         date = (datetime.datetime, Field(default=None, description="The timestamp to filter by"))
-
+        
+        logger.info(f"Creating model with params: aggregate={aggregate}, group={group}, date={date}")
         AggregateParam = create_model(f"{model_class.__name__}Aggregate", aggregate=aggregate, group_by=group, time_from=date, time_to=date, **query)
-        @self.app.get("/dashboard/widgets/{guid}/" + path, tags=["dashboard"])
-        async def get_bucket(guid: str, kwargs: Annotated[AggregateParam, Query()]):
-            try:
-                time = kwargs.aggregate
-                between = kwargs.time_from, kwargs.time_to
-                group_by = kwargs.group_by.split(",") if kwargs.group_by is not None else None
-                where = {k: v for k, v in kwargs if v is not None and k in query}
-                matView = f"widget_{guid}"
-
-                dal = GenericDAL()
-
-                aggregation = agg_func if agg_func is not None else func.count(model_class.id)
-                
-                #cursor = await dal.async_get_bucket(matView, _func=aggregation, _time=time, _group=group_by, _between=between, **where)
-                if cursor is None:
-                    cursor = await dal.async_get_bucket(model_class, _func=aggregation, _time=time, _group=group_by, _between=between, **where)
-                
-                ret = []
-                for row in cursor:
-                    data = {
-                        "timestamp": row[0],
-                        "count": row[1]
-                    }
-                    if group_by is not None:
-                        for idx, group in enumerate(group_by):
-                            data[group] = row[idx + 2]
-
-                    ret.append(data)
-
-                return ret
-            except ValueError as e:
-                raise HTTPException(status_code=500, detail=str(e))
         
         @self.app.get("/dashboard/widgets/" + path, tags=["dashboard"])
         async def get_bucket(kwargs: Annotated[AggregateParam, Query()]):
             try:
+                logger.info(f"get_bucket called with kwargs={kwargs}")
                 time = kwargs.aggregate
                 between = kwargs.time_from, kwargs.time_to
                 group_by = kwargs.group_by.split(",") if kwargs.group_by is not None else None
                 where = {k: v for k, v in kwargs if v is not None and k in query}
 
+                logger.info(f"Extracted params: time={time}, between={between}, group_by={group_by}, where={where}")
                 dal = GenericDAL()
 
                 aggregation = agg_func if agg_func is not None else func.count(model_class.id)
+                logger.info(f"Using aggregation function: {aggregation}")
                 
+                logger.info(f"Executing query: dal.async_get_bucket({model_class}, _func={aggregation}, _time={time}, _group={group_by}, _between={between}, where={where})")
                 cursor = await dal.async_get_bucket(model_class, _func=aggregation, _time=time, _group=group_by, _between=between, **where)
+                logger.info(f"Cursor returned: {cursor}")
+
+                ret = []
+                for row in cursor:
+                    data = {
+                        "timestamp": row[0],
+                        "count": row[1]
+                    }
+                    if group_by is not None:
+                        for idx, group in enumerate(group_by):
+                            data[group] = row[idx + 2]
+                            logger.info(f"  Adding group_by value: {group}={row[idx + 2]}")
+
+                    ret.append(data)
+                    logger.info(f"  Processed data: {data}")
+
+                logger.info(f"Returning {len(ret)} results: {ret}")
+                return ret
+            except ValueError as e:
+                logger.error(f"Error in get_bucket: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=str(e))
+    
+    def __create_endpoint2(self, agg_func=None):
+        logger.info(f"__create_endpoint2 called with agg_func={agg_func}")
+        query = {}
+
+        aggregate = (ModelName, Field(default=ModelName.hour, description="The time interval to aggregate the data"))
+        group = (str, Field(default=None, description="The column to group by"))
+        date = (datetime.datetime, Field(default=None, description="The timestamp to filter by"))
+
+        logger.info(f"Creating model with params: aggregate={aggregate}, group={group}, date={date}")
+        AggregateParam = create_model(f"Aggregate", aggregate=aggregate, group_by=group, time_from=date, time_to=date, **query)    
+        
+        @self.app.get("/dashboard/widgets/{guid}", tags=["dashboard"])
+        async def get_bucket(guid: str, kwargs: Annotated[AggregateParam, Query()]):
+            logger.info(f"get_bucket called with guid={guid}, kwargs={kwargs}")
+            try:
+                time = kwargs.aggregate
+                between = kwargs.time_from, kwargs.time_to
+                group_by = kwargs.group_by.split(",") if kwargs.group_by is not None else None
+                matView = f"widget_{guid}"
+                
+                logger.info(f"Extracted params: time={time}, between={between}, group_by={group_by}, matView={matView}")
+
+                dal = GenericDAL()
+                aggregation = agg_func if agg_func is not None else func.count('*')
+                logger.info(f"Using aggregation function: {aggregation}")
+                
+                logger.info(f"Executing query: dal.async_get_bucket({matView}, _func={aggregation}, _time={time}, _group={group_by}, _between={between})")
+                cursor = await dal.async_get_view(matView, _group=group_by, _between=between)
                 
                 ret = []
                 for row in cursor:
@@ -1046,11 +1072,16 @@ class FastAPIServer:
                     if group_by is not None:
                         for idx, group in enumerate(group_by):
                             data[group] = row[idx + 2]
+                            logger.info(f"  Adding group_by value: {group}={row[idx + 2]}")
 
                     ret.append(data)
+                    logger.info(f"  Processed data: {data}")
 
+                logger.info(f"Returning {len(ret)} results: {ret}")
                 return ret
             except ValueError as e:
+                logger.error(f"Error in get_bucket: {e}")
+                logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=str(e))
             
     def __create_proxy(self):

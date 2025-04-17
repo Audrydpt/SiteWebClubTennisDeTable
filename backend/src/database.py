@@ -31,7 +31,7 @@ file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(mes
 logger.addHandler(file_handler)
 
 def get_database_url(use_timescaledb=True, async_driver=False):
-    db_host = os.getenv("DB_HOST", "localhost")
+    db_host = os.getenv("DB_HOST", "192.168.20.145")
     db_user = os.getenv("DB_USER", "postgres")
     db_pass = os.getenv("DB_PASS", "postgres")
     db_port = os.getenv("DB_PORT", "5432")
@@ -486,6 +486,42 @@ class GenericDAL:
             result = result.all()
             return result
 
+    async def async_get_view(self, view_name, _group=None, _between=None, **filters) -> List[Any]:
+        async with GenericDAL.AsyncSession() as session:
+            query = f'SELECT bucket as _timestamp, counts as count'
+        
+        group_columns = ''
+        if _group is not None:
+            if isinstance(_group, list):
+                for group in _group:
+                    query += f', {group}'
+                    group_columns += f', {group}'
+            else:
+                query += f', {_group}'
+                group_columns += f', {_group}'
+        
+        query += f' FROM "{view_name}"'
+        
+        where_clauses = []
+        if _between is not None and len(_between) == 2 and _between[0] is not None and _between[1] is not None:
+            where_clauses.append(f"bucket >= '{_between[0]}' AND bucket <= '{_between[1]}'")
+        
+        if filters:
+            for key, value in filters.items():
+                if isinstance(value, list):
+                    placeholders = ', '.join([f"'{v}'" for v in value])
+                    where_clauses.append(f"{key} IN ({placeholders})")
+                else:
+                    where_clauses.append(f"{key} = '{value}'")
+        
+        if where_clauses:
+            query += ' WHERE ' + ' AND '.join(where_clauses)
+        
+        query += ' ORDER BY bucket'
+        
+        result = await session.execute(text(query))
+        return result.all()
+        
     async def async_update(self, obj) -> Any:
         async with GenericDAL.AsyncSession() as session:
             result = await session.merge(obj)
