@@ -35,6 +35,7 @@ export default function Forensic() {
     tabJobs,
     handleTabChange: jobsHandleTabChange,
     activeTabIndex,
+    addNewTab,
   } = useJobs();
 
   const handleToggleCollapse = () => {
@@ -98,6 +99,8 @@ export default function Forensic() {
 
   const currentWidth = isCollapsed ? collapsedWidth : expandedWidth;
 
+  const activeTabsCount = tabJobs.filter((tab) => tab.jobId).length;
+
   return (
     <div ref={containerRef} className="flex h-full">
       <div
@@ -129,6 +132,8 @@ export default function Forensic() {
                 isSearching={isSearching}
                 stopSearch={stopSearch}
                 isCollapsed={isCollapsed}
+                addNewTab={addNewTab}
+                tabLength={activeTabsCount}
               />
             </ForensicFormProvider>
           </CardContent>

@@ -10,6 +10,8 @@ interface ForensicFormProps {
   isSearching: boolean;
   stopSearch: () => Promise<void>;
   isCollapsed: boolean;
+  addNewTab: () => void;
+  tabLength?: number;
 }
 
 export default function ForensicForm({
@@ -17,6 +19,8 @@ export default function ForensicForm({
   isSearching,
   stopSearch,
   isCollapsed,
+  addNewTab,
+  tabLength = 0,
 }: ForensicFormProps) {
   const { formMethods } = useForensicForm();
 
@@ -27,7 +31,12 @@ export default function ForensicForm({
         className="flex flex-col h-full relative"
       >
         <Params isCollapsed={isCollapsed} />
-        <Submit isSearching={isSearching} onCancel={stopSearch} />
+        <Submit
+          isSearching={isSearching}
+          onCancel={stopSearch}
+          onAddTab={addNewTab}
+          activeTabCount={tabLength}
+        />
       </form>
     </Form>
   );

@@ -1,5 +1,6 @@
-/* eslint-disable no-console,react-hooks/exhaustive-deps,@typescript-eslint/no-explicit-any */
+/* eslint-disable no-console,react-hooks/exhaustive-deps,@typescript-eslint/no-explicit-any,no-plusplus */
 import { useState, useEffect } from 'react';
+import forensicResultsHeap from '../lib/data-structure/heap.tsx';
 
 export interface ForensicTask {
   id: string;
@@ -26,6 +27,7 @@ export interface TabJob {
   tabIndex: number;
   jobId?: string;
   status?: 'idle' | 'running' | 'completed' | 'error';
+  isNew?: boolean;
 }
 
 export default function useJobs() {
@@ -53,12 +55,11 @@ export default function useJobs() {
     }
   };
 
-  // Récupération des tâches depuis l'API
+  // Dans fetchTasks de useJobs.tsx
   const fetchTasks = async () => {
     try {
       setLoading(true);
 
-      // Utilisation de fetch au lieu d'axios
       const response = await fetch(`${process.env.MAIN_API_URL}/forensics`);
 
       if (!response.ok) {
@@ -86,18 +87,35 @@ export default function useJobs() {
 
       setTasks(tasksArray);
 
-      // Association des 5 tâches les plus récentes aux onglets
-      const newTabJobs: TabJob[] = Array(5)
-        .fill(0)
-        .map((_, index) => ({
-          tabIndex: index + 1,
-          jobId: tasksArray[index]?.id,
-          status: tasksArray[index]
-            ? mapTaskStatusToTabStatus(tasksArray[index].status)
-            : 'idle',
-        }));
+      // Ne créer des onglets que pour les tâches réelles, limité à 5
+      const taskTabJobs = tasksArray.slice(0, 5).map((task, index) => ({
+        tabIndex: index + 1,
+        jobId: task.id,
+        status: mapTaskStatusToTabStatus(task.status),
+      }));
 
-      setTabJobs(newTabJobs);
+      // Conserver les onglets "isNew" existants
+      const existingNewTabs = tabJobs.filter((tab) => tab.isNew);
+
+      // Fusionner les deux types d'onglets, en évitant les doublons d'index
+      // Fusionner les deux types d'onglets, en évitant les doublons d'index
+      let combinedTabs: TabJob[] = [...taskTabJobs];
+
+      existingNewTabs.forEach((newTab) => {
+        if (!combinedTabs.some((tab) => tab.tabIndex === newTab.tabIndex)) {
+          combinedTabs.push(newTab);
+        }
+      });
+
+      // Limiter à un maximum de 5 onglets
+      combinedTabs = combinedTabs.slice(0, 5);
+
+      setTabJobs(combinedTabs);
+
+      // S'assurer que l'onglet actif existe toujours dans les nouveaux onglets
+      if (!combinedTabs.some((tab) => tab.tabIndex === activeTabIndex)) {
+        setActiveTabIndex(combinedTabs[0]?.tabIndex || 1);
+      }
 
       setError(null);
     } catch (err) {
@@ -109,6 +127,51 @@ export default function useJobs() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Dans useJobs.tsx, modifier la fonction addNewTab:
+
+  const addNewTab = () => {
+    console.log("Tentative d'ajout d'un nouvel onglet");
+
+    // Vérifier le nombre d'onglets existants
+    if (tabJobs.length >= 5) {
+      console.log("Nombre maximum d'onglets atteint (5), ajout impossible");
+      return;
+    }
+
+    // Trouver le prochain index disponible
+    let nextIndex = 1;
+    const usedIndices = tabJobs.map((tab) => tab.tabIndex);
+
+    // Recherche du premier index disponible entre 1 et 5
+    while (usedIndices.includes(nextIndex) && nextIndex <= 5) {
+      nextIndex++;
+    }
+
+    console.log('Index du nouvel onglet:', nextIndex);
+
+    // Créer un nouvel onglet avec jobId défini comme une chaîne vide
+    const newTab: TabJob = {
+      tabIndex: nextIndex,
+      jobId: '', // Onglet vide
+      status: 'idle',
+      isNew: true,
+    };
+
+    console.log('Nouvel onglet créé:', newTab);
+
+    // Ajouter le nouvel onglet
+    setTabJobs((prev) => [...prev, newTab]);
+
+    // Réinitialiser les résultats en vidant le heap
+    forensicResultsHeap.clear();
+
+    // Supprimer le jobId du localStorage
+    localStorage.removeItem('currentJobId');
+
+    // Activer automatiquement le nouvel onglet
+    setActiveTabIndex(nextIndex);
   };
 
   // Changement d'onglet actif
@@ -182,5 +245,6 @@ export default function useJobs() {
     handleTabChange,
     resumeActiveJob,
     setTabJobs,
+    addNewTab,
   };
 }

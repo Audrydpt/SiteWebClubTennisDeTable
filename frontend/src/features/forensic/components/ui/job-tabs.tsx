@@ -1,18 +1,20 @@
+/* eslint-disable no-console */
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export interface TabJob {
-  tabIndex: number; // Index de l'onglet (1-5)
-  jobId?: string; // ID du job associé (optionnel)
-  status?: 'idle' | 'running' | 'completed' | 'error'; // État optionnel du job
+  tabIndex: number;
+  jobId?: string;
+  status?: 'idle' | 'running' | 'completed' | 'error';
+  isNew?: boolean;
 }
 
 interface JobTabsProps {
-  tabJobs: TabJob[]; // Association entre tabs et jobs
-  activeTabIndex: number; // Onglet actuellement actif (1-5)
-  onTabChange: (tabIndex: number) => void; // Callback lors du changement d'onglet
+  tabJobs: TabJob[];
+  activeTabIndex: number;
+  onTabChange: (tabIndex: number) => void;
   hideTitle?: boolean;
-  isLoading?: boolean; // Nouvel état pour montrer un chargement global
+  isLoading?: boolean;
 }
 
 export default function JobTabs({
@@ -22,19 +24,25 @@ export default function JobTabs({
   hideTitle = false,
   isLoading = false,
 }: JobTabsProps) {
-  // Filtrer les tabJobs pour ne garder que ceux avec un jobId ou limiter à 5 maximum
-  const activeTabs = tabJobs
-    .filter((tab) => tab.jobId)
-    .sort((a, b) => a.tabIndex - b.tabIndex)
-    .slice(0, 5);
+  const MAX_TABS = 5;
 
-  // S'il n'y a pas de tabs actifs, afficher un tab par défaut
-  const displayTabs: TabJob[] =
-    activeTabs.length > 0
-      ? activeTabs
-      : [{ tabIndex: 1, status: 'idle' } as TabJob];
+  // Utiliser directement les tabJobs fournis, sans triage
+  let displayTabs = [...tabJobs];
 
-  // Nouvelle fonction pour obtenir la classe de grille appropriée
+  // Si aucun onglet n'est disponible, ajouter un onglet par défaut
+  if (displayTabs.length === 0) {
+    displayTabs = [{ tabIndex: 1, status: 'idle' }];
+  }
+
+  // S'assurer que l'onglet actif est toujours inclus
+  if (!displayTabs.some((tab) => tab.tabIndex === activeTabIndex)) {
+    displayTabs.push({ tabIndex: activeTabIndex, status: 'idle' });
+  }
+
+  // Limiter à MAX_TABS sans trier
+  displayTabs = displayTabs.slice(0, MAX_TABS);
+
+  // Fonction pour obtenir la classe de grille appropriée
   const getGridClass = (count: number) => {
     switch (count) {
       case 1:
@@ -62,6 +70,8 @@ export default function JobTabs({
     );
   }
 
+  console.log('Onglets à afficher:', displayTabs);
+
   return (
     <div className="flex flex-col">
       {!hideTitle && (
@@ -80,7 +90,7 @@ export default function JobTabs({
       >
         <TabsList className={`grid w-full ${getGridClass(displayTabs.length)}`}>
           {displayTabs.map((tab) => {
-            const hasJob = 'jobId' in tab && !!tab.jobId;
+            const hasJob = !!tab.jobId;
             // Générer l'affichage de l'onglet en fonction de son état
             let tabDisplay = `Recherche ${tab.tabIndex}`;
             let statusIndicator = null;
@@ -131,7 +141,6 @@ export default function JobTabs({
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             )}
-            {/* Le contenu sera injecté par le composant parent */}
           </TabsContent>
         ))}
       </Tabs>

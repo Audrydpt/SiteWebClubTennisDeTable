@@ -45,6 +45,28 @@ export default function Results({
   const requestTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const handleTabChange = onTabChange || defaultHandleTabChange;
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [hasActiveJob, setHasActiveJob] = useState(false);
+
+  // Vérifier s'il y a un job actif dans localStorage
+  useEffect(() => {
+    const checkForActiveJob = () => {
+      const jobId = localStorage.getItem('currentJobId');
+      setHasActiveJob(!!jobId);
+    };
+
+    checkForActiveJob();
+
+    // Surveiller les changements de localStorage
+    window.addEventListener('storage', checkForActiveJob);
+    return () => {
+      window.removeEventListener('storage', checkForActiveJob);
+    };
+  }, []);
+
+  // Mettre à jour l'état hasActiveJob quand un job est démarré ou arrêté
+  useEffect(() => {
+    setHasActiveJob(!!localStorage.getItem('currentJobId'));
+  }, [propsResults, displayResults]);
 
   // Modifier l'useEffect existant pour le chargement initial
   useEffect(() => {
@@ -86,8 +108,12 @@ export default function Results({
       }
 
       const lastJobId = localStorage.getItem('currentJobId');
-      if (!lastJobId) return;
+      if (!lastJobId) {
+        setHasActiveJob(false);
+        return;
+      }
 
+      setHasActiveJob(true);
       const shouldLoad = !initialLoadComplete.current ||
         previousTabIndex.current !== activeTabIndex;
 
@@ -140,6 +166,7 @@ export default function Results({
     const lastJobId = localStorage.getItem('currentJobId');
     if (lastJobId) {
       await resumeJob(lastJobId);
+      setHasActiveJob(true);
       // Les résultats seront déjà mis à jour dans displayResults
     }
   };
@@ -226,21 +253,28 @@ export default function Results({
         tabJobs={tabJobs}
         activeTabIndex={activeTabIndex}
         onTabChange={handleTabChange}
+        loading={isInitialLoading}
       />
       <ScrollArea className="h-[calc(100%-3rem)] pb-1">
         <div className="space-y-4">
           {/* Progress section inside ScrollArea */}
           {renderProgressSection()}
 
-          {/* Results using the new Display component */}
-          <Display
-            results={resultsToDisplay}
-            isSearching={isSearching}
-            progress={progress}
-            sortType={sortType}
-            sortOrder={sortOrder}
-            isTabLoading={isTabLoading || isInitialLoading}
-          />
+          {/* N'afficher le Display que s'il y a un job actif */}
+          {hasActiveJob || isSearching ? (
+            <Display
+              results={resultsToDisplay}
+              isSearching={isSearching}
+              progress={progress}
+              sortType={sortType}
+              sortOrder={sortOrder}
+              isTabLoading={isTabLoading || isInitialLoading}
+            />
+          ) : (
+            <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
+              Sélectionnez une caméra et lancez une recherche
+            </div>
+          )}
         </div>
       </ScrollArea>
     </>
