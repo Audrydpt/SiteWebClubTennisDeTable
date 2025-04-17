@@ -55,6 +55,25 @@ export default function useJobs() {
     }
   };
 
+  const selectLeftmostTab = () => {
+    // Trouver l'onglet avec le plus petit tabIndex
+    if (tabJobs.length > 0) {
+      const leftmostTab = [...tabJobs].sort(
+        (a, b) => a.tabIndex - b.tabIndex
+      )[0];
+      setActiveTabIndex(leftmostTab.tabIndex);
+
+      // Si cet onglet a un jobId, le mettre dans localStorage
+      if (leftmostTab.jobId) {
+        localStorage.setItem('currentJobId', leftmostTab.jobId);
+        console.log(`JobId mis à jour dans localStorage: ${leftmostTab.jobId}`);
+      }
+
+      return leftmostTab.tabIndex;
+    }
+    return 1; // Par défaut, revenir à l'onglet 1
+  };
+
   // Dans fetchTasks de useJobs.tsx
   const fetchTasks = async () => {
     try {
@@ -131,8 +150,16 @@ export default function useJobs() {
 
   // Dans useJobs.tsx, modifier la fonction addNewTab:
 
-  const addNewTab = () => {
+  const addNewTab = (cleanup?: () => void) => {
     console.log("Tentative d'ajout d'un nouvel onglet");
+
+    // Nettoyer les ressources WebSocket si une fonction de nettoyage est fournie
+    if (typeof cleanup === 'function') {
+      console.log(
+        '🧹 Nettoyage des connexions WebSocket avant création du nouvel onglet'
+      );
+      cleanup();
+    }
 
     // Vérifier le nombre d'onglets existants
     if (tabJobs.length >= 5) {
@@ -246,5 +273,6 @@ export default function useJobs() {
     resumeActiveJob,
     setTabJobs,
     addNewTab,
+    selectLeftmostTab,
   };
 }

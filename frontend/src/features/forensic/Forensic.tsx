@@ -36,23 +36,15 @@ export default function Forensic() {
     handleTabChange: jobsHandleTabChange,
     activeTabIndex,
     addNewTab,
+    selectLeftmostTab,
   } = useJobs();
+
+  const handleAddNewTab = () => {
+    addNewTab(cleanupWebSocket);
+  };
 
   const handleToggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
-  };
-
-  const handleSearch = async (data: ForensicFormValues) => {
-    if (isSearching) {
-      return;
-    }
-
-    try {
-      const searchFormData = createSearchFormData(data);
-      await startSearch(searchFormData);
-    } catch (error) {
-      console.error('Failed to start search:', error);
-    }
   };
 
   const handleTabChange = async (tabIndex: number) => {
@@ -97,6 +89,28 @@ export default function Forensic() {
     }
   };
 
+  const handleSearch = async (data: ForensicFormValues) => {
+    if (isSearching) {
+      return;
+    }
+
+    try {
+      const searchFormData = createSearchFormData(data);
+      const jobId = await startSearch(searchFormData);
+
+      // Une fois la recherche lancée, sélectionner l'onglet le plus à gauche
+      if (jobId) {
+        // Sélectionner l'onglet le plus à gauche
+        const selectedTabIndex = selectLeftmostTab();
+
+        // On peut aussi déclencher le chargement des résultats si nécessaire
+        await handleTabChange(selectedTabIndex);
+      }
+    } catch (error) {
+      console.error('Failed to start search:', error);
+    }
+  };
+
   const currentWidth = isCollapsed ? collapsedWidth : expandedWidth;
 
   const activeTabsCount = tabJobs.filter((tab) => tab.jobId).length;
@@ -132,7 +146,7 @@ export default function Forensic() {
                 isSearching={isSearching}
                 stopSearch={stopSearch}
                 isCollapsed={isCollapsed}
-                addNewTab={addNewTab}
+                addNewTab={handleAddNewTab}
                 tabLength={activeTabsCount}
               />
             </ForensicFormProvider>

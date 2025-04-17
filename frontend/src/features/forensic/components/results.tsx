@@ -183,7 +183,7 @@ export default function Results({
 
   const renderProgressSection = () => {
     // Ne pas afficher la barre de progression normale si l'onglet est en cours de chargement
-    if (progress === null || isTabLoading) {
+    if (!hasActiveJob || progress === null || isTabLoading) {
       return null;
     }
 
