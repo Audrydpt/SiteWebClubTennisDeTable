@@ -5,14 +5,15 @@ export interface TabJob {
   tabIndex: number; // Index de l'onglet (1-5)
   jobId?: string; // ID du job associé (optionnel)
   status?: 'idle' | 'running' | 'completed' | 'error'; // État optionnel du job
+  isNew?: boolean; // Indique si l'onglet est nouvellement créé
 }
 
 interface JobTabsProps {
-  tabJobs: TabJob[]; // Association entre tabs et jobs
-  activeTabIndex: number; // Onglet actuellement actif (1-5)
-  onTabChange: (tabIndex: number) => void; // Callback lors du changement d'onglet
+  tabJobs: TabJob[];
+  activeTabIndex: number;
+  onTabChange: (tabIndex: number) => void;
   hideTitle?: boolean;
-  isLoading?: boolean; // Nouvel état pour montrer un chargement global
+  isLoading?: boolean;
 }
 
 export default function JobTabs({
@@ -22,19 +23,52 @@ export default function JobTabs({
   hideTitle = false,
   isLoading = false,
 }: JobTabsProps) {
-  // Filtrer les tabJobs pour ne garder que ceux avec un jobId ou limiter à 5 maximum
-  const activeTabs = tabJobs
-    .filter((tab) => tab.jobId)
+  const MAX_TABS = 5;
+
+  // 1. Liste des onglets avec un job associé (onglets actifs)
+  const activeTabsWithJob = tabJobs.filter((tab) => tab.jobId);
+
+  // 2. Liste des onglets vides ajoutés via le bouton "+" (sans job, mais considérés comme actifs)
+  const newEmptyTabs = tabJobs.filter(
+    (tab) => !tab.jobId && (tab.isNew || tab.tabIndex > 5)
+  );
+
+  // 3. Préparation de la liste d'affichage
+  let displayTabs: TabJob[] = [];
+
+  // Toujours inclure l'onglet actif en premier
+  const currentActiveTab = tabJobs.find(
+    (tab) => tab.tabIndex === activeTabIndex
+  );
+  if (currentActiveTab) {
+    displayTabs.push(currentActiveTab);
+  }
+
+  // Ajouter tous les nouveaux onglets vides (isNew: true) en priorité
+  newEmptyTabs.forEach((tab) => {
+    if (!displayTabs.some((t) => t.tabIndex === tab.tabIndex)) {
+      displayTabs.push(tab);
+    }
+  });
+
+  // Compléter avec les onglets qui ont un job associé
+  activeTabsWithJob.forEach((tab) => {
+    if (!displayTabs.some((t) => t.tabIndex === tab.tabIndex)) {
+      displayTabs.push(tab);
+    }
+  });
+
+  // Trier les onglets par index et limiter à MAX_TABS
+  displayTabs = displayTabs
     .sort((a, b) => a.tabIndex - b.tabIndex)
-    .slice(0, 5);
+    .slice(0, MAX_TABS);
 
-  // S'il n'y a pas de tabs actifs, afficher un tab par défaut
-  const displayTabs: TabJob[] =
-    activeTabs.length > 0
-      ? activeTabs
-      : [{ tabIndex: 1, status: 'idle' } as TabJob];
+  // S'il n'y a pas d'onglets, afficher un onglet par défaut
+  if (displayTabs.length === 0) {
+    displayTabs.push({ tabIndex: 1, status: 'idle' });
+  }
 
-  // Nouvelle fonction pour obtenir la classe de grille appropriée
+  // Fonction pour obtenir la classe de grille appropriée
   const getGridClass = (count: number) => {
     switch (count) {
       case 1:
@@ -80,7 +114,7 @@ export default function JobTabs({
       >
         <TabsList className={`grid w-full ${getGridClass(displayTabs.length)}`}>
           {displayTabs.map((tab) => {
-            const hasJob = 'jobId' in tab && !!tab.jobId;
+            const hasJob = !!tab.jobId;
             // Générer l'affichage de l'onglet en fonction de son état
             let tabDisplay = `Recherche ${tab.tabIndex}`;
             let statusIndicator = null;

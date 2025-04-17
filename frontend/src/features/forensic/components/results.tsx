@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ForensicResult, SourceProgress } from '../lib/types';
 import { calculateTimeRemaining } from '@/features/forensic/lib/estimation/estimation';
 import useSearch from '../hooks/use-search.tsx';
-import useJobs from '../hooks/use-jobs';
+import useJobs, { TabJob } from '../hooks/use-jobs';
 import MultiProgress from '@/features/forensic/components/ui/multi-progress';
 import forensicResultsHeap from '@/features/forensic/lib/data-structure/heap';
 import ForensicHeader from './ui/header';
@@ -23,6 +23,7 @@ interface ResultsProps {
   onTabChange?: (tabIndex: number) => void;
   activeTabIndex?: number;
   isTabLoading?: boolean;
+  tabJobs?: TabJob[];
 }
 
 export default function Results({
@@ -33,12 +34,14 @@ export default function Results({
   onTabChange,
   activeTabIndex,
   isTabLoading,
+  tabJobs,
+
 }: ResultsProps) {
   const [sortType, setSortType] = useState<SortType>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSourceDetails, setShowSourceDetails] = useState(false);
   const { resumeJob, displayResults, setDisplayResults } = useSearch();
-  const { tabJobs, handleTabChange: defaultHandleTabChange } = useJobs();
+  const { handleTabChange: defaultHandleTabChange } = useJobs();
   const initialLoadComplete = useRef(false);
   const previousTabIndex = useRef<number | undefined>(activeTabIndex);
   const isLoadingRef = useRef(false); // Pour éviter les chargements multiples
@@ -80,13 +83,17 @@ export default function Results({
   useEffect(() => {
     // Fonction pour charger automatiquement les résultats avec mécanisme anti-rebond
     const autoLoadResults = async () => {
-      // Si déjà en cours de chargement, on ignore
-      if (isLoadingRef.current || isSearching || isTabLoading) {
-        return;
-      }
-
+      // Vérifier si déjà chargé dans cette session
       const lastJobId = localStorage.getItem('currentJobId');
       if (!lastJobId) return;
+
+      const sessionKey = `loaded-${lastJobId}`;
+      const hasLoaded = sessionStorage.getItem(sessionKey);
+
+      // Ne pas charger si déjà fait dans cette session
+      if (hasLoaded === 'true') {
+        return;
+      }
 
       const shouldLoad = !initialLoadComplete.current ||
         previousTabIndex.current !== activeTabIndex;
@@ -97,33 +104,42 @@ export default function Results({
           clearTimeout(requestTimeoutRef.current);
         }
 
-        // Configurer un nouveau timeout pour regrouper les demandes rapprochées
+        // Configurer un nouveau timeout avec délai plus long (1000ms au lieu de 300ms)
         requestTimeoutRef.current = setTimeout(async () => {
           try {
-            isLoadingRef.current = true; // Verrouiller pour éviter les appels multiples
+            isLoadingRef.current = true;
             console.log('Chargement automatique des résultats...');
             await resumeJob(lastJobId);
             initialLoadComplete.current = true;
+            // Marquer comme chargé pour cette session
+            sessionStorage.setItem(`loaded-${lastJobId}`, 'true');
           } catch (error) {
             console.error('Erreur lors du chargement automatique:', error);
+            // En cas d'erreur, nettoyer le localStorage pour éviter de réessayer
+            localStorage.removeItem('currentJobId');
           } finally {
-            isLoadingRef.current = false;  // Déverrouiller
+            isLoadingRef.current = false;
             requestTimeoutRef.current = null;
           }
-        }, 300); // Délai de regroupement (300ms)
+        }, 1000); // Délai augmenté
       }
 
       // Toujours mettre à jour la référence de l'onglet actif
       previousTabIndex.current = activeTabIndex;
+      sessionStorage.setItem(sessionKey, 'true');
     };
 
-    autoLoadResults();
+    // Ajouter un délai au chargement initial pour éviter l'exécution immédiate
+    const initialLoadTimeout = setTimeout(() => {
+      autoLoadResults();
+    }, 500);
 
-    // Nettoyage du timeout en cas de démontage du composant
+    // Nettoyage
     return () => {
       if (requestTimeoutRef.current) {
         clearTimeout(requestTimeoutRef.current);
       }
+      clearTimeout(initialLoadTimeout);
     };
   }, [resumeJob, isSearching, activeTabIndex, isTabLoading]);
 
@@ -226,6 +242,7 @@ export default function Results({
         tabJobs={tabJobs}
         activeTabIndex={activeTabIndex}
         onTabChange={handleTabChange}
+        loading={isInitialLoading}
       />
       <ScrollArea className="h-[calc(100%-3rem)] pb-1">
         <div className="space-y-4">

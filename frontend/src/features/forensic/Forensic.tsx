@@ -1,5 +1,5 @@
-/* eslint-disable no-console,@typescript-eslint/no-unused-vars */
-import { useRef, useState } from 'react';
+/* eslint-disable no-console,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
+import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 
 import useSearch from './hooks/use-search';
@@ -31,11 +31,36 @@ export default function Forensic() {
     cleanupWebSocket,
   } = useSearch();
 
+  const clearResults = () => {
+    forensicResultsHeap.clear();
+    setDisplayResults([]);
+  };
+
   const {
     tabJobs,
     handleTabChange: jobsHandleTabChange,
     activeTabIndex,
-  } = useJobs();
+    addNewTab,
+  } = useJobs(clearResults);
+
+  useEffect(() => {
+    const storedJobId = localStorage.getItem('currentJobId');
+    // Utiliser sessionStorage comme indicateur de chargement
+    const sessionKey = `loaded-${storedJobId}`;
+    const hasLoaded = sessionStorage.getItem(sessionKey);
+
+    // Condition de chargement plus stricte
+    if (storedJobId && !hasLoaded && !isSearching && tabJobs.length > 0) {
+      const matchingTab = tabJobs.find((tab) => tab.jobId === storedJobId);
+
+      if (matchingTab) {
+        console.log('Chargement initial unique du job:', storedJobId);
+        // Marquer comme chargé pour cette session
+        sessionStorage.setItem(sessionKey, 'true');
+        resumeJob(storedJobId);
+      }
+    }
+  }, [tabJobs, isSearching]);
 
   const handleToggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
@@ -98,6 +123,8 @@ export default function Forensic() {
 
   const currentWidth = isCollapsed ? collapsedWidth : expandedWidth;
 
+  const activeTabsCount = tabJobs.filter((tab) => tab.jobId).length;
+
   return (
     <div ref={containerRef} className="flex h-full">
       <div
@@ -129,6 +156,8 @@ export default function Forensic() {
                 isSearching={isSearching}
                 stopSearch={stopSearch}
                 isCollapsed={isCollapsed}
+                addNewTab={addNewTab}
+                tabLength={activeTabsCount}
               />
             </ForensicFormProvider>
           </CardContent>
@@ -164,6 +193,7 @@ export default function Forensic() {
             onTabChange={handleTabChange}
             activeTabIndex={activeTabIndex}
             isTabLoading={isTabLoading}
+            tabJobs={tabJobs}
           />
         </CardContent>
       </Card>

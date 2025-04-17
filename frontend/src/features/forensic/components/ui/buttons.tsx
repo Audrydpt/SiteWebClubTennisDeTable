@@ -56,14 +56,11 @@ export function SortButtons({
         )}
       </Button>
 
-      {/* Bouton pour reprendre la recherche */}
-      <Button onClick={handleResumeLastSearch}>Reprendre</Button>
-
       {/* Bouton pour vider les résultats */}
       <Button
         variant="ghost"
         size="icon"
-        onClick={clearResults}
+        onClick={clearResults || handleResumeLastSearch}
         className="h-8 w-8 text-muted-foreground hover:text-destructive"
         title="Vider les résultats"
       >
