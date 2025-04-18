@@ -1,5 +1,5 @@
-/* eslint-disable no-console,@typescript-eslint/no-unused-vars */
-import { useRef, useState } from 'react';
+/* eslint-disable no-console,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
+import { useRef, useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 
 import useSearch from './hooks/use-search';
@@ -110,6 +110,38 @@ export default function Forensic() {
   const currentWidth = isCollapsed ? collapsedWidth : expandedWidth;
 
   const activeTabsCount = tabJobs.filter((tab) => tab.jobId).length;
+
+  useEffect(() => {
+    const loadExistingJobOnMount = async () => {
+      const jobId = localStorage.getItem('currentJobId');
+
+      if (jobId) {
+        console.log(
+          `Chargement du job existant au retour de navigation: ${jobId}`
+        );
+        try {
+          // Trouver l'onglet correspondant à ce jobId
+          const jobTab = tabJobs.find((tab) => tab.jobId === jobId);
+
+          if (jobTab) {
+            // Sélectionner l'onglet sans provoquer de nettoyage inutile
+            jobsHandleTabChange(jobTab.tabIndex);
+
+            // Charger explicitement les résultats
+            await resumeJob(jobId, true);
+          } else {
+            // Si aucun onglet ne correspond, charger quand même
+            await resumeJob(jobId, true);
+          }
+        } catch (error) {
+          console.error('Erreur lors du chargement du job existant:', error);
+        }
+      }
+    };
+
+    // Exécuter uniquement au montage du composant
+    loadExistingJobOnMount();
+  }, []); // Dépendances vides pour n'exécuter qu'au montage
 
   return (
     <div ref={containerRef} className="flex h-full">
