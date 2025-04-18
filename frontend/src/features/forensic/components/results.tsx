@@ -23,6 +23,7 @@ interface ResultsProps {
   onTabChange?: (tabIndex: number) => void;
   activeTabIndex?: number;
   isTabLoading?: boolean;
+  onDeleteTab?: (tabIndex: number) => void;
 }
 
 export default function Results({
@@ -33,6 +34,7 @@ export default function Results({
   onTabChange,
   activeTabIndex,
   isTabLoading,
+  onDeleteTab,
 }: ResultsProps) {
   const [sortType, setSortType] = useState<SortType>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -261,6 +263,7 @@ export default function Results({
         onTabChange={handleTabChange}
         loading={isInitialLoading}
         setIsLoading={setIsInitialLoading}
+        onDeleteTab={onDeleteTab}
       />
       <ScrollArea className="h-[calc(100%-3rem)] pb-1">
         <div className="space-y-4">

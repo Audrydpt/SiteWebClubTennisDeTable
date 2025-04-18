@@ -37,7 +37,19 @@ export default function Forensic() {
     activeTabIndex,
     addNewTab,
     selectLeftmostTab,
+    deleteTab,
   } = useJobs();
+
+  const handleDeleteTab = (tabIndex: number) => {
+    // Si l'onglet actif est supprimé, on change vers le premier onglet
+    if (activeTabIndex === tabIndex) {
+      const newActiveTabIndex = tabJobs[0]?.tabIndex || 1;
+      jobsHandleTabChange(newActiveTabIndex);
+    }
+
+    // Supprimer l'onglet
+    deleteTab(tabIndex);
+  };
 
   const handleAddNewTab = () => {
     addNewTab(cleanupWebSocket);
@@ -211,6 +223,7 @@ export default function Forensic() {
             onTabChange={handleTabChange}
             activeTabIndex={activeTabIndex}
             isTabLoading={isTabLoading}
+            onDeleteTab={handleDeleteTab}
           />
         </CardContent>
       </Card>

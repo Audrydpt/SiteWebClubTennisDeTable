@@ -267,6 +267,11 @@ export default function useJobs() {
     return resumeCallback(activeTab.jobId);
   };
 
+  const deleteTab = (tabIndex: number) => {
+    setTabJobs((prev) => prev.filter((tab) => tab.tabIndex !== tabIndex));
+    setActiveTabIndex(1);
+  };
+
   return {
     tasks,
     tabJobs,
@@ -281,5 +286,6 @@ export default function useJobs() {
     setTabJobs,
     addNewTab,
     selectLeftmostTab,
+    deleteTab,
   };
 }

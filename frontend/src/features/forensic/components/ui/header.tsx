@@ -12,6 +12,7 @@ interface HeaderProps {
   onTabChange?: (tabIndex: number) => void;
   loading: boolean;
   setIsLoading: (isLoading: boolean) => void;
+  onDeleteTab?: (tabIndex: number) => void;
 }
 
 export default function ForensicHeader({
@@ -25,6 +26,7 @@ export default function ForensicHeader({
   onTabChange = () => {},
   loading = false,
   setIsLoading = () => {},
+  onDeleteTab = () => {},
 }: HeaderProps) {
   return (
     <div className="mb-4">
@@ -37,6 +39,7 @@ export default function ForensicHeader({
             isLoading={loading}
             hideTitle={false}
             setIsLoading={setIsLoading}
+            onDeleteTab={onDeleteTab}
           />
         </div>
         <div className="flex-shrink-0">

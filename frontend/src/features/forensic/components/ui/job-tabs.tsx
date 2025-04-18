@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
-import { Loader2 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { Loader2, Trash2 } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export interface TabJob {
@@ -14,6 +14,7 @@ interface JobTabsProps {
   tabJobs: TabJob[];
   activeTabIndex: number;
   onTabChange: (tabIndex: number) => void;
+  onDeleteTab: (tabIndex: number) => void; // Nouvelle prop pour supprimer un onglet
   hideTitle?: boolean;
   isLoading?: boolean;
   setIsLoading?: (isLoading: boolean) => void;
@@ -23,6 +24,7 @@ export default function JobTabs({
   tabJobs = [],
   activeTabIndex = 1,
   onTabChange,
+  onDeleteTab, // Récupération de la prop
   hideTitle = false,
   isLoading = false,
   setIsLoading,
@@ -79,6 +81,12 @@ export default function JobTabs({
 
   // Limiter à MAX_TABS sans trier
   displayTabs = displayTabs.slice(0, MAX_TABS);
+
+  // Fonction pour gérer la suppression d'un onglet
+  const handleDeleteTab = (tabIndex: number, event: React.MouseEvent) => {
+    event.stopPropagation(); // Empêcher le changement d'onglet
+    onDeleteTab(tabIndex);
+  };
 
   // Fonction pour obtenir la classe de grille appropriée
   const getGridClass = (count: number) => {
@@ -159,11 +167,27 @@ export default function JobTabs({
               <TabsTrigger
                 key={tab.tabIndex}
                 value={tab.tabIndex.toString()}
-                className={`${hasJob ? 'font-medium' : ''} ${activeTabClass} ${runningClass} transition-all`}
+                className={`${hasJob ? 'font-medium' : ''} ${activeTabClass} ${runningClass} transition-all relative group`}
                 disabled={isLoading}
               >
-                {tabDisplay}
-                {statusIndicator}
+                <div className="flex items-center">
+                  {tabDisplay}
+                  {statusIndicator}
+
+                  {/* Bouton de suppression */}
+                  {hasJob && (
+                    <button
+                      onClick={(e) => handleDeleteTab(tab.tabIndex, e)}
+                      className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-muted p-0.5 focus:outline-none focus:ring-1 focus:ring-primary"
+                      title="Supprimer cette recherche"
+                      aria-label="Supprimer cette recherche"
+                      type="button"
+                      disabled={isLoading || tab.status === 'running'}
+                    >
+                      <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                    </button>
+                  )}
+                </div>
               </TabsTrigger>
             );
           })}
