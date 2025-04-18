@@ -48,45 +48,35 @@ export default function Forensic() {
   };
 
   const handleTabChange = async (tabIndex: number) => {
-    // Activer l'état de chargement
     setIsTabLoading(true);
 
-    // 1. Fermer proprement la connexion WebSocket du job actuel sans l'annuler
-    cleanupWebSocket();
+    // Récupérer le jobId associé au nouvel onglet
+    const selectedTab = tabJobs.find((tab) => tab.tabIndex === tabIndex);
+    const currentJobId = localStorage.getItem('currentJobId');
 
-    // 2. Mettre à jour l'onglet actif
+    // Ne pas nettoyer la WebSocket si on change vers un onglet
+    // avec le même jobId que celui qui vient d'être créé
+    if (!selectedTab?.jobId || selectedTab.jobId !== currentJobId) {
+      cleanupWebSocket();
+    }
+
+    // Mettre à jour l'onglet actif
     jobsHandleTabChange(tabIndex);
-
-    // 3. Vider le heap pour éviter le mélange des résultats
     forensicResultsHeap.clear();
-
-    // 4. Réinitialiser l'affichage pour le nouvel onglet
     setDisplayResults([]);
 
-    // 5. Récupérer le jobId associé au nouvel onglet
-    const selectedTab = tabJobs.find((tab) => tab.tabIndex === tabIndex);
-
     if (selectedTab?.jobId) {
-      console.log(
-        `Chargement des résultats pour l'onglet ${tabIndex}, job ${selectedTab.jobId}`
-      );
-
       try {
-        // 6. Reprendre le job en chargeant les résultats historiques
         await resumeJob(selectedTab.jobId, false);
       } catch (error) {
         console.error(
           `Erreur lors du chargement du job ${selectedTab.jobId}:`,
           error
         );
-      } finally {
-        // Désactiver l'état de chargement une fois terminé
-        setIsTabLoading(false);
       }
-    } else {
-      // Pas de job pour cet onglet, désactiver l'état de chargement
-      setIsTabLoading(false);
     }
+
+    setIsTabLoading(false);
   };
 
   const handleSearch = async (data: ForensicFormValues) => {
@@ -98,13 +88,19 @@ export default function Forensic() {
       const searchFormData = createSearchFormData(data);
       const jobId = await startSearch(searchFormData);
 
-      // Une fois la recherche lancée, sélectionner l'onglet le plus à gauche
       if (jobId) {
-        // Sélectionner l'onglet le plus à gauche
-        const selectedTabIndex = selectLeftmostTab();
+        // Stocker le nouveau jobId dans le localStorage immédiatement
+        localStorage.setItem('currentJobId', jobId);
 
-        // On peut aussi déclencher le chargement des résultats si nécessaire
-        await handleTabChange(selectedTabIndex);
+        // Mettre à jour les tabJobs sans déclencher handleTabChange
+        // qui appellerait cleanupWebSocket
+        const selectedTabIndex = await selectLeftmostTab();
+
+        // Ne pas appeler handleTabChange car cela fermerait la WebSocket
+        // déjà ouverte par startSearch
+
+        // Au lieu de cela, mettre à jour directement l'UI
+        jobsHandleTabChange(selectedTabIndex);
       }
     } catch (error) {
       console.error('Failed to start search:', error);

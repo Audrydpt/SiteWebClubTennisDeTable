@@ -55,24 +55,31 @@ export default function useJobs() {
     }
   };
 
-  const selectLeftmostTab = () => {
-    // Trouver l'onglet avec le plus petit tabIndex
-    if (tabJobs.length > 0) {
-      const leftmostTab = [...tabJobs].sort(
-        (a, b) => a.tabIndex - b.tabIndex
-      )[0];
-      setActiveTabIndex(leftmostTab.tabIndex);
+  const selectLeftmostTab = () =>
+    new Promise<number>((resolve) => {
+      setTimeout(() => {
+        // Trouver l'onglet avec le plus petit tabIndex
+        if (tabJobs.length > 0) {
+          const leftmostTab = [...tabJobs].sort(
+            (a, b) => a.tabIndex - b.tabIndex
+          )[0];
+          setActiveTabIndex(leftmostTab.tabIndex);
 
-      // Si cet onglet a un jobId, le mettre dans localStorage
-      if (leftmostTab.jobId) {
-        localStorage.setItem('currentJobId', leftmostTab.jobId);
-        console.log(`JobId mis à jour dans localStorage: ${leftmostTab.jobId}`);
-      }
+          // Si cet onglet a un jobId, le mettre dans localStorage
+          if (leftmostTab.jobId) {
+            localStorage.setItem('currentJobId', leftmostTab.jobId);
+            console.log(
+              `JobId mis à jour dans localStorage: ${leftmostTab.jobId}`
+            );
+          }
 
-      return leftmostTab.tabIndex;
-    }
-    return 1; // Par défaut, revenir à l'onglet 1
-  };
+          resolve(leftmostTab.tabIndex);
+        } else {
+          setActiveTabIndex(1); // Par défaut, revenir à l'onglet 1
+          resolve(1);
+        }
+      }, 1500); // Délai de 1.5 secondes
+    });
 
   // Dans fetchTasks de useJobs.tsx
   const fetchTasks = async () => {

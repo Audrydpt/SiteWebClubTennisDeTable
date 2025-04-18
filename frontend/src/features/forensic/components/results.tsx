@@ -74,7 +74,7 @@ export default function Results({
     setIsInitialLoading(true);
   }, []);
 
-  // Ajouter un nouvel useEffect qui observe les résultats
+  // Vérifier si les résultats sont disponibles
   useEffect(() => {
     // Si nous avons des résultats (soit depuis props, soit depuis displayResults)
     // alors nous pouvons désactiver le skeleton loader
@@ -123,6 +123,17 @@ export default function Results({
           clearTimeout(requestTimeoutRef.current);
         }
 
+        // Timeout pour détecter un job en erreur (reste en chargement plus de 5 sec)
+        const loadingErrorTimeout = setTimeout(() => {
+          // Si après 5 secondes on est toujours en chargement, on considère le job comme erroné
+          if (isLoadingRef.current) {
+            console.error('Le job semble bloqué, réinitialisation...');
+            localStorage.removeItem('currentJobId');
+            setHasActiveJob(false);
+            isLoadingRef.current = false;
+          }
+        }, 5000);
+
         // Configurer un nouveau timeout pour regrouper les demandes rapprochées
         requestTimeoutRef.current = setTimeout(async () => {
           try {
@@ -132,9 +143,12 @@ export default function Results({
             initialLoadComplete.current = true;
           } catch (error) {
             console.error('Erreur lors du chargement automatique:', error);
+            localStorage.removeItem('currentJobId');
+            setHasActiveJob(false);
           } finally {
             isLoadingRef.current = false;  // Déverrouiller
             requestTimeoutRef.current = null;
+            clearTimeout(loadingErrorTimeout);
           }
         }, 300); // Délai de regroupement (300ms)
       }
@@ -162,14 +176,7 @@ export default function Results({
     }
   }, [displayResults, propsResults]);
 
-  const handleResumeLastSearch = async () => {
-    const lastJobId = localStorage.getItem('currentJobId');
-    if (lastJobId) {
-      await resumeJob(lastJobId);
-      setHasActiveJob(true);
-      // Les résultats seront déjà mis à jour dans displayResults
-    }
-  };
+
 
   // Toggle sort order
   const toggleSortOrder = () => {
@@ -183,7 +190,7 @@ export default function Results({
 
   const renderProgressSection = () => {
     // Ne pas afficher la barre de progression normale si l'onglet est en cours de chargement
-    if (!hasActiveJob || progress === null || isTabLoading) {
+    if (!isSearching && (!hasActiveJob || progress === null || isTabLoading)) {
       return null;
     }
 
@@ -204,8 +211,8 @@ export default function Results({
             <p className="text-sm font-medium text-foreground">
               Progression :{' '}
               <span className="text-primary font-semibold">
-              {progress.toFixed(0)}%
-            </span>
+                {progress !== null ? progress.toFixed(0) : 0}%
+              </span>
               <span className="text-muted-foreground ml-2 text-xs font-medium">
               {statusText}
             </span>
@@ -248,12 +255,12 @@ export default function Results({
         setSortType={setSortType}
         sortOrder={sortOrder}
         toggleSortOrder={toggleSortOrder}
-        handleResumeLastSearch={handleResumeLastSearch}
         clearResults={clearResults}
         tabJobs={tabJobs}
         activeTabIndex={activeTabIndex}
         onTabChange={handleTabChange}
         loading={isInitialLoading}
+        setIsLoading={setIsInitialLoading}
       />
       <ScrollArea className="h-[calc(100%-3rem)] pb-1">
         <div className="space-y-4">

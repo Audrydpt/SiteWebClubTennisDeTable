@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import { Loader2 } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export interface TabJob {
@@ -15,6 +16,7 @@ interface JobTabsProps {
   onTabChange: (tabIndex: number) => void;
   hideTitle?: boolean;
   isLoading?: boolean;
+  setIsLoading?: (isLoading: boolean) => void;
 }
 
 export default function JobTabs({
@@ -23,8 +25,44 @@ export default function JobTabs({
   onTabChange,
   hideTitle = false,
   isLoading = false,
+  setIsLoading,
 }: JobTabsProps) {
   const MAX_TABS = 5;
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Ajouter un effet pour détecter les chargements trop longs
+  useEffect(() => {
+    if (isLoading && tabJobs.length === 0) {
+      // Nettoyer tout timeout existant
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+
+      // Créer un nouveau timeout pour détecter un chargement bloqué
+      loadingTimeoutRef.current = setTimeout(() => {
+        console.error(
+          'Chargement bloqué pendant plus de 5 secondes, réinitialisation...'
+        );
+        // Si on a toujours setIsLoading, on l'utilise pour réinitialiser l'état
+        if (setIsLoading) {
+          setIsLoading(false);
+          // Supprimer le jobId invalide du localStorage
+          localStorage.removeItem('currentJobId');
+        }
+      }, 5000);
+    } else if (!isLoading && loadingTimeoutRef.current) {
+      // Annuler le timeout si le chargement est terminé
+      clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = null;
+    }
+
+    // Nettoyage lors du démontage
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
+  }, [isLoading, tabJobs.length, setIsLoading]);
 
   // Utiliser directement les tabJobs fournis, sans triage
   let displayTabs = [...tabJobs];
@@ -69,8 +107,6 @@ export default function JobTabs({
       </div>
     );
   }
-
-  console.log('Onglets à afficher:', displayTabs);
 
   return (
     <div className="flex flex-col">
@@ -135,13 +171,7 @@ export default function JobTabs({
 
         {/* Les contenus des onglets - ils seront vides car le contenu sera injecté par le parent */}
         {displayTabs.map((tab) => (
-          <TabsContent key={tab.tabIndex} value={tab.tabIndex.toString()}>
-            {isLoading && (
-              <div className="flex justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            )}
-          </TabsContent>
+          <TabsContent key={tab.tabIndex} value={tab.tabIndex.toString()} />
         ))}
       </Tabs>
     </div>

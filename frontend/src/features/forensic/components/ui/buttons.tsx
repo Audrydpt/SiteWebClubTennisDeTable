@@ -9,7 +9,6 @@ interface SortButtonsProps {
   setSortType: (type: SortType) => void;
   sortOrder: 'asc' | 'desc';
   toggleSortOrder: () => void;
-  handleResumeLastSearch: () => Promise<void>;
   clearResults: () => void;
 }
 
@@ -18,9 +17,17 @@ export function SortButtons({
   setSortType,
   sortOrder,
   toggleSortOrder,
-  handleResumeLastSearch,
   clearResults,
 }: SortButtonsProps) {
+  // Fonction pour gérer le reset complet
+  const handleReset = () => {
+    // Vider le localStorage
+    localStorage.removeItem('currentJobId');
+
+    // Appeler la fonction clearResults qui vide déjà le heap et les résultats affichés
+    clearResults();
+  };
+
   return (
     <div className="flex gap-2">
       {/* Contrôles de tri */}
@@ -60,7 +67,7 @@ export function SortButtons({
       <Button
         variant="ghost"
         size="icon"
-        onClick={clearResults || handleResumeLastSearch}
+        onClick={handleReset}
         className="h-8 w-8 text-muted-foreground hover:text-destructive"
         title="Vider les résultats"
       >

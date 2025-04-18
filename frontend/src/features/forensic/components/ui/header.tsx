@@ -6,12 +6,12 @@ interface HeaderProps {
   setSortType: (type: SortType) => void;
   sortOrder: 'asc' | 'desc';
   toggleSortOrder: () => void;
-  handleResumeLastSearch: () => Promise<void>;
   clearResults: () => void;
   tabJobs?: TabJob[];
   activeTabIndex?: number;
   onTabChange?: (tabIndex: number) => void;
   loading: boolean;
+  setIsLoading: (isLoading: boolean) => void;
 }
 
 export default function ForensicHeader({
@@ -19,12 +19,12 @@ export default function ForensicHeader({
   setSortType,
   sortOrder,
   toggleSortOrder,
-  handleResumeLastSearch,
   clearResults,
   tabJobs = [],
   activeTabIndex = 1,
   onTabChange = () => {},
   loading = false,
+  setIsLoading = () => {},
 }: HeaderProps) {
   return (
     <div className="mb-4">
@@ -36,6 +36,7 @@ export default function ForensicHeader({
             onTabChange={onTabChange}
             isLoading={loading}
             hideTitle={false}
+            setIsLoading={setIsLoading}
           />
         </div>
         <div className="flex-shrink-0">
@@ -44,7 +45,6 @@ export default function ForensicHeader({
             setSortType={setSortType}
             sortOrder={sortOrder}
             toggleSortOrder={toggleSortOrder}
-            handleResumeLastSearch={handleResumeLastSearch}
             clearResults={clearResults}
           />
         </div>
