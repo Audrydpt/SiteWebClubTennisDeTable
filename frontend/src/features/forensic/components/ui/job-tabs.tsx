@@ -2,6 +2,7 @@
 import { Loader2, Trash2 } from 'lucide-react';
 import React, { useEffect, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button.tsx';
 
 export interface TabJob {
   tabIndex: number;
@@ -174,18 +175,20 @@ export default function JobTabs({
                   {tabDisplay}
                   {statusIndicator}
 
-                  {/* Bouton de suppression */}
+                  {/* Bouton de suppression comme dans le Dashboard */}
                   {hasJob && (
-                    <button
-                      onClick={(e) => handleDeleteTab(tab.tabIndex, e)}
-                      className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-muted p-0.5 focus:outline-none focus:ring-1 focus:ring-primary"
-                      title="Supprimer cette recherche"
-                      aria-label="Supprimer cette recherche"
-                      type="button"
-                      disabled={isLoading || tab.status === 'running'}
-                    >
-                      <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-                    </button>
+                    <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="destructive"
+                        className="h-4 w-4 p-0"
+                        onClick={(e) => handleDeleteTab(tab.tabIndex, e)}
+                        disabled={isLoading || tab.status === 'running'}
+                        title="Supprimer cette recherche"
+                        aria-label="Supprimer cette recherche"
+                      >
+                        <Trash2 className="!h-3 !w-3" />
+                      </Button>
+                    </div>
                   )}
                 </div>
               </TabsTrigger>
