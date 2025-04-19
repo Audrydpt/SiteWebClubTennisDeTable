@@ -88,17 +88,22 @@ export default function DashboardTab({
   if (isLoading || !data) return <LoadingSpinner />;
 
   const widgets =
-    data.map((widget: StoredWidget) => {
-      const { id, size, type, ...chart } = widget;
-      const Component = ChartTypeComponents[type];
-      return {
-        id,
-        widget,
-        content: (
-          <Component {...chart} page={id ? (pagesToChart[id] ?? 0) : 0} />
-        ),
-      } as ChartTiles;
-    }) ?? [];
+    data
+      .map((widget: StoredWidget) => {
+        const { id, size, type, ...chart } = widget;
+
+        const Component = ChartTypeComponents[type];
+        if (!Component) return null;
+
+        return {
+          id,
+          widget,
+          content: (
+            <Component {...chart} page={id ? (pagesToChart[id] ?? 0) : 0} />
+          ),
+        } as ChartTiles;
+      })
+      .filter((item): item is ChartTiles => item !== null) ?? [];
 
   return (
     <ReactSortable
