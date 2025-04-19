@@ -187,14 +187,29 @@ class GenericDAL:
     AsyncSession = None
 
     def __init__(self):
-        if not GenericDAL.SyncSession:
+        if not GenericDAL.SyncSession or True:
             with GenericDAL.lock:
-                GenericDAL.SyncEngine  = create_engine(get_database_url(use_timescaledb=True, async_driver=False), echo=False, connect_args={'client_encoding': 'utf8'})
+                GenericDAL.SyncEngine  = create_engine(
+                    get_database_url(use_timescaledb=True, async_driver=False), 
+                    echo=True, 
+                    connect_args={'client_encoding': 'utf8'},
+                    pool_size=3,
+                    max_overflow=2,
+                    pool_timeout=30,
+                    pool_recycle=1*60*60
+                )
                 GenericDAL.SyncSession = sessionmaker(bind=GenericDAL.SyncEngine , expire_on_commit=False)
         
-        if not GenericDAL.AsyncSession:
+        if not GenericDAL.AsyncSession or True:
             with GenericDAL.lock:
-                GenericDAL.AsyncEngine = create_async_engine(get_database_url(use_timescaledb=True, async_driver=True), echo=False)
+                GenericDAL.AsyncEngine = create_async_engine(
+                    get_database_url(use_timescaledb=True, async_driver=True), 
+                    echo=True,
+                    pool_size=5,
+                    max_overflow=5,
+                    pool_timeout=30,
+                    pool_recycle=1*60*60
+                )
                 GenericDAL.AsyncSession = async_sessionmaker(bind=GenericDAL.AsyncEngine, expire_on_commit=False)
         
         if not GenericDAL.initialized:

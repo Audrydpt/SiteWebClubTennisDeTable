@@ -77,7 +77,7 @@ class ServiceAI:
             parsed_classif_response.append(parsed_classif)
         return parsed_classif_response
     
-    async def process(self, image,selected_classes=["car","truck","bus","motorcycle","bicycle"]):
+    async def process(self, image, selected_classes=["car","truck","bus","motorcycle","bicycle"]):
         print("Processing Forensic")
 
         version = await self.get_version()
@@ -180,7 +180,6 @@ class ServiceAI:
         image_jpeg = cv2.imencode(".jpg", frame)[1]
 
         detections = await asyncio.wait_for(self.__detect_object(width=modelWidth, height=modelHeight, model=model, object_detection=True, jpeg=image_jpeg), timeout=5)
-        logger.info(f"Detections: {detections}")
         return detections
     
     async def classify(self, frame, type: str = "vehicle"):
@@ -227,9 +226,27 @@ class ServiceAI:
         
         model = self.vehicle if type == "vehicle" else self.person
         attributes = await get_classes(model)
-
         return attributes
     
+    async def send(self, frame, model, confidenceThreshold, overlapThreshold):
+        version = await self.get_version()
+        if version[0] <= 1 or version[0] == 2 and version[1] < 2:
+            logger.error(f"Incompatible version")
+            raise Exception("Incompatible version")
+        
+        models = await self.get_models()
+        if model not in models:
+            logger.error(f"No model found")
+            raise Exception("No model found")
+
+        modelWidth = models[model]["networkWidth"]
+        modelHeight = models[model]["networkHeight"]
+
+        await asyncio.wait_for(self.__init_ws(model), timeout=5)
+        image_jpeg = cv2.imencode(".jpg", frame)[1]
+        detections = await asyncio.wait_for(self.__detect_object(width=modelWidth, height=modelHeight, model=model, jpeg=image_jpeg, confidenceThreshold=confidenceThreshold, overlapThreshold=overlapThreshold), timeout=5)
+        return detections
+        
     async def __heartbeat(self):
         for ws in self.ws:
             await asyncio.wait_for(self.ws[ws].ping(), timeout=1)
@@ -280,14 +297,14 @@ class ServiceAI:
 
         return frame[top:bottom, left:right]
 
-    async def __detect_object(self, model, object_detection=False, classification=False, width=0, height=0, raw=None, jpeg=None):        
+    async def __detect_object(self, model, object_detection=False, classification=False, width=0, height=0, raw=None, jpeg=None, confidenceThreshold=0.1, overlapThreshold=0.1):        
         if object_detection == classification:
             logger.error("You must choose between object detection or classification")
             raise Exception("You must choose between object detection or classification")
         
         ctx = {
-            "confidenceThreshold": 0.1,
-            "overlapThreshold": 0.1,
+            "confidenceThreshold": confidenceThreshold,
+            "overlapThreshold": overlapThreshold,
             "bbox": True if object_detection else False,
             "classifier": True if classification else False
         }
@@ -349,8 +366,7 @@ class ServiceAI:
                             logger.info(f"Classifier response {data['classifiers']}")
                             return data["classifiers"]
                         
-                        logger.error(f"Unknown response {msg.data}")
-                        raise Exception("Unknown response")
+                        return data
 
                     elif data["msg"] == "error":
                         logger.error(f"Error message: {data['error']}")

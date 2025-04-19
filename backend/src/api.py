@@ -6,6 +6,7 @@ import uuid
 from fastapi.websockets import WebSocketState
 import gunicorn
 import httpx
+import requests
 import uvicorn
 import datetime
 import time
@@ -41,7 +42,7 @@ from pydantic import BaseModel, Field, Extra
 
 from vms import CameraClient
 from api_cpp import get_routes as get_cpp_routes
-
+from api_ai import get_routes as get_ai_routes
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 file_handler = logging.FileHandler(f"/tmp/{__name__}.log")
@@ -579,7 +580,6 @@ class FastAPIServer:
                 raise Exception("VMS settings not found")
                 
             settings_dict = settings[0].value_index
-            logger.info(f"Settings: {settings_dict} {settings}")
             vms_host = settings_dict.get("ip", None)
             vms_port = settings_dict.get("port", None)
             vms_username = settings_dict.get("username", None)
@@ -1022,7 +1022,7 @@ class FastAPIServer:
                 raise HTTPException(status_code=500, detail=str(e))
 
     def __create_proxy(self):
-        def add_routes(subpath, routes):    
+        def add_routes(subpath, routes):
             for router in routes:
                 original_tags = getattr(router, "tags", [])
                 
@@ -1034,6 +1034,7 @@ class FastAPIServer:
                 self.app.include_router(router, prefix=subpath)
         
         add_routes("/proxy/localhost", get_cpp_routes())
+        add_routes("/proxy/localhost", get_ai_routes())
 
         @self.app.get("/proxy/{host}/{subpath:path}", tags=["proxy"])
         async def get_proxy(request: Request, host: str, subpath: str = ""):

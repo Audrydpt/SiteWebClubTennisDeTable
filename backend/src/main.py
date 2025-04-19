@@ -31,7 +31,7 @@ if __name__ == "__main__":
     grabber = EventGrabber()
     grabber.add_grabber("127.0.0.1",     8081)   # localhost
 
-    if ip == "192.168.20.145":
+    if True and ip == "192.168.20.145":
         for i in ["44", "150"]:
             server_ip = f"192.168.20.{i}"
             if server_ip != ip:
