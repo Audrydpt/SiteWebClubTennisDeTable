@@ -1,6 +1,5 @@
 /* eslint-disable no-console,react-hooks/exhaustive-deps,@typescript-eslint/no-explicit-any,no-plusplus */
 import { useState, useEffect } from 'react';
-import forensicResultsHeap from '../lib/data-structure/heap.tsx';
 
 export interface ForensicTask {
   id: string;
@@ -34,6 +33,7 @@ export default function useJobs() {
   const [tasks, setTasks] = useState<ForensicTask[]>([]);
   const [tabJobs, setTabJobs] = useState<TabJob[]>([]);
   const [activeTabIndex, setActiveTabIndex] = useState<number>(1);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,46 +55,67 @@ export default function useJobs() {
     }
   };
 
+  // Dans useJobs.ts, modifiez la fonction selectLeftmostTab
   const selectLeftmostTab = () =>
     new Promise<number>((resolve) => {
       setTimeout(() => {
-        // Trouver l'onglet avec le plus petit tabIndex
-        if (tabJobs.length > 0) {
+        // Ne changer d'onglet que si aucun n'est actuellement actif
+        // ou si l'onglet actif n'existe plus dans tabJobs
+        const activeTabExists = tabJobs.some(
+          (tab) => tab.tabIndex === activeTabIndex
+        );
+
+        if (!activeTabExists && tabJobs.length > 0) {
           const leftmostTab = [...tabJobs].sort(
             (a, b) => a.tabIndex - b.tabIndex
           )[0];
           setActiveTabIndex(leftmostTab.tabIndex);
 
-          // Si cet onglet a un jobId, le mettre dans localStorage
+          // Mettre à jour le jobId seulement si nécessaire
           if (leftmostTab.jobId) {
-            localStorage.setItem('currentJobId', leftmostTab.jobId);
-            console.log(
-              `JobId mis à jour dans localStorage: ${leftmostTab.jobId}`
-            );
+            setActiveJobId(leftmostTab.jobId);
+            console.log(`JobId mis à jour: ${leftmostTab.jobId}`);
           }
 
           resolve(leftmostTab.tabIndex);
+        } else if (tabJobs.length > 0) {
+          // Garder l'onglet actif mais mettre à jour le jobId si nécessaire
+          const currentTab = tabJobs.find(
+            (tab) => tab.tabIndex === activeTabIndex
+          );
+          if (currentTab?.jobId && currentTab.jobId !== activeJobId) {
+            setActiveJobId(currentTab.jobId);
+            console.log(
+              `JobId mis à jour pour l'onglet actif: ${currentTab.jobId}`
+            );
+          }
+          resolve(activeTabIndex);
         } else {
-          setActiveTabIndex(1); // Par défaut, revenir à l'onglet 1
+          // Cas par défaut si aucun onglet n'existe
+          setActiveTabIndex(1);
+          setActiveJobId(null);
           resolve(1);
         }
       }, 1500); // Délai de 1.5 secondes
     });
 
-  // Dans fetchTasks de useJobs.tsx
   const fetchTasks = async () => {
     try {
       setLoading(true);
-
       const response = await fetch(`${process.env.MAIN_API_URL}/forensics`);
 
       if (!response.ok) {
-        throw new Error(`Erreur HTTP ${response.status}`);
+        throw new Error(`API returned status ${response.status}`);
       }
 
       const data: ForensicTaskResponse = await response.json();
 
-      // Transformation des données de l'API
+      if (!data.tasks) {
+        setTasks([]);
+        return [];
+      }
+
+      // Transformer les tâches en tableau
       const tasksArray: ForensicTask[] = Object.entries(data.tasks).map(
         ([id, task]) => ({
           id,
@@ -106,24 +127,24 @@ export default function useJobs() {
         })
       );
 
-      // Tri par date de création (plus récent en premier)
+      // Trier par date de création (plus récent en premier)
       tasksArray.sort(
         (a, b) => new Date(b.created).getTime() - new Date(a.created).getTime()
       );
 
       setTasks(tasksArray);
 
-      // Ne créer des onglets que pour les tâches réelles, limité à 5
+      // Créer les onglets à partir des tâches
       const taskTabJobs = tasksArray.slice(0, 5).map((task, index) => ({
         tabIndex: index + 1,
         jobId: task.id,
         status: mapTaskStatusToTabStatus(task.status),
+        isNew: false,
       }));
 
       // Conserver les onglets "isNew" existants
       const existingNewTabs = tabJobs.filter((tab) => tab.isNew);
 
-      // Fusionner les deux types d'onglets, en évitant les doublons d'index
       // Fusionner les deux types d'onglets, en évitant les doublons d'index
       let combinedTabs: TabJob[] = [...taskTabJobs];
 
@@ -140,89 +161,115 @@ export default function useJobs() {
 
       // S'assurer que l'onglet actif existe toujours dans les nouveaux onglets
       if (!combinedTabs.some((tab) => tab.tabIndex === activeTabIndex)) {
-        setActiveTabIndex(combinedTabs[0]?.tabIndex || 1);
+        if (combinedTabs.length > 0) {
+          setActiveTabIndex(combinedTabs[0].tabIndex);
+          // Mettre à jour le jobId actif si nécessaire
+          if (combinedTabs[0].jobId) {
+            setActiveJobId(combinedTabs[0].jobId);
+          }
+        }
       }
 
       setError(null);
+
+      // Retourner les onglets combinés pour usage immédiat
+      return combinedTabs;
     } catch (err) {
-      console.error(
-        'Erreur lors de la récupération des tâches forensics:',
-        err
-      );
+      console.error('Erreur lors de la récupération des tâches:', err);
       setError('Impossible de charger les tâches forensiques');
+      return [];
     } finally {
       setLoading(false);
     }
   };
 
-  // Dans useJobs.tsx, modifier la fonction addNewTab:
-
-  const addNewTab = (cleanup?: () => void) => {
-    console.log("Tentative d'ajout d'un nouvel onglet");
-
-    // Nettoyer les ressources WebSocket si une fonction de nettoyage est fournie
-    if (typeof cleanup === 'function') {
-      console.log(
-        '🧹 Nettoyage des connexions WebSocket avant création du nouvel onglet'
-      );
-      cleanup();
-    }
-
-    // Vérifier le nombre d'onglets existants
-    if (tabJobs.length >= 5) {
-      console.log("Nombre maximum d'onglets atteint (5), ajout impossible");
-      return;
-    }
+  const addNewTab = (cleanupCallback?: () => void) => {
+    // Exécuter le callback de nettoyage si fourni
+    if (cleanupCallback) cleanupCallback();
 
     // Trouver le prochain index disponible
-    let nextIndex = 1;
-    const usedIndices = tabJobs.map((tab) => tab.tabIndex);
+    const maxIndex =
+      tabJobs.length > 0 ? Math.max(...tabJobs.map((tab) => tab.tabIndex)) : 0;
+    const nextTabIndex = maxIndex + 1;
 
-    // Recherche du premier index disponible entre 1 et 5
-    while (usedIndices.includes(nextIndex) && nextIndex <= 5) {
-      nextIndex++;
-    }
-
-    console.log('Index du nouvel onglet:', nextIndex);
-
-    // Créer un nouvel onglet avec jobId défini comme une chaîne vide
+    // Créer un nouvel onglet clairement marqué comme nouveau
     const newTab: TabJob = {
-      tabIndex: nextIndex,
-      jobId: '', // Onglet vide
-      status: 'idle',
+      tabIndex: nextTabIndex,
       isNew: true,
+      status: 'idle',
     };
 
-    console.log('Nouvel onglet créé:', newTab);
+    // Mettre à jour la liste des onglets
+    setTabJobs([...tabJobs, newTab]);
 
-    // Ajouter le nouvel onglet
-    setTabJobs((prev) => [...prev, newTab]);
-
-    // Réinitialiser les résultats en vidant le heap
-    forensicResultsHeap.clear();
-
-    // Supprimer le jobId du localStorage
-    localStorage.removeItem('currentJobId');
-
-    // Activer automatiquement le nouvel onglet
-    setActiveTabIndex(nextIndex);
+    // Activer immédiatement le nouvel onglet
+    setActiveTabIndex(nextTabIndex);
+    // Réinitialiser explicitement jobId à null
+    setActiveJobId(null);
   };
 
-  // Changement d'onglet actif
   const handleTabChange = (tabIndex: number) => {
+    console.log(`⚡ Changement vers l'onglet ${tabIndex}`);
     setActiveTabIndex(tabIndex);
 
-    // Récupérer le jobId correspondant au nouvel onglet
+    // Récupérer le TabJob complet pour le nouvel onglet
     const selectedTab = tabJobs.find((tab) => tab.tabIndex === tabIndex);
 
-    // Mettre à jour le localStorage avec le nouveau jobId
+    // Vérification explicite de l'état isNew
+    const isNewTab = selectedTab?.isNew === true;
+
+    // Log complet de l'état de l'onglet
+    console.log('⚡ Changement onglet - État complet:', {
+      activeTabIndex: tabIndex,
+      isNew: isNewTab,
+      hasJobId: Boolean(selectedTab?.jobId),
+      ongletComplet: selectedTab,
+    });
+
+    // Mettre à jour l'état avec le nouveau jobId
     if (selectedTab?.jobId) {
-      localStorage.setItem('currentJobId', selectedTab.jobId);
-      console.log(`JobId mis à jour dans localStorage: ${selectedTab.jobId}`);
+      setActiveJobId(selectedTab.jobId);
+      console.log(`JobId mis à jour: ${selectedTab.jobId}`);
     } else {
-      // Si l'onglet n'a pas de jobId associé, effacer le localStorage
-      localStorage.removeItem('currentJobId');
-      console.log('JobId supprimé du localStorage (onglet sans job associé)');
+      setActiveJobId(null);
+      console.log(
+        `JobId effacé (onglet ${isNewTab ? 'nouveau' : 'sans job associé'})`
+      );
+    }
+
+    if (isNewTab) {
+      console.log("Initialisation d'un nouvel onglet");
+    }
+  };
+
+  // Fonction pour supprimer un onglet
+  const deleteTab = (tabIndex: number) => {
+    // Vérifier si l'onglet à supprimer est l'onglet actif
+    const isActiveTab = tabIndex === activeTabIndex;
+
+    // Supprimer l'onglet de la liste
+    setTabJobs((prev) => prev.filter((tab) => tab.tabIndex !== tabIndex));
+
+    // Si c'était l'onglet actif, sélectionner un autre onglet
+    if (isActiveTab) {
+      const remainingTabs = tabJobs.filter((tab) => tab.tabIndex !== tabIndex);
+      if (remainingTabs.length > 0) {
+        const newActiveTab = [...remainingTabs].sort(
+          (a, b) => a.tabIndex - b.tabIndex
+        )[0];
+        setActiveTabIndex(newActiveTab.tabIndex);
+
+        // Mettre à jour le jobId actif
+        if (newActiveTab.jobId) {
+          setActiveJobId(newActiveTab.jobId);
+        } else {
+          setActiveJobId(null);
+        }
+      } else {
+        // Pas d'onglets restants
+        setActiveTabIndex(1);
+        setActiveJobId(null);
+      }
     }
   };
 
@@ -238,6 +285,9 @@ export default function useJobs() {
     return activeTab?.jobId ? getTaskById(activeTab.jobId) : undefined;
   };
 
+  // Fonction utilitaire pour accéder au jobId actif
+  const getActiveJobId = (): string | null => activeJobId;
+
   // Rafraîchissement périodique des tâches
   useEffect(() => {
     // Chargement initial
@@ -252,35 +302,28 @@ export default function useJobs() {
   const resumeActiveJob = async (
     resumeCallback: (id: string) => Promise<any>
   ) => {
-    const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
-
-    if (!activeTab?.jobId) {
+    if (!activeJobId) {
       console.log('Aucun job associé à cet onglet');
       return null;
     }
 
-    console.log(
-      `Reprise du job ${activeTab.jobId} avec statut ${activeTab.status}`
-    );
+    console.log(`Reprise du job ${activeJobId}`);
 
     // Appeler resumeJob avec le jobId de l'onglet actif
-    return resumeCallback(activeTab.jobId);
-  };
-
-  const deleteTab = (tabIndex: number) => {
-    setTabJobs((prev) => prev.filter((tab) => tab.tabIndex !== tabIndex));
-    setActiveTabIndex(1);
+    return resumeCallback(activeJobId);
   };
 
   return {
     tasks,
     tabJobs,
     activeTabIndex,
+    activeJobId,
     loading,
     error,
     fetchTasks,
     getTaskById,
     getActiveTask,
+    getActiveJobId,
     handleTabChange,
     resumeActiveJob,
     setTabJobs,

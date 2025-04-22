@@ -287,7 +287,6 @@ export default function useSearch() {
   const resumeJob = async (jobId: string, skipHistory: boolean = false) => {
     try {
       setJobId(jobId);
-      localStorage.setItem('currentJobId', jobId);
 
       // Ne pas effacer le heap si on veut simplement changer d'onglet
       if (!skipHistory) {
@@ -343,7 +342,7 @@ export default function useSearch() {
 
         let validDetectionResults: ForensicResult[] = [];
 
-        // Charger les résultats si skipHistory=false OU si la tâche est terminée
+        // IMPORTANT: Pour les tâches terminées, toujours charger l'historique complet
         if (!skipHistory || isCompleted) {
           // Récupérer les résultats de détection avec leurs images
           const detectionResults = await Promise.all(
@@ -395,16 +394,11 @@ export default function useSearch() {
             '🧠 Détections valides récupérées:',
             validDetectionResults.length
           );
-
-          setResults(validDetectionResults);
-          setDisplayResults(validDetectionResults);
         } else {
           // En mode skipHistory pour tâches en cours uniquement, ne pas charger les images
           console.log(
             '⏭️ Chargement des résultats historiques ignoré (mode skipHistory, tâche en cours)'
           );
-          setResults([]);
-          setDisplayResults([]);
         }
 
         // Définir la progression à 100% si la tâche est terminée
@@ -427,6 +421,12 @@ export default function useSearch() {
           console.log('✅ Tâche terminée, affichage des résultats uniquement');
           setIsSearching(false);
         }
+        // Ne pas conditionner cette mise à jour par validDetectionResults.length > 0
+        const bestResults = forensicResultsHeap.getBestResults();
+        setResults(bestResults);
+        setDisplayResults(bestResults);
+
+        console.log('📊 Mise à jour des résultats:', bestResults.length);
 
         return skipHistory && !isCompleted ? [] : validDetectionResults;
       }
@@ -486,9 +486,6 @@ export default function useSearch() {
         if (!guid) {
           throw new Error('No job ID returned from API');
         }
-
-        // Stocker le jobId dans le localStorage
-        localStorage.setItem('currentJobId', guid);
 
         // Initialize source progress with selected sources
         const selectedSources = formData.cameras || [];
@@ -610,5 +607,6 @@ export default function useSearch() {
     displayResults,
     resumeJob,
     setDisplayResults,
+    setResults,
   };
 }

@@ -29,6 +29,7 @@ export default function Forensic() {
     resumeJob,
     setDisplayResults,
     cleanupWebSocket,
+    setResults,
   } = useSearch();
 
   const {
@@ -38,6 +39,7 @@ export default function Forensic() {
     addNewTab,
     selectLeftmostTab,
     deleteTab,
+    fetchTasks,
   } = useJobs();
 
   const handleDeleteTab = (tabIndex: number) => {
@@ -52,7 +54,24 @@ export default function Forensic() {
   };
 
   const handleAddNewTab = () => {
-    addNewTab(cleanupWebSocket);
+    // Nettoyage complet des résultats
+    forensicResultsHeap.clear();
+    setDisplayResults([]);
+
+    // Réinitialiser l'état de recherche globale
+    setIsTabLoading(false);
+
+    // Créer le nouvel onglet avec un callback de nettoyage renforcé
+    addNewTab(() => {
+      cleanupWebSocket();
+      forensicResultsHeap.clear();
+      setDisplayResults([]);
+
+      // Forcer une réinitialisation du DOM après un court délai
+      setTimeout(() => {
+        setDisplayResults([]);
+      }, 100);
+    });
   };
 
   const handleToggleCollapse = () => {
@@ -64,27 +83,40 @@ export default function Forensic() {
 
     // Récupérer le jobId associé au nouvel onglet
     const selectedTab = tabJobs.find((tab) => tab.tabIndex === tabIndex);
-    const currentJobId = localStorage.getItem('currentJobId');
+    const isNewTab = selectedTab?.isNew === true;
 
-    // Ne pas nettoyer la WebSocket si on change vers un onglet
-    // avec le même jobId que celui qui vient d'être créé
-    if (!selectedTab?.jobId || selectedTab.jobId !== currentJobId) {
-      cleanupWebSocket();
-    }
+    console.log('Changement vers onglet:', {
+      tabIndex,
+      isNew: isNewTab,
+      hasJobId: Boolean(selectedTab?.jobId),
+    });
+
+    // Nettoyer la WebSocket précédente
+    cleanupWebSocket();
+
+    // Forcer la réinitialisation des résultats AVANT de changer l'onglet
+    forensicResultsHeap.clear();
+    setDisplayResults([]);
+
+    // IMPORTANT: réinitialiser aussi les résultats dans le hook useSearch
+    // Ajoutez cette ligne pour réinitialiser propsResults
+    setResults([]);
 
     // Mettre à jour l'onglet actif
     jobsHandleTabChange(tabIndex);
-    forensicResultsHeap.clear();
-    setDisplayResults([]);
+
+    // Pour un nouvel onglet, ne pas charger de résultats
+    if (isNewTab) {
+      console.log('Nouvel onglet détecté, pas de chargement de résultats');
+      setIsTabLoading(false);
+      return;
+    }
 
     if (selectedTab?.jobId) {
       try {
         await resumeJob(selectedTab.jobId, false);
       } catch (error) {
-        console.error(
-          `Erreur lors du chargement du job ${selectedTab.jobId}:`,
-          error
-        );
+        console.error('Erreur lors du chargement des résultats:', error);
       }
     }
 
@@ -101,17 +133,11 @@ export default function Forensic() {
       const jobId = await startSearch(searchFormData);
 
       if (jobId) {
-        // Stocker le nouveau jobId dans le localStorage immédiatement
-        localStorage.setItem('currentJobId', jobId);
-
         // Mettre à jour les tabJobs sans déclencher handleTabChange
-        // qui appellerait cleanupWebSocket
         const selectedTabIndex = await selectLeftmostTab();
 
         // Ne pas appeler handleTabChange car cela fermerait la WebSocket
         // déjà ouverte par startSearch
-
-        // Au lieu de cela, mettre à jour directement l'UI
         jobsHandleTabChange(selectedTabIndex);
       }
     } catch (error) {
@@ -124,35 +150,65 @@ export default function Forensic() {
   const activeTabsCount = tabJobs.filter((tab) => tab.jobId).length;
 
   useEffect(() => {
-    const loadExistingJobOnMount = async () => {
-      const jobId = localStorage.getItem('currentJobId');
+    const loadExistingJobs = async () => {
+      try {
+        setIsTabLoading(true); // Activer le skeleton loader
+        console.log('🔍 Démarrage du chargement des jobs existants');
 
-      if (jobId) {
+        // Récupérer les tâches existantes et leurs onglets associés
+        const updatedTabJobs = await fetchTasks();
         console.log(
-          `Chargement du job existant au retour de navigation: ${jobId}`
+          '📊 État des tabJobs après fetchTasks:',
+          updatedTabJobs || []
         );
-        try {
-          // Trouver l'onglet correspondant à ce jobId
-          const jobTab = tabJobs.find((tab) => tab.jobId === jobId);
 
-          if (jobTab) {
-            // Sélectionner l'onglet sans provoquer de nettoyage inutile
-            jobsHandleTabChange(jobTab.tabIndex);
+        // Chercher un onglet avec un jobId
+        const tabWithJob =
+          updatedTabJobs?.find((tab) => tab.jobId) ||
+          tabJobs.find((tab) => tab.jobId);
 
-            // Charger explicitement les résultats
-            await resumeJob(jobId, true);
-          } else {
-            // Si aucun onglet ne correspond, charger quand même
-            await resumeJob(jobId, true);
+        if (tabWithJob) {
+          console.log('✅ Onglet avec jobId trouvé:', tabWithJob);
+
+          // Sélectionner explicitement l'onglet
+          handleTabChange(tabWithJob.tabIndex);
+
+          // Délai court pour laisser le changement d'onglet s'appliquer
+          await new Promise((resolve) => {
+            setTimeout(resolve, 50);
+          });
+
+          // Charger les résultats pour cet onglet
+          if (tabWithJob.jobId) {
+            console.log(
+              '🚀 Chargement des résultats pour jobId:',
+              tabWithJob.jobId
+            );
+            await resumeJob(tabWithJob.jobId, false);
+            console.log('✅ Résultats chargés avec succès');
           }
-        } catch (error) {
-          console.error('Erreur lors du chargement du job existant:', error);
+        } else {
+          console.log('ℹ️ Aucun onglet avec jobId trouvé');
+          // Si pas d'onglet avec jobId, sélectionner le premier onglet
+          if (updatedTabJobs?.length > 0) {
+            handleTabChange(updatedTabJobs[0].tabIndex);
+          }
         }
+
+        console.log('🏁 Fin du chargement des jobs existants');
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des jobs:', error);
+      } finally {
+        // Désactiver l'état de chargement avec un léger délai
+        // pour éviter un clignotement du skeleton loader
+        setTimeout(() => {
+          setIsTabLoading(false);
+        }, 300);
       }
     };
 
     // Exécuter uniquement au montage du composant
-    loadExistingJobOnMount();
+    loadExistingJobs();
   }, []); // Dépendances vides pour n'exécuter qu'au montage
 
   return (
@@ -174,7 +230,9 @@ export default function Forensic() {
               className={`${isCollapsed ? 'mb-2' : 'mb-4'} flex items-center justify-between pointer-events-auto`}
             >
               <h1
-                className={`${isCollapsed ? 'text-sm' : 'text-lg'} font-semibold truncate`}
+                className={`${
+                  isCollapsed ? 'scale-0 w-0' : 'scale-100 w-auto'
+                } transition-all text-xl font-bold tracking-tight`}
               >
                 {isCollapsed ? '' : 'Recherche vidéo'}
               </h1>

@@ -49,8 +49,7 @@ export default function JobTabs({
         // Si on a toujours setIsLoading, on l'utilise pour réinitialiser l'état
         if (setIsLoading) {
           setIsLoading(false);
-          // Supprimer le jobId invalide du localStorage
-          localStorage.removeItem('currentJobId');
+          // Nous n'utilisons plus localStorage ici
         }
       }, 5000);
     } else if (!isLoading && loadingTimeoutRef.current) {
