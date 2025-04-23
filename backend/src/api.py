@@ -562,6 +562,50 @@ class FastAPIServer:
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
 
+        @self.app.get("/forensics/delete", tags=["forensics"])
+        async def delete_all_forensic_task():
+            """
+            Supprime toutes les tâches forensiques et leurs résultats associés.
+            """
+            try:
+                # Vérifier si la tâche est en cours et l'annuler si nécessaire
+                cancelled = []
+                for job_id in await TaskManager.get_jobs():
+                    job_status = TaskManager.get_job_status(job_id)
+                    if job_status in [JobStatus.PENDING, JobStatus.STARTED, JobStatus.RECEIVED]:
+                        cancelled.append(job_id)
+                        await TaskManager.cancel_job(job_id)
+
+                result = await TaskManager.delete_all_task_data()
+                return result
+            except Exception as e:
+                logger.error(f"Erreur lors de la suppression de toutes les tâches: {e}")
+                logger.error(traceback.format_exc())
+
+        @self.app.delete("/forensics/delete/{guid}", tags=["forensics"])
+        async def delete_forensic_task(job_id: str):
+            """
+            Supprime une tâche forensique et ses résultats associés.
+            """
+            try:
+                # Vérifier si la tâche est en cours et l'annuler si nécessaire
+                job_status = TaskManager.get_job_status(job_id)
+
+                if job_status in [JobStatus.PENDING, JobStatus.STARTED, JobStatus.RECEIVED]:
+                    cancelled = await TaskManager.cancel_job(job_id)
+                    if not cancelled:
+                        logger.warning(f"Impossible d'annuler la tâche {job_id}, mais la suppression des données continuera")
+
+                try:
+                    result = await  TaskManager.delete_task_data(job_id)
+                    return result
+                except ValueError as e:
+                    raise HTTPException(status_code=404, detail="Tâche introuvable")
+
+            except Exception as e:
+                logger.error(f"Erreur lors de la suppression de la tâche {job_id}: {e}")
+                logger.error(traceback.format_exc())
+
     def __create_vms(self):
         async def get_vms_config():
             dal = GenericDAL()

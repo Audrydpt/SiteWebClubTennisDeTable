@@ -243,7 +243,33 @@ export default function useJobs() {
   };
 
   // Fonction pour supprimer un onglet
-  const deleteTab = (tabIndex: number) => {
+  const deleteTab = async (tabIndex: number) => {
+    // Trouver l'onglet à supprimer
+    const tabToDelete = tabJobs.find((tab) => tab.tabIndex === tabIndex);
+
+    // Si l'onglet a un jobId associé, supprimer la tâche forensique
+    if (tabToDelete?.jobId) {
+      try {
+        // Appeler l'API backend pour supprimer les données de la tâche
+        const response = await fetch(`/forensics/delete/${tabToDelete.jobId}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          console.error(
+            `Erreur lors de la suppression de la tâche ${tabToDelete.jobId}:`,
+            await response.text()
+          );
+        }
+        // eslint-disable-next-line @typescript-eslint/no-shadow
+      } catch (error) {
+        console.error(
+          'Erreur lors de la communication avec le serveur:',
+          error
+        );
+      }
+    }
+
     // Vérifier si l'onglet à supprimer est l'onglet actif
     const isActiveTab = tabIndex === activeTabIndex;
 

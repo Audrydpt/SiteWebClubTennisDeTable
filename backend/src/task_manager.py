@@ -498,6 +498,66 @@ class TaskManager:
         except Exception as e:
             logger.error(f"Unexpected error while processing job status for job_id {job_id}: {e}")
             return JobStatus.REVOKED
+
+    @staticmethod
+    async def delete_task_data(job_id: str) -> dict:
+        """
+        Supprime toutes les données Redis associées à une tâche.
+        Retourne un dictionnaire avec le statut de l'opération.
+        Lève une ValueError si aucune tâche n'est trouvée avec cet ID.
+        """
+        # Supprimer les données Redis
+        redis_pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
+        redis_client = aioredis.Redis(connection_pool=redis_pool)
+
+        try:
+            # Clés à supprimer
+            job_key = f"task:{job_id}"
+            result_list_key = f"task:{job_id}:results"
+
+            # Vérifier si au moins une des clés existe
+            exists = await redis_client.exists(job_key)
+            results_exist = await redis_client.exists(result_list_key)
+
+            if not exists and not results_exist:
+                raise ValueError(f"Aucune tâche trouvée avec l'ID {job_id}")
+
+            # Supprimer les métadonnées et résultats
+            await redis_client.delete(job_key)
+            await redis_client.delete(result_list_key)
+
+            # Supprimer toutes les frames associées
+            frame_pattern = f"task:{job_id}:frame:*"
+            frame_keys = await redis_client.keys(frame_pattern)
+            if frame_keys:
+                await redis_client.delete(*frame_keys)
+
+            return {"success": True, "message": f"Tâche {job_id} supprimée avec succès"}
+
+        finally:
+            await redis_client.close()
+            await redis_pool.disconnect()
+
+    @staticmethod
+    async def delete_all_task_data() -> dict:
+        """
+        Supprime toutes les données Redis associées à toutes les tâches.
+        Retourne un dictionnaire avec le statut de l'opération.
+        """
+        redis_pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
+        redis_client = aioredis.Redis(connection_pool=redis_pool)
+
+        try:
+            # Supprimer toutes les clés associées aux tâches
+            keys = await redis_client.keys("task:*")
+            if keys:
+                await redis_client.delete(*keys)
+
+            return {"success": True, "message": "Toutes les tâches supprimées avec succès"}
+
+        finally:
+            await redis_client.close()
+            await redis_pool.disconnect()
     
     @staticmethod
     async def get_job_error(job_id: str) -> Tuple[Optional[str], Optional[str]]:
