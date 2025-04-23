@@ -41,54 +41,31 @@ export default function Results({
   const [showSourceDetails, setShowSourceDetails] = useState(false);
   const { resumeJob, displayResults, setDisplayResults } = useSearch();
   const { tabJobs, handleTabChange: defaultHandleTabChange, getActiveJobId } = useJobs();
-  const initialLoadComplete = useRef(false);
-  const previousTabIndex = useRef<number | undefined>(activeTabIndex);
   const isLoadingRef = useRef(false);
   const requestTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const loadedJobsRef = useRef<Set<string>>(new Set());
   const handleTabChange = onTabChange || defaultHandleTabChange;
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  // Modifiez la fonction resultsToDisplay pour ajouter des logs détaillés
+  // Fonction modifiée pour éviter les logs excessifs
   const resultsToDisplay = useMemo(() => {
     // Rechercher l'onglet actif dans tabJobs
     const activeTab = tabJobs.find(tab => tab.tabIndex === activeTabIndex);
 
-    console.log('🔍 Calcul des résultats à afficher:', {
-      activeTabIndex,
-      activeTab,
-      propsResultsLength: propsResults?.length || 0,
-      displayResultsLength: displayResults?.length || 0,
-      isNew: activeTab?.isNew,
-      hasJobId: !!activeTab?.jobId
-    });
-
     // Vérification explicite: si activeTabIndex est défini mais qu'aucun onglet ne correspond
     // (car tabJobs n'est pas encore synchronisé), considérer comme nouvel onglet
     if (activeTab?.isNew === true || (activeTabIndex && !activeTab)) {
-      console.log("📋 Retour d'un tableau vide pour le nouvel onglet");
       return [];
     }
 
     // Sinon, logique existante
-    const results = propsResults && propsResults.length > 0 ? propsResults : displayResults;
-    console.log(`📊 Utilisation des ${propsResults && propsResults.length > 0 ? 'propsResults' : 'displayResults'} (${results?.length || 0} éléments)`);
-    return results;
+    return propsResults && propsResults.length > 0 ? propsResults : displayResults;
   }, [displayResults, propsResults, activeTabIndex, tabJobs]);
 
-  /* Remplacer les deux fonctions forceCleanupResults par cette version unique */
   const forceCleanupResults = () => {
-    console.log('🧹 AVANT nettoyage - État heap:', {
-      heapSize: forensicResultsHeap.getBestResults().length, // Correction: utiliser getBestResults().length au lieu de size()
-      displayResultsLength: displayResults?.length || 0
-    });
-
     // Effacer les deux sources de données
     forensicResultsHeap.clear();
     setDisplayResults([]);
-
-    console.log('🧹 APRÈS nettoyage - État heap:', {
-      heapSize: forensicResultsHeap.getBestResults().length // Correction: utiliser getBestResults().length au lieu de size()
-    });
   };
 
   const hasActiveJob = useMemo(() => {
@@ -97,48 +74,35 @@ export default function Results({
 
     // Si l'onglet est nouveau, on considère qu'il n'a pas de job actif
     if (activeTab?.isNew === true) {
-      console.log('🔄 hasActiveJob forcé à FALSE pour nouvel onglet');
       return false;
     }
 
-    const result = !!activeJobId || (resultsToDisplay && resultsToDisplay.length > 0);
-    return result;
+    return !!activeJobId || (resultsToDisplay && resultsToDisplay.length > 0);
   }, [getActiveJobId, resultsToDisplay, tabJobs, activeTabIndex]);
 
-  const clearResults = () => {
-    // Effacer les résultats dans le heap
-    forensicResultsHeap.clear();
-
-    // Mettre à jour les états
-    setDisplayResults([]);
-  };
-
-  // Supprimer le premier useEffect (lignes 108-120) qui n'utilise pas de valeur par défaut
-  // et ne garder que celui-ci avec la valeur par défaut :
+  // Effet pour nettoyer les résultats lors du changement d'onglet
   useEffect(() => {
-    const activeTab = tabJobs.find(tab => tab.tabIndex === activeTabIndex);
-    const hasJobId = !!activeTab?.jobId;
-
-    // Si l'onglet n'a pas de jobId, on considère qu'il est nouveau
-    // tout en préservant la valeur isNew si elle est déjà définie
-    const isNew = activeTab?.isNew ?? (!hasJobId);
+    const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
+    const isNewTab = activeTab?.isNew === true;
+    const hasJobId = Boolean(activeTab?.jobId);
 
     console.log('⚡ Changement onglet - Vérification nettoyage:', {
       activeTabIndex,
-      isNew,
-      hasJobId
+      isNew: isNewTab,
+      hasJobId,
     });
 
-    // La condition reste inchangée car elle vérifie déjà isNew === true && !jobId
-    if (activeTab && activeTab.isNew === true && !activeTab.jobId) {
-      console.log('⚡ Déclenchement du nettoyage pour nouvel onglet');
+    // Éviter de déclencher le nettoyage des résultats inutilement
+    if (isNewTab) {
       forceCleanupResults();
     }
+
+    // Ne pas supprimer cette ligne - elle est nécessaire pour le fonctionnement correct
   }, [activeTabIndex, tabJobs]);
 
-
+  // Effet pour désactiver l'état de chargement initial
   useEffect(() => {
-    // Cas 1: Si nous avons des résultats, désactiver le chargement
+    // Cas 1: Si nous avons des résultats
     if ((propsResults && propsResults.length > 0) ||
       (displayResults && displayResults.length > 0)) {
       const timer = setTimeout(() => {
@@ -147,16 +111,8 @@ export default function Results({
       return () => clearTimeout(timer);
     }
 
-    // Cas 2: Si la recherche est terminée (progress = 100%), désactiver le chargement
+    // Cas 2: Si la recherche est terminée
     if (progress === 100 && !isSearching) {
-      const timer = setTimeout(() => {
-        setIsInitialLoading(false);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-
-    // Cas 3: Si des onglets avec des tâches sont chargés
-    if (tabJobs && tabJobs.filter(tab => tab.jobId).length > 0) {
       const timer = setTimeout(() => {
         setIsInitialLoading(false);
       }, 300);
@@ -165,65 +121,66 @@ export default function Results({
 
     // Délai de sécurité pour éviter un chargement infini
     const fallbackTimer = setTimeout(() => {
-      console.log('Désactivation forcée du chargement initial après délai de sécurité');
       setIsInitialLoading(false);
     }, 3000);
 
     return () => clearTimeout(fallbackTimer);
-  }, [propsResults, displayResults, progress, isSearching, tabJobs]);
+  }, [propsResults, displayResults, progress, isSearching]);
 
+  // Effet pour charger automatiquement les résultats
   useEffect(() => {
     const autoLoadResults = async () => {
-      // Ajoutons une vérification de loading plus stricte qui inclut isTabLoading
-      if (isLoadingRef.current || isSearching || isTabLoading) {
+      // Empêcher les appels multiples pendant le chargement
+      if (isLoadingRef.current) {
         console.log('❌ Chargement déjà en cours, abandon du chargement automatique');
         return;
       }
 
-      const activeJobId = getActiveJobId();
-      if (!activeJobId) {
+      // Récupérer l'onglet actif et son jobId
+      const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
+      const jobId = activeTab?.jobId;
+
+      // Si aucun jobId n'est disponible, ne rien faire
+      if (!jobId) {
         return;
       }
 
-      // Vérifions si nous avons déjà des résultats pour éviter le double chargement
-      if (resultsToDisplay && resultsToDisplay.length > 0) {
-        console.log('✅ Résultats déjà disponibles, évitement du double chargement');
-        initialLoadComplete.current = true;
+      // Si le job a déjà été chargé récemment, éviter de le recharger
+      if (loadedJobsRef.current.has(jobId)) {
         return;
       }
 
-      if (!initialLoadComplete.current || previousTabIndex.current !== activeTabIndex) {
-        try {
-          isLoadingRef.current = true;
+      // Marquer le job comme en cours de chargement
+      isLoadingRef.current = true;
 
-          if (requestTimeoutRef.current) {
-            clearTimeout(requestTimeoutRef.current);
-          }
-
-          // Délai pour éviter trop d'appels rapprochés
-          requestTimeoutRef.current = setTimeout(async () => {
-            await resumeJob(activeJobId, false);
-            initialLoadComplete.current = true;
-            setIsInitialLoading(false); // Force désactiver le chargement
-            isLoadingRef.current = false;
-          }, 300);
-        } catch (error) {
-          console.error('Erreur lors du chargement des résultats:', error);
+      try {
+        // Ajouter à l'ensemble des jobs chargés pour éviter les rechargements
+        loadedJobsRef.current.add(jobId);
+        await resumeJob(jobId, false);
+      } catch (error) {
+        console.error('Erreur lors du chargement des résultats:', error);
+      } finally {
+        // Attendre un court délai avant de permettre un nouveau chargement
+        setTimeout(() => {
           isLoadingRef.current = false;
-        }
+        }, 500);
       }
-
-      previousTabIndex.current = activeTabIndex;
     };
 
-    autoLoadResults();
+    // Annuler tous les timeouts précédents
+    if (requestTimeoutRef.current) {
+      clearTimeout(requestTimeoutRef.current);
+    }
+
+    // Déclencher le chargement après un court délai pour éviter les charges multiples
+    requestTimeoutRef.current = setTimeout(autoLoadResults, 100);
 
     return () => {
       if (requestTimeoutRef.current) {
         clearTimeout(requestTimeoutRef.current);
       }
     };
-  }, [resumeJob, isSearching, activeTabIndex, isTabLoading, getActiveJobId]);
+  }, [activeTabIndex, tabJobs, resumeJob]);
 
   // Toggle sort order
   const toggleSortOrder = () => {
@@ -234,7 +191,13 @@ export default function Results({
     () => calculateTimeRemaining(sourceProgress),
     [sourceProgress]
   );
+  const clearResults = () => {
+    // Effacer les résultats dans le heap
+    forensicResultsHeap.clear();
 
+    // Mettre à jour les états
+    setDisplayResults([]);
+  };
   const renderProgressSection = () => {
     if (!isSearching && (!hasActiveJob || progress === null || isTabLoading)) {
       return null;
@@ -293,17 +256,6 @@ export default function Results({
     );
   };
 
-  // Pour déboguer
-  useEffect(() => {
-    console.log("État d'affichage:", {
-      hasActiveJob,
-      isInitialLoading,
-      resultsCount: resultsToDisplay?.length || 0,
-      isSearching,
-      progress
-    });
-  }, [hasActiveJob, isInitialLoading, resultsToDisplay, isSearching, progress]);
-
   return (
     <>
       <ForensicHeader
@@ -332,6 +284,13 @@ export default function Results({
               return (
                 <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
                   Sélectionnez une caméra et lancez une recherche
+                </div>
+              );
+            } else if (hasActiveJob && !isSearching && progress === 100 &&
+              (!resultsToDisplay || resultsToDisplay.length === 0)) {
+              return (
+                <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
+                  Aucun résultat trouvé
                 </div>
               );
             } else if (hasActiveJob || isSearching || resultsToDisplay?.length > 0) {
