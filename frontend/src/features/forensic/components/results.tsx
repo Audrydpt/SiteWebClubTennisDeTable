@@ -84,13 +84,6 @@ export default function Results({
   useEffect(() => {
     const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
     const isNewTab = activeTab?.isNew === true;
-    const hasJobId = Boolean(activeTab?.jobId);
-
-    console.log('⚡ Changement onglet - Vérification nettoyage:', {
-      activeTabIndex,
-      isNew: isNewTab,
-      hasJobId,
-    });
 
     // Éviter de déclencher le nettoyage des résultats inutilement
     if (isNewTab) {
