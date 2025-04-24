@@ -41,6 +41,7 @@ export default function Forensic() {
     deleteTab,
     fetchTasks,
     deleteAllTasks,
+    getActiveJobId,
   } = useJobs();
 
   const handleDeleteAllTabs = () => {
@@ -53,6 +54,13 @@ export default function Forensic() {
 
     // Réinitialiser l'état de recherche globale
     setIsTabLoading(false);
+  };
+
+  const handleStopSearch = async () => {
+    const activeJob = getActiveJobId();
+    if (activeJob) {
+      stopSearch(activeJob);
+    }
   };
 
   const handleDeleteTab = (tabIndex: number) => {
@@ -255,7 +263,7 @@ export default function Forensic() {
               <ForensicForm
                 onSubmit={handleSearch}
                 isSearching={isSearching}
-                stopSearch={stopSearch}
+                stopSearch={handleStopSearch}
                 isCollapsed={isCollapsed}
                 addNewTab={handleAddNewTab}
                 tabLength={activeTabsCount}

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import useLatest from '@/hooks/use-latest';
 import { useAuth } from '@/providers/auth-context';
+import useJobs from './use-jobs';
 
 import forensicResultsHeap from '../lib/data-structure/heap.tsx';
 import { FormData as CustomFormData, formatQuery } from '../lib/format-query';
@@ -507,92 +508,34 @@ export default function useSearch() {
     [sessionId, cleanupWebSocket, initializeSourceProgress, initWebSocket]
   );
 
-  const stopSearch = useCallback(() => {
-    // Vérifier si une annulation est déjà en cours
-    if (isCancelling) {
-      console.log('🔄 Une annulation est déjà en cours, ignoré');
-      return Promise.resolve();
-    }
-
-    // Marquer comme en cours d'annulation pour éviter les doubles appels
-    setIsCancelling(true);
-
-    console.log("🔒 Démarrage de la procédure d'annulation de recherche");
-
-    // Créer un nouvel AbortController pour la requête d'annulation
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    // Si la recherche n'est pas active ou qu'il n'y a pas de WebSocket, juste réinitialiser
-    if (!isSearching || !jobId) {
-      console.log('⚠️ Pas de recherche active à annuler');
+  // Récupérer la fonction depuis useJobs
+  const stopSearch = async (jobId: string) => {
+    try {
       setIsSearching(false);
-      setProgress(null);
-      setJobId(null);
-      setIsCancelling(false);
-      return Promise.resolve();
-    }
 
-    // D'abord fermer le WebSocket s'il existe - FORCE CODE 1000
-    if (wsRef.current) {
-      if (
-        wsRef.current.readyState === WebSocket.OPEN ||
-        wsRef.current.readyState === WebSocket.CONNECTING
-      ) {
-        console.log('🔒 Fermeture de la connexion WebSocket avec code 1000...');
-        // Force close avec code 1000 (fermeture normale)
-        wsRef.current.close(1000, 'Client cancelled search');
+      if (!jobId) {
+        console.error(
+          "❌ Impossible d'annuler la recherche: aucun jobId fourni"
+        );
+        return;
       }
-      wsRef.current = null;
-    }
 
-    // Réinitialiser les états du UI immédiatement
-    setIsSearching(false);
-    setProgress(null);
+      const response = await fetch(
+        `${process.env.MAIN_API_URL}/forensics/${jobId}`,
+        {
+          method: 'DELETE',
+        }
+      );
 
-    // Timeout pour la requête DELETE
-    const timeoutId = setTimeout(() => {
-      if (controller && !controller.signal.aborted) {
-        controller.abort('Timeout');
+      if (!response.ok) {
+        throw new Error(`Échec de l'annulation: ${response.statusText}`);
       }
-    }, 5000);
 
-    // Puis annuler la recherche via l'API
-    return fetch(`${process.env.MAIN_API_URL}/forensics`, {
-      method: 'DELETE',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        Authorization: `X-Session-Id ${sessionId}`,
-      },
-      signal: controller.signal,
-    })
-      .then((response) => {
-        clearTimeout(timeoutId);
-        if (response.ok) {
-          console.log("✅ Recherche annulée avec succès via l'API");
-        } else {
-          console.error(`❌ Échec de l'annulation: ${response.status}`);
-        }
-      })
-      .catch((error) => {
-        clearTimeout(timeoutId);
-        if (error.name === 'AbortError') {
-          console.warn(
-            "⚠️ La requête d'annulation a expiré, mais l'UI a été réinitialisé"
-          );
-        } else {
-          console.error("❌ Erreur lors de l'annulation:", error);
-        }
-      })
-      .finally(() => {
-        // Reset job ID et état d'annulation
-        setJobId(null);
-        setIsCancelling(false);
-        // S'assurer que isSearching est bien à false
-        setIsSearching(false);
-      });
-  }, [sessionId, isSearching, jobId, isCancelling]);
+      // Logique post-annulation...
+    } catch (error) {
+      console.error("❌ Erreur lors de l'annulation de la recherche:", error);
+    }
+  };
 
   return {
     startSearch,

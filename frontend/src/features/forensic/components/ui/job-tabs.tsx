@@ -49,7 +49,6 @@ export default function JobTabs({
         // Si on a toujours setIsLoading, on l'utilise pour réinitialiser l'état
         if (setIsLoading) {
           setIsLoading(false);
-          // Nous n'utilisons plus localStorage ici
         }
       }, 5000);
     } else if (!isLoading && loadingTimeoutRef.current) {
@@ -66,8 +65,19 @@ export default function JobTabs({
     };
   }, [isLoading, tabJobs.length, setIsLoading]);
 
-  // Utiliser directement les tabJobs fournis, sans triage
-  let displayTabs = [...tabJobs];
+  let displayTabs = [...tabJobs].sort((a, b) => {
+    // Onglets sans jobId (nouveaux) à gauche
+    if (!a.jobId && b.jobId) return -1;
+    if (a.jobId && !b.jobId) return 1;
+
+    // Puis, si les deux ont ou n'ont pas de jobId :
+    // Onglets isNew=true à gauche
+    if (a.isNew && !b.isNew) return -1;
+    if (!a.isNew && b.isNew) return 1;
+
+    // Sinon, ordre stable
+    return a.tabIndex - b.tabIndex;
+  });
 
   // Si aucun onglet n'est disponible, ajouter un onglet par défaut
   if (displayTabs.length === 0) {
@@ -79,7 +89,7 @@ export default function JobTabs({
     displayTabs.push({ tabIndex: activeTabIndex, status: 'idle' });
   }
 
-  // Limiter à MAX_TABS sans trier
+  // Limiter à MAX_TABS
   displayTabs = displayTabs.slice(0, MAX_TABS);
 
   // Fonction pour gérer la suppression d'un onglet
@@ -116,6 +126,19 @@ export default function JobTabs({
     );
   }
 
+  // Compter les onglets avec jobId pour la numérotation séquentielle
+  const tabsWithJobs = tabJobs.filter((tab) => !!tab.jobId);
+  // Créer un mapping pour la numérotation des recherches (R1, R2, etc.)
+  // La numérotation commence à la fin (le plus ancien est R1)
+  const searchNumbering = tabsWithJobs.reduce(
+    (acc, tab, index) => {
+      // Le dernier élément de tabsWithJobs est R1, l'avant-dernier R2, etc.
+      acc[tab.tabIndex] = tabsWithJobs.length - index;
+      return acc;
+    },
+    {} as Record<number, number>
+  );
+
   return (
     <div className="flex flex-col">
       {!hideTitle && (
@@ -136,11 +159,14 @@ export default function JobTabs({
           {displayTabs.map((tab) => {
             const hasJob = !!tab.jobId;
             // Générer l'affichage de l'onglet en fonction de son état
-            let tabDisplay = `Recherche ${tab.tabIndex}`;
+            let tabDisplay = 'Nouvel onglet'; // Par défaut pour les onglets sans jobId
             let statusIndicator = null;
 
             if (hasJob) {
-              tabDisplay = `R${tab.tabIndex}`;
+              // Utiliser le numéro de recherche du mapping
+              const searchNumber =
+                searchNumbering[tab.tabIndex] || tabsWithJobs.length;
+              tabDisplay = `R${searchNumber}`;
 
               // Ajouter un indicateur visuel pour le statut
               if (tab.status === 'running') {
