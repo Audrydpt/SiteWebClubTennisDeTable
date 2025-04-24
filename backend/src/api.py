@@ -576,8 +576,8 @@ class FastAPIServer:
                         cancelled.append(job_id)
                         await TaskManager.cancel_job(job_id)
 
-                result = await TaskManager.delete_all_task_data()
-                return result
+                await TaskManager.delete_all_task_data()
+                return {"status": "ok", "cancelled_tasks": cancelled}
             except Exception as e:
                 logger.error(f"Erreur lors de la suppression de toutes les tâches: {e}")
                 logger.error(traceback.format_exc())

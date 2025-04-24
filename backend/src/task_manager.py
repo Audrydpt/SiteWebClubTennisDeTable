@@ -556,16 +556,13 @@ class TaskManager:
         Supprime toutes les données Redis associées à toutes les tâches dans les bases 0 et 1.
         Retourne un dictionnaire avec le statut de l'opération.
         """
-        # Initialiser des connexions pour les deux bases Redis
-        redis_pool_db1 = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
-        redis_client_db1 = aioredis.Redis(connection_pool=redis_pool_db1)
 
-        redis_pool_db0 = aioredis.ConnectionPool.from_url('redis://localhost:6379/0')
-        redis_client_db0 = aioredis.Redis(connection_pool=redis_pool_db0)
+        redis_db1 = await results_store._get_redis()
+        redis_db0 = await results_store._get_redis_0()
 
         try:
             # Obtenir tous les IDs de tâches pour supprimer les entrées correspondantes dans DB0
-            task_keys = await redis_client_db1.keys("task:*")
+            task_keys = await redis_db1.keys("task:*")
             task_ids = set()
 
             # Extraire les IDs de tâches à partir des clés
@@ -577,42 +574,17 @@ class TaskManager:
 
             # Supprimer les métadonnées Celery dans DB0
             for task_id in task_ids:
-                await redis_client_db0.delete(f"celery-task-meta-{task_id}")
-                await redis_client_db0.delete(f"celery-group-meta-{task_id}")
+                await redis_db0.delete(f"celery-task-meta-{task_id}")
+                await redis_db0.delete(f"celery-group-meta-{task_id}")
 
             # Supprimer toutes les clés associées aux tâches dans DB1
             if task_keys:
-                await redis_client_db1.delete(*task_keys)
+                await redis_db1.delete(*task_keys)
 
             return {"success": True, "message": "Toutes les tâches supprimées avec succès"}
-
-        finally:
-            # Fermer proprement toutes les connexions
-            await redis_client_db1.close()
-            await redis_pool_db1.disconnect()
-            await redis_client_db0.close()
-            await redis_pool_db0.disconnect()
-
-    @staticmethod
-    async def delete_all_task_data() -> dict:
-        """
-        Supprime toutes les données Redis associées à toutes les tâches.
-        Retourne un dictionnaire avec le statut de l'opération.
-        """
-        redis_pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
-        redis_client = aioredis.Redis(connection_pool=redis_pool)
-
-        try:
-            # Supprimer toutes les clés associées aux tâches
-            keys = await redis_client.keys("task:*")
-            if keys:
-                await redis_client.delete(*keys)
-
-            return {"success": True, "message": "Toutes les tâches supprimées avec succès"}
-
-        finally:
-            await redis_client.close()
-            await redis_pool.disconnect()
+        except Exception as e:
+            logger.error(f"Erreur lors de la suppression des données de toutes les tâches: {e}")
+            return {"success": False, "message": str(e)}
     
     @staticmethod
     async def get_job_error(job_id: str) -> Tuple[Optional[str], Optional[str]]:
