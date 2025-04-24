@@ -568,15 +568,6 @@ class FastAPIServer:
             Supprime toutes les tâches forensiques et leurs résultats associés.
             """
             try:
-                tasks = await TaskManager.get_jobs()
-
-                for job_id in tasks:
-                    status = TaskManager.get_job_status(job_id)
-                    if status in [JobStatus.PENDING, JobStatus.STARTED, JobStatus.RECEIVED]:
-                        cancelled = await TaskManager.cancel_job(job_id)
-                        if not cancelled:
-                            logger.warning(f"Impossible d'annuler la tâche {job_id}, mais la suppression des données continuera")
-
                 result = await TaskManager.delete_all_task_data()
 
                 if result["success"]:
