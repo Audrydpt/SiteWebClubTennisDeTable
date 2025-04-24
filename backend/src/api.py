@@ -562,7 +562,7 @@ class FastAPIServer:
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
 
-        @self.app.delete("/forensics/delete-all", tags=["forensics"])
+        @self.app.delete("/forensics/test/delete-all", tags=["forensics"])
         async def delete_all_forensic_task():
             """
             Supprime toutes les tâches forensiques et leurs résultats associés.
@@ -574,7 +574,9 @@ class FastAPIServer:
                     message = result["message"]
                     return {
                         "status": "ok",
-                        "message": message
+                        "message": result["message"],
+                        "deleted_tasks": result.get("deleted_tasks", 0),
+                        "deleted_keys": result.get("deleted_keys", 0),
                     }
                 else:
                     raise HTTPException(status_code=500, detail=result["message"])
