@@ -13,6 +13,7 @@ interface HeaderProps {
   loading: boolean;
   setIsLoading: (isLoading: boolean) => void;
   onDeleteTab?: (tabIndex: number) => void;
+  onDeleteAllTabs?: () => void;
 }
 
 export default function ForensicHeader({
@@ -27,6 +28,7 @@ export default function ForensicHeader({
   loading = false,
   setIsLoading = () => {},
   onDeleteTab = () => {},
+  onDeleteAllTabs = () => {},
 }: HeaderProps) {
   return (
     <div className="mb-4">
@@ -49,6 +51,7 @@ export default function ForensicHeader({
             sortOrder={sortOrder}
             toggleSortOrder={toggleSortOrder}
             clearResults={clearResults}
+            onDeleteAllTabs={onDeleteAllTabs}
           />
         </div>
       </div>

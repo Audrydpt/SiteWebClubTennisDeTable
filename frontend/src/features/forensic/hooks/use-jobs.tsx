@@ -242,6 +242,27 @@ export default function useJobs() {
     }
   };
 
+  const deleteAllTasks = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.MAIN_API_URL}/forensics/delete`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        console.error('Erreur lors de la suppression de toutes les tâches');
+      }
+      // eslint-disable-next-line @typescript-eslint/no-shadow
+    } catch (error) {
+      console.error('Erreur lors de la communication avec le serveur:', error);
+    }
+  };
+
   // Fonction pour supprimer un onglet
   const deleteTab = async (tabIndex: number) => {
     // Trouver l'onglet à supprimer
@@ -366,5 +387,6 @@ export default function useJobs() {
     addNewTab,
     selectLeftmostTab,
     deleteTab,
+    deleteAllTasks,
   };
 }

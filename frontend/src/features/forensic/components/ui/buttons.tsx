@@ -10,6 +10,7 @@ interface SortButtonsProps {
   sortOrder: 'asc' | 'desc';
   toggleSortOrder: () => void;
   clearResults: () => void;
+  onDeleteAllTabs: () => void;
 }
 
 export function SortButtons({
@@ -18,12 +19,12 @@ export function SortButtons({
   sortOrder,
   toggleSortOrder,
   clearResults,
+  onDeleteAllTabs,
 }: SortButtonsProps) {
   // Fonction pour gérer le reset complet
   const handleReset = () => {
-    // Vider le localStorage
-    localStorage.removeItem('currentJobId');
-
+    // Appeler la fonction pour supprimer tous les onglets
+    onDeleteAllTabs();
     // Appeler la fonction clearResults qui vide déjà le heap et les résultats affichés
     clearResults();
   };

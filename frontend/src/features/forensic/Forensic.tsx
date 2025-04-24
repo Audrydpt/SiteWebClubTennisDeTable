@@ -40,7 +40,20 @@ export default function Forensic() {
     selectLeftmostTab,
     deleteTab,
     fetchTasks,
+    deleteAllTasks,
   } = useJobs();
+
+  const handleDeleteAllTabs = () => {
+    // Supprimer tous les onglets
+    deleteAllTasks();
+
+    // Nettoyer les résultats
+    forensicResultsHeap.clear();
+    setDisplayResults([]);
+
+    // Réinitialiser l'état de recherche globale
+    setIsTabLoading(false);
+  };
 
   const handleDeleteTab = (tabIndex: number) => {
     // Si l'onglet actif est supprimé, on change vers le premier onglet
@@ -282,6 +295,7 @@ export default function Forensic() {
             activeTabIndex={activeTabIndex}
             isTabLoading={isTabLoading}
             onDeleteTab={handleDeleteTab}
+            onDeleteAllTabs={handleDeleteAllTabs}
           />
         </CardContent>
       </Card>

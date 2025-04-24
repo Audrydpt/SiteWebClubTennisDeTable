@@ -568,19 +568,26 @@ class FastAPIServer:
             Supprime toutes les tâches forensiques et leurs résultats associés.
             """
             try:
-                # Vérifier si la tâche est en cours et l'annuler si nécessaire
-                cancelled = []
-                for job_id in await TaskManager.get_jobs():
-                    job_status = TaskManager.get_job_status(job_id)
-                    if job_status in [JobStatus.PENDING, JobStatus.STARTED, JobStatus.RECEIVED]:
-                        cancelled.append(job_id)
-                        await TaskManager.cancel_job(job_id)
+                tasks = await TaskManager.get_jobs()
 
-                await TaskManager.delete_all_task_data()
-                return {"status": "ok", "cancelled_tasks": cancelled}
+                for job_id in tasks:
+                    status = TaskManager.get_job_status(job_id)
+                    if status in [JobStatus.PENDING, JobStatus.STARTED, JobStatus.RECEIVED]:
+                        cancelled = await TaskManager.cancel_job(job_id)
+                        if not cancelled:
+                            logger.warning(f"Impossible d'annuler la tâche {job_id}, mais la suppression des données continuera")
+
+                result = await TaskManager.delete_all_task_data()
+
+                if result["success"]:
+                    return {"status": "ok", "deleted_tasks": result["deleted_tasks"]}
+                else:
+                    raise HTTPException(status_code=500, detail="Échec de la suppression des données")
             except Exception as e:
                 logger.error(f"Erreur lors de la suppression de toutes les tâches: {e}")
                 logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=traceback.format_exc())
+
 
         @self.app.delete("/forensics/delete/{guid}", tags=["forensics"])
         async def delete_forensic_task(guid: str):
