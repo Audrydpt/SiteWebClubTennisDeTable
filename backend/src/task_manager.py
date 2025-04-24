@@ -107,7 +107,7 @@ class JobResult:
         )
 
 class ResultsStore:
-    def __init__(self, max_results: int = 1000):
+    def __init__(self, max_results: int = 100):
         self.max_results = max_results
         self._redis = None
         self._pool = None
@@ -115,6 +115,13 @@ class ResultsStore:
     async def _get_redis(self) -> aioredis.Redis:
         if self._pool is None:
             self._pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
+        if self._redis is None:
+            self._redis = aioredis.Redis(connection_pool=self._pool)
+        return self._redis
+
+    async def _get_redis_0(self) -> aioredis.Redis:
+        if self._pool is None:
+            self._pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/0')
         if self._redis is None:
             self._redis = aioredis.Redis(connection_pool=self._pool)
         return self._redis
@@ -506,12 +513,8 @@ class TaskManager:
         Retourne un dictionnaire avec le statut de l'opération.
         Lève une ValueError si aucune tâche n'est trouvée avec cet ID.
         """
-        # Initialiser des connexions pour les deux bases Redis
-        redis_pool_db1 = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
-        redis_client_db1 = aioredis.Redis(connection_pool=redis_pool_db1)
-
-        redis_pool_db0 = aioredis.ConnectionPool.from_url('redis://localhost:6379/0')
-        redis_client_db0 = aioredis.Redis(connection_pool=redis_pool_db0)
+        redis_db1 = await results_store._get_redis()
+        redis_db0 = await results_store._get_redis_0()
 
         try:
             # Clés à supprimer dans DB1
@@ -519,21 +522,21 @@ class TaskManager:
             result_list_key = f"task:{job_id}:results"
 
             # Vérifier si au moins une des clés existe dans DB1
-            exists = await redis_client_db1.exists(job_key)
-            results_exist = await redis_client_db1.exists(result_list_key)
+            exists = await redis_db1.exists(job_key)
+            results_exist = await redis_db1.exists(result_list_key)
 
             if not exists and not results_exist:
                 raise ValueError(f"Aucune tâche trouvée avec l'ID {job_id}")
 
             # Supprimer les métadonnées et résultats dans DB1
-            await redis_client_db1.delete(job_key)
-            await redis_client_db1.delete(result_list_key)
+            await redis_db1.delete(job_key)
+            await redis_db1.delete(result_list_key)
 
             # Supprimer toutes les frames associées dans DB1
             frame_pattern = f"task:{job_id}:frame:*"
-            frame_keys = await redis_client_db1.keys(frame_pattern)
+            frame_keys = await redis_db1.keys(frame_pattern)
             if frame_keys:
-                await redis_client_db1.delete(*frame_keys)
+                await redis_db1.delete(*frame_keys)
 
             # Supprimer les informations dans DB0
             celery_task_keys = [
@@ -541,17 +544,12 @@ class TaskManager:
                 f"celery-group-meta-{job_id}"
             ]
             for key in celery_task_keys:
-                await redis_client_db0.delete(key)
+                await redis_db0.delete(key)
 
             return {"success": True, "message": f"Tâche {job_id} supprimée avec succès"}
-
-        finally:
-            # Fermer proprement toutes les connexions
-            await redis_client_db1.close()
-            await redis_pool_db1.disconnect()
-            await redis_client_db0.close()
-            await redis_pool_db0.disconnect()
-
+        except Exception as e:
+            logger.error(f"Erreur lors de la suppression des données de la tâche {job_id}: {e}")
+            return {"success": False, "message": str(e)}
     @staticmethod
     async def delete_all_task_data() -> dict:
         """
