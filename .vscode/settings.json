@@ -13,5 +13,6 @@
   "python.terminal.activateEnvInCurrentTerminal": true,
   "files.eol": "\n",
   "prettier.endOfLine": "lf",
-  "prettier.requireConfig": false
+  "prettier.requireConfig": false,
+  "makefile.configureOnOpen": false
 }
