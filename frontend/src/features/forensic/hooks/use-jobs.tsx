@@ -245,7 +245,7 @@ export default function useJobs() {
   const deleteAllTasks = async () => {
     try {
       const response = await fetch(
-        `${process.env.MAIN_API_URL}/forensics/delete-all`,
+        `${process.env.MAIN_API_URL}/forensics/tasks/delete-all`,
         {
           method: 'DELETE',
           headers: {
