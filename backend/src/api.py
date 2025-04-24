@@ -562,7 +562,7 @@ class FastAPIServer:
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
 
-        @self.app.get("/forensics/delete", tags=["forensics"])
+        @self.app.delete("/forensics/delete", tags=["forensics"])
         async def delete_all_forensic_task():
             """
             Supprime toutes les tâches forensiques et leurs résultats associés.
@@ -583,27 +583,27 @@ class FastAPIServer:
                 logger.error(traceback.format_exc())
 
         @self.app.delete("/forensics/delete/{guid}", tags=["forensics"])
-        async def delete_forensic_task(job_id: str):
+        async def delete_forensic_task(guid: str):
             """
             Supprime une tâche forensique et ses résultats associés.
             """
             try:
                 # Vérifier si la tâche est en cours et l'annuler si nécessaire
-                job_status = TaskManager.get_job_status(job_id)
+                job_status = TaskManager.get_job_status(guid)
 
                 if job_status in [JobStatus.PENDING, JobStatus.STARTED, JobStatus.RECEIVED]:
-                    cancelled = await TaskManager.cancel_job(job_id)
+                    cancelled = await TaskManager.cancel_job(guid)
                     if not cancelled:
-                        logger.warning(f"Impossible d'annuler la tâche {job_id}, mais la suppression des données continuera")
+                        logger.warning(f"Impossible d'annuler la tâche {guid}, mais la suppression des données continuera")
 
                 try:
-                    result = await  TaskManager.delete_task_data(job_id)
+                    result = await  TaskManager.delete_task_data(guid)
                     return result
                 except ValueError as e:
                     raise HTTPException(status_code=404, detail="Tâche introuvable")
 
             except Exception as e:
-                logger.error(f"Erreur lors de la suppression de la tâche {job_id}: {e}")
+                logger.error(f"Erreur lors de la suppression de la tâche {guid}: {e}")
                 logger.error(traceback.format_exc())
 
     def __create_vms(self):

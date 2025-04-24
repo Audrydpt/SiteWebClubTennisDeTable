@@ -25,7 +25,7 @@ export default function JobTabs({
   tabJobs = [],
   activeTabIndex = 1,
   onTabChange,
-  onDeleteTab, // Récupération de la prop
+  onDeleteTab,
   hideTitle = false,
   isLoading = false,
   setIsLoading,

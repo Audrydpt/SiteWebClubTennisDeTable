@@ -251,9 +251,15 @@ export default function useJobs() {
     if (tabToDelete?.jobId) {
       try {
         // Appeler l'API backend pour supprimer les données de la tâche
-        const response = await fetch(`/forensics/delete/${tabToDelete.jobId}`, {
-          method: 'DELETE',
-        });
+        const response = await fetch(
+          `${process.env.MAIN_API_URL}/forensics/delete/${tabToDelete.jobId}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
 
         if (!response.ok) {
           console.error(
@@ -261,6 +267,10 @@ export default function useJobs() {
             await response.text()
           );
         }
+        setTabJobs((prevTabJobs) =>
+          prevTabJobs.filter((tab) => tab.tabIndex !== tabIndex)
+        );
+
         // eslint-disable-next-line @typescript-eslint/no-shadow
       } catch (error) {
         console.error(
