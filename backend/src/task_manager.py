@@ -556,34 +556,69 @@ class TaskManager:
         Supprime toutes les données Redis associées à toutes les tâches dans les bases 0 et 1.
         Retourne un dictionnaire avec le statut de l'opération.
         """
-
         redis_db1 = await results_store._get_redis()
         redis_db0 = await results_store._get_redis_0()
 
+        deleted_keys = 0
+        deleted_tasks = 0
+
         try:
-            # Obtenir tous les IDs de tâches pour supprimer les entrées correspondantes dans DB0
-            task_keys = await redis_db1.keys("task:*")
+            # Utiliser scan au lieu de keys pour éviter de bloquer Redis
+            cursor = "0"
             task_ids = set()
 
-            # Extraire les IDs de tâches à partir des clés
-            for key in task_keys:
-                key_str = key.decode('utf-8')
-                parts = key_str.split(':')
-                if len(parts) >= 2 and parts[0] == 'task' and len(parts[1]) > 0 and ':' not in parts[1]:
-                    task_ids.add(parts[1])
+            # Étape 1: Identifier toutes les tâches
+            while cursor != 0:
+                cursor, keys = await redis_db1.scan(cursor=cursor, match="task:*:results", count=1000)
+                cursor = int(cursor)
 
-            # Supprimer les métadonnées Celery dans DB0
+                for key in keys:
+                    key_str = key.decode('utf-8') if isinstance(key, bytes) else key
+                    parts = key_str.split(':')
+                    if len(parts) >= 3 and parts[0] == 'task' and len(parts[1]) > 0:
+                        task_ids.add(parts[1])
+
+            logger.info(f"Suppression de {len(task_ids)} tâches identifiées")
+
+            # Étape 2: Supprimer toutes les données associées aux tâches
             for task_id in task_ids:
+                # Supprimer les métadonnées Celery dans DB0
                 await redis_db0.delete(f"celery-task-meta-{task_id}")
                 await redis_db0.delete(f"celery-group-meta-{task_id}")
 
-            # Supprimer toutes les clés associées aux tâches dans DB1
-            if task_keys:
-                await redis_db1.delete(*task_keys)
+                # Supprimer les résultats de la tâche
+                deleted = await redis_db1.delete(f"task:{task_id}:results")
+                if deleted > 0:
+                    deleted_keys += deleted
 
-            return {"success": True, "message": "Toutes les tâches supprimées avec succès"}
+                # Supprimer les frames associées
+                cursor_frames = "0"
+                while cursor_frames != 0:
+                    cursor_frames, frame_keys = await redis_db1.scan(
+                        cursor=cursor_frames,
+                        match=f"task:{task_id}:frame:*",
+                        count=1000
+                    )
+                    cursor_frames = int(cursor_frames)
+
+                    if frame_keys:
+                        deleted = await redis_db1.delete(*frame_keys)
+                        deleted_keys += deleted
+
+                # Supprimer les autres métadonnées
+                deleted = await redis_db1.delete(f"task:{task_id}")
+                if deleted > 0:
+                    deleted_keys += deleted
+
+                deleted_tasks += 1
+
+            return {
+                "success": True,
+                "message": f"Toutes les tâches supprimées avec succès ({deleted_tasks} tâches, {deleted_keys} clés)"
+            }
         except Exception as e:
             logger.error(f"Erreur lors de la suppression des données de toutes les tâches: {e}")
+            logger.error(traceback.format_exc())
             return {"success": False, "message": str(e)}
     
     @staticmethod
