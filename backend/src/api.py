@@ -562,7 +562,7 @@ class FastAPIServer:
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
 
-        @self.app.delete("/forensics/delete", tags=["forensics"])
+        @self.app.delete("/forensics/delete-all", tags=["forensics"])
         async def delete_all_forensic_task():
             """
             Supprime toutes les tâches forensiques et leurs résultats associés.
@@ -571,9 +571,13 @@ class FastAPIServer:
                 result = await TaskManager.delete_all_task_data()
 
                 if result["success"]:
-                    return {"status": "ok", "deleted_tasks": result["deleted_tasks"]}
+                    message = result["message"]
+                    return {
+                        "status": "ok",
+                        "message": message
+                    }
                 else:
-                    raise HTTPException(status_code=500, detail="Échec de la suppression des données")
+                    raise HTTPException(status_code=500, detail=result["message"])
             except Exception as e:
                 logger.error(f"Erreur lors de la suppression de toutes les tâches: {e}")
                 logger.error(traceback.format_exc())
