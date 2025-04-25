@@ -27,7 +27,7 @@ export interface StepperFormData {
   format?: ExportFormat;
 }
 export interface ExportStep {
-  widgetId: string;
+  widgetId?: string;
   storedWidget: StepperFormData;
   chartContent?: JSX.Element;
   page?: number;

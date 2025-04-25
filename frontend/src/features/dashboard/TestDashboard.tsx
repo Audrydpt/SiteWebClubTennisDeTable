@@ -16,42 +16,36 @@ export default function TestDashboard() {
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
         layout="natural"
-        widgetId=""
       />
       <AreaComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
         layout="linear"
-        widgetId=""
       />
       <AreaComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
         layout="step"
-        widgetId=""
       />
       <LineComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
         layout="natural"
-        widgetId=""
       />
       <LineComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
         layout="linear"
-        widgetId=""
       />
       <LineComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
         layout="step"
-        widgetId=""
       />
       <AreaComponent
         table={AcicEvent.AcicCounting}
@@ -60,7 +54,6 @@ export default function TestDashboard() {
         layout="natural"
         groupBy="direction"
         stackOffset="none"
-        widgetId=""
       />
       <AreaComponent
         table={AcicEvent.AcicCounting}
@@ -69,7 +62,6 @@ export default function TestDashboard() {
         layout="natural"
         groupBy="direction"
         stackOffset="expand"
-        widgetId=""
       />
       <AreaComponent
         table={AcicEvent.AcicCounting}
@@ -78,7 +70,6 @@ export default function TestDashboard() {
         layout="natural"
         groupBy="direction"
         stackOffset="wiggle"
-        widgetId=""
       />
       <LineComponent
         table={AcicEvent.AcicCounting}
@@ -86,7 +77,6 @@ export default function TestDashboard() {
         aggregation={AcicAggregation.OneHour}
         layout="natural"
         groupBy="direction"
-        widgetId=""
       />
       <LineComponent
         table={AcicEvent.AcicCounting}
@@ -94,7 +84,6 @@ export default function TestDashboard() {
         aggregation={AcicAggregation.OneHour}
         layout="linear"
         groupBy="direction"
-        widgetId=""
       />
       <LineComponent
         table={AcicEvent.AcicCounting}
@@ -102,14 +91,12 @@ export default function TestDashboard() {
         aggregation={AcicAggregation.OneHour}
         layout="step"
         groupBy="direction"
-        widgetId=""
       />
       <BarComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneWeek}
         aggregation={AcicAggregation.OneDay}
         layout="horizontal"
-        widgetId=""
       />
       <BarComponent
         table={AcicEvent.AcicCounting}
@@ -117,7 +104,6 @@ export default function TestDashboard() {
         aggregation={AcicAggregation.OneDay}
         layout="horizontal stacked"
         groupBy="direction"
-        widgetId=""
       />
       <BarComponent
         table={AcicEvent.AcicCounting}
@@ -125,14 +111,12 @@ export default function TestDashboard() {
         aggregation={AcicAggregation.OneDay}
         layout="horizontal"
         groupBy="direction"
-        widgetId=""
       />
       <BarComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneWeek}
         aggregation={AcicAggregation.OneDay}
         layout="vertical"
-        widgetId=""
       />
       <BarComponent
         table={AcicEvent.AcicCounting}
@@ -140,7 +124,6 @@ export default function TestDashboard() {
         aggregation={AcicAggregation.OneDay}
         layout="vertical stacked"
         groupBy="direction"
-        widgetId=""
       />
       <BarComponent
         table={AcicEvent.AcicCounting}
@@ -148,7 +131,6 @@ export default function TestDashboard() {
         aggregation={AcicAggregation.OneDay}
         layout="vertical"
         groupBy="direction"
-        widgetId=""
       />
       <PieComponent
         table={AcicEvent.AcicCounting}
@@ -157,7 +139,6 @@ export default function TestDashboard() {
         groupBy="direction"
         layout="donut"
         gap={0}
-        widgetId=""
       />
       <PieComponent
         table={AcicEvent.AcicCounting}
@@ -166,7 +147,6 @@ export default function TestDashboard() {
         groupBy="direction"
         layout="pie"
         gap={1}
-        widgetId=""
       />
       <PieComponent
         table={AcicEvent.AcicCounting}
@@ -175,7 +155,6 @@ export default function TestDashboard() {
         groupBy="direction"
         layout="donut"
         gap={4}
-        widgetId=""
       />
       <PieComponent
         table={AcicEvent.AcicCounting}
@@ -184,7 +163,6 @@ export default function TestDashboard() {
         groupBy="direction"
         layout="halfdonut"
         gap={0}
-        widgetId=""
       />
       <PieComponent
         table={AcicEvent.AcicCounting}
@@ -193,7 +171,6 @@ export default function TestDashboard() {
         groupBy="direction"
         layout="halfpie"
         gap={1}
-        widgetId=""
       />
       <PieComponent
         table={AcicEvent.AcicCounting}
@@ -202,14 +179,12 @@ export default function TestDashboard() {
         groupBy="direction"
         layout="halfdonut"
         gap={4}
-        widgetId=""
       />
       <GaugeComponent
         table={AcicEvent.AcicCounting}
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
         layout="half"
-        widgetId=""
       />
       <div className="col-span-1"> </div>
       <GaugeComponent
@@ -217,7 +192,6 @@ export default function TestDashboard() {
         duration={AcicAggregation.OneDay}
         aggregation={AcicAggregation.OneHour}
         layout="full"
-        widgetId=""
       />
       <MultiGaugeComponent
         table={AcicEvent.AcicCounting}
@@ -225,7 +199,6 @@ export default function TestDashboard() {
         aggregation={AcicAggregation.OneHour}
         groupBy="direction"
         layout="full"
-        widgetId=""
       />
       <MultiGaugeComponent
         table={AcicEvent.AcicCounting}
@@ -233,7 +206,6 @@ export default function TestDashboard() {
         aggregation={AcicAggregation.OneHour}
         groupBy="direction"
         layout="half"
-        widgetId=""
       />
       <StackedGaugeComponent
         table={AcicEvent.AcicCounting}
@@ -241,7 +213,6 @@ export default function TestDashboard() {
         aggregation={AcicAggregation.OneHour}
         groupBy="direction"
         layout="half"
-        widgetId=""
       />
       <div className="col-span-3">
         <HeatmapComponent
@@ -249,7 +220,6 @@ export default function TestDashboard() {
           aggregation={AcicAggregation.OneHour}
           duration={AcicAggregation.OneWeek}
           layout="horizontal"
-          widgetId=""
         />
       </div>
       <div className="col-span-3">
@@ -258,7 +228,6 @@ export default function TestDashboard() {
           aggregation={AcicAggregation.OneHour}
           duration={AcicAggregation.OneWeek}
           layout="vertical"
-          widgetId=""
         />
       </div>
     </div>

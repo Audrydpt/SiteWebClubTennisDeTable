@@ -65,7 +65,7 @@ export enum ChartType {
 
 export type ChartProps = {
   title?: string;
-  widgetId: string;
+  widgetId?: string;
   table: AcicEvent;
   aggregation: AcicAggregation;
   duration: AcicAggregation;

@@ -70,7 +70,7 @@ export function getTimeFormattingConfig(
 }
 
 type DashboardQuery = {
-  widgetId: string;
+  widgetId?: string;
   table: string;
   aggregation: AcicAggregation;
   duration?: AcicAggregation;
