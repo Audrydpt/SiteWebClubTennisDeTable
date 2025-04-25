@@ -91,7 +91,6 @@ export default function DashboardTab({
     data.map((widget: StoredWidget) => {
       const { id, size, type, ...chart } = widget;
       const Component = ChartTypeComponents[type];
-      console.log('DashboardTab : WidgetId : ', id);
       return {
         id,
         widget,

@@ -57,7 +57,6 @@ export default function BarComponent({
 
   const isStacked = layout.includes('stack');
   const baseLayout = layout.includes('horizontal') ? 'horizontal' : 'vertical';
-  console.log('BarComponent : WidgetId : ', widgetId);
   const { isLoading, isError, data } = useQuery({
     queryKey: [widgetId, table, aggregation, duration, where, groupBy, page],
     queryFn: () =>

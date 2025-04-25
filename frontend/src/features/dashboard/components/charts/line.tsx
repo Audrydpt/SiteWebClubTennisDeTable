@@ -47,7 +47,6 @@ export default function LineComponent({
   const { t, i18n } = useTranslation();
   const { widgetId, title, table, aggregation, duration, where, page } = props;
   const { groupBy } = props;
-  console.log('LineComponent : WidgetId : ', widgetId);
   const { isLoading, isError, data } = useQuery({
     queryKey: [widgetId, table, aggregation, duration, where, groupBy, page],
     queryFn: () =>
