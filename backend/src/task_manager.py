@@ -528,6 +528,8 @@ class TaskManager:
             if not exists and not results_exist:
                 raise ValueError(f"Aucune tâche trouvée avec l'ID {job_id}")
 
+            await asyncio.to_thread(lambda: AsyncResult(job_id).forget())
+
             # Supprimer les métadonnées et résultats dans DB1
             await redis_db1.delete(job_key)
             await redis_db1.delete(result_list_key)
@@ -537,14 +539,6 @@ class TaskManager:
             frame_keys = await redis_db1.keys(frame_pattern)
             if frame_keys:
                 await redis_db1.delete(*frame_keys)
-
-            # Supprimer les informations dans DB0
-            celery_task_keys = [
-                f"celery-task-meta-{job_id}",
-                f"celery-group-meta-{job_id}"
-            ]
-            for key in celery_task_keys:
-                await redis_db0.delete(key)
 
             return {"success": True, "message": f"Tâche {job_id} supprimée avec succès"}
         except Exception as e:
@@ -583,8 +577,7 @@ class TaskManager:
             # Étape 2: Supprimer toutes les données associées aux tâches
             for task_id in task_ids:
                 # Supprimer les métadonnées Celery dans DB0
-                await redis_db0.delete(f"celery-task-meta-{task_id}")
-                await redis_db0.delete(f"celery-group-meta-{task_id}")
+                await asyncio.to_thread(lambda id=task_id: AsyncResult(id).forget())
 
                 # Supprimer les résultats de la tâche
                 deleted = await redis_db1.delete(f"task:{task_id}:results")
