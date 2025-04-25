@@ -32,7 +32,7 @@ run: build
 	make venv CMD="python src/main.py --port 5021"	
 
 install:
-	apt install python3-venv subversion
+	sudo apt install python3-venv subversion
 	python3 -m venv .venv
 	make venv CMD="pip install -r requirements.txt"	
 

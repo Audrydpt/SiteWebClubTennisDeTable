@@ -386,8 +386,6 @@ class FastAPIServer:
                         "updated": updated,
                         "count": count,
                         "size": size,
-
-
                     }
                     
                     if status == JobStatus.FAILURE:
