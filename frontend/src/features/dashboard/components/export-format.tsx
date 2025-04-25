@@ -32,6 +32,7 @@ export default function ExportStepFormat({
     queryFn: async () =>
       getWidgetDataForExport(
         {
+          widgetId: 'undefined',
           table: storedWidget.table,
           aggregation: storedWidget.aggregation || AcicAggregation.OneHour,
           range: storedWidget.range,

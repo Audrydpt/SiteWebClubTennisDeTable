@@ -66,6 +66,7 @@ export default function ExportStepSource({
     queryFn: async () =>
       getWidgetData(
         {
+          widgetId: 'undefined',
           table: storedWidget.table,
           aggregation: AcicAggregation.LifeTime,
           duration: AcicAggregation.LifeTime,

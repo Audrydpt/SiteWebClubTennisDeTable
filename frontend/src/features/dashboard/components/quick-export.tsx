@@ -16,9 +16,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ExportStep } from '../lib/export';
 import exportData, { ExportFormat } from '../lib/exportData';
 import { AcicAggregation } from '../lib/props';
-import { getWidgetDataForExport } from '../lib/utils';
+import { getWidgetData } from '../lib/utils';
 
 export default function QuickExport({
+  widgetId,
   storedWidget,
   chartContent,
   page,
@@ -49,6 +50,7 @@ export default function QuickExport({
   const { data, isSuccess, isLoading } = useQuery({
     queryKey: [
       'export-options',
+      widgetId,
       storedWidget.table,
       storedWidget.aggregation,
       storedWidget.duration,
@@ -57,8 +59,9 @@ export default function QuickExport({
       page,
     ],
     queryFn: async () =>
-      getWidgetDataForExport(
+      getWidgetData(
         {
+          widgetId,
           table: storedWidget.table,
           aggregation: storedWidget.aggregation || AcicAggregation.OneHour,
           duration: storedWidget.duration,

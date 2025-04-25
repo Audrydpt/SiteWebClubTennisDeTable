@@ -569,7 +569,7 @@ export function FormWidget({
                   </AlertDescription>
                 </Alert>
               ) : (
-                <PreviewComponent {...formValues} />
+                <PreviewComponent {...formValues} widgetId="undefined" />
               )}
             </div>
           </div>
