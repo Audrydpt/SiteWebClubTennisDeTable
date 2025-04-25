@@ -96,7 +96,7 @@ export default function DashboardTab({
         widget,
         content: (
           <Component
-            widgetId={id!}
+            widgetId={id}
             {...chart}
             page={id ? (pagesToChart[id] ?? 0) : 0}
           />
