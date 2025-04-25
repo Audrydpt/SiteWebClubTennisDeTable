@@ -156,14 +156,20 @@ export default function QuickExport({
             </RadioGroup>
 
             {isLoading && (
-              <div className="flex items-center justify-center space-x-2">
+              <div
+                className="flex items-center justify-center space-x-2"
+                data-testid="loading-spinner"
+              >
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 <span>Fetching data for exporting file...</span>
               </div>
             )}
 
             {loading && (
-              <div className="flex items-center justify-center space-x-2">
+              <div
+                className="flex items-center justify-center space-x-2"
+                data-testid="generating-spinner"
+              >
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 <span>Generating file...</span>
               </div>

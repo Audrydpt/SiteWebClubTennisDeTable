@@ -1,4 +1,10 @@
-import { render, screen, within } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -20,6 +26,12 @@ vi.mock('./DashboardTab', () => ({
 
 vi.mock('./TestDashboard', () => ({
   default: () => <div data-testid="test-dashboard">Test Dashboard Mock</div>,
+}));
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
 }));
 
 const mockNavigate = vi.fn();
@@ -172,6 +184,72 @@ describe('Dashboard', () => {
       await userEvent.click(deleteButton);
 
       expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    });
+
+    it('should add a new dashboard and navigate', async () => {
+      const mockHook = {
+        query: { isLoading: false, isError: false, data: mockData },
+        add: vi.fn().mockResolvedValue({ id: 'new-id' }),
+        remove: vi.fn(),
+      };
+      (useDashboardAPI as ReturnType<typeof vi.fn>).mockReturnValue(mockHook);
+
+      render(
+        <MemoryRouter>
+          <Dashboard />
+        </MemoryRouter>
+      );
+
+      const addTrigger = screen.getByText('dashboard:dashboard.add');
+      await userEvent.click(addTrigger);
+
+      const dialog = screen.getByRole('dialog');
+      const titleInput = within(dialog).getByRole('textbox');
+      await userEvent.type(titleInput, 'New Dashboard');
+
+      const form = dialog.querySelector('form');
+      fireEvent.submit(form!);
+
+      await waitFor(() => {
+        expect(mockHook.add).toHaveBeenCalledWith({ title: 'New Dashboard' });
+        expect(mockNavigate).toHaveBeenCalledWith('/dashboard/new-id');
+      });
+    });
+
+    it('should delete a dashboard and navigate', async () => {
+      const mockHook = {
+        query: { isLoading: false, isError: false, data: mockData },
+        add: vi.fn(),
+        remove: vi.fn(),
+      };
+      (useDashboardAPI as ReturnType<typeof vi.fn>).mockReturnValue(mockHook);
+
+      render(
+        <MemoryRouter initialEntries={['/dashboard-2']}>
+          <Routes>
+            <Route path="/:dashboardId?" element={<Dashboard />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      const secondaryTab = screen.getByRole('tab', {
+        name: /Secondary Dashboard/i,
+      });
+      await userEvent.hover(secondaryTab);
+
+      const deleteButton = await within(secondaryTab).findByRole('button');
+      await userEvent.click(deleteButton);
+
+      const dialog = screen.getByRole('alertdialog');
+      const confirmButton = within(dialog).getByRole('button', {
+        name: 'delete',
+      });
+      await userEvent.click(confirmButton);
+
+      await waitFor(() => {
+        expect(mockHook.remove).toHaveBeenCalledWith('dashboard-2');
+        expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
+      });
     });
   });
 

@@ -103,7 +103,6 @@ export default function DashboardTab({
         ),
       } as ChartTiles;
     }) ?? [];
-
   return (
     <ReactSortable
       list={widgets}

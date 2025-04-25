@@ -44,11 +44,12 @@ export default function WidgetRangeNavigation({
   };
 
   return (
-    <div className="opacity-0 group-hover:opacity-100">
+    <div className="opacity-0 group-hover:opacity-100" role="navigation">
       <div className="absolute left-2 top-1/2 transform -translate-y-1/2 cursor-pointer">
         <ChevronLeftCircle
           className="opacity-10 hover:opacity-100 transition-opacity"
           onClick={handlePrevious}
+          aria-label="Previous page"
         />
       </div>
 
@@ -56,6 +57,7 @@ export default function WidgetRangeNavigation({
         <ChevronRightCircle
           className="opacity-10 hover:opacity-100 transition-opacity"
           onClick={handleNext}
+          aria-label="Next page"
         />
       </div>
     </div>
