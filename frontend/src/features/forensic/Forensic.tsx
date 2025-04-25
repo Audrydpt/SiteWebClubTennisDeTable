@@ -45,14 +45,9 @@ export default function Forensic() {
   } = useJobs();
 
   const handleDeleteAllTabs = () => {
-    // Supprimer tous les onglets
     deleteAllTasks();
-
-    // Nettoyer les résultats
     forensicResultsHeap.clear();
     setDisplayResults([]);
-
-    // Réinitialiser l'état de recherche globale
     setIsTabLoading(false);
   };
 
@@ -64,31 +59,27 @@ export default function Forensic() {
   };
 
   const handleDeleteTab = (tabIndex: number) => {
-    // Si l'onglet actif est supprimé, on change vers le premier onglet
     if (activeTabIndex === tabIndex) {
       const newActiveTabIndex = tabJobs[0]?.tabIndex || 1;
       jobsHandleTabChange(newActiveTabIndex);
     }
-
-    // Supprimer l'onglet
     deleteTab(tabIndex);
+    cleanupWebSocket();
+    forensicResultsHeap.clear();
+    setDisplayResults([]);
   };
 
   const handleAddNewTab = () => {
-    // Nettoyage complet des résultats
     forensicResultsHeap.clear();
     setDisplayResults([]);
 
-    // Réinitialiser l'état de recherche globale
     setIsTabLoading(false);
 
-    // Créer le nouvel onglet avec un callback de nettoyage renforcé
     addNewTab(() => {
       cleanupWebSocket();
       forensicResultsHeap.clear();
       setDisplayResults([]);
 
-      // Forcer une réinitialisation du DOM après un court délai
       setTimeout(() => {
         setDisplayResults([]);
       }, 100);
@@ -102,7 +93,6 @@ export default function Forensic() {
   const handleTabChange = async (tabIndex: number) => {
     setIsTabLoading(true);
 
-    // Récupérer le jobId associé au nouvel onglet
     const selectedTab = tabJobs.find((tab) => tab.tabIndex === tabIndex);
     const isNewTab = selectedTab?.isNew === true;
 
@@ -112,23 +102,14 @@ export default function Forensic() {
       hasJobId: Boolean(selectedTab?.jobId),
     });
 
-    // Nettoyer la WebSocket précédente
     cleanupWebSocket();
-
-    // Forcer la réinitialisation des résultats AVANT de changer l'onglet
     forensicResultsHeap.clear();
     setDisplayResults([]);
-
-    // IMPORTANT: réinitialiser aussi les résultats dans le hook useSearch
-    // Ajoutez cette ligne pour réinitialiser propsResults
     setResults([]);
 
-    // Mettre à jour l'onglet actif
     jobsHandleTabChange(tabIndex);
 
-    // Pour un nouvel onglet, ne pas charger de résultats
     if (isNewTab) {
-      console.log('Nouvel onglet détecté, pas de chargement de résultats');
       setIsTabLoading(false);
       return;
     }
@@ -154,11 +135,7 @@ export default function Forensic() {
       const jobId = await startSearch(searchFormData);
 
       if (jobId) {
-        // Mettre à jour les tabJobs sans déclencher handleTabChange
         const selectedTabIndex = await selectLeftmostTab();
-
-        // Ne pas appeler handleTabChange car cela fermerait la WebSocket
-        // déjà ouverte par startSearch
         jobsHandleTabChange(selectedTabIndex);
       }
     } catch (error) {
@@ -173,17 +150,9 @@ export default function Forensic() {
   useEffect(() => {
     const loadExistingJobs = async () => {
       try {
-        setIsTabLoading(true); // Activer le skeleton loader
-        console.log('🔍 Démarrage du chargement des jobs existants');
-
-        // Récupérer les tâches existantes et leurs onglets associés
+        setIsTabLoading(true);
         const updatedTabJobs = await fetchTasks();
-        console.log(
-          '📊 État des tabJobs après fetchTasks:',
-          updatedTabJobs || []
-        );
 
-        // Chercher un onglet avec un jobId
         const tabWithJob =
           updatedTabJobs?.find((tab) => tab.jobId) ||
           tabJobs.find((tab) => tab.jobId);
@@ -191,46 +160,26 @@ export default function Forensic() {
         if (tabWithJob) {
           console.log('✅ Onglet avec jobId trouvé:', tabWithJob);
 
-          // Sélectionner explicitement l'onglet
           handleTabChange(tabWithJob.tabIndex);
-
-          // Délai court pour laisser le changement d'onglet s'appliquer
           await new Promise((resolve) => {
             setTimeout(resolve, 50);
           });
-
-          // Charger les résultats pour cet onglet
           if (tabWithJob.jobId) {
-            console.log(
-              '🚀 Chargement des résultats pour jobId:',
-              tabWithJob.jobId
-            );
             await resumeJob(tabWithJob.jobId, false);
-            console.log('✅ Résultats chargés avec succès');
           }
-        } else {
-          console.log('ℹ️ Aucun onglet avec jobId trouvé');
-          // Si pas d'onglet avec jobId, sélectionner le premier onglet
-          if (updatedTabJobs?.length > 0) {
-            handleTabChange(updatedTabJobs[0].tabIndex);
-          }
+        } else if (updatedTabJobs?.length > 0) {
+          handleTabChange(updatedTabJobs[0].tabIndex);
         }
-
-        console.log('🏁 Fin du chargement des jobs existants');
       } catch (error) {
         console.error('❌ Erreur lors du chargement des jobs:', error);
       } finally {
-        // Désactiver l'état de chargement avec un léger délai
-        // pour éviter un clignotement du skeleton loader
         setTimeout(() => {
           setIsTabLoading(false);
         }, 300);
       }
     };
-
-    // Exécuter uniquement au montage du composant
     loadExistingJobs();
-  }, []); // Dépendances vides pour n'exécuter qu'au montage
+  }, []);
 
   return (
     <div ref={containerRef} className="flex h-full">

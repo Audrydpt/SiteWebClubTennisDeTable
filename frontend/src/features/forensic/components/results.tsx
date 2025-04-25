@@ -51,21 +51,14 @@ export default function Results({
 
   // Fonction modifiée pour éviter les logs excessifs
   const resultsToDisplay = useMemo(() => {
-    // Rechercher l'onglet actif dans tabJobs
     const activeTab = tabJobs.find(tab => tab.tabIndex === activeTabIndex);
-
-    // Vérification explicite: si activeTabIndex est défini mais qu'aucun onglet ne correspond
-    // (car tabJobs n'est pas encore synchronisé), considérer comme nouvel onglet
     if (activeTab?.isNew === true || (activeTabIndex && !activeTab)) {
       return [];
     }
-
-    // Sinon, logique existante
     return propsResults && propsResults.length > 0 ? propsResults : displayResults;
   }, [displayResults, propsResults, activeTabIndex, tabJobs]);
 
   const forceCleanupResults = () => {
-    // Effacer les deux sources de données
     forensicResultsHeap.clear();
     setDisplayResults([]);
   };
@@ -73,8 +66,6 @@ export default function Results({
   const hasActiveJob = useMemo(() => {
     const activeJobId = getActiveJobId();
     const activeTab = tabJobs.find(tab => tab.tabIndex === activeTabIndex);
-
-    // Si l'onglet est nouveau, on considère qu'il n'a pas de job actif
     if (activeTab?.isNew === true) {
       return false;
     }
@@ -86,13 +77,9 @@ export default function Results({
   useEffect(() => {
     const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
     const isNewTab = activeTab?.isNew === true;
-
-    // Éviter de déclencher le nettoyage des résultats inutilement
     if (isNewTab) {
       forceCleanupResults();
     }
-
-    // Ne pas supprimer cette ligne - elle est nécessaire pour le fonctionnement correct
   }, [activeTabIndex, tabJobs]);
 
   // Effet pour désactiver l'état de chargement initial
@@ -125,49 +112,34 @@ export default function Results({
   // Effet pour charger automatiquement les résultats
   useEffect(() => {
     const autoLoadResults = async () => {
-      // Empêcher les appels multiples pendant le chargement
       if (isLoadingRef.current) {
         console.log('❌ Chargement déjà en cours, abandon du chargement automatique');
         return;
       }
-
-      // Récupérer l'onglet actif et son jobId
       const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
       const jobId = activeTab?.jobId;
-
-      // Si aucun jobId n'est disponible, ne rien faire
       if (!jobId) {
         return;
       }
-
-      // Si le job a déjà été chargé récemment, éviter de le recharger
       if (loadedJobsRef.current.has(jobId)) {
         return;
       }
-
-      // Marquer le job comme en cours de chargement
       isLoadingRef.current = true;
 
       try {
-        // Ajouter à l'ensemble des jobs chargés pour éviter les rechargements
         loadedJobsRef.current.add(jobId);
         await resumeJob(jobId, false);
       } catch (error) {
         console.error('Erreur lors du chargement des résultats:', error);
       } finally {
-        // Attendre un court délai avant de permettre un nouveau chargement
         setTimeout(() => {
           isLoadingRef.current = false;
         }, 500);
       }
     };
-
-    // Annuler tous les timeouts précédents
     if (requestTimeoutRef.current) {
       clearTimeout(requestTimeoutRef.current);
     }
-
-    // Déclencher le chargement après un court délai pour éviter les charges multiples
     requestTimeoutRef.current = setTimeout(autoLoadResults, 100);
 
     return () => {
@@ -177,7 +149,6 @@ export default function Results({
     };
   }, [activeTabIndex, tabJobs, resumeJob]);
 
-  // Toggle sort order
   const toggleSortOrder = () => {
     setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
   };
@@ -186,13 +157,12 @@ export default function Results({
     () => calculateTimeRemaining(sourceProgress),
     [sourceProgress]
   );
-  const clearResults = () => {
-    // Effacer les résultats dans le heap
-    forensicResultsHeap.clear();
 
-    // Mettre à jour les états
+  const clearResults = () => {
+    forensicResultsHeap.clear();
     setDisplayResults([]);
   };
+
   const renderProgressSection = () => {
     if (!isSearching && (!hasActiveJob || progress === null || isTabLoading)) {
       return null;

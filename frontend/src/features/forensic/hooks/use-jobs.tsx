@@ -188,20 +188,22 @@ export default function useJobs() {
     if (cleanupCallback) cleanupCallback();
 
     // Trouver le prochain index disponible
-    // On va utiliser un index très élevé pour le nouvel onglet
-    // pour garantir qu'il soit placé à gauche lors de l'affichage
-    const minTabIndex = Math.min(0, ...tabJobs.map((t) => t.tabIndex));
+    const maxIndex =
+      tabJobs.length > 0 ? Math.max(...tabJobs.map((tab) => tab.tabIndex)) : 0;
+    const nextTabIndex = maxIndex + 1;
+
+    // Créer un nouvel onglet clairement marqué comme nouveau
     const newTab: TabJob = {
-      tabIndex: minTabIndex - 1,
+      tabIndex: nextTabIndex,
       isNew: true,
       status: 'idle',
     };
 
-    // Ajouter l'onglet au début du tableau pour qu'il apparaisse à gauche
-    setTabJobs([newTab, ...tabJobs]);
+    // Mettre à jour la liste des onglets
+    setTabJobs([...tabJobs, newTab]);
 
     // Activer immédiatement le nouvel onglet
-    setActiveTabIndex(minTabIndex);
+    setActiveTabIndex(nextTabIndex);
     // Réinitialiser explicitement jobId à null
     setActiveJobId(null);
   };
@@ -254,9 +256,6 @@ export default function useJobs() {
 
       if (!response.ok) {
         console.error('Erreur lors de la suppression de toutes les tâches');
-      } else {
-        // Actualiser la liste des tâches après suppression
-        fetchTasks();
       }
       // eslint-disable-next-line @typescript-eslint/no-shadow
     } catch (error) {

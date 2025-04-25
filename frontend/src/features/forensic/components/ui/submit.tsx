@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 interface SubmitProps {
   isSearching: boolean;
   onCancel: () => Promise<void>;
-  onAddTab?: () => void; // Nouvelle prop pour gérer l'ajout d'un onglet
-  activeTabCount?: number; // Nombre d'onglets actifs
+  onAddTab?: () => void;
+  activeTabCount?: number;
 }
 
 export default function Submit({
@@ -14,7 +14,6 @@ export default function Submit({
   onAddTab,
   activeTabCount = 0,
 }: SubmitProps) {
-  // Helper function to render button content based on state
   const renderButtonContent = () => {
     if (isSearching) {
       return (

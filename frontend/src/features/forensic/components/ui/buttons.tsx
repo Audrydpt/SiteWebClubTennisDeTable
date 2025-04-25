@@ -1,7 +1,6 @@
 import { SortAsc, SortDesc, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-// Type pour représenter différents types de tri
 export type SortType = 'score' | 'date';
 
 interface SortButtonsProps {
@@ -23,9 +22,7 @@ export function SortButtons({
 }: SortButtonsProps) {
   // Fonction pour gérer le reset complet
   const handleReset = () => {
-    // Appeler la fonction pour supprimer tous les onglets
     onDeleteAllTabs();
-    // Appeler la fonction clearResults qui vide déjà le heap et les résultats affichés
     clearResults();
   };
 

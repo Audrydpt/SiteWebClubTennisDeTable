@@ -70,7 +70,6 @@ export default function Display({
       if (sortType === 'score') {
         return sortOrder === 'desc' ? b.score - a.score : a.score - b.score;
       }
-      // Sort by date
       const dateA = new Date(a.timestamp).getTime();
       const dateB = new Date(b.timestamp).getTime();
       return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
@@ -125,8 +124,6 @@ export default function Display({
       </div>
     );
   };
-
-  // Afficher un skeleton loader amélioré pendant le chargement de l'onglet
   if (isTabLoading) {
     return (
       <div className="space-y-6">

@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import useLatest from '@/hooks/use-latest';
 import { useAuth } from '@/providers/auth-context';
-import useJobs from './use-jobs';
 
 import forensicResultsHeap from '../lib/data-structure/heap.tsx';
 import { FormData as CustomFormData, formatQuery } from '../lib/format-query';
@@ -507,8 +506,6 @@ export default function useSearch() {
     },
     [sessionId, cleanupWebSocket, initializeSourceProgress, initWebSocket]
   );
-
-  // Récupérer la fonction depuis useJobs
   const stopSearch = async (jobId: string) => {
     try {
       setIsSearching(false);
@@ -530,8 +527,6 @@ export default function useSearch() {
       if (!response.ok) {
         throw new Error(`Échec de l'annulation: ${response.statusText}`);
       }
-
-      // Logique post-annulation...
     } catch (error) {
       console.error("❌ Erreur lors de l'annulation de la recherche:", error);
     }

@@ -15,7 +15,7 @@ interface JobTabsProps {
   tabJobs: TabJob[];
   activeTabIndex: number;
   onTabChange: (tabIndex: number) => void;
-  onDeleteTab: (tabIndex: number) => void; // Nouvelle prop pour supprimer un onglet
+  onDeleteTab: (tabIndex: number) => void;
   hideTitle?: boolean;
   isLoading?: boolean;
   setIsLoading?: (isLoading: boolean) => void;
@@ -32,32 +32,22 @@ export default function JobTabs({
 }: JobTabsProps) {
   const MAX_TABS = 5;
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Ajouter un effet pour détecter les chargements trop longs
   useEffect(() => {
     if (isLoading && tabJobs.length === 0) {
-      // Nettoyer tout timeout existant
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
       }
 
-      // Créer un nouveau timeout pour détecter un chargement bloqué
       loadingTimeoutRef.current = setTimeout(() => {
-        console.error(
-          'Chargement bloqué pendant plus de 5 secondes, réinitialisation...'
-        );
-        // Si on a toujours setIsLoading, on l'utilise pour réinitialiser l'état
         if (setIsLoading) {
           setIsLoading(false);
         }
       }, 5000);
     } else if (!isLoading && loadingTimeoutRef.current) {
-      // Annuler le timeout si le chargement est terminé
       clearTimeout(loadingTimeoutRef.current);
       loadingTimeoutRef.current = null;
     }
 
-    // Nettoyage lors du démontage
     return () => {
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
@@ -65,40 +55,22 @@ export default function JobTabs({
     };
   }, [isLoading, tabJobs.length, setIsLoading]);
 
-  let displayTabs = [...tabJobs].sort((a, b) => {
-    // Onglets sans jobId (nouveaux) à gauche
-    if (!a.jobId && b.jobId) return -1;
-    if (a.jobId && !b.jobId) return 1;
+  let displayTabs = [...tabJobs];
 
-    // Puis, si les deux ont ou n'ont pas de jobId :
-    // Onglets isNew=true à gauche
-    if (a.isNew && !b.isNew) return -1;
-    if (!a.isNew && b.isNew) return 1;
-
-    // Sinon, ordre stable
-    return a.tabIndex - b.tabIndex;
-  });
-
-  // Si aucun onglet n'est disponible, ajouter un onglet par défaut
   if (displayTabs.length === 0) {
     displayTabs = [{ tabIndex: 1, status: 'idle' }];
   }
 
-  // S'assurer que l'onglet actif est toujours inclus
   if (!displayTabs.some((tab) => tab.tabIndex === activeTabIndex)) {
     displayTabs.push({ tabIndex: activeTabIndex, status: 'idle' });
   }
 
-  // Limiter à MAX_TABS
   displayTabs = displayTabs.slice(0, MAX_TABS);
 
-  // Fonction pour gérer la suppression d'un onglet
   const handleDeleteTab = (tabIndex: number, event: React.MouseEvent) => {
-    event.stopPropagation(); // Empêcher le changement d'onglet
+    event.stopPropagation();
     onDeleteTab(tabIndex);
   };
-
-  // Fonction pour obtenir la classe de grille appropriée
   const getGridClass = (count: number) => {
     switch (count) {
       case 1:
@@ -116,7 +88,6 @@ export default function JobTabs({
     }
   };
 
-  // Afficher un état de chargement global
   if (isLoading && tabJobs.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 space-y-4">
@@ -125,19 +96,6 @@ export default function JobTabs({
       </div>
     );
   }
-
-  // Compter les onglets avec jobId pour la numérotation séquentielle
-  const tabsWithJobs = tabJobs.filter((tab) => !!tab.jobId);
-  // Créer un mapping pour la numérotation des recherches (R1, R2, etc.)
-  // La numérotation commence à la fin (le plus ancien est R1)
-  const searchNumbering = tabsWithJobs.reduce(
-    (acc, tab, index) => {
-      // Le dernier élément de tabsWithJobs est R1, l'avant-dernier R2, etc.
-      acc[tab.tabIndex] = tabsWithJobs.length - index;
-      return acc;
-    },
-    {} as Record<number, number>
-  );
 
   return (
     <div className="flex flex-col">
@@ -158,17 +116,11 @@ export default function JobTabs({
         <TabsList className={`grid w-full ${getGridClass(displayTabs.length)}`}>
           {displayTabs.map((tab) => {
             const hasJob = !!tab.jobId;
-            // Générer l'affichage de l'onglet en fonction de son état
-            let tabDisplay = 'Nouvel onglet'; // Par défaut pour les onglets sans jobId
+            let tabDisplay = 'Nouvel onglet';
             let statusIndicator = null;
 
             if (hasJob) {
-              // Utiliser le numéro de recherche du mapping
-              const searchNumber =
-                searchNumbering[tab.tabIndex] || tabsWithJobs.length;
-              tabDisplay = `R${searchNumber}`;
-
-              // Ajouter un indicateur visuel pour le statut
+              tabDisplay = `R${tab.tabIndex}`;
               if (tab.status === 'running') {
                 statusIndicator = (
                   <Loader2 className="ml-1 h-3 w-3 animate-spin" />
@@ -181,8 +133,6 @@ export default function JobTabs({
                 );
               }
             }
-
-            // Appliquer une classe spéciale pour les onglets actifs et en cours d'exécution
             const activeTabClass =
               activeTabIndex === tab.tabIndex ? 'ring-1 ring-primary' : '';
 
@@ -199,8 +149,6 @@ export default function JobTabs({
                 <div className="flex items-center">
                   {tabDisplay}
                   {statusIndicator}
-
-                  {/* Bouton de suppression comme dans le Dashboard */}
                   {hasJob && (
                     <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
@@ -220,8 +168,6 @@ export default function JobTabs({
             );
           })}
         </TabsList>
-
-        {/* Les contenus des onglets - ils seront vides car le contenu sera injecté par le parent */}
         {displayTabs.map((tab) => (
           <TabsContent key={tab.tabIndex} value={tab.tabIndex.toString()} />
         ))}
