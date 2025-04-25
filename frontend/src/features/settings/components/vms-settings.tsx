@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CheckCircle, Video, XCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Video } from 'lucide-react';
+import { useEffect } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -31,15 +31,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+import { Badge } from '@/components/ui/badge';
 import useVMSAPI from '../hooks/use-vms';
 import { VMSFormValues, vmsSchema } from '../lib/types';
 
 export default function VMSSettings() {
   const { t } = useTranslation('settings');
-  const { query, edit } = useVMSAPI();
-  const [isTesting, setIsTesting] = useState<boolean>(false);
-  const [isTestSuccessful, setIsTestSuccessful] = useState<boolean>(false);
-  const [isTestAttempted, setIsTestAttempted] = useState<boolean>(false);
 
   const form = useForm<VMSFormValues>({
     resolver: zodResolver(vmsSchema),
@@ -53,34 +50,20 @@ export default function VMSSettings() {
     mode: 'onChange',
   });
 
+  const customValue = useWatch({ control: form.control });
+  const { query, describeQuery, edit } = useVMSAPI({
+    customValue:
+      customValue.ip && customValue.port
+        ? (customValue as VMSFormValues)
+        : undefined,
+  });
+
   const vmsType = form.watch('type');
 
   // Charger les données existantes
   useEffect(() => {
-    if (query.data && query.data.vms) {
-      const vmsData =
-        typeof query.data.vms === 'string'
-          ? JSON.parse(query.data.vms)
-          : query.data.vms;
-
-      form.reset(vmsData);
-    }
+    form.reset(query.data);
   }, [query.data, form]);
-
-  const handleTestCredentials = () => {
-    const formData = form.getValues();
-    setIsTesting(true);
-    setTimeout(() => {
-      setIsTestSuccessful(true);
-      // eslint-disable-next-line no-console
-      console.log('Testing credentials:', {
-        username: formData.type === 'Milestone' ? formData.username : '',
-        password: formData.type === 'Milestone' ? formData.password : '',
-      });
-      setIsTestAttempted(true);
-      setIsTesting(false);
-    }, 2000);
-  };
 
   const onSubmit = (data: VMSFormValues) => {
     edit(data, {
@@ -101,6 +84,20 @@ export default function VMSSettings() {
         });
       },
     });
+  };
+
+  // Function to render connection status badge
+  const renderConnectionStatus = () => {
+    if (describeQuery.isLoading) {
+      return <Badge variant="outline">Checking connection...</Badge>;
+    }
+    if (describeQuery.data) {
+      return <Badge variant="default">Connection successful</Badge>;
+    }
+    if (!describeQuery.data && describeQuery.isFetched) {
+      return <Badge variant="destructive">Connection failed</Badge>;
+    }
+    return null;
   };
 
   return (
@@ -156,8 +153,9 @@ export default function VMSSettings() {
               />
 
               <div className="space-y-2">
-                <h3 className="text-sm font-medium">
+                <h3 className="text-sm font-medium flex justify-between items-center">
                   {t('vms-settings.host')}
+                  {renderConnectionStatus()}
                 </h3>
                 <div className="flex gap-4">
                   <FormField
@@ -243,43 +241,6 @@ export default function VMSSettings() {
                   </div>
                 </div>
               )}
-
-              <div className="flex gap-4 mt-6 items-start">
-                <div className="flex-shrink-0 w-25">
-                  <Button
-                    onClick={handleTestCredentials}
-                    variant="secondary"
-                    className="w-full"
-                    type="button"
-                    disabled={
-                      !form.formState.isValid || vmsType !== 'Milestone'
-                    }
-                  >
-                    {isTesting
-                      ? t('vms-settings.actions.connecting')
-                      : t('vms-settings.actions.testConnection')}
-                  </Button>
-                </div>
-
-                {isTestAttempted && (
-                  <div className="flex p-3 rounded-md bg-muted flex-1">
-                    <div className="mr-3 mt-1">
-                      {isTestSuccessful ? (
-                        <CheckCircle className="h-4 w-4 text-primary" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-destructive" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">
-                        {isTestSuccessful
-                          ? t('vms-settings.connectionSuccess')
-                          : t('vms-settings.connectionFailed')}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
             </CardContent>
 
             <CardFooter>

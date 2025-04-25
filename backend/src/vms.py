@@ -15,6 +15,7 @@ import httpx
 from abc import ABC, abstractmethod
 from httpx import BasicAuth, DigestAuth
 from httpx_ntlm import HttpNtlmAuth
+import ssl
 
 import numpy as np
 
@@ -367,6 +368,9 @@ class MilestoneCameraClient(CameraClient):
         self.__uuid = uuid.uuid4().hex.upper()
         self.__is_fallback = is_fallback
         self.__set_namespace()
+        self.__ssl_context = ssl.create_default_context()
+        self.__ssl_context.check_hostname = False
+        self.__ssl_context.verify_mode = ssl.CERT_NONE
 
         self.__auth = None
         if auth_method == "ntlm":
@@ -599,13 +603,16 @@ class MilestoneCameraClient(CameraClient):
         
         recorder = system_info[camera_guid]
         host = Resolver().resolve(recorder["hostName"])
-        logger.info(f"Host: {host}")
         port = int(recorder["webServerUri"].split("/")[2].split(":")[1])
-        logger.info(f"Port: {port}")
+        protocol = recorder["webServerUri"].split(":")[0]
 
         self.requestid = 1
         self.reader, self.writer = await asyncio.wait_for(
-            asyncio.open_connection(host, port),
+            asyncio.open_connection(
+                host, 
+                port,
+                ssl=self.__ssl_context if protocol == "https" else None
+            ),
             timeout=TIMEOUT
         )
 
@@ -750,15 +757,16 @@ class MilestoneCameraClient(CameraClient):
         
         recorder = system_info[camera_guid]
         host = Resolver().resolve(recorder["hostName"])
-        logger.info(f"Host: {host}")
         port = int(recorder["webServerUri"].split("/")[2].split(":")[1])
-        logger.info(f"Port: {port}")
-        host = Resolver().resolve(recorder["hostName"])
-        port = int(recorder["webServerUri"].split("/")[2].split(":")[1])
+        protocol = recorder["webServerUri"].split(":")[0]
 
         self.requestid = 1
         self.reader, self.writer = await asyncio.wait_for(
-            asyncio.open_connection(host, port),
+            asyncio.open_connection(
+                host, 
+                port,
+                ssl=self.__ssl_context if protocol == "https" else None
+            ),
             timeout=TIMEOUT
         )
 
@@ -927,7 +935,7 @@ async def test_dual_stream(host: str, port: int):
         process_replay_stream(client2, camera_guid, from_time2, to_time2, gap, "stream2")
     )
 
-async def main():
+async def test_genetec():
     parser = argparse.ArgumentParser(description="Client de contrôle des caméras")
     parser.add_argument("--host", default="192.168.20.72", help="Adresse IP du serveur")
     parser.add_argument("--port", type=int, default=7778, help="Port du serveur")
@@ -950,14 +958,15 @@ async def main():
     except Exception as e:
         print(f"Erreur lors de l'exécution: {e}")
 
-async def test():
-    #client = MilestoneCameraClient("10.39.0.50", 80, "AcicMilestoneGrab", "UhH66PjFSTWrrbiH2RiM--")
-    #client = MilestoneCameraClient("192.168.20.232", 443, 'Admininstrator', "7ednHuLXNThoQg5p--", is_fallback=True, auth_method="ntlm")
-    #client = MilestoneCameraClient("192.168.20.76", 443, 'bb', "Acicacic1-", is_fallback=False, auth_method="basic")
-    #client = MilestoneCameraClient("192.168.20.76", 443, 'bbarrie', "RedHeel44+", is_fallback=True, auth_method="ntlm")
-    #client = MilestoneCameraClient("192.168.20.232", 443, 'sbakkouche', 'YxCt4gLEHB758F', True, "ntlm")
+async def test_milestone():
+    #async with MilestoneCameraClient("10.39.0.50", 80, "AcicMilestoneGrab", "UhH66PjFSTWrrbiH2RiM--") as client:
+    #async with MilestoneCameraClient("192.168.20.232", 443, 'Admininstrator', "7ednHuLXNThoQg5p--", is_fallback=True, auth_method="ntlm") as client:
+    #async with MilestoneCameraClient("192.168.20.76", 443, 'bb', "Acicacic1-", is_fallback=False, auth_method="basic") as client:
+    #async with MilestoneCameraClient("192.168.20.76", 443, 'bbarrie', "RedHeel44+", is_fallback=True, auth_method="ntlm") as client:
+    #async with MilestoneCameraClient("192.168.20.232", 443, 'sbakkouche', 'YxCt4gLEHB758F', True, "ntlm") as client:
     async with MilestoneCameraClient("192.168.20.76", 443, 'bbarrie', "RedHeel44+", is_fallback=True) as client:
         cameras = await client.get_system_info()
+        print(cameras)
         first_guid = next(iter(cameras))
 
         streams = client.start_live(first_guid)
@@ -973,7 +982,4 @@ async def test():
             break
 
 if __name__ == "__main__":
-
-    #asyncio.run(test())
-    # 7653 server d'image
-    asyncio.run(main())
+    asyncio.run(test_milestone())

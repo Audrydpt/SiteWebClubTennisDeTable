@@ -96,6 +96,40 @@ describe('ClearableSelect', () => {
         expect(onValueChange).toHaveBeenCalledWith(null);
       }
     });
+
+    it('calls onValueChange with null when clear button is clicked', () => {
+      const onValueChange = vi.fn();
+
+      // Render component first without a value
+      const { rerender } = renderComponent({ onValueChange });
+
+      // Simulate selecting a value
+      fireEvent.click(screen.getByRole('combobox'));
+      fireEvent.click(screen.getByText('Option 1'));
+
+      // Rerender with the selected value to make sure the clear button appears
+      rerender(
+        <ClearableSelect onValueChange={onValueChange} value="option1">
+          <SelectTrigger>
+            <SelectValue placeholder="Select option" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="option1">Option 1</SelectItem>
+            <SelectItem value="option2">Option 2</SelectItem>
+          </SelectContent>
+        </ClearableSelect>
+      );
+
+      // The clear button should be visible when a value is selected
+      const clearButton = screen.getByLabelText('Clear selection');
+      expect(clearButton).toBeInTheDocument();
+
+      // Click the clear button
+      fireEvent.click(clearButton);
+
+      // Check if onValueChange was called with null
+      expect(onValueChange).toHaveBeenCalledWith(null);
+    });
   });
 
   describe('Edge Cases', () => {

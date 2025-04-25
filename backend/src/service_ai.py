@@ -17,9 +17,14 @@ def bgr_to_yuv420p(bgr_image):
     return cv2.cvtColor(bgr_image, cv2.COLOR_BGR2YUV_I420).astype("uint8")
 
 class ServiceAI:
-    def __init__(self, analytic="192.168.20.212:53211", *args, **kwargs):
-        self.analytic = "192.168.20.212:53211"
-        self.analytic = analytic
+    def __init__(self, host: str, port: int, object: str = None, vehicle: str = None, person: str = None):
+        if not host or not port:
+            raise Exception("Host and port are required")
+        
+        self.analytic = f"{host}:{port}"
+        self.object = object if object else "/object"
+        self.vehicle = vehicle if vehicle else "/vehicule"
+        self.person = person if person else "/person"
         self.describe = None
         self.ws = {}
         self.session = {}
@@ -72,7 +77,7 @@ class ServiceAI:
             parsed_classif_response.append(parsed_classif)
         return parsed_classif_response
     
-    async def process(self, image,selected_classes=["car","truck","bus","motorcycle","bicycle"]):
+    async def process(self, image, selected_classes=["car","truck","bus","motorcycle","bicycle"]):
         print("Processing Forensic")
 
         version = await self.get_version()
@@ -163,11 +168,11 @@ class ServiceAI:
         
         models = await self.get_models()
 
-        if "/object" not in models:
+        if self.object not in models:
             logger.error(f"No object detection model found")
             raise Exception("No object detection model found")
         
-        model = "/object"
+        model = self.object
         modelWidth = models[model]["networkWidth"]
         modelHeight = models[model]["networkHeight"]
 
@@ -175,10 +180,9 @@ class ServiceAI:
         image_jpeg = cv2.imencode(".jpg", frame)[1]
 
         detections = await asyncio.wait_for(self.__detect_object(width=modelWidth, height=modelHeight, model=model, object_detection=True, jpeg=image_jpeg), timeout=5)
-        logger.info(f"Detections: {detections}")
         return detections
     
-    async def classify(self, frame):
+    async def classify(self, frame, type: str = "vehicle"):
         async def get_classes(model):
             modelWidth = models[model]["networkWidth"]
             modelHeight = models[model]["networkHeight"]
@@ -216,20 +220,33 @@ class ServiceAI:
         models = await self.get_models()
 
         attributes = {}
-        if "/vehicule" in models or "/vehicule_attributes" in models:
-            model = "/vehicule" if "/vehicule" in models else "/vehicule_attributes"
-            attributes = await get_classes(model)
+        if self.object not in models:
+            logger.error(f"No object detection model found")
+            raise Exception("No object detection model found")
         
-        if "/color" in models or "/vehicule_color" in models:
-            model = "/color" if "/color" in models else "/vehicule_color"
-            attributes["color"] = await get_classes(model)
-        
-        if "/type" in models or "/vehicule_type" in models:
-            model = "/type" if "/type" in models else "/vehicule_type"
-            attributes["type"] = await get_classes(model)
-
+        model = self.vehicle if type == "vehicle" else self.person
+        attributes = await get_classes(model)
         return attributes
     
+    async def send(self, frame, model, confidenceThreshold, overlapThreshold):
+        version = await self.get_version()
+        if version[0] <= 1 or version[0] == 2 and version[1] < 2:
+            logger.error(f"Incompatible version")
+            raise Exception("Incompatible version")
+        
+        models = await self.get_models()
+        if model not in models:
+            logger.error(f"No model found")
+            raise Exception("No model found")
+
+        modelWidth = models[model]["networkWidth"]
+        modelHeight = models[model]["networkHeight"]
+
+        await asyncio.wait_for(self.__init_ws(model), timeout=5)
+        image_jpeg = cv2.imencode(".jpg", frame)[1]
+        detections = await asyncio.wait_for(self.__detect_object(width=modelWidth, height=modelHeight, model=model, jpeg=image_jpeg, confidenceThreshold=confidenceThreshold, overlapThreshold=overlapThreshold), timeout=5)
+        return detections
+        
     async def __heartbeat(self):
         for ws in self.ws:
             await asyncio.wait_for(self.ws[ws].ping(), timeout=1)
@@ -280,14 +297,14 @@ class ServiceAI:
 
         return frame[top:bottom, left:right]
 
-    async def __detect_object(self, model, object_detection=False, classification=False, width=0, height=0, raw=None, jpeg=None):        
+    async def __detect_object(self, model, object_detection=False, classification=False, width=0, height=0, raw=None, jpeg=None, confidenceThreshold=0.1, overlapThreshold=0.1):        
         if object_detection == classification:
             logger.error("You must choose between object detection or classification")
             raise Exception("You must choose between object detection or classification")
         
         ctx = {
-            "confidenceThreshold": 0.1,
-            "overlapThreshold": 0.1,
+            "confidenceThreshold": confidenceThreshold,
+            "overlapThreshold": overlapThreshold,
             "bbox": True if object_detection else False,
             "classifier": True if classification else False
         }
@@ -349,8 +366,7 @@ class ServiceAI:
                             logger.info(f"Classifier response {data['classifiers']}")
                             return data["classifiers"]
                         
-                        logger.error(f"Unknown response {msg.data}")
-                        raise Exception("Unknown response")
+                        return data
 
                     elif data["msg"] == "error":
                         logger.error(f"Error message: {data['error']}")

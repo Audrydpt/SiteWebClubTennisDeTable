@@ -6,6 +6,7 @@ import uuid
 from fastapi.websockets import WebSocketState
 import gunicorn
 import httpx
+import requests
 import uvicorn
 import datetime
 import time
@@ -40,7 +41,8 @@ from database import AcicAllInOneEvent, AcicCounting, AcicEvent, AcicLicensePlat
 from pydantic import BaseModel, Field, Extra
 
 from vms import CameraClient
-
+from api_cpp import get_routes as get_cpp_routes
+from api_ai import get_routes as get_ai_routes
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 file_handler = logging.FileHandler(f"/tmp/{__name__}.log")
@@ -69,7 +71,12 @@ class FastAPIServer:
         self.app = FastAPI(
             docs_url=None, redoc_url=None,
             swagger_ui_parameters={
-                "persistAuthorization": True
+                "deepLinking": True,
+                "displayRequestDuration": True,
+                "docExpansion": "none",
+                "operationsSorter": "alpha",
+                "persistAuthorization": True,
+                "tagsSorter": "alpha",
             },
             servers=[
                 {"description": "production", "url": "/front-api"},
@@ -97,7 +104,11 @@ class FastAPIServer:
 
         @self.app.get("/", include_in_schema=False)
         async def custom_swagger_ui_html():
-            return get_custom_swagger_ui_html(openapi_url="openapi.json", title=self.app.title + " - Swagger UI",)
+            return get_custom_swagger_ui_html(
+                openapi_url="openapi.json",
+                title=self.app.title + " - Swagger UI",
+                swagger_ui_parameters=self.app.swagger_ui_parameters
+            )
 
         @self.app.get("/servers/grabbers", tags=["servers"])
         async def get_all_servers(health: Optional[bool] = False):
@@ -348,11 +359,11 @@ class FastAPIServer:
         
         class UpperPersonAttributes(BaseModel):
             color: Optional[List[Color]] = None
-            type: Optional[List[Literal["shirt", "jacket", "coat", "sweater", "dress", "other"]]] = None
+            type: Optional[List[str]] = None
         
         class LowerPersonAttributes(BaseModel):
             color: Optional[List[Color]] = None
-            type: Optional[List[Literal["pants", "shorts", "skirt", "dress", "other"]]] = None
+            type: Optional[List[str]] = None
             
         class PersonAttributes(BaseModel):
             upper: UpperPersonAttributes
@@ -385,8 +396,6 @@ class FastAPIServer:
                         "updated": updated,
                         "count": count,
                         "size": size,
-
-
                     }
                     
                     if status == JobStatus.FAILURE:
@@ -411,7 +420,9 @@ class FastAPIServer:
                 if data.type == "vehicle":
                     job_id = TaskManager.submit_job("VehicleReplayJob", job_params)
                 elif data.type == "person":
-                    job_id = TaskManager.submit_job("VehicleReplayJob", job_params)
+                    job_id = TaskManager.submit_job("PersonReplayJob", job_params)
+                elif data.type == "mobility":
+                    job_id = TaskManager.submit_job("MobilityReplayJob", job_params)
                 else:
                     raise HTTPException(status_code=400, detail="Type non supporté")
                     
@@ -627,7 +638,6 @@ class FastAPIServer:
                 raise Exception("VMS settings not found")
                 
             settings_dict = settings[0].value_index
-            logger.info(f"Settings: {settings_dict} {settings}")
             vms_host = settings_dict.get("ip", None)
             vms_port = settings_dict.get("port", None)
             vms_username = settings_dict.get("username", None)
@@ -636,6 +646,25 @@ class FastAPIServer:
             
             return vms_host, vms_port, vms_username, vms_password, vms_type
 
+        @self.app.post("/vms/test", tags=["vms"])
+        async def test_vms(request: Request):
+            try:
+                data = await request.json()
+                vms_host = data.get("ip", None)
+                vms_port = data.get("port", None)
+                vms_username = data.get("username", None)
+                vms_password = data.get("password", None)
+                vms_type = data.get("type", None)
+
+                if vms_host is None or vms_port is None:
+                    raise HTTPException(status_code=400, detail="VMS IP or port not configured. Please configure VMS settings before trying to access cameras.")
+                
+                VMS = CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type)
+                async with VMS() as client:
+                    return await client.get_system_info()
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=traceback.format_exc())
+        
         @self.app.get("/vms/cameras", tags=["vms"])
         async def get_cameras():
             try:
@@ -655,12 +684,11 @@ class FastAPIServer:
             if vms_host is None or vms_port is None:
                 raise HTTPException(status_code=400, detail="VMS IP or port not configured. Please configure VMS settings before trying to access cameras.")
             
-            return HTTPException(status_code=501, detail="Not implemented")
             try:
                 VMS = CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type)
                 async with VMS() as client:
                     streams = client.start_live(guuid)
-                    img = await anext(streams)
+                    img, time_frame = await anext(streams)
                     _, bytes = cv2.imencode('.jpg', img)
                     return Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
 
@@ -953,7 +981,7 @@ class FastAPIServer:
                 raise HTTPException(status_code=500, detail=str(e))
 
     def __create_settings(self):
-        @self.app.get("/dashboard/settings", tags=["settings"])
+        @self.app.get("/settings", tags=["settings"])
         async def get_settings():
             try:
                 dal = GenericDAL()
@@ -970,7 +998,7 @@ class FastAPIServer:
                 logger.error(f"Error retrieving dashboard settings: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
         
-        @self.app.get("/dashboard/settings/{key}", tags=["settings"])
+        @self.app.get("/settings/{key}", tags=["settings"])
         async def get_settings_key(key: str):
             try:
                 dal = GenericDAL()
@@ -984,7 +1012,7 @@ class FastAPIServer:
                 logger.error(f"Error retrieving dashboard settings: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.put("/dashboard/settings/{key}", tags=["settings"])
+        @self.app.put("/settings/{key}", tags=["settings"])
         async def update_settings(request: Request, key: str):
             """Update a specific setting by key"""
 
@@ -1052,6 +1080,20 @@ class FastAPIServer:
                 raise HTTPException(status_code=500, detail=str(e))
 
     def __create_proxy(self):
+        def add_routes(subpath, routes):
+            for router in routes:
+                original_tags = getattr(router, "tags", [])
+                
+                if subpath and original_tags:
+                    new_tags = [f"{subpath[1:]}/{tag}" for tag in original_tags]
+                    for route in router.routes:
+                        route.tags = new_tags
+                
+                self.app.include_router(router, prefix=subpath)
+        
+        add_routes("/proxy/localhost", get_cpp_routes())
+        add_routes("/proxy/localhost", get_ai_routes())
+
         @self.app.get("/proxy/{host}/{subpath:path}", tags=["proxy"])
         async def get_proxy(request: Request, host: str, subpath: str = ""):
             base_url = f"http://{host}"
@@ -1151,7 +1193,7 @@ class FastAPIServer:
                 except httpx.RequestError as exc:
                     logger.error(f"Proxy DELETE request failed: {exc}")
                     raise HTTPException(status_code=502, detail=f"Bad Gateway: {exc}")
-    
+
     def start(self, host="0.0.0.0", port=5020):
         uvicorn.run(self.app, host=host, port=port, root_path="/front-api", ws_ping_interval=30, ws_ping_timeout=30)
 

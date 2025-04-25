@@ -1,10 +1,19 @@
 /* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier,@typescript-eslint/no-explicit-any,no-console,no-else-return,consistent-return,react-hooks/exhaustive-deps */
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  Search,
+  SortAsc,
+  SortDesc,
+  Trash2,
+} from 'lucide-react';
 import { useMemo, useRef, useEffect, useState } from 'react';
+
 
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { ForensicResult, SourceProgress } from '../lib/types';
 import { calculateTimeRemaining } from '@/features/forensic/lib/estimation/estimation';
 import useSearch from '../hooks/use-search.tsx';
@@ -26,6 +35,43 @@ interface ResultsProps {
   onDeleteTab?: (tabIndex: number) => void;
   onDeleteAllTabs?: () => void;
 }
+
+// Helper function to avoid nested ternaries
+const getScoreBackgroundColor = (score: number) => {
+  if (score > 0.7) return 'rgba(220, 38, 38, 0.8)'; // Red for high scores
+  if (score > 0.4) return 'rgba(245, 158, 11, 0.8)'; // Orange for medium scores
+  return 'rgba(0, 0, 0, 0.7)'; // Black for low scores
+};
+
+// Helper to extract camera name and IP from camera ID
+const extractCameraInfo = (cameraId: string) => {
+  // If cameraId has a structure like "Camera Name (192.168.1.1)"
+  const match = cameraId.match(/^(.+?)\s*\(([^)]+)\)$/);
+  if (match) {
+    return {
+      name: match[1].trim(),
+      ip: match[2].trim(),
+    };
+  }
+
+  // Default case - just return the ID as name and unknown IP
+  return {
+    name: cameraId !== 'unknown' ? cameraId : 'Caméra inconnue',
+    ip: 'IP inconnue',
+  };
+};
+
+const containerClassMap: Record<string, string> = {
+  vehicle:
+    'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4',
+  person:
+    'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4',
+};
+
+const childClassMap: Record<string, string> = {
+  vehicle: 'w-full h-auto object-cover object-[center_10%] aspect-[16/9]',
+  person: 'w-full h-auto object-cover object-[center_10%] aspect-[9/16]',
+};
 
 export default function Results({
   results: propsResults,
@@ -220,23 +266,6 @@ export default function Results({
       </div>
     );
   };
-
-  return (
-    <>
-      <ForensicHeader
-        sortType={sortType}
-        setSortType={setSortType}
-        sortOrder={sortOrder}
-        toggleSortOrder={toggleSortOrder}
-        clearResults={clearResults}
-        tabJobs={tabJobs}
-        activeTabIndex={activeTabIndex}
-        onTabChange={handleTabChange}
-        loading={isInitialLoading}
-        setIsLoading={setIsInitialLoading}
-        onDeleteTab={onDeleteTab}
-        onDeleteAllTabs={onDeleteAllTabs}
-      />
       <ScrollArea className="h-[calc(100%-3rem)] pb-1">
         <div className="space-y-4">
           {/* Progress section inside ScrollArea */}

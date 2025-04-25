@@ -8,18 +8,19 @@ export default function Camera() {
   } catch {
     url = new URL(window.location.href);
   }
+  url.protocol = window.location.protocol;
 
   const serverUrl = url.origin;
 
   return (
     <div className="flex justify-center">
-      <table className="w-[900px]">
+      <table className="w-full">
         <tbody>
           <tr>
             <td className="w-1/2 align-top text-center">
               <iframe
                 title="results"
-                className="w-full h-[425px]"
+                className="w-full h-[800px]"
                 src={`${serverUrl}/cgi-bin/CameraView.cgi?stream=${streamId}`}
                 aria-label="Camera results view"
               />
@@ -27,7 +28,7 @@ export default function Camera() {
             <td>
               <iframe
                 title="cameraForm"
-                className="w-full h-[610px]"
+                className="w-full h-[800px]"
                 src={`${serverUrl}/cgi-bin/CameraForm.cgi?stream=${streamId}`}
                 aria-label="Camera form view"
               />

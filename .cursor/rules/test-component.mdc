@@ -26,9 +26,11 @@ When a user wants to write tests, consider these aspects:
 
 You should write them, even if the tests might fail because the component is poorly written. When testing, we should test all edge cases to ensure robustness. The goal is to detect bad scenarios, not just to have the tests succeed.
 
-After writing a test, run it ! 
+After writing a test, run it ! If it fail, fix it until you make it. You might need to fix a bug inside the component being tested. However, NEVER ADD "data-testid" or similar to component to target sutff in it.
+
 
 = Test template =
+```ts
 describe('TestTemplate', () => {
 
   const renderComponent = (props = {}) => {
@@ -51,6 +53,7 @@ describe('TestTemplate', () => {
    // ... COMPLETE HERE
   });
 });
+```
 
 = Running test =
 To run a test, you must move to the main project directory "frontend". 
@@ -60,12 +63,148 @@ After all, you can safely run the wanted file using npm.
 Quick go: "cd frontend ; nvm use --lts && npm test src/examples/examples.test.tsx"
 
 = JSDOM & NextJS problem =
- NextJS use portal, so it's might be difficult to write test correctly.
- Consider using "screen.getByxxx" to target specific element. Use role, label, than text if previous was not possible.
- Consider using "fireEvent.xxxx" to mimick user input.
- NEVER USE "data-testid" or similar to target elements.
+NextJS use portal, so it's might be difficult to write test correctly.
+Consider using "screen.getByxxx" to target specific element. Use role, label, than text if previous was not possible.
+Consider using "fireEvent.xxxx" to mimick user input.
+NEVER USE "data-testid" or similar to target elements.
 
-  You have example of good JSDOM/NextJS test here:
-  - components/where-clauses.test.tsx
-  - features/settings/components/users.test.tsx
+You have example of good JSDOM/NextJS test here:
+- components/where-clauses.tsx => components/where-clauses.test.tsx
+- features/settings/components/users.tsx => features/settings/components/users.test.tsx
 
+= Element Selection Strategy =
+When targeting elements with common text that appears multiple times:
+- Use the most specific selector possible (role + name + location)
+- Always prefer `within()` to scope queries to specific parent elements
+- For dialog content, always target elements within the dialog using within(dialog).getByXXX
+- Use precise role selectors with name filters:
+  ```ts
+  // For buttons with similar text
+  const button = screen.getByRole('button', { 
+    name: (content) => content.includes('Create') && !content.includes('Delete')
+  });
+  
+  // For headings specifically
+  const title = within(dialog).getByRole('heading', { level: 2, name: /Title/ });
+  ```
+
+= Dialog & Portal Testing =
+For testing dialog/modal components:
+1. Always query for the dialog first:
+   ```ts
+   const dialog = screen.getByRole('dialog');
+   expect(dialog).toBeInTheDocument();
+   ```
+
+2. Use `within(dialog)` for all content queries inside the dialog:
+   ```ts
+   const dialogContent = within(dialog).getByText('Dialog content');
+   ```
+
+3. Handle multiple identical texts:
+   - When text appears in multiple places, use `getAllByText()` and check length:
+     ```ts
+     const dialogContent = within(dialog).getAllByText(/Title/i);
+     expect(dialogContent.length).toBeGreaterThan(0);
+     ```
+
+4. For complex UI tests involving dialogs:
+   - Test opening dialog
+   - Test dialog content is displayed correctly
+   - Test dialog can be closed (via close button, cancel button, outside click)
+   - Test dialog interactions (form inputs, buttons, etc.)
+   - Test edge cases (loading states, errors, etc.)
+
+= ShadCN Component Testing =
+ShadCN components often render multiple instances of text in different parts of the component tree:
+- Card titles appear in both CardHeader and CardTitle components
+- Dialog titles appear in DialogHeader, DialogTitle, and sometimes in content
+- When tests fail due to duplicate elements, use these strategies:
+
+1. Always check the DOM structure first when targeting is difficult:
+   ```ts
+   screen.debug(); // Outputs the current DOM structure
+   ```
+
+2. For complex components:
+   - Use more specific selectors combining role, text, and context
+   - Check for existence rather than specific count when appropriate
+   - Test functional behavior vs. exact DOM structure when possible
+   - Use userEvent for interaction tests instead of fireEvent when possible
+
+= Testing Forms and Dialogs =
+
+When testing components with forms in dialogs (like FormDashboard):
+
+1. Form submission:
+   ```ts
+   // For forms without explicit role attributes
+   const form = within(dialog).querySelector('form');
+   fireEvent.submit(form);
+   
+   // If submit button click is needed instead
+   const submitButton = within(dialog).getByRole('button', { name: /submit|save|add/i });
+   userEvent.click(submitButton);
+   ```
+
+2. Dialog testing strategy:
+   - First test dialog opens correctly
+   - Then test form input interaction
+   - Finally test form submission and resulting API calls
+   ```ts
+   // Test dialog opening
+   const trigger = screen.getByRole('button', { name: 'Open Dialog' });
+   await userEvent.click(trigger);
+   const dialog = screen.getByRole('dialog');
+   expect(dialog).toBeInTheDocument();
+   
+   // Test form interaction within dialog context
+   const input = within(dialog).getByRole('textbox');
+   await userEvent.type(input, 'New Value');
+   
+   // Test submission
+   const form = dialog.querySelector('form');
+   fireEvent.submit(form);
+   
+   // Assert API was called
+   await waitFor(() => {
+     expect(mockApi.create).toHaveBeenCalledWith({ value: 'New Value' });
+   });
+   ```
+
+3. Mocking considerations:
+   - Mock API hooks with resolved promises for success cases
+   ```ts
+   const mockHook = {
+     query: { isLoading: false, isError: false, data: mockData },
+     create: vi.fn().mockResolvedValue({ id: 'new-id' }),
+     update: vi.fn().mockResolvedValue(true),
+     remove: vi.fn().mockResolvedValue(true),
+   };
+   ```
+
+4. Element selection strategies:
+   - For elements without semantic roles, use querySelector as fallback
+   - For inconsistently labeled elements, use regular expressions
+   ```ts
+   // Use within() to scope queries to a specific container
+   const dialog = screen.getByRole('dialog');
+   
+   // For elements that might not have proper roles
+   const form = dialog.querySelector('form');
+   
+   // For buttons with variable text but consistent purpose
+   const submitButton = within(dialog).getByRole('button', { 
+     name: (content) => /submit|save|add/i.test(content) 
+   });
+   ```
+
+5. Testing asynchronous operations:
+   - Always use waitFor when testing state changes after async operations
+   - Provide specific assertions in waitFor to catch exactly what failed
+   ```ts
+   await waitFor(() => {
+     expect(mockApi.create).toHaveBeenCalledWith(expectedArgs);
+     expect(mockNavigate).toHaveBeenCalledWith(expectedPath);
+   });
+   ```
