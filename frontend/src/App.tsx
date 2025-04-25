@@ -60,6 +60,10 @@ const Configuration = lazyLoadFeature(
   'forensic',
   () => import('./features/forensic/Configuration')
 );
+const Camera = lazyLoadFeature(
+  'camera',
+  () => import('./features/camera/Camera')
+);
 
 export default function App() {
   const { open, setOpen } = useSidebarState();
@@ -120,6 +124,11 @@ export default function App() {
             <Route path="forensic/config" element={<Configuration />} />
 
             <Route path="/theme" element={<Theme />} />
+          </Route>
+
+          {/* Operator routers */}
+          <Route element={<ProtectedRoute role={UserPrivileges.Operator} />}>
+            <Route path="/cameras" element={<Camera />} />
           </Route>
 
           {/* Catch-all for authenticated routes */}

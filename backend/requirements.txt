@@ -24,3 +24,5 @@ pysmb~=1.2.11
 zeroconf~=0.146.3
 httpx~=0.28.1
 httpx-ntlm~=1.4.0
+Pillow~=11.2.1
+python-multipart~=0.0.20

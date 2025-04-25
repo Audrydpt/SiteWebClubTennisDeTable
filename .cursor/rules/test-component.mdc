@@ -131,3 +131,80 @@ ShadCN components often render multiple instances of text in different parts of 
    - Check for existence rather than specific count when appropriate
    - Test functional behavior vs. exact DOM structure when possible
    - Use userEvent for interaction tests instead of fireEvent when possible
+
+= Testing Forms and Dialogs =
+
+When testing components with forms in dialogs (like FormDashboard):
+
+1. Form submission:
+   ```ts
+   // For forms without explicit role attributes
+   const form = within(dialog).querySelector('form');
+   fireEvent.submit(form);
+   
+   // If submit button click is needed instead
+   const submitButton = within(dialog).getByRole('button', { name: /submit|save|add/i });
+   userEvent.click(submitButton);
+   ```
+
+2. Dialog testing strategy:
+   - First test dialog opens correctly
+   - Then test form input interaction
+   - Finally test form submission and resulting API calls
+   ```ts
+   // Test dialog opening
+   const trigger = screen.getByRole('button', { name: 'Open Dialog' });
+   await userEvent.click(trigger);
+   const dialog = screen.getByRole('dialog');
+   expect(dialog).toBeInTheDocument();
+   
+   // Test form interaction within dialog context
+   const input = within(dialog).getByRole('textbox');
+   await userEvent.type(input, 'New Value');
+   
+   // Test submission
+   const form = dialog.querySelector('form');
+   fireEvent.submit(form);
+   
+   // Assert API was called
+   await waitFor(() => {
+     expect(mockApi.create).toHaveBeenCalledWith({ value: 'New Value' });
+   });
+   ```
+
+3. Mocking considerations:
+   - Mock API hooks with resolved promises for success cases
+   ```ts
+   const mockHook = {
+     query: { isLoading: false, isError: false, data: mockData },
+     create: vi.fn().mockResolvedValue({ id: 'new-id' }),
+     update: vi.fn().mockResolvedValue(true),
+     remove: vi.fn().mockResolvedValue(true),
+   };
+   ```
+
+4. Element selection strategies:
+   - For elements without semantic roles, use querySelector as fallback
+   - For inconsistently labeled elements, use regular expressions
+   ```ts
+   // Use within() to scope queries to a specific container
+   const dialog = screen.getByRole('dialog');
+   
+   // For elements that might not have proper roles
+   const form = dialog.querySelector('form');
+   
+   // For buttons with variable text but consistent purpose
+   const submitButton = within(dialog).getByRole('button', { 
+     name: (content) => /submit|save|add/i.test(content) 
+   });
+   ```
+
+5. Testing asynchronous operations:
+   - Always use waitFor when testing state changes after async operations
+   - Provide specific assertions in waitFor to catch exactly what failed
+   ```ts
+   await waitFor(() => {
+     expect(mockApi.create).toHaveBeenCalledWith(expectedArgs);
+     expect(mockNavigate).toHaveBeenCalledWith(expectedPath);
+   });
+   ```

@@ -40,7 +40,7 @@ describe('Camera', () => {
     it('renders table with correct width class', () => {
       const { container } = render(<Camera />);
       const table = container.querySelector('table');
-      expect(table).toHaveClass('w-[900px]');
+      expect(table).toHaveClass('w-full');
     });
   });
 
@@ -99,7 +99,7 @@ describe('Camera', () => {
       const iframe = screen.getByTitle('results');
 
       expect(iframe).toHaveAttribute('aria-label', 'Camera results view');
-      expect(iframe).toHaveClass('w-full h-[425px]');
+      expect(iframe).toHaveClass('w-full h-[800px]');
     });
 
     it('renders camera form iframe with correct attributes', () => {
@@ -107,7 +107,7 @@ describe('Camera', () => {
       const iframe = screen.getByTitle('cameraForm');
 
       expect(iframe).toHaveAttribute('aria-label', 'Camera form view');
-      expect(iframe).toHaveClass('w-full h-[610px]');
+      expect(iframe).toHaveClass('w-full h-[800px]');
     });
   });
 

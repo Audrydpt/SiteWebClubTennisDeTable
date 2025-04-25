@@ -23,6 +23,9 @@ export default function useSearch() {
   const [isCancelling, setIsCancelling] = useState(false);
   const latestIsCancelling = useLatest(isCancelling);
 
+  const [type, setType] = useState<string | null>(null);
+  const latestType = useLatest(type);
+
   // Références pour WebSocket et AbortController
   const wsRef = useRef<WebSocket | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -226,6 +229,7 @@ export default function useSearch() {
               progress: metadataQueue.current.progress,
               attributes: metadataQueue.current.attributes,
               cameraId: metadataQueue.current.camera ?? 'unknown',
+              type: latestType.current === 'person' ? 'person' : 'vehicle',
             };
 
             // Add to heap and get sorted results
@@ -262,7 +266,13 @@ export default function useSearch() {
         setIsSearching(false);
       }
     },
-    [latestIsCancelling, latestIsSearching, latestJobId, isCancelling]
+    [
+      latestIsCancelling,
+      latestIsSearching,
+      latestJobId,
+      latestType,
+      isCancelling,
+    ]
   );
 
   // Clean up WebSocket et AbortController on unmount
@@ -396,6 +406,7 @@ export default function useSearch() {
         setDisplayResults([]);
         setIsSearching(true);
         setIsCancelling(false);
+        setType(formData.subjectType);
         forensicResultsHeap.clear();
 
         // S'assurer que toutes les ressources précédentes sont bien fermées

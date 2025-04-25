@@ -58,6 +58,18 @@ const extractCameraInfo = (cameraId: string) => {
   };
 };
 
+const containerClassMap: Record<string, string> = {
+  vehicle:
+    'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4',
+  person:
+    'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4',
+};
+
+const childClassMap: Record<string, string> = {
+  vehicle: 'w-full h-auto object-cover object-[center_10%] aspect-[16/9]',
+  person: 'w-full h-auto object-cover object-[center_10%] aspect-[9/16]',
+};
+
 export default function Results({
   results: propsResults,
   isSearching,
@@ -252,7 +264,9 @@ export default function Results({
     // Si nous avons des résultats à afficher, on les montre quelle que soit la progression
     if (resultsToDisplay && resultsToDisplay.length > 0) {
       return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div
+          className={containerClassMap[resultsToDisplay[0].type || 'vehicle']}
+        >
           {sortedResults.map((result: ForensicResult) => {
             const timestamp = new Date(result.timestamp);
             return (
@@ -265,7 +279,11 @@ export default function Results({
                           <img
                             src={result.imageData}
                             alt="Forensic result"
-                            className="w-full h-auto object-cover object-[center_10%] aspect-[16/9]"
+                            className={
+                              childClassMap[
+                                resultsToDisplay[0].type || 'vehicle'
+                              ]
+                            }
                           />
                           <button
                             className="absolute bottom-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1"
