@@ -28,7 +28,7 @@ export default function Forensic() {
     sourceProgress,
     resumeJob,
     setDisplayResults,
-    cleanupWebSocket,
+    resetSearch,
     setResults,
   } = useSearch();
 
@@ -64,7 +64,7 @@ export default function Forensic() {
       jobsHandleTabChange(newActiveTabIndex);
     }
     deleteTab(tabIndex);
-    cleanupWebSocket();
+    resetSearch();
     forensicResultsHeap.clear();
     setDisplayResults([]);
   };
@@ -76,7 +76,7 @@ export default function Forensic() {
     setIsTabLoading(false);
 
     addNewTab(() => {
-      cleanupWebSocket();
+      resetSearch();
       forensicResultsHeap.clear();
       setDisplayResults([]);
 
@@ -102,7 +102,7 @@ export default function Forensic() {
       hasJobId: Boolean(selectedTab?.jobId),
     });
 
-    cleanupWebSocket();
+    resetSearch();
     forensicResultsHeap.clear();
     setDisplayResults([]);
     setResults([]);

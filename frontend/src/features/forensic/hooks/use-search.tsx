@@ -1,4 +1,4 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-shadow,consistent-return,no-promise-executor-return,@typescript-eslint/no-unused-vars */
+/* eslint-disable no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-shadow,consistent-return,no-promise-executor-return,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import useLatest from '@/hooks/use-latest';
@@ -294,6 +294,12 @@ export default function useSearch() {
     }
   }, []);
 
+  const resetSearch = () => {
+    cleanupWebSocket();
+    setResults([]);
+    setDisplayResults([]);
+  };
+
   const resumeJob = async (jobId: string, skipHistory: boolean = false) => {
     try {
       setJobId(jobId);
@@ -464,9 +470,7 @@ export default function useSearch() {
         setType(formData.subjectType);
         forensicResultsHeap.clear();
 
-        // Au lieu d'annuler la recherche précédente via DELETE,
-        // simplement nettoyer le WebSocket
-        cleanupWebSocket();
+        resetSearch();
 
         // Attendre un court délai pour s'assurer que les ressources sont bien libérées
         await new Promise((resolve) => setTimeout(resolve, 100));
@@ -547,7 +551,6 @@ export default function useSearch() {
     startSearch,
     stopSearch,
     cleanupResources,
-    cleanupWebSocket,
     progress,
     results,
     isSearching,
@@ -557,5 +560,6 @@ export default function useSearch() {
     resumeJob,
     setDisplayResults,
     setResults,
+    resetSearch,
   };
 }
