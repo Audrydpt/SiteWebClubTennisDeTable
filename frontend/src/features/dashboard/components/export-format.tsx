@@ -13,6 +13,7 @@ import { AcicAggregation } from '../lib/props';
 import { getWidgetDataForExport } from '../lib/utils';
 
 export default function ExportStepFormat({
+  widgetId,
   storedWidget,
   updateStoredWidget,
   setStepValidity,
@@ -23,6 +24,7 @@ export default function ExportStepFormat({
   const { data, isSuccess, isLoading } = useQuery({
     queryKey: [
       'export-options',
+      widgetId,
       storedWidget.table,
       storedWidget.range,
       storedWidget.aggregation,
@@ -32,7 +34,7 @@ export default function ExportStepFormat({
     queryFn: async () =>
       getWidgetDataForExport(
         {
-          widgetId: 'undefined',
+          widgetId,
           table: storedWidget.table,
           aggregation: storedWidget.aggregation || AcicAggregation.OneHour,
           range: storedWidget.range,

@@ -68,6 +68,7 @@ export default function ExportDashboard() {
               {methods.switch({
                 'step-1': () => (
                   <ExportStepSource
+                    widgetId="undefined"
                     storedWidget={storedWidget}
                     updateStoredWidget={updateStoredWidget}
                     setStepValidity={setIsStepValid}
@@ -75,6 +76,7 @@ export default function ExportDashboard() {
                 ),
                 'step-2': () => (
                   <ExportStepOptions
+                    widgetId="undefined"
                     storedWidget={storedWidget}
                     updateStoredWidget={updateStoredWidget}
                     setStepValidity={setIsStepValid}
@@ -82,6 +84,7 @@ export default function ExportDashboard() {
                 ),
                 'step-3': () => (
                   <ExportStepFormat
+                    widgetId="undefined"
                     storedWidget={storedWidget}
                     updateStoredWidget={updateStoredWidget}
                     setStepValidity={setIsStepValid}

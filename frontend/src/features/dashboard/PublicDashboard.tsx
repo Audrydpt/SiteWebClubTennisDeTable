@@ -70,7 +70,7 @@ export default function PublicDashboard({
       return {
         id,
         widget,
-        content: <Component {...chart} />,
+        content: <Component widgetId={id!} {...chart} />,
       };
     })
     .filter((item): item is ChartTiles => item !== null);

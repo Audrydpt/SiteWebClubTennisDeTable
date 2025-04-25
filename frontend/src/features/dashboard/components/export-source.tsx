@@ -44,6 +44,7 @@ const exportStepSourceSchema = z.object({
 type ExportStepSourceFormValues = z.infer<typeof exportStepSourceSchema>;
 
 export default function ExportStepSource({
+  widgetId,
   storedWidget,
   updateStoredWidget,
   setStepValidity,
@@ -62,11 +63,11 @@ export default function ExportStepSource({
 
   // récupérer tous les streamid existant d'une table
   const { data, isSuccess, isFetching } = useQuery({
-    queryKey: ['export-source', storedWidget.table],
+    queryKey: ['export-source', widgetId, storedWidget.table],
     queryFn: async () =>
       getWidgetData(
         {
-          widgetId: 'undefined',
+          widgetId,
           table: storedWidget.table,
           aggregation: AcicAggregation.LifeTime,
           duration: AcicAggregation.LifeTime,
