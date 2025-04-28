@@ -397,7 +397,6 @@ class FastAPIServer:
                         "updated": updated,
                         "count": count,
                         "size": size,
-
                     }
                     
                     if status == JobStatus.FAILURE:
@@ -574,6 +573,63 @@ class FastAPIServer:
                 logger.error(f"Erreur lors de la récupération de la frame {frameId} pour la tâche {guid}: {e}")
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
+
+        @self.app.delete("/forensics/tasks/delete-all", tags=["forensics"])
+        async def delete_all_forensic_task():
+            """
+            Supprime toutes les tâches forensiques et leurs résultats associés.
+            """
+            try:
+                # Récupérer toutes les tâches
+                tasks = await TaskManager.get_jobs()
+
+                # Annuler toutes les tâches en cours
+                cancelled_count = 0
+                for job_id in tasks:
+                    job_status = TaskManager.get_job_status(job_id)
+                    if job_status in [JobStatus.PENDING, JobStatus.RECEIVED, JobStatus.STARTED]:
+                        await TaskManager.cancel_job(job_id)
+                        cancelled_count += 1
+
+                # Supprimer toutes les données
+                result = await TaskManager.delete_all_task_data()
+
+                if result["success"]:
+                    return {
+                        "status": "ok",
+                        "message": result["message"],
+                        "cancelled_tasks": cancelled_count
+                    }
+                else:
+                    raise HTTPException(status_code=500, detail=result["message"])
+            except Exception as e:
+                logger.error(f"Erreur lors de la suppression de toutes les tâches: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.delete("/forensics/delete/{guid}", tags=["forensics"])
+        async def delete_forensic_task(guid: str):
+            """
+            Supprime une tâche forensique et ses résultats associés.
+            """
+            try:
+                # Vérifier si la tâche est en cours et l'annuler si nécessaire
+                job_status = TaskManager.get_job_status(guid)
+
+                if job_status in [JobStatus.PENDING, JobStatus.STARTED, JobStatus.RECEIVED]:
+                    cancelled = await TaskManager.cancel_job(guid)
+                    if not cancelled:
+                        logger.warning(f"Impossible d'annuler la tâche {guid}, mais la suppression des données continuera")
+
+                try:
+                    result = await  TaskManager.delete_task_data(guid)
+                    return result
+                except ValueError as e:
+                    raise HTTPException(status_code=404, detail="Tâche introuvable")
+
+            except Exception as e:
+                logger.error(f"Erreur lors de la suppression de la tâche {guid}: {e}")
+                logger.error(traceback.format_exc())
 
     def __create_vms(self):
         async def get_vms_config():

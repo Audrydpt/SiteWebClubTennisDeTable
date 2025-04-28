@@ -1,14 +1,19 @@
-import { Search } from 'lucide-react';
-
+import { Search, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface SubmitProps {
   isSearching: boolean;
   onCancel: () => Promise<void>;
+  onAddTab?: () => void;
+  activeTabCount?: number;
 }
 
-export default function Submit({ isSearching, onCancel }: SubmitProps) {
-  // Helper function to render button content based on state
+export default function Submit({
+  isSearching,
+  onCancel,
+  onAddTab,
+  activeTabCount = 0,
+}: SubmitProps) {
   const renderButtonContent = () => {
     if (isSearching) {
       return (
@@ -24,11 +29,32 @@ export default function Submit({ isSearching, onCancel }: SubmitProps) {
     );
   };
 
+  const canAddTab = activeTabCount < 5;
+
   return (
     <div className="sticky bottom-0 left-0 right-0 pt-4 pb-4 z-50">
-      <Button type="submit" className="w-full" disabled={isSearching}>
-        {renderButtonContent()}
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button type="submit" className="w-full flex-1" disabled={isSearching}>
+          {renderButtonContent()}
+        </Button>
+        {onAddTab && (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="flex-shrink-0 h-10 w-10"
+            onClick={onAddTab}
+            disabled={!canAddTab}
+            title={
+              canAddTab
+                ? 'Ajouter un nouvel onglet'
+                : "Nombre maximum d'onglets atteint"
+            }
+          >
+            <Plus size={16} />
+          </Button>
+        )}
+      </div>
       <Button
         onClick={onCancel}
         variant="outline"
