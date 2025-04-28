@@ -69,7 +69,6 @@ export default function GaugeComponent({
   ...props
 }: GaugeComponentProps) {
   const { widgetId, title, table, aggregation, duration, where, page } = props;
-  console.log('GaugeComponent : WidgetId : ', widgetId);
   const { isLoading, isError, data } = useQuery({
     queryKey: [widgetId, table, aggregation, duration, where, page],
     queryFn: () =>

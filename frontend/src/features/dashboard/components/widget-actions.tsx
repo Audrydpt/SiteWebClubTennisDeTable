@@ -49,6 +49,7 @@ export default function WidgetActions({
 
       {!isOperator && (
         <QuickExport
+          widgetId={item.id}
           storedWidget={item.widget}
           chartContent={item.content}
           page={page}

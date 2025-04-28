@@ -235,7 +235,6 @@ export default function HeatmapComponent({
 }: HeatmapProps) {
   const { t, i18n } = useTranslation();
   const { widgetId, title, table, aggregation, duration, where, page } = props;
-  console.log('HeatmapComponent : WidgetId : ', widgetId);
   const { isLoading, isError, data } = useQuery({
     queryKey: [widgetId, table, aggregation, duration, where, page],
     queryFn: () =>

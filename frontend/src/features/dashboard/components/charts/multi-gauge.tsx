@@ -43,7 +43,6 @@ export default function MultiGaugeComponent({
 }: MultiGaugeComponentProps) {
   const { widgetId, title, table, aggregation, duration, where, page } = props;
   const { groupBy } = props;
-  console.log('MultiGaugeComponent : WidgetId : ', widgetId);
   const { isLoading, isError, data } = useQuery({
     queryKey: [widgetId, table, aggregation, duration, where, groupBy, page],
     queryFn: () =>

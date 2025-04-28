@@ -34,11 +34,11 @@ RUN sh -c "echo 'deb https://packagecloud.io/timescale/timescaledb/ubuntu/ $(lsb
     && rm -rf /var/lib/apt/lists/* \
     && echo "shared_preload_libraries = 'timescaledb'" >> /etc/postgresql/${PG_VERSION}/main/postgresql.conf
 
-# Configuration Redis (bind à localhost par défaut)
-RUN sed -i 's/bind 127.0.0.1 -::1/bind 0.0.0.0/g' /etc/redis/redis.conf && \
-    sed -i 's/protected-mode yes/protected-mode no/g' /etc/redis/redis.conf && \
+# Configuration Redis
+RUN sed -i 's/protected-mode yes/protected-mode no/g' /etc/redis/redis.conf && \
     sed -i 's/# maxmemory <bytes>/maxmemory 1024mb/g' /etc/redis/redis.conf && \
     sed -i 's/# maxmemory-policy noeviction/maxmemory-policy allkeys-lru/g' /etc/redis/redis.conf && \
+#    sed -i 's/bind 127.0.0.1 -::1/bind 0.0.0.0/g' /etc/redis/redis.conf && \
     sed -i 's/daemonize yes/daemonize no/g' /etc/redis/redis.conf
 
 # Configuration de supervisord pour gérer tous les processus
@@ -67,6 +67,10 @@ RUN wget -O /usr/bin/dumb-init https://github.com/Yelp/dumb-init/releases/downlo
     && echo "" >> /start.sh \
     && echo "sed -i \"s/#listen_addresses = 'localhost'/listen_addresses = '*'/\" /etc/postgresql/${PG_VERSION}/main/postgresql.conf" >> /start.sh \
     && echo "sed -i \"s/#idle_in_transaction_session_timeout = 0/idle_in_transaction_session_timeout = 3600000/\" /etc/postgresql/${PG_VERSION}/main/postgresql.conf" >> /start.sh \
+#    && echo "echo 'log_min_messages = error' >> /etc/postgresql/${PG_VERSION}/main/postgresql.conf" >> /start.sh \
+#    && echo "echo 'log_min_error_statement = error' >> /etc/postgresql/${PG_VERSION}/main/postgresql.conf" >> /start.sh \
+#    && echo "echo 'log_statement = none' >> /etc/postgresql/${PG_VERSION}/main/postgresql.conf" >> /start.sh \
+#    && echo "echo 'log_filename = \'/tmp/pgsql.log\'' >> /etc/postgresql/${PG_VERSION}/main/postgresql.conf" >> /start.sh \
     && echo "echo 'host all all ::1/128 md5' >> /etc/postgresql/${PG_VERSION}/main/pg_hba.conf" >> /start.sh \
     && echo "echo 'host all all 127.0.0.1/32 md5' >> /etc/postgresql/${PG_VERSION}/main/pg_hba.conf" >> /start.sh \
 #    && echo "echo 'host all all 10.0.0.0/8 md5' >> /etc/postgresql/${PG_VERSION}/main/pg_hba.conf" >> /start.sh \

@@ -31,7 +31,8 @@ file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(mes
 logger.addHandler(file_handler)
 
 def get_database_url(use_timescaledb=True, async_driver=False):
-    db_host = os.getenv("DB_HOST", "192.168.20.145")
+    load_dotenv()
+    db_host = os.getenv("DB_HOST", "localhost")
     db_user = os.getenv("DB_USER", "postgres")
     db_pass = os.getenv("DB_PASS", "postgres")
     db_port = os.getenv("DB_PORT", "5432")
@@ -186,14 +187,29 @@ class GenericDAL:
     AsyncSession = None
 
     def __init__(self):
-        if not GenericDAL.SyncSession:
+        if not GenericDAL.SyncSession or True:
             with GenericDAL.lock:
-                GenericDAL.SyncEngine  = create_engine(get_database_url(use_timescaledb=True, async_driver=False), echo=False, connect_args={'client_encoding': 'utf8'})
+                GenericDAL.SyncEngine  = create_engine(
+                    get_database_url(use_timescaledb=True, async_driver=False), 
+                    echo=True, 
+                    connect_args={'client_encoding': 'utf8'},
+                    pool_size=3,
+                    max_overflow=2,
+                    pool_timeout=30,
+                    pool_recycle=1*60*60
+                )
                 GenericDAL.SyncSession = sessionmaker(bind=GenericDAL.SyncEngine , expire_on_commit=False)
         
-        if not GenericDAL.AsyncSession:
+        if not GenericDAL.AsyncSession or True:
             with GenericDAL.lock:
-                GenericDAL.AsyncEngine = create_async_engine(get_database_url(use_timescaledb=True, async_driver=True), echo=False)
+                GenericDAL.AsyncEngine = create_async_engine(
+                    get_database_url(use_timescaledb=True, async_driver=True), 
+                    echo=True,
+                    pool_size=5,
+                    max_overflow=5,
+                    pool_timeout=30,
+                    pool_recycle=1*60*60
+                )
                 GenericDAL.AsyncSession = async_sessionmaker(bind=GenericDAL.AsyncEngine, expire_on_commit=False)
         
         if not GenericDAL.initialized:
@@ -486,41 +502,68 @@ class GenericDAL:
             result = result.all()
             return result
 
-    async def async_get_view(self, view_name, _group=None, _between=None, **filters) -> List[Any]:
+    async def async_get_view(self, view_name, _time="1 hour", _group=None, _between=None, **filters) -> List[Any]:
         async with GenericDAL.AsyncSession() as session:
-            query = f'SELECT bucket as _timestamp, counts as count'
-        
-        group_columns = ''
-        if _group is not None:
-            if isinstance(_group, list):
-                for group in _group:
-                    query += f', {group}'
-                    group_columns += f', {group}'
+            # Start with a base select statement using time_bucket_gapfill
+            bucket_column = column('bucket')
+            stmt = select(func.time_bucket_gapfill(text("'" + _time + "'"), bucket_column).label('_timestamp'))
+            
+            # Add count/sum column based on grouping
+            if _group is None:
+                stmt = stmt.add_columns(func.sum(column('counts')).label('count'))
             else:
-                query += f', {_group}'
-                group_columns += f', {_group}'
-        
-        query += f' FROM "{view_name}"'
-        
-        where_clauses = []
-        if _between is not None and len(_between) == 2 and _between[0] is not None and _between[1] is not None:
-            where_clauses.append(f"bucket >= '{_between[0]}' AND bucket <= '{_between[1]}'")
-        
-        if filters:
-            for key, value in filters.items():
-                if isinstance(value, list):
-                    placeholders = ', '.join([f"'{v}'" for v in value])
-                    where_clauses.append(f"{key} IN ({placeholders})")
+                stmt = stmt.add_columns(column('counts').label('count'))
+                
+                # Add group columns
+                if isinstance(_group, list):
+                    for group in _group:
+                        stmt = stmt.add_columns(column(group))
                 else:
-                    where_clauses.append(f"{key} = '{value}'")
-        
-        if where_clauses:
-            query += ' WHERE ' + ' AND '.join(where_clauses)
-        
-        query += ' ORDER BY bucket'
-        
-        result = await session.execute(text(query))
-        return result.all()
+                    stmt = stmt.add_columns(column(_group))
+            
+            # FROM clause
+            # Need to use from_statement since we're working with a view
+            stmt = stmt.select_from(text(f'"{view_name}"'))
+            
+            # Apply WHERE conditions
+            where_clauses = []
+            if _between is not None and len(_between) == 2 and _between[0] is not None and _between[1] is not None:
+                where_clauses.append(bucket_column >= _between[0])
+                where_clauses.append(bucket_column <= _between[1])
+            
+            # Apply any additional filters
+            if filters:
+                for key, value in filters.items():
+                    if isinstance(value, list):
+                        where_clauses.append(column(key).in_(value))
+                    else:
+                        where_clauses.append(column(key) == value)
+            
+            if where_clauses:
+                for clause in where_clauses:
+                    stmt = stmt.where(clause)
+            
+            # GROUP BY clause
+            stmt = stmt.group_by(column('_timestamp'))
+            
+            # Add any group by columns
+            if _group is not None:
+                if isinstance(_group, list):
+                    for group in _group:
+                        stmt = stmt.group_by(column(group))
+                else:
+                    stmt = stmt.group_by(column(_group))
+            
+            # Order by timestamp
+            stmt = stmt.order_by(column('_timestamp'))
+            
+            try:
+                result = await session.execute(stmt)
+                return result.all()
+            except Exception as e:
+                logger.error(f"Error executing view query: {e}")
+                logger.error(f"Query was: {stmt}")
+                raise
         
     async def async_update(self, obj) -> Any:
         async with GenericDAL.AsyncSession() as session:

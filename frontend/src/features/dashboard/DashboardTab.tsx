@@ -91,20 +91,18 @@ export default function DashboardTab({
     data.map((widget: StoredWidget) => {
       const { id, size, type, ...chart } = widget;
       const Component = ChartTypeComponents[type];
-      console.log('DashboardTab : WidgetId : ', id);
       return {
         id,
         widget,
         content: (
           <Component
-            widgetId={id!}
+            widgetId={id}
             {...chart}
             page={id ? (pagesToChart[id] ?? 0) : 0}
           />
         ),
       } as ChartTiles;
     }) ?? [];
-
   return (
     <ReactSortable
       list={widgets}

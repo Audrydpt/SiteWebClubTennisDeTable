@@ -243,7 +243,7 @@ def execute_job(self, job_type: str, job_params: Dict[str, Any]):
     
     async def execute_async():
         try:
-            if job_type == "VehicleReplayJob":
+            if job_type == "VehicleReplayJob" or job_type == "PersonReplayJob" or job_type == "MobilityReplayJob":
                 cancel_event = asyncio.Event()
                 job_params['job_id'] = job_id
                 job = VehicleReplayJob(job_params, cancel_event=cancel_event)
@@ -961,11 +961,12 @@ class VehicleReplayJob:
             _, encoded_image = cv2.imencode('.jpg', export)
             frame_bytes = encoded_image.tobytes()
 
-            path = "/var/lib/postgresql/16/main"
-            name = f"{source_guid}:{time.strftime('%Y-%m-%dT%H:%M')}"
-            os.makedirs(f"{path}/thumbnail/", exist_ok=True)
-            cv2.imwrite(f"{path}/thumbnail/{name}.jpg", thumbnail)
-            #cv2.imwrite(f"{ self.save_path}/thumbnail/{name}_{index}.jpg", thumbnail) #seulement pour les tests
+            if False:
+                path = "/var/lib/postgresql/16/main"
+                name = f"{source_guid}:{time.strftime('%Y-%m-%dT%H:%M')}"
+                os.makedirs(f"{path}/thumbnail/", exist_ok=True)
+                cv2.imwrite(f"{path}/thumbnail/{name}.jpg", thumbnail)
+                #cv2.imwrite(f"{ self.save_path}/thumbnail/{name}_{index}.jpg", thumbnail) #seulement pour les tests
 
             yield metadata, frame_bytes, current_boxes
 
