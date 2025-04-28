@@ -258,8 +258,8 @@ export default function Results({
         loading={isInitialLoading}
         setIsLoading={setIsInitialLoading}
       />
-      <ScrollArea className="h-[calc(100%-3rem)] pb-1">
-        <div className="space-y-4">
+      <ScrollArea className="h-[calc(100%-3rem)] pb-6">
+        <div className="space-y-4 pb-6">
           {/* Progress section inside ScrollArea */}
           {renderProgressSection()}
 

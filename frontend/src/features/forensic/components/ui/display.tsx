@@ -1,11 +1,18 @@
-/* eslint-disable no-console,@typescript-eslint/no-unused-vars */
-import { Search } from 'lucide-react';
-import { useState, useMemo } from 'react';
+/* eslint-disable no-console,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Search,
+} from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 import { ForensicResult } from '../../lib/types';
 import { SortType } from './buttons';
 
@@ -34,18 +41,6 @@ const extractCameraInfo = (cameraId: string) => {
   };
 };
 
-const containerClassMap: Record<string, string> = {
-  vehicle:
-    'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4',
-  person:
-    'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4',
-};
-
-const childClassMap: Record<string, string> = {
-  vehicle: 'w-full h-auto object-cover object-[center_10%] aspect-[16/9]',
-  person: 'w-full h-auto object-cover object-[center_10%] aspect-[9/16]',
-};
-
 interface DisplayProps {
   results: ForensicResult[];
   isSearching: boolean;
@@ -64,6 +59,8 @@ export default function Display({
   isTabLoading = false,
 }: DisplayProps) {
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(12);
 
   // Generate stable skeleton IDs
   const skeletonIds = useMemo(
@@ -87,6 +84,30 @@ export default function Display({
       return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
   }, [results, sortType, sortOrder]);
+
+  // Pagination calculations
+  const totalPages = useMemo(
+    () => Math.ceil(sortedResults.length / itemsPerPage),
+    [sortedResults, itemsPerPage]
+  );
+
+  // Reset to first page when sorting or filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [sortType, sortOrder]);
+
+  // Assurer que currentPage ne dépasse jamais totalPages
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  // Get only the results for the current page
+  const paginatedResults = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return sortedResults.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedResults, currentPage, itemsPerPage]);
 
   // Render expanded image modal
   const renderExpandedImageModal = () => {
@@ -136,6 +157,56 @@ export default function Display({
       </div>
     );
   };
+
+  // Pagination controls
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex justify-center items-center mt-6 space-x-1">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setCurrentPage(1)}
+          disabled={currentPage === 1}
+        >
+          <ChevronsLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+
+        <span className="mx-2 text-sm">
+          Page {currentPage} sur {totalPages} ({sortedResults.length} résultats)
+        </span>
+
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() =>
+            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+          }
+          disabled={currentPage === totalPages}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setCurrentPage(totalPages)}
+          disabled={currentPage === totalPages}
+        >
+          <ChevronsRight className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  };
+
   if (isTabLoading) {
     return (
       <div className="space-y-6">
@@ -204,9 +275,9 @@ export default function Display({
   // Si nous avons des résultats à afficher, on les montre quelle que soit la progression
   if (results && results.length > 0) {
     return (
-      <div className={containerClassMap[results[0].type || 'vehicle']}>
+      <div className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {sortedResults.map((result: ForensicResult) => {
+          {paginatedResults.map((result: ForensicResult) => {
             const timestamp = new Date(result.timestamp);
             return (
               <Popover key={result.id}>
@@ -218,9 +289,7 @@ export default function Display({
                           <img
                             src={result.imageData}
                             alt="Forensic result"
-                            className={
-                              childClassMap[results[0].type || 'vehicle']
-                            }
+                            className="w-full h-auto object-cover object-[center_10%] aspect-[16/9]"
                           />
                           <button
                             className="absolute bottom-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1"
@@ -324,6 +393,10 @@ export default function Display({
             );
           })}
         </div>
+
+        {/* Pagination controls */}
+        {renderPagination()}
+
         {renderExpandedImageModal()}
       </div>
     );

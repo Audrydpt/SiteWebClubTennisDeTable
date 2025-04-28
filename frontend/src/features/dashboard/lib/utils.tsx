@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { DateTime, Duration } from 'luxon';
 
 import { WhereClause } from '@/components/where-clauses';
