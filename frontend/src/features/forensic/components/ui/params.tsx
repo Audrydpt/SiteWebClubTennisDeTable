@@ -17,7 +17,7 @@ export default function Params({ isCollapsed }: ParamsProps) {
   }
 
   return (
-    <ScrollArea className="flex-1">
+    <ScrollArea className="flex-1" scrollHideDelay={0}>
       <div className="space-y-4">
         <Accordion type="single" defaultValue="sources" collapsible>
           <Sources />

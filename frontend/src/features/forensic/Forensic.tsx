@@ -1,21 +1,23 @@
-/* eslint-disable no-console */
-import { useRef, useState } from 'react';
-
+/* eslint-disable no-console,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
+import { useRef, useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 
 import useSearch from './hooks/use-search';
+import useJobs from './hooks/use-jobs';
 import { createSearchFormData } from './lib/format-query';
 
 import ForensicForm from './components/form';
 import Results from './components/results';
 import ForensicFormProvider from './lib/provider/forensic-form-provider';
 import { ForensicFormValues } from './lib/types';
+import forensicResultsHeap from './lib/data-structure/heap.tsx';
 
 export default function Forensic() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const collapsedWidth = 1;
   const expandedWidth = 350;
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isTabLoading, setIsTabLoading] = useState(false);
 
   const {
     startSearch,
@@ -24,10 +26,103 @@ export default function Forensic() {
     results,
     isSearching,
     sourceProgress,
+    resumeJob,
+    setDisplayResults,
+    resetSearch,
+    setResults,
   } = useSearch();
+
+  const {
+    tabJobs,
+    handleTabChange: jobsHandleTabChange,
+    activeTabIndex,
+    addNewTab,
+    selectLeftmostTab,
+    deleteTab,
+    fetchTasks,
+    deleteAllTasks,
+    getActiveJobId,
+  } = useJobs();
+
+  const handleDeleteAllTabs = () => {
+    deleteAllTasks();
+    forensicResultsHeap.clear();
+    setDisplayResults([]);
+    setIsTabLoading(false);
+  };
+
+  const handleStopSearch = async () => {
+    const activeJob = getActiveJobId();
+    if (activeJob) {
+      stopSearch(activeJob);
+    }
+  };
+
+  const handleDeleteTab = (tabIndex: number) => {
+    if (activeTabIndex === tabIndex) {
+      const newActiveTabIndex = tabJobs[0]?.tabIndex || 1;
+      jobsHandleTabChange(newActiveTabIndex);
+    }
+    deleteTab(tabIndex);
+    resetSearch();
+    forensicResultsHeap.clear();
+    setDisplayResults([]);
+  };
+
+  const handleAddNewTab = () => {
+    forensicResultsHeap.clear();
+    setDisplayResults([]);
+
+    setIsTabLoading(false);
+
+    addNewTab(() => {
+      resetSearch();
+      forensicResultsHeap.clear();
+      setDisplayResults([]);
+
+      setTimeout(() => {
+        setDisplayResults([]);
+      }, 100);
+    });
+  };
 
   const handleToggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
+  };
+
+  const handleTabChange = async (tabIndex: number) => {
+    setIsTabLoading(true);
+
+    const selectedTab = tabJobs.find((tab) => tab.tabIndex === tabIndex);
+    const isNewTab = selectedTab?.isNew === true;
+
+    console.log('Changement vers onglet:', {
+      tabIndex,
+      isNew: isNewTab,
+      hasJobId: Boolean(selectedTab?.jobId),
+    });
+
+    resetSearch();
+    forensicResultsHeap.clear();
+    setDisplayResults([]);
+    setResults([]);
+
+    jobsHandleTabChange(tabIndex);
+
+    if (isNewTab) {
+      setIsTabLoading(false);
+      return;
+    }
+
+    if (selectedTab?.jobId) {
+      try {
+        await resumeJob(selectedTab.jobId, false);
+      } catch (error) {
+        console.error('Erreur lors du chargement des résultats:', error);
+      }
+    }
+
+    setIsTabLoading(false);
   };
 
   const handleSearch = async (data: ForensicFormValues) => {
@@ -37,13 +132,54 @@ export default function Forensic() {
 
     try {
       const searchFormData = createSearchFormData(data);
-      await startSearch(searchFormData);
+      const jobId = await startSearch(searchFormData);
+
+      if (jobId) {
+        const selectedTabIndex = await selectLeftmostTab();
+        jobsHandleTabChange(selectedTabIndex);
+      }
     } catch (error) {
       console.error('Failed to start search:', error);
     }
   };
 
   const currentWidth = isCollapsed ? collapsedWidth : expandedWidth;
+
+  const activeTabsCount = tabJobs.filter((tab) => tab.jobId).length;
+
+  useEffect(() => {
+    const loadExistingJobs = async () => {
+      try {
+        setIsTabLoading(true);
+        const updatedTabJobs = await fetchTasks();
+
+        const tabWithJob =
+          updatedTabJobs?.find((tab) => tab.jobId) ||
+          tabJobs.find((tab) => tab.jobId);
+
+        if (tabWithJob) {
+          console.log('✅ Onglet avec jobId trouvé:', tabWithJob);
+
+          handleTabChange(tabWithJob.tabIndex);
+          await new Promise((resolve) => {
+            setTimeout(resolve, 50);
+          });
+          if (tabWithJob.jobId) {
+            await resumeJob(tabWithJob.jobId, false);
+          }
+        } else if (updatedTabJobs?.length > 0) {
+          handleTabChange(updatedTabJobs[0].tabIndex);
+        }
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des jobs:', error);
+      } finally {
+        setTimeout(() => {
+          setIsTabLoading(false);
+        }, 300);
+      }
+    };
+    loadExistingJobs();
+  }, []);
 
   return (
     <div ref={containerRef} className="flex h-full">
@@ -55,7 +191,7 @@ export default function Forensic() {
           flexShrink: 0,
         }}
       >
-        {/* Form Panel with dynamic width */}
+        {/* Panneau du formulaire */}
         <Card className="h-[calc(100vh-2rem)] overflow-hidden flex flex-col">
           <CardContent
             className={`${isCollapsed ? 'p-2' : 'p-4'} h-full flex flex-col`}
@@ -64,7 +200,9 @@ export default function Forensic() {
               className={`${isCollapsed ? 'mb-2' : 'mb-4'} flex items-center justify-between pointer-events-auto`}
             >
               <h1
-                className={`${isCollapsed ? 'text-sm' : 'text-lg'} font-semibold truncate`}
+                className={`${
+                  isCollapsed ? 'scale-0 w-0' : 'scale-100 w-auto'
+                } transition-all text-xl font-bold tracking-tight`}
               >
                 {isCollapsed ? '' : 'Recherche vidéo'}
               </h1>
@@ -74,14 +212,16 @@ export default function Forensic() {
               <ForensicForm
                 onSubmit={handleSearch}
                 isSearching={isSearching}
-                stopSearch={stopSearch}
+                stopSearch={handleStopSearch}
                 isCollapsed={isCollapsed}
+                addNewTab={handleAddNewTab}
+                tabLength={activeTabsCount}
               />
             </ForensicFormProvider>
           </CardContent>
         </Card>
 
-        {/* Vertical handle that toggles collapse on click */}
+        {/* Poignée pour réduire/agrandir le panneau */}
         <button
           className="absolute top-0 right-0 w-4 h-full cursor-pointer z-30 bg-transparent border-none p-0"
           type="button"
@@ -100,7 +240,7 @@ export default function Forensic() {
         </button>
       </div>
 
-      {/* Results Panel */}
+      {/* Panneau des résultats */}
       <Card className="h-[calc(100vh-2rem)] overflow-hidden flex-1 ml-2">
         <CardContent className="p-10 pb-8 h-full">
           <Results
@@ -108,6 +248,11 @@ export default function Forensic() {
             isSearching={isSearching}
             progress={progress}
             sourceProgress={sourceProgress}
+            onTabChange={handleTabChange}
+            activeTabIndex={activeTabIndex}
+            isTabLoading={isTabLoading}
+            onDeleteTab={handleDeleteTab}
+            onDeleteAllTabs={handleDeleteAllTabs}
           />
         </CardContent>
       </Card>

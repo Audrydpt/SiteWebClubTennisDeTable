@@ -29,14 +29,10 @@ export function calculateTimeRemaining(sourcesProgress: SourceProgress[]): {
   combined: string | null;
   individual: Record<string, string | null>;
 } {
-  console.log('calculateTimeRemaining called with:', sourcesProgress);
-
   // Filter sources that have progress > 0 but < 100
   const activeSources = sourcesProgress.filter(
     (source) => source.progress > 0 && source.progress < 100
   );
-
-  console.log('Active sources:', activeSources);
 
   const result = {
     combined: null as string | null,
@@ -52,11 +48,8 @@ export function calculateTimeRemaining(sourcesProgress: SourceProgress[]): {
 
   // Calculate individual times
   activeSources.forEach((source) => {
-    console.log(`Processing source ${source.sourceId}:`, source);
-
     // Check if source has no progress
     if (source.progress <= 0) {
-      console.log(`Source ${source.sourceId} has no valid progress`);
       result.individual[source.sourceId] = null;
       return;
     }
@@ -66,30 +59,18 @@ export function calculateTimeRemaining(sourcesProgress: SourceProgress[]): {
       ? new Date(source.startTime).getTime()
       : Date.now();
 
-    console.log(
-      `Source ${source.sourceId} has ${source.startTime ? 'a valid' : 'no'} startTime`
-    );
-
     // Calculate elapsed time since source started
     const now = Date.now();
     const elapsedMs = now - effectiveStartTime;
 
-    console.log(
-      `Source ${source.sourceId} - elapsed time: ${elapsedMs}ms, progress: ${source.progress}%`
-    );
-
     // Skip if elapsed time is too small or invalid
     if (elapsedMs <= 0) {
-      console.log(`Source ${source.sourceId} has invalid elapsed time`);
       result.individual[source.sourceId] = null;
       return;
     }
 
     // If we haven't reached 2% yet, show "calcul en cours..."
     if (source.progress < ESTIMATE_THRESHOLD) {
-      console.log(
-        `Source ${source.sourceId} below threshold (${ESTIMATE_THRESHOLD}%)`
-      );
       result.individual[source.sourceId] = 'calcul en cours...';
       return;
     }
@@ -104,10 +85,6 @@ export function calculateTimeRemaining(sourcesProgress: SourceProgress[]): {
     // Calculate remaining time
     const remainingMs = estimatedTotalTimeMs - elapsedMs;
 
-    console.log(
-      `Source ${source.sourceId} - estimated total: ${estimatedTotalTimeMs}ms, remaining: ${remainingMs}ms`
-    );
-
     if (remainingMs > 0) {
       result.individual[source.sourceId] = formatTimeRemaining(remainingMs);
     } else {
@@ -120,67 +97,46 @@ export function calculateTimeRemaining(sourcesProgress: SourceProgress[]): {
     (source) => source.progress >= ESTIMATE_THRESHOLD && source.startTime
   );
 
-  console.log('Sources above threshold:', sourcesAboveThreshold);
-
   if (sourcesAboveThreshold.length > 0) {
     // Use the first source that passed the threshold as reference
     const referenceSource = sourcesAboveThreshold[0];
-    console.log('Using reference source:', referenceSource);
 
     // Get startTime safely
     if (!referenceSource.startTime) {
-      console.log(
-        'Reference source has no startTime, cannot calculate combined estimate'
-      );
       result.combined = 'calcul en cours...';
       return result;
     }
 
     const startTime = new Date(referenceSource.startTime).getTime();
     const elapsedMs = Date.now() - startTime;
-    console.log(
-      `Reference source - elapsed time: ${elapsedMs}ms, progress: ${referenceSource.progress}%`
-    );
 
     // Calculate time to reach 2%
     const timeForThresholdMs =
       (elapsedMs / referenceSource.progress) * ESTIMATE_THRESHOLD;
-    console.log(`Time for threshold: ${timeForThresholdMs}ms`);
 
     // Calculate total time for a single source (2% * 50 = 100%)
     const singleSourceEstimatedTotalMs = timeForThresholdMs * 50;
-    console.log(
-      `Single source estimated total: ${singleSourceEstimatedTotalMs}ms`
-    );
 
     // Multiply by the number of active sources to get global estimate
     const totalSourcesCount = activeSources.length;
     const globalEstimatedTotalMs =
       singleSourceEstimatedTotalMs * totalSourcesCount;
-    console.log(
-      `Global estimated total: ${globalEstimatedTotalMs}ms, sources: ${totalSourcesCount}`
-    );
 
     // Calculate what percentage of total work is done across all sources
     const averageProgress =
       activeSources.reduce((sum, source) => sum + source.progress, 0) /
       totalSourcesCount;
-    console.log(`Average progress: ${averageProgress}%`);
 
     // Calculate remaining time based on average progress
     const percentComplete = averageProgress / 100;
     const globalRemainingMs = globalEstimatedTotalMs * (1 - percentComplete);
-    console.log(`Global remaining: ${globalRemainingMs}ms`);
 
     if (globalRemainingMs > 0) {
       result.combined = formatTimeRemaining(globalRemainingMs);
-      console.log(`Formatted global remaining time: ${result.combined}`);
     }
   } else {
-    console.log("No sources above threshold, displaying 'calcul en cours...'");
     result.combined = 'calcul en cours...';
   }
 
-  console.log('Final result:', result);
   return result;
 }

@@ -1,4 +1,4 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-shadow,consistent-return,no-promise-executor-return,@typescript-eslint/no-unused-vars */
+/* eslint-disable no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-shadow,consistent-return,no-promise-executor-return,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import useLatest from '@/hooks/use-latest';
@@ -282,13 +282,34 @@ export default function useSearch() {
     },
     [cleanupResources]
   );
-  const resumeJob = async (jobId: string) => {
-    try {
-      setIsSearching(true);
-      setJobId(jobId);
-      localStorage.setItem('currentJobId', jobId);
-      forensicResultsHeap.clear();
 
+  const cleanupWebSocket = useCallback(() => {
+    // Fermer WebSocket s'il existe
+    if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
+      console.log(
+        '🔒 Fermeture de la connexion WebSocket sans annuler la recherche'
+      );
+      wsRef.current.close(1000, "Changement d'onglet");
+      wsRef.current = null;
+    }
+  }, []);
+
+  const resetSearch = () => {
+    cleanupWebSocket();
+    setResults([]);
+    setDisplayResults([]);
+  };
+
+  const resumeJob = async (jobId: string, skipHistory: boolean = false) => {
+    try {
+      setJobId(jobId);
+
+      // Ne pas effacer le heap si on veut simplement changer d'onglet
+      if (!skipHistory) {
+        forensicResultsHeap.clear();
+      }
+
+      // Récupérer les informations de la tâche
       const resultsResponse = await fetch(
         `${process.env.MAIN_API_URL}/forensics/${jobId}`
       );
@@ -298,6 +319,15 @@ export default function useSearch() {
       const resultsData = await resultsResponse.json();
 
       if (resultsData?.results) {
+        // Vérifier l'état de la tâche pour déterminer le comportement
+        const taskStatus = resultsData.status || 'PENDING';
+        const isCompleted = ['SUCCESS', 'FAILURE', 'REVOKED'].includes(
+          taskStatus
+        );
+
+        console.log(`🔍 État de la tâche ${jobId}: ${taskStatus}`);
+
+        // Traitement des données de progression des sources
         const sourcesProgress = resultsData.results
           .filter((r: { type: string }) => r.type === 'progress')
           .reduce((acc: any, curr: any) => {
@@ -317,72 +347,104 @@ export default function useSearch() {
             return acc;
           }, {});
 
+        // Forcer la progression à 100% pour toutes les sources si la tâche est terminée
+        if (isCompleted) {
+          Object.keys(sourcesProgress).forEach((key) => {
+            sourcesProgress[key].progress = 100;
+          });
+        }
+
         setSourceProgress(Object.values(sourcesProgress));
 
-        const detectionResults = await Promise.all(
-          resultsData.results
-            .filter((r: any) => r.metadata?.type === 'detection')
-            .map(async (result: any) => {
-              const frameId = result.frame_uuid;
-              const imageResponse = await fetch(
-                `${process.env.MAIN_API_URL}/forensics/${jobId}/frames/${frameId}`
-              );
+        let validDetectionResults: ForensicResult[] = [];
 
-              if (!imageResponse.ok) {
-                console.error(
-                  `Erreur lors du chargement de l'image pour ${frameId}`
+        // IMPORTANT: Pour les tâches terminées, toujours charger l'historique complet
+        if (!skipHistory || isCompleted) {
+          // Récupérer les résultats de détection avec leurs images
+          const detectionResults = await Promise.all(
+            resultsData.results
+              .filter((r: any) => r.metadata?.type === 'detection')
+              .map(async (result: any) => {
+                const frameId = result.frame_uuid;
+                const imageResponse = await fetch(
+                  `${process.env.MAIN_API_URL}/forensics/${jobId}/frames/${frameId}`
                 );
-                return null;
-              }
 
-              const imageBlob = await imageResponse.blob();
-              const imageUrl = URL.createObjectURL(imageBlob);
+                if (!imageResponse.ok) {
+                  console.error(
+                    `Erreur lors du chargement de l'image pour ${frameId}`
+                  );
+                  return null;
+                }
 
-              return {
-                id: frameId,
-                imageData: imageUrl, // Utilisation de l'URL blob
-                timestamp:
-                  result.metadata?.timestamp || new Date().toISOString(),
-                score: result.metadata?.score || 0,
-                cameraId:
-                  result.metadata?.camera ||
-                  result.metadata?.source ||
-                  'unknown',
-                type: 'detection',
-                attributes: result.metadata?.attributes || {},
-                progress: result.metadata?.progress || 0,
-              };
-            })
-        );
+                const imageBlob = await imageResponse.blob();
+                const imageUrl = URL.createObjectURL(imageBlob);
 
-        // Filtrer les nulls résultant de l'échec de chargement d'images
-        const validDetectionResults = detectionResults.filter(
-          (result) => result !== null
-        );
+                return {
+                  id: frameId,
+                  imageData: imageUrl,
+                  timestamp:
+                    result.metadata?.timestamp || new Date().toISOString(),
+                  score: result.metadata?.score || 0,
+                  cameraId:
+                    result.metadata?.camera ||
+                    result.metadata?.source ||
+                    'unknown',
+                  type: 'detection',
+                  attributes: result.metadata?.attributes || {},
+                  progress: result.metadata?.progress || 0,
+                };
+              })
+          );
 
-        validDetectionResults.forEach((res: ForensicResult) =>
-          forensicResultsHeap.addResult(res)
-        );
+          // Filtrer les nulls résultant de l'échec de chargement d'images
+          validDetectionResults = detectionResults.filter(
+            (result) => result !== null
+          ) as ForensicResult[];
 
-        console.log(
-          '🧠 Détections valides récupérées:',
-          validDetectionResults.length
-        );
+          validDetectionResults.forEach((res: ForensicResult) =>
+            forensicResultsHeap.addResult(res)
+          );
 
-        setResults(validDetectionResults);
-        setDisplayResults(validDetectionResults);
-        const maxProgress = Math.max(
-          ...Object.values(sourcesProgress).map((s: any) => s.progress || 0),
-          0
-        );
-        setProgress(maxProgress);
+          console.log(
+            '🧠 Détections valides récupérées:',
+            validDetectionResults.length
+          );
+        } else {
+          // En mode skipHistory pour tâches en cours uniquement, ne pas charger les images
+          console.log(
+            '⏭️ Chargement des résultats historiques ignoré (mode skipHistory, tâche en cours)'
+          );
+        }
 
-        localStorage.setItem('currentJobId', jobId);
+        // Définir la progression à 100% si la tâche est terminée
+        if (isCompleted) {
+          setProgress(100);
+        } else {
+          const maxProgress = Math.max(
+            ...Object.values(sourcesProgress).map((s: any) => s.progress || 0),
+            0
+          );
+          setProgress(maxProgress);
+        }
 
-        console.log('🔄 Job repris avec succès:', jobId);
-        console.log(resultsData);
+        // Si la tâche n'est pas terminée, relancer le WebSocket
+        if (!isCompleted) {
+          console.log('🔄 Tâche en cours, initialisation du WebSocket...');
+          setIsSearching(true);
+          initWebSocket(jobId);
+        } else {
+          console.log('✅ Tâche terminée, affichage des résultats uniquement');
+          setIsSearching(false);
+        }
+        // Ne pas conditionner cette mise à jour par validDetectionResults.length > 0
+        const bestResults = forensicResultsHeap.getBestResults();
+        setResults(bestResults);
+        setDisplayResults(bestResults);
 
-        return validDetectionResults;
+        console.log('📊 Mise à jour des résultats:', bestResults.length);
+
+        return skipHistory && !isCompleted ? [] : validDetectionResults;
       }
 
       return [];
@@ -392,9 +454,8 @@ export default function useSearch() {
       setDisplayResults([]);
       setProgress(null);
       setSourceProgress([]);
-      return [];
-    } finally {
       setIsSearching(false);
+      return [];
     }
   };
 
@@ -409,35 +470,10 @@ export default function useSearch() {
         setType(formData.subjectType);
         forensicResultsHeap.clear();
 
-        // S'assurer que toutes les ressources précédentes sont bien fermées
-        cleanupResources();
+        resetSearch();
 
         // Attendre un court délai pour s'assurer que les ressources sont bien libérées
         await new Promise((resolve) => setTimeout(resolve, 100));
-
-        try {
-          // Annuler toute recherche en cours via l'API et attendre la réponse
-          const cancelResponse = await fetch(
-            `${process.env.MAIN_API_URL}/forensics`,
-            {
-              method: 'DELETE',
-              headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                Authorization: `X-Session-Id ${sessionId}`,
-              },
-            }
-          );
-
-          // Vérifier si l'annulation a réussi
-          if (!cancelResponse.ok) {
-            console.warn(
-              `⚠️ L'annulation précédente a retourné le statut ${cancelResponse.status}`
-            );
-          }
-        } catch (cancelError) {
-          // On log l'erreur mais on continue la recherche
-        }
 
         // Créer un nouvel AbortController pour cette requête
         abortControllerRef.current = new AbortController();
@@ -466,9 +502,6 @@ export default function useSearch() {
           throw new Error('No job ID returned from API');
         }
 
-        // Stocker le jobId dans le localStorage
-        localStorage.setItem('currentJobId', guid);
-
         // Initialize source progress with selected sources
         const selectedSources = formData.cameras || [];
         initializeSourceProgress(selectedSources);
@@ -486,99 +519,38 @@ export default function useSearch() {
         throw error;
       }
     },
-    [sessionId, cleanupResources, initializeSourceProgress, initWebSocket]
+    [sessionId, cleanupWebSocket, initializeSourceProgress, initWebSocket]
   );
-
-  const stopSearch = useCallback(() => {
-    // Vérifier si une annulation est déjà en cours
-    if (isCancelling) {
-      console.log('🔄 Une annulation est déjà en cours, ignoré');
-      return Promise.resolve();
-    }
-
-    // Marquer comme en cours d'annulation pour éviter les doubles appels
-    setIsCancelling(true);
-
-    console.log("🔒 Démarrage de la procédure d'annulation de recherche");
-
-    // Créer un nouvel AbortController pour la requête d'annulation
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    // Si la recherche n'est pas active ou qu'il n'y a pas de WebSocket, juste réinitialiser
-    if (!isSearching || !jobId) {
-      console.log('⚠️ Pas de recherche active à annuler');
+  const stopSearch = async (jobId: string) => {
+    try {
       setIsSearching(false);
-      setProgress(null);
-      setJobId(null);
-      setIsCancelling(false);
-      return Promise.resolve();
-    }
 
-    // D'abord fermer le WebSocket s'il existe - FORCE CODE 1000
-    if (wsRef.current) {
-      if (
-        wsRef.current.readyState === WebSocket.OPEN ||
-        wsRef.current.readyState === WebSocket.CONNECTING
-      ) {
-        console.log('🔒 Fermeture de la connexion WebSocket avec code 1000...');
-        // Force close avec code 1000 (fermeture normale)
-        wsRef.current.close(1000, 'Client cancelled search');
+      if (!jobId) {
+        console.error(
+          "❌ Impossible d'annuler la recherche: aucun jobId fourni"
+        );
+        return;
       }
-      wsRef.current = null;
-    }
 
-    // Réinitialiser les états du UI immédiatement
-    setIsSearching(false);
-    setProgress(null);
+      const response = await fetch(
+        `${process.env.MAIN_API_URL}/forensics/${jobId}`,
+        {
+          method: 'DELETE',
+        }
+      );
 
-    // Timeout pour la requête DELETE
-    const timeoutId = setTimeout(() => {
-      if (controller && !controller.signal.aborted) {
-        controller.abort('Timeout');
+      if (!response.ok) {
+        throw new Error(`Échec de l'annulation: ${response.statusText}`);
       }
-    }, 5000);
-
-    // Puis annuler la recherche via l'API
-    return fetch(`${process.env.MAIN_API_URL}/forensics`, {
-      method: 'DELETE',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        Authorization: `X-Session-Id ${sessionId}`,
-      },
-      signal: controller.signal,
-    })
-      .then((response) => {
-        clearTimeout(timeoutId);
-        if (response.ok) {
-          console.log("✅ Recherche annulée avec succès via l'API");
-        } else {
-          console.error(`❌ Échec de l'annulation: ${response.status}`);
-        }
-      })
-      .catch((error) => {
-        clearTimeout(timeoutId);
-        if (error.name === 'AbortError') {
-          console.warn(
-            "⚠️ La requête d'annulation a expiré, mais l'UI a été réinitialisé"
-          );
-        } else {
-          console.error("❌ Erreur lors de l'annulation:", error);
-        }
-      })
-      .finally(() => {
-        // Reset job ID et état d'annulation
-        setJobId(null);
-        setIsCancelling(false);
-        // S'assurer que isSearching est bien à false
-        setIsSearching(false);
-      });
-  }, [sessionId, isSearching, jobId, isCancelling]);
+    } catch (error) {
+      console.error("❌ Erreur lors de l'annulation de la recherche:", error);
+    }
+  };
 
   return {
     startSearch,
     stopSearch,
+    cleanupResources,
     progress,
     results,
     isSearching,
@@ -587,5 +559,7 @@ export default function useSearch() {
     displayResults,
     resumeJob,
     setDisplayResults,
+    setResults,
+    resetSearch,
   };
 }

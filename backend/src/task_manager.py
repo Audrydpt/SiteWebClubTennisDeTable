@@ -119,6 +119,13 @@ class ResultsStore:
             self._redis = aioredis.Redis(connection_pool=self._pool)
         return self._redis
 
+    async def _get_redis_0(self) -> aioredis.Redis:
+        if self._pool is None:
+            self._pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/0')
+        if self._redis is None:
+            self._redis = aioredis.Redis(connection_pool=self._pool)
+        return self._redis
+
     async def get_frame(self, job_id: str, frame_uuid: str) -> Optional[bytes]:
         redis = await self._get_redis()
         frame_key = f"task:{job_id}:frame:{frame_uuid}"
@@ -498,6 +505,114 @@ class TaskManager:
         except Exception as e:
             logger.error(f"Unexpected error while processing job status for job_id {job_id}: {e}")
             return JobStatus.REVOKED
+
+    @staticmethod
+    async def delete_task_data(job_id: str) -> dict:
+        """
+        Supprime toutes les données Redis associées à une tâche dans les bases 0 et 1.
+        Retourne un dictionnaire avec le statut de l'opération.
+        Lève une ValueError si aucune tâche n'est trouvée avec cet ID.
+        """
+        redis_db1 = await results_store._get_redis()
+        redis_db0 = await results_store._get_redis_0()
+
+        try:
+            # Clés à supprimer dans DB1
+            job_key = f"task:{job_id}"
+            result_list_key = f"task:{job_id}:results"
+
+            # Vérifier si au moins une des clés existe dans DB1
+            exists = await redis_db1.exists(job_key)
+            results_exist = await redis_db1.exists(result_list_key)
+
+            if not exists and not results_exist:
+                raise ValueError(f"Aucune tâche trouvée avec l'ID {job_id}")
+
+            await asyncio.to_thread(lambda: AsyncResult(job_id).forget())
+
+            # Supprimer les métadonnées et résultats dans DB1
+            await redis_db1.delete(job_key)
+            await redis_db1.delete(result_list_key)
+
+            # Supprimer toutes les frames associées dans DB1
+            frame_pattern = f"task:{job_id}:frame:*"
+            frame_keys = await redis_db1.keys(frame_pattern)
+            if frame_keys:
+                await redis_db1.delete(*frame_keys)
+
+            return {"success": True, "message": f"Tâche {job_id} supprimée avec succès"}
+        except Exception as e:
+            logger.error(f"Erreur lors de la suppression des données de la tâche {job_id}: {e}")
+            return {"success": False, "message": str(e)}
+    @staticmethod
+    async def delete_all_task_data() -> dict:
+        """
+        Supprime toutes les données Redis associées à toutes les tâches dans les bases 0 et 1.
+        Retourne un dictionnaire avec le statut de l'opération.
+        """
+        redis_db1 = await results_store._get_redis()
+        redis_db0 = await results_store._get_redis_0()
+
+        deleted_keys = 0
+        deleted_tasks = 0
+
+        try:
+            # Utiliser scan au lieu de keys pour éviter de bloquer Redis
+            cursor = "0"
+            task_ids = set()
+
+            # Étape 1: Identifier toutes les tâches
+            while cursor != 0:
+                cursor, keys = await redis_db1.scan(cursor=cursor, match="task:*:results", count=1000)
+                cursor = int(cursor)
+
+                for key in keys:
+                    key_str = key.decode('utf-8') if isinstance(key, bytes) else key
+                    parts = key_str.split(':')
+                    if len(parts) >= 3 and parts[0] == 'task' and len(parts[1]) > 0:
+                        task_ids.add(parts[1])
+
+            logger.info(f"Suppression de {len(task_ids)} tâches identifiées")
+
+            # Étape 2: Supprimer toutes les données associées aux tâches
+            for task_id in task_ids:
+                # Supprimer les métadonnées Celery dans DB0
+                await asyncio.to_thread(lambda id=task_id: AsyncResult(id).forget())
+
+                # Supprimer les résultats de la tâche
+                deleted = await redis_db1.delete(f"task:{task_id}:results")
+                if deleted > 0:
+                    deleted_keys += deleted
+
+                # Supprimer les frames associées
+                cursor_frames = "0"
+                while cursor_frames != 0:
+                    cursor_frames, frame_keys = await redis_db1.scan(
+                        cursor=cursor_frames,
+                        match=f"task:{task_id}:frame:*",
+                        count=1000
+                    )
+                    cursor_frames = int(cursor_frames)
+
+                    if frame_keys:
+                        deleted = await redis_db1.delete(*frame_keys)
+                        deleted_keys += deleted
+
+                # Supprimer les autres métadonnées
+                deleted = await redis_db1.delete(f"task:{task_id}")
+                if deleted > 0:
+                    deleted_keys += deleted
+
+                deleted_tasks += 1
+
+            return {
+                "success": True,
+                "message": f"Toutes les tâches supprimées avec succès ({deleted_tasks} tâches, {deleted_keys} clés)"
+            }
+        except Exception as e:
+            logger.error(f"Erreur lors de la suppression des données de toutes les tâches: {e}")
+            logger.error(traceback.format_exc())
+            return {"success": False, "message": str(e)}
     
     @staticmethod
     async def get_job_error(job_id: str) -> Tuple[Optional[str], Optional[str]]:
