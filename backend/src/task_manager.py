@@ -528,8 +528,6 @@ class TaskManager:
             if not exists and not results_exist:
                 raise ValueError(f"Aucune tâche trouvée avec l'ID {job_id}")
 
-            await asyncio.to_thread(lambda: AsyncResult(job_id).forget())
-
             # Supprimer les métadonnées et résultats dans DB1
             await redis_db1.delete(job_key)
             await redis_db1.delete(result_list_key)
@@ -540,10 +538,15 @@ class TaskManager:
             if frame_keys:
                 await redis_db1.delete(*frame_keys)
 
+            # Supprimer directement les clés Celery dans DB0
+            celery_meta_key = f"celery-task-meta-{job_id}"
+            await redis_db0.delete(celery_meta_key)
+
             return {"success": True, "message": f"Tâche {job_id} supprimée avec succès"}
         except Exception as e:
             logger.error(f"Erreur lors de la suppression des données de la tâche {job_id}: {e}")
             return {"success": False, "message": str(e)}
+
     @staticmethod
     async def delete_all_task_data() -> dict:
         """
@@ -576,9 +579,6 @@ class TaskManager:
 
             # Étape 2: Supprimer toutes les données associées aux tâches
             for task_id in task_ids:
-                # Supprimer les métadonnées Celery dans DB0
-                await asyncio.to_thread(lambda id=task_id: AsyncResult(id).forget())
-
                 # Supprimer les résultats de la tâche
                 deleted = await redis_db1.delete(f"task:{task_id}:results")
                 if deleted > 0:
@@ -600,6 +600,12 @@ class TaskManager:
 
                 # Supprimer les autres métadonnées
                 deleted = await redis_db1.delete(f"task:{task_id}")
+                if deleted > 0:
+                    deleted_keys += deleted
+
+                # Supprimer directement les métadonnées Celery dans DB0
+                celery_meta_key = f"celery-task-meta-{task_id}"
+                deleted = await redis_db0.delete(celery_meta_key)
                 if deleted > 0:
                     deleted_keys += deleted
 
