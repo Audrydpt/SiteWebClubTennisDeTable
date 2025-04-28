@@ -107,7 +107,7 @@ class JobResult:
         )
 
 class ResultsStore:
-    def __init__(self, max_results: int = 5000):
+    def __init__(self, max_results: int = 1000):
         self.max_results = max_results
         self._redis = None
         self._pool = None

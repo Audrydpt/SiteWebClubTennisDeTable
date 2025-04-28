@@ -3,7 +3,7 @@ import { MinHeap } from '@datastructures-js/heap';
 import { ForensicResult } from '../types';
 
 // Number of maximum results to keep
-const MAX_RESULTS = 5000;
+const MAX_RESULTS = 1500;
 
 class ForensicResultsHeap {
   private minHeap: MinHeap<ForensicResult>;
