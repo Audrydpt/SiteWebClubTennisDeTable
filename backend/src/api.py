@@ -148,6 +148,7 @@ class FastAPIServer:
         self.__create_endpoint("AcicOCR", AcicOCR)
         self.__create_endpoint("AcicAllInOneEvent", AcicAllInOneEvent)
         self.__create_endpoint("AcicEvent", AcicEvent)
+        self.__create_endpoint2()
 
         @self.app.get("/dashboard/widgets", tags=["dashboard"])
         async def get_dashboard():
@@ -384,6 +385,7 @@ class FastAPIServer:
                 for job_id in await TaskManager.get_jobs():
                     status = TaskManager.get_job_status(job_id)
                     created = TaskManager.get_job_created(job_id)
+                    updated = TaskManager.get_job_updated(job_id)
                     job_type = TaskManager.get_job_type(job_id)
                     size = TaskManager.get_job_size(job_id)
                     count = TaskManager.get_job_count(job_id)
@@ -392,6 +394,7 @@ class FastAPIServer:
                         "status": status,
                         "type": job_type,
                         "created": created,
+                        "updated": updated,
                         "count": count,
                         "size": size,
 
@@ -707,10 +710,17 @@ class FastAPIServer:
         async def delete_tab(id: str):
             try:
                 dal = GenericDAL()
-                obj = await dal.async_get(Dashboard, id=id)
-                if obj is None or len(obj) != 1:
+                tab = await dal.async_get(Dashboard, id=id)
+                if tab is None or len(tab) != 1:
                     raise HTTPException(status_code=404, detail="Tab not found")
-                return await dal.async_remove(obj[0])
+                
+                widgets = await dal.async_get(Widget, dashboard_id=id)
+
+                for widget in widgets:
+                    await self.drop_materialized_view(str(widget.id))
+                    await dal.async_remove(widget)
+
+                return await dal.async_remove(tab[0])
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
 
@@ -718,15 +728,19 @@ class FastAPIServer:
         """Create a materialized view for a widget"""
         try:
             #Build the SQL query based on widget config
-            group_clause = f", {group_by}" if group_by else ""
-            group_by_clause = f"GROUP BY bucket{group_clause}" if group_by else "GROUP BY bucket"
+            if group_by:
+                group_select = f", {group_by} AS {group_by}"
+                group_by_clause = f"GROUP BY bucket, {group_by}"
+            else:
+                group_select = ""
+                group_by_clause = "GROUP BY bucket"
 
             #Construct the SQL query
             sql = f"""
-            CREATE MATERIALIZED VIEW "widget_{widget_id}" WITH (timescaledb.continuous) AS
+            CREATE MATERIALIZED VIEW "widget_{widget_id}" WITH (timescaledb.continuous, timescaledb.materialized_only=false)  AS
             SELECT time_bucket('{aggregation}', timestamp) AS bucket,
                    count(timestamp) as counts
-                   {group_by if group_by else ''}
+                   {group_select}
             FROM {table.lower()}
             {group_by_clause};
             """
@@ -904,6 +918,14 @@ class FastAPIServer:
                     setattr(widget, field, value)
 
                 res = await dal.async_update(widget)
+
+                await self.drop_materialized_view(str(widget_id))
+                await self.create_materialized_view(
+                    str(widget_id),
+                    widget.table,
+                    widget.aggregation,
+                    widget.groupBy if hasattr(widget, "groupBy") else None
+                )
                 return res
 
             except ValueError as e:
@@ -989,8 +1011,9 @@ class FastAPIServer:
         aggregate = (ModelName, Field(default=ModelName.hour, description="The time interval to aggregate the data"))
         group = (str, Field(default=None, description="The column to group by"))
         date = (datetime.datetime, Field(default=None, description="The timestamp to filter by"))
-
+        
         AggregateParam = create_model(f"{model_class.__name__}Aggregate", aggregate=aggregate, group_by=group, time_from=date, time_to=date, **query)
+        
         @self.app.get("/dashboard/widgets/" + path, tags=["dashboard"])
         async def get_bucket(kwargs: Annotated[AggregateParam, Query()]):
             try:
@@ -1002,9 +1025,9 @@ class FastAPIServer:
                 dal = GenericDAL()
 
                 aggregation = agg_func if agg_func is not None else func.count(model_class.id)
-
+                
                 cursor = await dal.async_get_bucket(model_class, _func=aggregation, _time=time, _group=group_by, _between=between, **where)
-
+                
                 ret = []
                 for row in cursor:
                     data = {
@@ -1014,13 +1037,71 @@ class FastAPIServer:
                     if group_by is not None:
                         for idx, group in enumerate(group_by):
                             data[group] = row[idx + 2]
+                            logger.info(f"  Adding group_by value: {group}={row[idx + 2]}")
 
                     ret.append(data)
 
                 return ret
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
+    
+    def __create_endpoint2(self, agg_func=None):
+        query = {}
 
+        aggregate = (ModelName, Field(default=ModelName.hour, description="The time interval to aggregate the data"))
+        group = (str, Field(default=None, description="The column to group by"))
+        date = (datetime.datetime, Field(default=None, description="The timestamp to filter by"))
+
+        AggregateParam = create_model(f"Aggregate", aggregate=aggregate, group_by=group, time_from=date, time_to=date, **query)    
+        
+        @self.app.get("/dashboard/widgets/{guid}", tags=["dashboard"])
+        async def get_bucket(guid: str, kwargs: Annotated[AggregateParam, Query()]):
+            try:
+                if guid == "undefined":
+                    return []
+                
+                time = str(kwargs.aggregate.value) if hasattr(kwargs.aggregate, 'value') else str(kwargs.aggregate)
+                between = kwargs.time_from, kwargs.time_to
+                group_by = kwargs.group_by.split(",") if kwargs.group_by is not None else None
+                matView = f"widget_{guid}"
+                
+                dal = GenericDAL()
+                aggregation = agg_func if agg_func is not None else func.count('*')
+                
+                try:
+                    cursor = await dal.async_get_view(matView, _time=time, _group=group_by, _between=between)
+                except Exception as e:                    
+                    # Récupérer le widget pour obtenir la table source
+                    widget = await dal.async_get(Widget, id=guid)
+                    if not widget or len(widget) == 0:
+                        return []
+                        
+                    widget = widget[0]
+                    table_class = globals()[widget.table]
+                    cursor = await dal.async_get_bucket(
+                        table_class, 
+                        _func=aggregation, 
+                        _time=time, 
+                        _group=group_by, 
+                        _between=between
+                    )
+                
+                ret = []
+                for row in cursor:
+                    data = {
+                        "timestamp": row[0],
+                        "count": row[1]
+                    }
+                    if group_by is not None:
+                        for idx, group in enumerate(group_by):
+                            data[group] = row[idx + 2]
+                
+                    ret.append(data)
+                
+                return ret
+            except ValueError as e:
+                raise HTTPException(status_code=500, detail=str(e))
+            
     def __create_proxy(self):
         def add_routes(subpath, routes):
             for router in routes:

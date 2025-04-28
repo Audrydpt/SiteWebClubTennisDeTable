@@ -70,6 +70,7 @@ export function getTimeFormattingConfig(
 }
 
 type DashboardQuery = {
+  widgetId?: string;
   table: string;
   aggregation: AcicAggregation;
   duration?: AcicAggregation;
@@ -165,7 +166,8 @@ export async function getWidgetData(
     );
   }
 
-  const query = `${process.env.MAIN_API_URL}/dashboard/widgets/${props.table}`; // props.table => props.idWidget;
+  const query = `${process.env.MAIN_API_URL}/dashboard/widgets/${props.widgetId}`;
+  const query1 = `${process.env.MAIN_API_URL}/dashboard/widgets/${props.table}`;
 
   let params = '?';
   params += `&aggregate=${props.aggregation}`;
@@ -196,10 +198,130 @@ export async function getWidgetData(
     });
   }
 
-  return fetch(query + params).then((res) => {
+  if (props.widgetId === undefined) {
+    return fetch(query1 + params).then((res) => {
+      if (!res.ok) throw new Error(res.statusText);
+      return res.json();
+    });
+  }
+  /*  return fetch(query + params).then((res) => {
     if (!res.ok) throw new Error(res.statusText);
     return res.json();
-  });
+  }); */
+
+  try {
+    const [result, result1] = await Promise.all([
+      fetch(query + params),
+      fetch(query1 + params),
+    ]);
+
+    if (!result.ok) throw new Error(result.statusText);
+    if (!result1.ok) throw new Error(result1.statusText);
+
+    const data = await result.json();
+    const data1 = await result1.json();
+
+    const areEqual = JSON.stringify(data) === JSON.stringify(data1);
+
+    console.log(
+      `GetWidgetData:\nWidget : ${props.widgetId}\nQuery results are ${areEqual ? 'equal' : 'NOT equal'}`
+    );
+    console.log('Data from Materialized view: ', data);
+    console.log('Data from Table: ', data1);
+
+    if (areEqual) {
+      console.log('Both endpoints returned identical data');
+    } else {
+      console.log('Materialized View data length:', data.length);
+      console.log('Table data length:', data1.length);
+
+      // Comparer les structures de données
+      console.log('--- DIFFERENCES DÉTECTÉES ---');
+
+      // Différence de longueur
+      if (data.length !== data1.length) {
+        console.log(
+          `Différence de taille: View=${data.length}, Table=${data1.length}`
+        );
+
+        // Identifier les éléments supplémentaires
+        if (data.length > data1.length) {
+          console.log('Éléments supplémentaires dans Materialized View :');
+          const dataTimestamps = new Set(
+            data.map((item: { timestamp: string }) => item.timestamp)
+          );
+          const data1Timestamps = new Set(
+            data1.map((item: { timestamp: string }) => item.timestamp)
+          );
+          const extraTimestamps = [...dataTimestamps].filter(
+            (ts) => !data1Timestamps.has(ts)
+          );
+          const extraItems = data.filter((item: { timestamp: string }) =>
+            extraTimestamps.includes(item.timestamp)
+          );
+          console.log(extraItems);
+        } else {
+          console.log('Éléments supplémentaires dans la Table :');
+          const dataTimestamps = new Set(
+            data.map((item: { timestamp: string }) => item.timestamp)
+          );
+          const data1Timestamps = new Set(
+            data1.map((item: { timestamp: string }) => item.timestamp)
+          );
+          const extraTimestamps = [...data1Timestamps].filter(
+            (ts) => !dataTimestamps.has(ts)
+          );
+          const extraItems = data1.filter((item: { timestamp: string }) =>
+            extraTimestamps.includes(item.timestamp)
+          );
+          console.log(extraItems);
+        }
+      }
+
+      // Comparer les valeurs pour les timestamps communs
+      console.log('Différences de valeurs pour les mêmes timestamps:');
+      const commonTimestamps = data
+        .map((item: { timestamp: string }) => item.timestamp)
+        .filter((ts: string) =>
+          data1.some((item: { timestamp: string }) => item.timestamp === ts)
+        );
+
+      commonTimestamps.forEach((ts: string) => {
+        const itemFromData = data.find(
+          (item: { timestamp: string }) => item.timestamp === ts
+        );
+        const itemFromData1 = data1.find(
+          (item: { timestamp: string }) => item.timestamp === ts
+        );
+
+        if (JSON.stringify(itemFromData) !== JSON.stringify(itemFromData1)) {
+          console.log(`Timestamp: ${ts}`);
+          console.log('  Materialized View:', itemFromData);
+          console.log('  Table :', itemFromData1);
+
+          // Comparer chaque propriété
+          const allKeys = new Set([
+            ...Object.keys(itemFromData || {}),
+            ...Object.keys(itemFromData1 || {}),
+          ]);
+
+          allKeys.forEach((key) => {
+            if (itemFromData?.[key] !== itemFromData1?.[key]) {
+              console.log(
+                `Propriété '${key}':\n  Materialized View data= ${itemFromData?.[key]}\n  Table data=${itemFromData1?.[key]}`
+              );
+            }
+          });
+        }
+      });
+    }
+    console.log('--- FIN DES DIFFÉRENCES ---');
+    console.log('areEqual :', areEqual);
+    return areEqual ? data : data1;
+  } catch (error) {
+    console.error('Error fetching widget data:', error);
+    throw error;
+  }
 }
 
 export async function getWidgetDataForExport(

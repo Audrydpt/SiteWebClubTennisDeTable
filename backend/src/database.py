@@ -502,6 +502,69 @@ class GenericDAL:
             result = result.all()
             return result
 
+    async def async_get_view(self, view_name, _time="1 hour", _group=None, _between=None, **filters) -> List[Any]:
+        async with GenericDAL.AsyncSession() as session:
+            # Start with a base select statement using time_bucket_gapfill
+            bucket_column = column('bucket')
+            stmt = select(func.time_bucket_gapfill(text("'" + _time + "'"), bucket_column).label('_timestamp'))
+            
+            # Add count/sum column based on grouping
+            if _group is None:
+                stmt = stmt.add_columns(func.sum(column('counts')).label('count'))
+            else:
+                stmt = stmt.add_columns(column('counts').label('count'))
+                
+                # Add group columns
+                if isinstance(_group, list):
+                    for group in _group:
+                        stmt = stmt.add_columns(column(group))
+                else:
+                    stmt = stmt.add_columns(column(_group))
+            
+            # FROM clause
+            # Need to use from_statement since we're working with a view
+            stmt = stmt.select_from(text(f'"{view_name}"'))
+            
+            # Apply WHERE conditions
+            where_clauses = []
+            if _between is not None and len(_between) == 2 and _between[0] is not None and _between[1] is not None:
+                where_clauses.append(bucket_column >= _between[0])
+                where_clauses.append(bucket_column <= _between[1])
+            
+            # Apply any additional filters
+            if filters:
+                for key, value in filters.items():
+                    if isinstance(value, list):
+                        where_clauses.append(column(key).in_(value))
+                    else:
+                        where_clauses.append(column(key) == value)
+            
+            if where_clauses:
+                for clause in where_clauses:
+                    stmt = stmt.where(clause)
+            
+            # GROUP BY clause
+            stmt = stmt.group_by(column('_timestamp'))
+            
+            # Add any group by columns
+            if _group is not None:
+                if isinstance(_group, list):
+                    for group in _group:
+                        stmt = stmt.group_by(column(group))
+                else:
+                    stmt = stmt.group_by(column(_group))
+            
+            # Order by timestamp
+            stmt = stmt.order_by(column('_timestamp'))
+            
+            try:
+                result = await session.execute(stmt)
+                return result.all()
+            except Exception as e:
+                logger.error(f"Error executing view query: {e}")
+                logger.error(f"Query was: {stmt}")
+                raise
+        
     async def async_update(self, obj) -> Any:
         async with GenericDAL.AsyncSession() as session:
             result = await session.merge(obj)
