@@ -8,6 +8,7 @@ import uuid
 from aiostream import stream
 from functools import wraps
 
+from celery.worker.state import total_count
 from fastapi.websockets import WebSocketState
 import numpy as np
 import cv2
@@ -339,6 +340,21 @@ class TaskManager:
         except Exception as send_e:
             logger.error(f"Erreur lors de l'envoi de la notification d'annulation pour le job {job_id}: {send_e}")
             return False
+
+    @staticmethod
+    async def get_job_results_paginated(job_id, page, per_page):
+        """
+        Récupère les résultats d'un job avec pagination.
+        """
+        skip = page * per_page
+
+        try:
+            all = await results_store.get_results(job_id)
+            paginated_results = all[skip:skip + per_page]
+            return paginated_results
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des résultats du job {job_id}: {e}")
+            raise
 
     @staticmethod
     def get_job_created(job_id: str) -> Optional[datetime.datetime]:
