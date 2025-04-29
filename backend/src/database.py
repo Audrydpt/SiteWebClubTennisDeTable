@@ -33,6 +33,7 @@ logger.addHandler(file_handler)
 def get_database_url(use_timescaledb=True, async_driver=False):
     load_dotenv()
     db_host = os.getenv("DB_HOST", "localhost")
+    #db_host = os.getenv("DB_HOST", "192.168.20.145")
     db_user = os.getenv("DB_USER", "postgres")
     db_pass = os.getenv("DB_PASS", "postgres")
     db_port = os.getenv("DB_PORT", "5432")
@@ -594,20 +595,36 @@ class GenericDAL:
 
                 stmt = stmt.select_from(text(f'"{view_name}"'))
                 stmt2 = select(stats_obj).select_from(text(f'"{view_name}"'))
-            try:
-                result = await session.execute(stmt)
-                result2 = await session.execute(stmt2)
-                group_stats = result.all()
-                global_stats = result2.scalar_one_or_none()
-                combined_result = {
-                    'global': global_stats,
-                    'group': group_stats
-                }
-                return combined_result
-            except Exception as e:
-                logger.error(f"Error executing trend query: {e}")
-                logger.error(f"Query was: {stmt}")
-                raise
+                try:
+                    result = await session.execute(stmt)
+                    result2 = await session.execute(stmt2)
+                    global_stats = result2.scalar_one_or_none()
+                    
+                    group_by_data = []
+                    for row in result.all():
+                        if isinstance(_group, list):
+                            # Créer un dictionnaire pour chaque groupe
+                            group_item = {}
+                            for i, group_name in enumerate(_group):
+                                group_item[group_name] = row[i]
+                            group_item['stats'] = row[-1]  # Dernière colonne = stats
+                        else:
+                            # Un seul groupe
+                            group_item = {
+                                _group: row[0],
+                                'stats': row[1]
+                            }
+                        group_by_data.append(group_item)
+
+                    combined_result = {
+                        'global': global_stats,
+                        'group': group_stats
+                    }
+                    return combined_result
+                except Exception as e:
+                    logger.error(f"Error executing trend query: {e}")
+                    logger.error(f"Query was: {stmt}")
+                    raise
 
     async def async_update(self, obj) -> Any:
         async with GenericDAL.AsyncSession() as session:

@@ -156,7 +156,6 @@ class FastAPIServer:
 
         self.__create_tabs()
         self.__create_widgets()
-        self.__create_trend()
         self.__create_settings()
         self.__create_health()
         self.__create_forensic()
@@ -1179,7 +1178,7 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
     
-        @self.app_get("/dashboard/widgets/{guid}/trend", tags=["dashboard", "materialized"])
+        @self.app.get("/dashboard/widgets/{guid}/trend", tags=["dashboard", "materialized"])
         async def get_trend(guid: str, kwargs: Annotated[AggregateParam, Query()]):
             try:
                 if guid == "undefined":
