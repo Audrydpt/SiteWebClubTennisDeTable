@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Video } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -37,6 +37,7 @@ import { VMSFormValues, vmsSchema } from '../lib/types';
 
 export default function VMSSettings() {
   const { t } = useTranslation('settings');
+  const [formKey, setFormKey] = useState(0);
 
   const form = useForm<VMSFormValues>({
     resolver: zodResolver(vmsSchema),
@@ -62,7 +63,18 @@ export default function VMSSettings() {
 
   // Charger les données existantes
   useEffect(() => {
-    form.reset(query.data);
+    if (query.data) {
+      form.reset({
+        type: query.data.type,
+        ip: query.data.ip,
+        port: query.data.port,
+        username: query.data.username || '',
+        password: query.data.password || '',
+      });
+
+      // Force re-render the form to ensure select gets updated
+      setFormKey((prev) => prev + 1);
+    }
   }, [query.data, form]);
 
   const onSubmit = (data: VMSFormValues) => {
@@ -111,7 +123,7 @@ export default function VMSSettings() {
           <CardDescription>{t('vms-settings.description')}</CardDescription>
         </CardHeader>
 
-        <Form {...form}>
+        <Form {...form} key={formKey}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-6">
               <FormField
@@ -121,15 +133,8 @@ export default function VMSSettings() {
                   <FormItem>
                     <FormLabel>{t('vms-settings.selectVMS')}</FormLabel>
                     <Select
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        if (value === 'Genetec') {
-                          // Réinitialiser les champs de Milestone si on change pour Genetec
-                          form.setValue('username', '');
-                          form.setValue('password', '');
-                        }
-                      }}
-                      value={field.value}
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>

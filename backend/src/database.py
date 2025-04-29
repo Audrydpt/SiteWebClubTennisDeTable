@@ -273,6 +273,7 @@ class GenericDAL:
             session.execute(DDL("SET client_encoding TO 'UTF8'"))
             session.execute(DDL("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
             session.execute(DDL("CREATE EXTENSION IF NOT EXISTS timescaledb"))
+            session.execute(DDL("CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit"))
             session.commit()
         
         print("Binding schema to engine...")
@@ -502,25 +503,13 @@ class GenericDAL:
             result = result.all()
             return result
 
-    async def async_get_view(self, view_name, _time="1 hour", _group=None, _between=None, **filters) -> List[Any]:
+    async def async_get_view(self, view_name, _time="1 hour", _group=None, _between=None) -> List[Any]:
         async with GenericDAL.AsyncSession() as session:
             # Start with a base select statement using time_bucket_gapfill
             bucket_column = column('bucket')
             stmt = select(func.time_bucket_gapfill(text("'" + _time + "'"), bucket_column).label('_timestamp'))
-            
-            # Add count/sum column based on grouping
-            if _group is None:
-                stmt = stmt.add_columns(func.sum(column('counts')).label('count'))
-            else:
-                stmt = stmt.add_columns(column('counts').label('count'))
-                
-                # Add group columns
-                if isinstance(_group, list):
-                    for group in _group:
-                        stmt = stmt.add_columns(column(group))
-                else:
-                    stmt = stmt.add_columns(column(_group))
-            
+            stmt = stmt.add_columns(column('counts').label('count'))
+                        
             # FROM clause
             # Need to use from_statement since we're working with a view
             stmt = stmt.select_from(text(f'"{view_name}"'))
@@ -531,28 +520,18 @@ class GenericDAL:
                 where_clauses.append(bucket_column >= _between[0])
                 where_clauses.append(bucket_column <= _between[1])
             
-            # Apply any additional filters
-            if filters:
-                for key, value in filters.items():
-                    if isinstance(value, list):
-                        where_clauses.append(column(key).in_(value))
-                    else:
-                        where_clauses.append(column(key) == value)
-            
             if where_clauses:
                 for clause in where_clauses:
                     stmt = stmt.where(clause)
             
-            # GROUP BY clause
-            stmt = stmt.group_by(column('_timestamp'))
-            
-            # Add any group by columns
+            # GROUP BY clause is handled in the view, so we only add the columns
             if _group is not None:
                 if isinstance(_group, list):
                     for group in _group:
-                        stmt = stmt.group_by(column(group))
+                        stmt = stmt.add_columns(column(group))
                 else:
-                    stmt = stmt.group_by(column(_group))
+                    stmt = stmt.add_columns(column(_group))
+            
             
             # Order by timestamp
             stmt = stmt.order_by(column('_timestamp'))
