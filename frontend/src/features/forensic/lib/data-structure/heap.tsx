@@ -79,6 +79,10 @@ class ForensicResultsHeap {
     this.minHeap.clear();
     this.resultMap.clear();
   }
+
+  size(): number {
+    return this.minHeap.size();
+  }
 }
 
 const forensicResultsHeap = new ForensicResultsHeap();
