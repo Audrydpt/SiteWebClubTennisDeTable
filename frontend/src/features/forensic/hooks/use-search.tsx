@@ -1,4 +1,4 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-shadow,consistent-return,no-promise-executor-return,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
+/* eslint-disable no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-shadow,consistent-return,no-promise-executor-return,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps,@typescript-eslint/naming-convention */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import useLatest from '@/hooks/use-latest';
@@ -470,7 +470,8 @@ export default function useSearch() {
       if (!skipLoadingState) {
         setIsSearching(true);
       }
-      // Récupération des résultats avec pagination
+
+      // Récupération des résultats paginés
       const response = await fetch(
         `${process.env.MAIN_API_URL}/forensics/${jobId}/pages/${page}`
       );
@@ -481,57 +482,100 @@ export default function useSearch() {
 
       const responseData = await response.json();
       const {
-        results,
+        guid,
+        results = [],
         total,
-        total_pages: totalPages,
+        total_pages,
         page: currentPage,
-        page_size: pageSize,
+        page_size,
       } = responseData;
 
       // Récupération des images pour chaque résultat
       const processedResults = await Promise.all(
-        results.map(async (result: any) => {
-          try {
-            if (result.frameId) {
-              const imageResponse = await fetch(
-                `${process.env.MAIN_API_URL}/forensics/${jobId}/frames/${result.frameId}`
-              );
+        results
+          .filter(
+            (result: { metadata: { type: string } }) =>
+              result.metadata?.type === 'detection'
+          )
+          .map(
+            async (result: {
+              frame_uuid: any;
+              metadata: {
+                timestamp: any;
+                score: any;
+                camera: any;
+                source: any;
+                type: any;
+                attributes: any;
+                progress: any;
+              };
+            }) => {
+              try {
+                const frameUuid = result.frame_uuid;
 
-              if (!imageResponse.ok) {
-                throw new Error(
-                  `Erreur lors du chargement de l'image: ${imageResponse.status}`
+                if (!frameUuid) {
+                  console.warn('Résultat sans frame_uuid:', result);
+                  return null;
+                }
+
+                const imageResponse = await fetch(
+                  `${process.env.MAIN_API_URL}/forensics/${jobId}/frames/${frameUuid}`
                 );
-              }
 
-              const imageBlob = await imageResponse.blob();
-              const imageUrl = URL.createObjectURL(imageBlob);
-              return { ...result, imageData: imageUrl };
+                if (!imageResponse.ok) {
+                  throw new Error(
+                    `Erreur lors du chargement de l'image: ${imageResponse.status}`
+                  );
+                }
+
+                const imageBlob = await imageResponse.blob();
+                const imageUrl = URL.createObjectURL(imageBlob);
+
+                // Construction du résultat formaté
+                return {
+                  id: frameUuid,
+                  imageData: imageUrl,
+                  timestamp:
+                    result.metadata?.timestamp || new Date().toISOString(),
+                  score: result.metadata?.score || 0,
+                  cameraId:
+                    result.metadata?.camera ||
+                    result.metadata?.source ||
+                    'unknown',
+                  type: result.metadata?.type || 'detection',
+                  attributes: result.metadata?.attributes || {},
+                  progress: result.metadata?.progress || 0,
+                };
+              } catch (error) {
+                console.error(
+                  `Erreur lors du chargement de l'image pour ${result.frame_uuid}:`,
+                  error
+                );
+                return null;
+              }
             }
-          } catch (error) {
-            console.error(
-              `Erreur lors du chargement de l'image pour ${result.id}:`,
-              error
-            );
-          }
-          return result;
-        })
+          )
       );
 
+      // Filtrer les résultats nuls (échecs de chargement d'images)
+      const validResults = processedResults.filter((result) => result !== null);
+
       // Ajout des résultats au heap pour le filtrage
-      processedResults.forEach((result: any) => {
+      validResults.forEach((result) => {
         forensicResultsHeap.addResult(result);
       });
 
       // Mise à jour des résultats à afficher
-      setDisplayResults(forensicResultsHeap.getBestResults());
+      const bestResults = forensicResultsHeap.getBestResults();
+      setDisplayResults(bestResults);
 
       return {
-        results: processedResults,
+        results: validResults,
         pagination: {
           total,
-          totalPages,
+          totalPages: total_pages,
           currentPage,
-          pageSize,
+          pageSize: page_size,
         },
       };
     } catch (error) {

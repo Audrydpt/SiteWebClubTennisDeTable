@@ -24,7 +24,14 @@ const getScoreBackgroundColor = (score: number) => {
 };
 
 // Helper to extract camera name and IP from camera ID
-const extractCameraInfo = (cameraId: string) => {
+const extractCameraInfo = (cameraId: string | undefined) => {
+  if (!cameraId) {
+    return {
+      name: 'Caméra inconnue',
+      ip: 'IP inconnue',
+    };
+  }
+
   // If cameraId has a structure like "Camera Name (192.168.1.1)"
   const match = cameraId.match(/^(.+?)\s*\(([^)]+)\)$/);
   if (match) {
@@ -164,8 +171,56 @@ export default function Display({
   const renderPagination = () => {
     if (totalPages <= 1) return null;
 
+    // Détermine quels numéros de page afficher
+    const getPageNumbers = () => {
+      const pageNumbers = [];
+      const maxPagesToShow = 5; // Nombre de pages à afficher autour de la page courante
+
+      if (totalPages <= maxPagesToShow + 2) {
+        // Si le nombre total de pages est petit, afficher toutes les pages
+        // eslint-disable-next-line no-plusplus
+        for (let i = 1; i <= totalPages; i++) {
+          pageNumbers.push(i);
+        }
+      } else {
+        // Toujours afficher la première page
+        pageNumbers.push(1);
+
+        // Calculer la plage à afficher autour de la page courante
+        const leftBound = Math.max(
+          2,
+          currentPage - Math.floor(maxPagesToShow / 2)
+        );
+        const rightBound = Math.min(
+          totalPages - 1,
+          leftBound + maxPagesToShow - 1
+        );
+
+        // Ajouter des points de suspension si nécessaire
+        if (leftBound > 2) {
+          pageNumbers.push('...');
+        }
+
+        // Ajouter les pages dans la plage calculée
+        // eslint-disable-next-line no-plusplus
+        for (let i = leftBound; i <= rightBound; i++) {
+          pageNumbers.push(i);
+        }
+
+        // Ajouter des points de suspension si nécessaire
+        if (rightBound < totalPages - 1) {
+          pageNumbers.push('...');
+        }
+
+        // Toujours afficher la dernière page
+        pageNumbers.push(totalPages);
+      }
+
+      return pageNumbers;
+    };
+
     return (
-      <div className="flex justify-center items-center mt-6 space-x-1">
+      <div className="flex justify-center items-center mt-6 space-x-1 flex-wrap">
         <Button
           variant="outline"
           size="icon"
@@ -183,9 +238,27 @@ export default function Display({
           <ChevronLeft className="h-4 w-4" />
         </Button>
 
-        <span className="mx-2 text-sm">
-          Page {currentPage} sur {totalPages} ({sortedResults.length} résultats)
-        </span>
+        {/* Affichage des numéros de page */}
+        <div className="flex space-x-1 mx-1">
+          {getPageNumbers().map((page, index) =>
+            typeof page === 'number' ? (
+              <Button
+                key={`page-${page}`}
+                variant={currentPage === page ? 'default' : 'outline'}
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => onPageChange(page)}
+              >
+                {page}
+              </Button>
+            ) : (
+              // eslint-disable-next-line react/no-array-index-key
+              <span key={`ellipsis-${index}`} className="px-1 self-center">
+                ...
+              </span>
+            )
+          )}
+        </div>
 
         <Button
           variant="outline"
@@ -203,6 +276,10 @@ export default function Display({
         >
           <ChevronsRight className="h-4 w-4" />
         </Button>
+
+        <div className="ml-2 text-sm text-muted-foreground">
+          {sortedResults.length} résultats
+        </div>
       </div>
     );
   };
@@ -277,10 +354,10 @@ export default function Display({
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {paginatedResults.map((result: ForensicResult) => {
+          {paginatedResults.map((result: ForensicResult, index) => {
             const timestamp = new Date(result.timestamp);
             return (
-              <Popover key={result.id}>
+              <Popover key={result.id || `result-${index}`}>
                 <PopoverTrigger asChild>
                   <div className="border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-card cursor-pointer relative group">
                     <div className="relative">
@@ -353,8 +430,9 @@ export default function Display({
                       <div className="text-muted-foreground">Caméra:</div>
                       <div>
                         {
-                          extractCameraInfo(result.camera || result.cameraId)
-                            .name
+                          extractCameraInfo(
+                            result.camera || result.cameraId || 'unknown'
+                          ).name
                         }
                       </div>
 
