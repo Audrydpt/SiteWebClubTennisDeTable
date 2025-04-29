@@ -87,10 +87,13 @@ export default function DashboardTab({
   if (isError) return <div>Something went wrong</div>;
   if (isLoading || !data) return <LoadingSpinner />;
 
-  const widgets =
-    data.map((widget: StoredWidget) => {
+  const widgets: ChartTiles[] = data
+    .map((widget: StoredWidget) => {
       const { id, size, type, ...chart } = widget;
       const Component = ChartTypeComponents[type];
+
+      if (!Component) return null;
+
       return {
         id,
         widget,
@@ -102,7 +105,9 @@ export default function DashboardTab({
           />
         ),
       } as ChartTiles;
-    }) ?? [];
+    })
+    .filter((item): item is ChartTiles => item !== null);
+
   return (
     <ReactSortable
       list={widgets}

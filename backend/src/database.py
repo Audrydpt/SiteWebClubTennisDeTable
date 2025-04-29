@@ -468,7 +468,7 @@ class GenericDAL:
         async with GenericDAL.AsyncSession() as session:
             # Remplacement de session.query(…)
             # Somehow, text(f"'{_time}'") get converted into ModelName.hour, instead of '1 hour'
-            stmt = select(func.time_bucket_gapfill(text("'" + _time + "'"), cls.timestamp).label('_timestamp'))
+            stmt = select(func.time_bucket_gapfill(text("'" + _time + "'"), cls.timestamp, 'UTC').label('_timestamp'))
     
             if _func is not None:
                 stmt = stmt.add_columns(_func)
@@ -481,7 +481,7 @@ class GenericDAL:
                 stmt = stmt.where(*conditions)
     
             if _between is not None and len(_between) == 2 and _between[0] is not None and _between[1] is not None:
-                stmt = stmt.where(cls.timestamp >= _between[0], cls.timestamp <= _between[1])
+                stmt = stmt.where(cls.timestamp >= _between[0], cls.timestamp < _between[1])
             
             # Pour group_by et order_by, on utilise column('_timestamp')
             stmt = stmt.group_by(column('_timestamp'))
@@ -497,7 +497,13 @@ class GenericDAL:
             if _having is not None:
                 stmt = stmt.having(_having)
             
-            stmt = stmt.order_by(column('_timestamp'))            
+            stmt = stmt.order_by(column('_timestamp'))        
+            if _group is not None:
+                if isinstance(_group, list):
+                    for group in _group:
+                        stmt = stmt.order_by(column(group))
+                else:
+                    stmt = stmt.order_by(column(_group))    
           
             result = await session.execute(stmt)
             result = result.all()
@@ -507,23 +513,16 @@ class GenericDAL:
         async with GenericDAL.AsyncSession() as session:
             # Start with a base select statement using time_bucket_gapfill
             bucket_column = column('bucket')
-            stmt = select(func.time_bucket_gapfill(text("'" + _time + "'"), bucket_column).label('_timestamp'))
+            stmt = select(func.time_bucket_gapfill(text("'" + _time + "'"), bucket_column, 'UTC').label('_timestamp'))
             stmt = stmt.add_columns(column('counts').label('count'))
                         
             # FROM clause
             # Need to use from_statement since we're working with a view
             stmt = stmt.select_from(text(f'"{view_name}"'))
             
-            # Apply WHERE conditions
-            where_clauses = []
             if _between is not None and len(_between) == 2 and _between[0] is not None and _between[1] is not None:
-                where_clauses.append(bucket_column >= _between[0])
-                where_clauses.append(bucket_column <= _between[1])
-            
-            if where_clauses:
-                for clause in where_clauses:
-                    stmt = stmt.where(clause)
-            
+                stmt = stmt.where(bucket_column >= _between[0], bucket_column < _between[1])
+
             # GROUP BY clause is handled in the view, so we only add the columns
             if _group is not None:
                 if isinstance(_group, list):
@@ -535,14 +534,15 @@ class GenericDAL:
             
             # Order by timestamp
             stmt = stmt.order_by(column('_timestamp'))
+            if _group is not None:
+                if isinstance(_group, list):
+                    for group in _group:
+                        stmt = stmt.order_by(column(group))
+                else:
+                    stmt = stmt.order_by(column(_group))
             
-            try:
-                result = await session.execute(stmt)
-                return result.all()
-            except Exception as e:
-                logger.error(f"Error executing view query: {e}")
-                logger.error(f"Query was: {stmt}")
-                raise
+            result = await session.execute(stmt)
+            return result.all()
         
     async def async_update(self, obj) -> Any:
         async with GenericDAL.AsyncSession() as session:

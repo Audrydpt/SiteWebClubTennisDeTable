@@ -810,7 +810,7 @@ class FastAPIServer:
             # Construct the SQL query including WHERE and GROUP BY clauses
             sql = f"""
             CREATE MATERIALIZED VIEW "widget_{widget_id}" WITH (timescaledb.continuous, timescaledb.materialized_only=false)  AS
-            SELECT time_bucket('{aggregation}', timestamp) AS bucket,
+            SELECT time_bucket('{aggregation}', timestamp, 'UTC') AS bucket,
                    count(timestamp) as counts
                    {group_select}
             FROM {table.lower()}
