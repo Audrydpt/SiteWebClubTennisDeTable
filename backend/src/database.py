@@ -565,7 +565,67 @@ class GenericDAL:
                 logger.error(f"Error executing view query: {e}")
                 logger.error(f"Query was: {stmt}")
                 raise
-        
+
+    async def async_get_trend(self, view_name, _group=None, **filters) -> JSON:
+        async with GenericDAL.AsyncSession() as session:
+            #def des fonctions de calcul
+            avg_func = func.avg(column('counts'))
+            med_func = func.percentile_cont(0.5).within_group(column('counts'))
+            std_func = func.stddev(column('counts'))
+            pc5_func = func.percentile_cont(0.05).within_group(column('counts'))
+            pc95_func = func.percentile_cont(0.95).within_group(column('counts'))
+            min_func = func.min(column('counts'))
+            max_func = func.max(column('counts'))
+
+            #construction du json à renvoyer
+            stats_obj = func.jsonb_build_object(
+                'avg', avg_func,
+                'med', med_func,
+                'std', std_func,
+                'pc5', pc5_func,
+                'pc95', pc95_func,
+                'min', min_func,
+                'max', max_func
+            ).label('stats')
+
+            if _group is None:
+                stmt = select(stats_obj).select_from(text(f'"{view_name}"'))
+                try:
+                    result = await session.execute(stmt)
+                    global_stats = { 'global': result.scalar_one_or_none()}
+                    return global_stats
+                except Exception as e:
+                    logger.error(f"Error executing trend query: {e}")
+                    logger.error(f"Query was: {stmt}")
+                    raise
+            else:
+                if isinstance(_group, list):
+                    group_cols = [column(g) for g in _group]
+                    stmt = select(*group_cols, stats_obj)
+                    for g in group_cols:
+                        stmt = stmt.group_by(g)
+                else:
+                    group_col = column(_group)
+                    stmt = select(group_col, stats_obj)
+                    stmt = stmt.group_by(group_col)
+
+                stmt = stmt.select_from(text(f'"{view_name}"'))
+                stmt2 = select(stats_obj).select_from(text(f'"{view_name}"'))
+            try:
+                result = await session.execute(stmt)
+                result2 = await session.execute(stmt2)
+                group_stats = result.all()
+                global_stats = result2.scalar_one_or_none()
+                combined_result = {
+                    'global': global_stats,
+                    'group': group_stats
+                }
+                return combined_result
+            except Exception as e:
+                logger.error(f"Error executing trend query: {e}")
+                logger.error(f"Query was: {stmt}")
+                raise
+
     async def async_update(self, obj) -> Any:
         async with GenericDAL.AsyncSession() as session:
             result = await session.merge(obj)

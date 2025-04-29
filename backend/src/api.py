@@ -1109,7 +1109,7 @@ class FastAPIServer:
 
         AggregateParam = create_model(f"Aggregate", aggregate=aggregate, group_by=group, time_from=date, time_to=date, **query)    
         
-        @self.app.get("/dashboard/widgets/{guid}", tags=["dashboard"])
+        @self.app.get("/dashboard/widgets/{guid}", tags=["dashboard", "materialized"])
         async def get_bucket(guid: str, kwargs: Annotated[AggregateParam, Query()]):
             try:
                 if guid == "undefined":
@@ -1156,15 +1156,8 @@ class FastAPIServer:
                 return ret
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
-    def __create_trend(self):
-        query = {}
-        aggregate = (ModelName, Field(default=ModelName.hour, description="The time interval to aggregate the data"))
-        group = (str, Field(default=None, description="The column to group by"))
-        date = (datetime.datetime, Field(default=None, description="The timestamp to filter by"))
-
-        AggregateParam = create_model(f"StatsAggregate", aggregate=aggregate, group_by=group_by, time_from=date, time_to=date, **query)
-
-        @self.app_get("/dashboard/widgets/{guid}/trend", tags=["dashboard"])
+    
+        @self.app_get("/dashboard/widgets/{guid}/trend", tags=["dashboard", "materialized"])
         async def get_trend(guid: str, kwargs: Annotated[AggregateParam, Query()]):
             try:
                 if guid == "undefined":
@@ -1179,7 +1172,9 @@ class FastAPIServer:
                 aggregation = agg_func if agg_func is not None else func.count('*')
 
                 try:
-                    cursor = await dal.async_get_trend(matView, _time=time, _group=group_by, _between=between)
+                    trend_data = await dal.async_get_trend(matView, _time=time, _group=group_by)
+                    
+                    return trend_data
                 except Exception as e:
                     raise HTTPException(status_code=500, detail=str(e))
                 
