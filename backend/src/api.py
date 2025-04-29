@@ -1101,7 +1101,7 @@ class FastAPIServer:
                 aggregation = agg_func if agg_func is not None else func.count('*')
                 
                 cursor = await dal.async_get_bucket(model_class, _func=aggregation, _time=time, _group=group_by, _between=between, **where)
-                
+
                 ret = []
                 for row in cursor:
                     data = {
@@ -1111,10 +1111,8 @@ class FastAPIServer:
                     if group_by is not None:
                         for idx, group in enumerate(group_by):
                             data[group] = row[idx + 2]
-                            logger.info(f"  Adding group_by value: {group}={row[idx + 2]}")
 
                     ret.append(data)
-
                 return ret
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
@@ -1128,7 +1126,7 @@ class FastAPIServer:
 
         AggregateParam = create_model(f"Aggregate", aggregate=aggregate, group_by=group, time_from=date, time_to=date, **query)    
         
-        @self.app.get("/dashboard/widgets/{guid}", tags=["dashboard"])
+        @self.app.get("/dashboard/widgets/{guid}", tags=["dashboard", "materialized"])
         async def get_bucket(guid: str, kwargs: Annotated[AggregateParam, Query()]):
             try:
                 if guid == "undefined":
@@ -1178,6 +1176,31 @@ class FastAPIServer:
                 
                 return ret
             except ValueError as e:
+                raise HTTPException(status_code=500, detail=str(e))
+    
+        @self.app_get("/dashboard/widgets/{guid}/trend", tags=["dashboard", "materialized"])
+        async def get_trend(guid: str, kwargs: Annotated[AggregateParam, Query()]):
+            try:
+                if guid == "undefined":
+                    return []
+                
+                time = str(kwargs.aggregate.value) if hasattr(kwargs.aggregate, 'value') else str(kwargs.aggregate)
+                between = kwargs.time_from, kwargs.time_to
+                group_by = kwargs.group_by.split(",") if kwargs.group_by is not None else None
+                matView = f"widget_{guid}"
+                
+                dal = GenericDAL()
+                aggregation = agg_func if agg_func is not None else func.count('*')
+
+                try:
+                    trend_data = await dal.async_get_trend(matView, _time=time, _group=group_by)
+                    
+                    return trend_data
+                except Exception as e:
+                    raise HTTPException(status_code=500, detail=str(e))
+                
+            except Exception as e:
+                logger.error(f"Error retrieving trend data for widget {guid}: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
             
     def __create_proxy(self):
