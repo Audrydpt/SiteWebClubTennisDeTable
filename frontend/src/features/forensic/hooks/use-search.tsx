@@ -532,9 +532,9 @@ export default function useSearch() {
         forensicResultsHeap.clear();
       }
 
-      // Récupérer les informations de la tâche
+      // Récupérer les informations de la tâche avec pagination
       const resultsResponse = await fetch(
-        `${process.env.MAIN_API_URL}/forensics/${jobId}`
+        `${process.env.MAIN_API_URL}/forensics/${jobId}?page=0&per_page=${perPage}`
       );
       if (!resultsResponse.ok)
         throw new Error(`Erreur API: ${resultsResponse.status}`);
@@ -552,20 +552,25 @@ export default function useSearch() {
 
         // Traitement des données de progression des sources
         const sourcesProgress = resultsData.results
-          .filter((r: { type: string }) => r.type === 'progress')
+          .filter((r: any) => r.metadata?.type === 'progress')
           .reduce((acc: any, curr: any) => {
-            if (!acc[curr.guid]) {
-              acc[curr.guid] = {
-                sourceId: curr.guid,
+            const guid = curr.metadata?.guid;
+            if (!guid) return acc;
+
+            if (!acc[guid]) {
+              acc[guid] = {
+                sourceId: guid,
                 sourceName:
-                  curr.source_name || `Source ${curr.guid.slice(0, 8)}...`,
-                progress: curr.progress,
-                timestamp: curr.timestamp || new Date().toISOString(),
-                startTime: curr.start_time || new Date().toISOString(),
+                  curr.metadata?.source_name || `Source ${guid.slice(0, 8)}...`,
+                progress: curr.metadata?.progress || 0,
+                timestamp: curr.metadata?.timestamp || new Date().toISOString(),
+                startTime:
+                  curr.metadata?.start_time || new Date().toISOString(),
               };
-            } else if (curr.progress > acc[curr.guid].progress) {
-              acc[curr.guid].progress = curr.progress;
-              acc[curr.guid].timestamp = curr.timestamp;
+            } else if ((curr.metadata?.progress || 0) > acc[guid].progress) {
+              acc[guid].progress = curr.metadata?.progress || 0;
+              if (curr.metadata?.timestamp)
+                acc[guid].timestamp = curr.metadata.timestamp;
             }
             return acc;
           }, {});
@@ -586,10 +591,12 @@ export default function useSearch() {
 
         // Pour les tâches terminées ou en mode non-skipHistory, charger la première page
         if (!skipHistory || isCompleted) {
-          // Charger la première page des résultats
-          await loadPageResults(0);
-
-          console.log('📊 Première page chargée');
+          // Utiliser loadPageResults pour charger la page initiale
+          // Cette fonction gère déjà le traitement des résultats
+          const pageResultS = (await loadPageResults(0)) as
+            | ForensicResult[]
+            | [];
+          console.log('📊 Première page chargée', pageResultS.length);
         }
 
         // Si la tâche n'est pas terminée, relancer le WebSocket
@@ -602,7 +609,7 @@ export default function useSearch() {
           setIsSearching(false);
         }
 
-        return [];
+        return resultsData.results;
       }
 
       return [];
