@@ -537,13 +537,15 @@ class FastAPIServer:
                 raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
         
         @self.app.get("/forensics/{guid}", tags=["forensics"])
-        async def get_task(guid: str):
+        async def get_task(guid: str, page: int, per_page: int = 12):
             try:
                 status = TaskManager.get_job_status(guid)
                 if not status:
                     raise HTTPException(status_code=404, detail="Tâche introuvable")
-                    
-                results = await TaskManager.get_job_results(guid)
+
+                total_count = TaskManager.get_job_count(guid)
+
+                results = await TaskManager.get_job_results_paginated(guid, page, per_page)
                 
                 # Ne pas inclure les données binaires dans la réponse
                 for result in results:
@@ -552,7 +554,13 @@ class FastAPIServer:
                 return {
                     "guid": guid,
                     "status": status,
-                    "results": results
+                    "results": results,
+                    "pagination": {
+                        "page": page,
+                        "per_page": per_page,
+                        "total_count": total_count,
+                        "total_pages": (total_count // per_page) + (1 if total_count % per_page > 0 else 0)
+                    }
                 }
             
             except Exception as e:
