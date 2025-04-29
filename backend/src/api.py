@@ -780,7 +780,14 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
 
-    async def create_materialized_view(self, widget_id: str, table: str, aggregation: str, group_by: str = None):
+    async def create_materialized_view(
+        self,
+        widget_id: str,
+        table: str,
+        aggregation: str,
+        group_by: Optional[str] = None,
+        where: Optional[List[Dict[str, Any]]] = None
+    ) -> bool:
         """Create a materialized view for a widget"""
         try:
             #Build the SQL query based on widget config
@@ -791,13 +798,23 @@ class FastAPIServer:
                 group_select = ""
                 group_by_clause = "GROUP BY bucket"
 
-            #Construct the SQL query
+            # Build the WHERE clause if provided
+            if where:
+                where_clause = f"WHERE "
+                for q in where:
+                    where_clause += f"{q['column']}::text = '{q['value']}' AND "
+                where_clause = where_clause[:-4]
+            else:
+                where_clause = ""
+
+            # Construct the SQL query including WHERE and GROUP BY clauses
             sql = f"""
             CREATE MATERIALIZED VIEW "widget_{widget_id}" WITH (timescaledb.continuous, timescaledb.materialized_only=false)  AS
             SELECT time_bucket('{aggregation}', timestamp) AS bucket,
                    count(timestamp) as counts
                    {group_select}
             FROM {table.lower()}
+            {where_clause}
             {group_by_clause};
             """
 
@@ -879,7 +896,8 @@ class FastAPIServer:
                     str(guid),
                     widget.table,
                     widget.aggregation,
-                    widget.groupBy if hasattr(widget, "groupBy") else None
+                    widget.groupBy if hasattr(widget, "groupBy") else None,
+                    widget.where if hasattr(widget, "where") else None
                 )
 
                 return widget
@@ -980,7 +998,8 @@ class FastAPIServer:
                     str(widget_id),
                     widget.table,
                     widget.aggregation,
-                    widget.groupBy if hasattr(widget, "groupBy") else None
+                    widget.groupBy if hasattr(widget, "groupBy") else None,
+                    widget.where if hasattr(widget, "where") else None
                 )
                 return res
 
@@ -1079,8 +1098,7 @@ class FastAPIServer:
                 where = {k: v for k, v in kwargs if v is not None and k in query}
 
                 dal = GenericDAL()
-
-                aggregation = agg_func if agg_func is not None else func.count(model_class.id)
+                aggregation = agg_func if agg_func is not None else func.count('*')
                 
                 cursor = await dal.async_get_bucket(model_class, _func=aggregation, _time=time, _group=group_by, _between=between, **where)
                 
@@ -1116,9 +1134,10 @@ class FastAPIServer:
                 if guid == "undefined":
                     return []
                 
-                time = str(kwargs.aggregate.value) if hasattr(kwargs.aggregate, 'value') else str(kwargs.aggregate)
+                time = kwargs.aggregate
                 between = kwargs.time_from, kwargs.time_to
                 group_by = kwargs.group_by.split(",") if kwargs.group_by is not None else None
+                where = {k: v for k, v in kwargs if v is not None and k in query}
                 matView = f"widget_{guid}"
                 
                 dal = GenericDAL()
@@ -1126,8 +1145,9 @@ class FastAPIServer:
                 
                 try:
                     cursor = await dal.async_get_view(matView, _time=time, _group=group_by, _between=between)
-                except Exception as e:                    
-                    # Récupérer le widget pour obtenir la table source
+                except Exception as e:
+                    logger.error(f"Error getting view {matView}: {e}")
+
                     widget = await dal.async_get(Widget, id=guid)
                     if not widget or len(widget) == 0:
                         return []
@@ -1139,8 +1159,10 @@ class FastAPIServer:
                         _func=aggregation, 
                         _time=time, 
                         _group=group_by, 
-                        _between=between
+                        _between=between,
+                        **where
                     )
+
                 
                 ret = []
                 for row in cursor:
