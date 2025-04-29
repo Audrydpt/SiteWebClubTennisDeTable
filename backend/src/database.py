@@ -273,6 +273,7 @@ class GenericDAL:
             session.execute(DDL("SET client_encoding TO 'UTF8'"))
             session.execute(DDL("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
             session.execute(DDL("CREATE EXTENSION IF NOT EXISTS timescaledb"))
+            session.execute(DDL("CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit"))
             session.commit()
         
         print("Binding schema to engine...")

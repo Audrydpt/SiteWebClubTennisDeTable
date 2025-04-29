@@ -30,7 +30,7 @@ RUN sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-
 RUN sh -c "echo 'deb https://packagecloud.io/timescale/timescaledb/ubuntu/ $(lsb_release -c -s) main' > /etc/apt/sources.list.d/timescaledb.list" \
     && wget --quiet -O - https://packagecloud.io/timescale/timescaledb/gpgkey | apt-key add - \
     && apt-get update \
-    && apt-get install -y timescaledb-2-postgresql-${PG_VERSION} \
+    && apt-get install -y timescaledb-2-postgresql-${PG_VERSION} timescaledb-toolkit-postgresql-${PG_VERSION} \
     && rm -rf /var/lib/apt/lists/* \
     && echo "shared_preload_libraries = 'timescaledb'" >> /etc/postgresql/${PG_VERSION}/main/postgresql.conf
 
