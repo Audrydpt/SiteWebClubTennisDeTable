@@ -49,16 +49,7 @@ export default function Results({
   const [sortType, setSortType] = useState<SortType>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSourceDetails, setShowSourceDetails] = useState(false);
-  const {
-    resumeJob,
-    displayResults,
-    setDisplayResults,
-    currentPage,
-    changePage,
-    totalResultsCount,
-    perPage,
-    totalPages,
-  } = useSearch();
+  const { resumeJob, displayResults, setDisplayResults } = useSearch();
   const {
     tabJobs,
     handleTabChange: defaultHandleTabChange,
@@ -317,10 +308,6 @@ export default function Results({
                   sortType={sortType}
                   sortOrder={sortOrder}
                   isTabLoading={isTabLoading || isInitialLoading}
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  totalResults={totalResultsCount}
-                  onPageChange={changePage}
                 />
               );
             } else {

@@ -6,7 +6,7 @@ import {
   ChevronsRight,
   Search,
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Popover,
   PopoverContent,
@@ -48,12 +48,6 @@ interface DisplayProps {
   sortType: SortType;
   sortOrder: 'asc' | 'desc';
   isTabLoading?: boolean;
-
-  // props pagination
-  currentPage: number;
-  totalPages: number;
-  totalResults: number;
-  onPageChange: (page: number) => void;
 }
 
 export default function Display({
@@ -63,12 +57,10 @@ export default function Display({
   sortType,
   sortOrder,
   isTabLoading = false,
-  currentPage,
-  totalPages,
-  totalResults,
-  onPageChange,
 }: DisplayProps) {
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(12);
 
   // Generate stable skeleton IDs
   const skeletonIds = useMemo(
@@ -93,11 +85,29 @@ export default function Display({
     });
   }, [results, sortType, sortOrder]);
 
+  // Pagination calculations
+  const totalPages = useMemo(
+    () => Math.ceil(sortedResults.length / itemsPerPage),
+    [sortedResults, itemsPerPage]
+  );
+
+  // Reset to first page when sorting or filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [sortType, sortOrder]);
+
+  // Assurer que currentPage ne dépasse jamais totalPages
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  // Get only the results for the current page
   const paginatedResults = useMemo(() => {
-    const start = (currentPage - 1) * 12;
-    const end = start + 12;
-    return sortedResults.slice(start, end);
-  }, [sortedResults, currentPage]);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return sortedResults.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedResults, currentPage, itemsPerPage]);
 
   // Render expanded image modal
   const renderExpandedImageModal = () => {
@@ -157,7 +167,7 @@ export default function Display({
         <Button
           variant="outline"
           size="icon"
-          onClick={() => onPageChange(1)}
+          onClick={() => setCurrentPage(1)}
           disabled={currentPage === 1}
         >
           <ChevronsLeft className="h-4 w-4" />
@@ -165,20 +175,22 @@ export default function Display({
         <Button
           variant="outline"
           size="icon"
-          onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
           disabled={currentPage === 1}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
 
         <span className="mx-2 text-sm">
-          Page {currentPage} sur {totalPages} ({totalResults} résultats)
+          Page {currentPage} sur {totalPages} ({sortedResults.length} résultats)
         </span>
 
         <Button
           variant="outline"
           size="icon"
-          onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
+          onClick={() =>
+            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+          }
           disabled={currentPage === totalPages}
         >
           <ChevronRight className="h-4 w-4" />
@@ -186,7 +198,7 @@ export default function Display({
         <Button
           variant="outline"
           size="icon"
-          onClick={() => onPageChange(totalPages)}
+          onClick={() => setCurrentPage(totalPages)}
           disabled={currentPage === totalPages}
         >
           <ChevronsRight className="h-4 w-4" />

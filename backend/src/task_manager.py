@@ -342,21 +342,6 @@ class TaskManager:
             return False
 
     @staticmethod
-    async def get_job_results_paginated(job_id, page, per_page):
-        """
-        Récupère les résultats d'un job avec pagination.
-        """
-        skip = page * per_page
-
-        try:
-            all = await results_store.get_results(job_id)
-            paginated_results = all[skip:skip + per_page]
-            return paginated_results
-        except Exception as e:
-            logger.error(f"Erreur lors de la récupération des résultats du job {job_id}: {e}")
-            raise
-
-    @staticmethod
     def get_job_created(job_id: str) -> Optional[datetime.datetime]:
         try:
             redis_client = redis.Redis(host='localhost', port=6379, db=1)
