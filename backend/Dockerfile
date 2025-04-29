@@ -32,8 +32,7 @@ RUN sh -c "echo 'deb https://packagecloud.io/timescale/timescaledb/ubuntu/ $(lsb
     && apt-get update \
     && apt-get install -y timescaledb-2-postgresql-${PG_VERSION} timescaledb-toolkit-postgresql-${PG_VERSION} \
     && rm -rf /var/lib/apt/lists/* \
-    && echo "shared_preload_libraries = 'timescaledb'" >> /etc/postgresql/${PG_VERSION}/main/postgresql.conf \
-    && echo "shared_preload_libraries = 'timescaledb_toolkit'" >> /etc/postgresql/${PG_VERSION}/main/postgresql.conf
+    && echo "shared_preload_libraries = 'timescaledb'" >> /etc/postgresql/${PG_VERSION}/main/postgresql.conf
 
 # Configuration Redis
 RUN sed -i 's/protected-mode yes/protected-mode no/g' /etc/redis/redis.conf && \
