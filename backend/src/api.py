@@ -156,7 +156,6 @@ class FastAPIServer:
 
         self.__create_tabs()
         self.__create_widgets()
-        self.__create_trend()
         self.__create_settings()
         self.__create_health()
         self.__create_forensic()
