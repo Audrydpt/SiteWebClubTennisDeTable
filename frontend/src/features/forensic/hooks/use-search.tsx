@@ -459,6 +459,91 @@ export default function useSearch() {
     }
   };
 
+  const testResumeJob = async (
+    jobId: string,
+    page: number,
+    skipLoadingState = false
+  ) => {
+    if (!jobId) return null;
+
+    try {
+      if (!skipLoadingState) {
+        setIsSearching(true);
+      }
+      // Récupération des résultats avec pagination
+      const response = await fetch(
+        `${process.env.MAIN_API_URL}/forensics/${jobId}/pages/${page}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Erreur API: ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      const {
+        results,
+        total,
+        total_pages: totalPages,
+        page: currentPage,
+        page_size: pageSize,
+      } = responseData;
+
+      // Récupération des images pour chaque résultat
+      const processedResults = await Promise.all(
+        results.map(async (result: any) => {
+          try {
+            if (result.frameId) {
+              const imageResponse = await fetch(
+                `${process.env.MAIN_API_URL}/forensics/${jobId}/frames/${result.frameId}`
+              );
+
+              if (!imageResponse.ok) {
+                throw new Error(
+                  `Erreur lors du chargement de l'image: ${imageResponse.status}`
+                );
+              }
+
+              const imageBlob = await imageResponse.blob();
+              const imageUrl = URL.createObjectURL(imageBlob);
+              return { ...result, imageData: imageUrl };
+            }
+          } catch (error) {
+            console.error(
+              `Erreur lors du chargement de l'image pour ${result.id}:`,
+              error
+            );
+          }
+          return result;
+        })
+      );
+
+      // Ajout des résultats au heap pour le filtrage
+      processedResults.forEach((result: any) => {
+        forensicResultsHeap.addResult(result);
+      });
+
+      // Mise à jour des résultats à afficher
+      setDisplayResults(forensicResultsHeap.getBestResults());
+
+      return {
+        results: processedResults,
+        pagination: {
+          total,
+          totalPages,
+          currentPage,
+          pageSize,
+        },
+      };
+    } catch (error) {
+      console.error('Erreur lors du chargement des résultats paginés:', error);
+      throw error;
+    } finally {
+      if (!skipLoadingState) {
+        setIsSearching(false);
+      }
+    }
+  };
+
   const startSearch = useCallback(
     async (formData: CustomFormData) => {
       try {
@@ -561,5 +646,6 @@ export default function useSearch() {
     setDisplayResults,
     setResults,
     resetSearch,
+    testResumeJob,
   };
 }

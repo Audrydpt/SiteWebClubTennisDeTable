@@ -18,6 +18,7 @@ export default function Forensic() {
   const expandedWidth = 350;
   const containerRef = useRef<HTMLDivElement>(null);
   const [isTabLoading, setIsTabLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   const {
     startSearch,
@@ -30,6 +31,7 @@ export default function Forensic() {
     setDisplayResults,
     resetSearch,
     setResults,
+    testResumeJob,
   } = useSearch();
 
   const {
@@ -43,6 +45,22 @@ export default function Forensic() {
     deleteAllTasks,
     getActiveJobId,
   } = useJobs();
+
+  const handlePageChange = async (page: number) => {
+    setCurrentPage(page);
+
+    const activeJobId = getActiveJobId(); // Récupère le jobId actif
+    if (activeJobId) {
+      try {
+        await testResumeJob(activeJobId, page, false); // Appel à testResumeJob avec la page
+      } catch (error) {
+        console.error(
+          'Erreur lors du chargement des résultats pour la page:',
+          error
+        );
+      }
+    }
+  };
 
   const handleDeleteAllTabs = () => {
     deleteAllTasks();
@@ -72,6 +90,7 @@ export default function Forensic() {
   const handleAddNewTab = () => {
     forensicResultsHeap.clear();
     setDisplayResults([]);
+    setCurrentPage(1);
 
     setIsTabLoading(false);
 
@@ -92,6 +111,7 @@ export default function Forensic() {
 
   const handleTabChange = async (tabIndex: number) => {
     setIsTabLoading(true);
+    setCurrentPage(1);
 
     const selectedTab = tabJobs.find((tab) => tab.tabIndex === tabIndex);
     const isNewTab = selectedTab?.isNew === true;
@@ -116,7 +136,8 @@ export default function Forensic() {
 
     if (selectedTab?.jobId) {
       try {
-        await resumeJob(selectedTab.jobId, false);
+        // await resumeJob(selectedTab.jobId, false);
+        await testResumeJob(selectedTab.jobId, currentPage, false);
       } catch (error) {
         console.error('Erreur lors du chargement des résultats:', error);
       }
@@ -165,7 +186,8 @@ export default function Forensic() {
             setTimeout(resolve, 50);
           });
           if (tabWithJob.jobId) {
-            await resumeJob(tabWithJob.jobId, false);
+            // await resumeJob(tabWithJob.jobId, false);
+            await testResumeJob(tabWithJob.jobId, currentPage, false);
           }
         } else if (updatedTabJobs?.length > 0) {
           handleTabChange(updatedTabJobs[0].tabIndex);
@@ -253,6 +275,8 @@ export default function Forensic() {
             isTabLoading={isTabLoading}
             onDeleteTab={handleDeleteTab}
             onDeleteAllTabs={handleDeleteAllTabs}
+            currentPage={currentPage}
+            onPageChange={handlePageChange}
           />
         </CardContent>
       </Card>

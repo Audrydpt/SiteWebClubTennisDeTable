@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier,@typescript-eslint/no-explicit-any,no-console,no-else-return,consistent-return,react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier,@typescript-eslint/no-explicit-any,no-console,no-else-return,consistent-return,react-hooks/exhaustive-deps,import/no-named-as-default */
 import {
   ChevronDown,
   ChevronUp,
@@ -33,6 +33,8 @@ interface ResultsProps {
   isTabLoading?: boolean;
   onDeleteTab?: (tabIndex: number) => void;
   onDeleteAllTabs?: () => void;
+  currentPage: number;
+  onPageChange: (page: number) => void;
 }
 
 export default function Results({
@@ -45,11 +47,14 @@ export default function Results({
   isTabLoading,
   onDeleteTab,
   onDeleteAllTabs,
+  currentPage,
+  onPageChange,
 }: ResultsProps) {
   const [sortType, setSortType] = useState<SortType>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSourceDetails, setShowSourceDetails] = useState(false);
-  const { resumeJob, displayResults, setDisplayResults } = useSearch();
+  const { resumeJob, displayResults, setDisplayResults, testResumeJob } =
+    useSearch();
   const {
     tabJobs,
     handleTabChange: defaultHandleTabChange,
@@ -146,7 +151,8 @@ export default function Results({
 
       try {
         loadedJobsRef.current.add(jobId);
-        await resumeJob(jobId, false);
+        // await resumeJob(jobId, false);
+        await testResumeJob(jobId, 1, false);
       } catch (error) {
         console.error('Erreur lors du chargement des résultats:', error);
       } finally {
@@ -165,7 +171,7 @@ export default function Results({
         clearTimeout(requestTimeoutRef.current);
       }
     };
-  }, [activeTabIndex, tabJobs, resumeJob]);
+  }, [activeTabIndex, tabJobs, resumeJob, testResumeJob]);
 
   const toggleSortOrder = () => {
     setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
@@ -308,6 +314,8 @@ export default function Results({
                   sortType={sortType}
                   sortOrder={sortOrder}
                   isTabLoading={isTabLoading || isInitialLoading}
+                  currentPage={currentPage}
+                  onPageChange={onPageChange}
                 />
               );
             } else {

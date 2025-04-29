@@ -48,6 +48,8 @@ interface DisplayProps {
   sortType: SortType;
   sortOrder: 'asc' | 'desc';
   isTabLoading?: boolean;
+  currentPage: number;
+  onPageChange: (page: number) => void;
 }
 
 export default function Display({
@@ -57,9 +59,10 @@ export default function Display({
   sortType,
   sortOrder,
   isTabLoading = false,
+  currentPage,
+  onPageChange,
 }: DisplayProps) {
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(12);
 
   // Generate stable skeleton IDs
@@ -93,13 +96,13 @@ export default function Display({
 
   // Reset to first page when sorting or filters change
   useMemo(() => {
-    setCurrentPage(1);
+    onPageChange(1);
   }, [sortType, sortOrder]);
 
   // Assurer que currentPage ne dépasse jamais totalPages
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(totalPages);
+      onPageChange(totalPages);
     }
   }, [totalPages, currentPage]);
 
@@ -158,7 +161,6 @@ export default function Display({
     );
   };
 
-  // Pagination controls
   const renderPagination = () => {
     if (totalPages <= 1) return null;
 
@@ -167,7 +169,7 @@ export default function Display({
         <Button
           variant="outline"
           size="icon"
-          onClick={() => setCurrentPage(1)}
+          onClick={() => onPageChange(1)}
           disabled={currentPage === 1}
         >
           <ChevronsLeft className="h-4 w-4" />
@@ -175,7 +177,7 @@ export default function Display({
         <Button
           variant="outline"
           size="icon"
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
           disabled={currentPage === 1}
         >
           <ChevronLeft className="h-4 w-4" />
@@ -188,9 +190,7 @@ export default function Display({
         <Button
           variant="outline"
           size="icon"
-          onClick={() =>
-            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-          }
+          onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
           disabled={currentPage === totalPages}
         >
           <ChevronRight className="h-4 w-4" />
@@ -198,7 +198,7 @@ export default function Display({
         <Button
           variant="outline"
           size="icon"
-          onClick={() => setCurrentPage(totalPages)}
+          onClick={() => onPageChange(totalPages)}
           disabled={currentPage === totalPages}
         >
           <ChevronsRight className="h-4 w-4" />
