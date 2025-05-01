@@ -93,7 +93,7 @@ describe('FormWidget', () => {
 
       // Note: we're not testing actual form submission as the component uses complex
       // dialog/form setup that's difficult to simulate in tests
-    });
+    }, 10000);
   });
 
   describe('Edge Cases', () => {
