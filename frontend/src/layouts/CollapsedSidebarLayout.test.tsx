@@ -1,8 +1,9 @@
-import { SidebarProvider } from '@/components/ui/sidebar'; // Import SidebarProvider
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { SidebarProvider } from '@/components/ui/sidebar'; // Import SidebarProvider
 import CollapsedSidebarLayout from './CollapsedSidebarLayout';
 
 // Mock child components to isolate the layout
