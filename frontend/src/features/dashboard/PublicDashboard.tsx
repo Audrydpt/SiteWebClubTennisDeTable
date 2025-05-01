@@ -61,7 +61,10 @@ export default function PublicDashboard({
     .filter((item): item is ChartTiles => item !== null);
 
   return (
-    <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6 gap-2">
+    <div
+      role="grid"
+      className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6 gap-2"
+    >
       {widgets.map(({ id, widget, content }) => (
         <div
           key={id}
