@@ -5,11 +5,11 @@ import { afterEach, vi } from 'vitest';
 import { UserPrivileges, UserType } from '@/lib/authenticate';
 
 // Mock the ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
+global.ResizeObserver = class MockResizeObserver {
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+};
 
 // Mock getBoundingClientRect
 Element.prototype.getBoundingClientRect = vi.fn().mockImplementation(() => ({

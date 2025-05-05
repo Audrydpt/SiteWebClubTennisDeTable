@@ -208,3 +208,119 @@ When testing components with forms in dialogs (like FormDashboard):
      expect(mockNavigate).toHaveBeenCalledWith(expectedPath);
    });
    ```
+
+= Testing Toast Notifications and Complex UI Elements =
+
+## Toast Notification Testing Strategy
+When testing toasts and other callback-driven functionality:
+1. Test the logic directly rather than through form events:
+   ```ts
+   // Instead of simulating form submit and hoping toast gets called
+   it('should show toast on success', () => {
+     // Test toast function directly
+     const successFn = () => toast('success.message', { description: 'success.description' });
+     successFn();
+     expect(toast).toHaveBeenCalledWith('success.message', expect.objectContaining({
+       description: 'success.description'
+     }));
+   });
+   ```
+
+## JSDOM Limitations
+Complex UI elements like sliders may not work properly in JSDOM:
+- setPointerCapture is not supported in JSDOM
+- Prefer testing value changes directly rather than simulating interactions
+- For ShadCN components like Slider, test value changes with fireEvent.change instead of trying to simulate click
+
+= Testing Checkbox Interactions =
+
+When testing checkboxes, there are several common challenges and best practices to ensure reliable tests:
+
+1. Targeting checkboxes:
+   - Prefer using `getByLabelText()` over `getByRole('checkbox')` when possible:
+     ```ts
+     // More reliable than indexing into getAllByRole('checkbox')
+     const checkbox = screen.getByLabelText('Option name');
+     ```
+   
+   - If using `getByRole`, add a name matcher for clarity:
+     ```ts
+     const checkbox = screen.getByRole('checkbox', { name: 'Option name' });
+     ```
+
+2. Checkbox interaction:
+   - Use `fireEvent.click()` for more reliable checkbox toggling:
+     ```ts
+     // More reliable than userEvent.click() for checkboxes
+     fireEvent.click(checkbox);
+     ```
+   
+   - Always verify checkbox state after interaction:
+     ```ts
+     fireEvent.click(checkbox);
+     expect(checkbox).toBeChecked();  // or not.toBeChecked()
+     ```
+
+3. Handling ShadCN and custom checkboxes:
+   - For complex UI where direct checkbox click doesn't work, try clicking on the label:
+     ```ts
+     const label = screen.getByText('Option name');
+     userEvent.click(label);
+     ```
+   
+   - For checkbox groups, first find the container, then target within it:
+     ```ts
+     const checkboxGroup = screen.getByRole('group', { name: 'Options' });
+     const specificCheckbox = within(checkboxGroup).getByLabelText('Option 1');
+     ```
+
+4. Debugging checkbox issues:
+   - Use `screen.debug()` to see the entire DOM structure:
+     ```ts
+     screen.debug(checkbox);  // Show just the checkbox
+     ```
+   
+   - Check for CSS interference by examining computed styles:
+     ```ts
+     console.log(window.getComputedStyle(checkbox));
+     ```
+
+5. Testing select/deselect all functionality:
+   - Test "Select All" and "Deselect All" button functionality separately:
+     ```ts
+     // Test Deselect All
+     await userEvent.click(screen.getByText('Deselect All'));
+     const checkboxes = screen.getAllByRole('checkbox');
+     checkboxes.forEach(checkbox => expect(checkbox).not.toBeChecked());
+     
+     // Test Select All
+     await userEvent.click(screen.getByText('Select All'));
+     checkboxes.forEach(checkbox => expect(checkbox).toBeChecked());
+     ```
+   
+   - When testing filtered selection, first verify the filtered view:
+     ```ts
+     // Filter items
+     await userEvent.type(screen.getByPlaceholderText('Search...'), 'Option 1');
+     
+     // Verify only filtered items are visible
+     expect(screen.getByText('Option 1')).toBeInTheDocument();
+     expect(screen.queryByText('Option 2')).not.toBeInTheDocument();
+     
+     // Test Select All on filtered items
+     await userEvent.click(screen.getByText('Select All'));
+     expect(screen.getByLabelText('Option 1')).toBeChecked();
+     ```
+
+6. Clean state for tests:
+   - Always ensure a clean initial state before testing selection changes:
+     ```ts
+     // Reset to a known state before each test
+     beforeEach(() => {
+       // Component rendering
+       renderComponent();
+       
+       // Ensure clean state
+       userEvent.click(screen.getByText('Deselect All'));
+     });
+     ```

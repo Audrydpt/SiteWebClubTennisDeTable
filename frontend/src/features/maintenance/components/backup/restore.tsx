@@ -138,6 +138,7 @@ export default function RestoreBackupWizard({
     serverStreamId: string,
     backupStreamId: string | null
   ) => {
+    console.log('handleMappingChange', serverStreamId, backupStreamId);
     setStreamMappings((prev) => {
       const newMappings = { ...prev };
       if (backupStreamId === null) {
@@ -246,6 +247,7 @@ export default function RestoreBackupWizard({
                   className="hidden"
                   onChange={handleFileChange}
                   disabled={isLoading}
+                  aria-label="Backup File"
                 />
                 <Button
                   onClick={() =>
