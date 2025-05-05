@@ -353,6 +353,21 @@ class TaskManager:
         except Exception as e:
             logger.error(f"Erreur lors de la récupération de la date de création du job {job_id}: {e}")
             return None
+        
+    @staticmethod
+    def get_job_total_pages(job_id: str) -> Optional[int]:
+        try:
+            redis_client = redis.Redis(host='localhost', port=6379, db=1)
+            result_list_key = f"task:{job_id}:results"
+            count = redis_client.llen(result_list_key)
+            
+            page_size = 12
+            total = (count + page_size - 1) // page_size if count > 0 else 0
+            return total
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération du nombre total de pages pour le job {job_id}: {e}")
+            return None
 
     @staticmethod
     def get_job_type(job_id: str) -> Optional[str]:

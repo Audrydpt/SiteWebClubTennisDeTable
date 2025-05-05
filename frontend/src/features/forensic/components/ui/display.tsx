@@ -57,6 +57,12 @@ interface DisplayProps {
   isTabLoading?: boolean;
   currentPage: number;
   onPageChange: (page: number) => void;
+  paginationInfo: {
+    currentPage: number;
+    pageSize: number;
+    totalPages: number;
+    total: number;
+  };
 }
 
 export default function Display({
@@ -68,9 +74,9 @@ export default function Display({
   isTabLoading = false,
   currentPage,
   onPageChange,
+  paginationInfo,
 }: DisplayProps) {
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(12);
 
   // Generate stable skeleton IDs
   const skeletonIds = useMemo(
@@ -96,14 +102,13 @@ export default function Display({
   }, [results, sortType, sortOrder]);
 
   // Pagination calculations
-  const totalPages = useMemo(
-    () => Math.ceil(sortedResults.length / itemsPerPage),
-    [sortedResults, itemsPerPage]
-  );
+  const { totalPages } = paginationInfo;
 
   // Reset to first page when sorting or filters change
-  useMemo(() => {
-    onPageChange(1);
+  useEffect(() => {
+    if (currentPage !== 1) {
+      onPageChange(1);
+    }
   }, [sortType, sortOrder]);
 
   // Assurer que currentPage ne dépasse jamais totalPages
@@ -111,13 +116,13 @@ export default function Display({
     if (currentPage > totalPages && totalPages > 0) {
       onPageChange(totalPages);
     }
-  }, [totalPages, currentPage]);
+  }, [totalPages, currentPage, onPageChange]);
 
-  // Get only the results for the current page
-  const paginatedResults = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return sortedResults.slice(startIndex, startIndex + itemsPerPage);
-  }, [sortedResults, currentPage, itemsPerPage]);
+  useEffect(() => {
+    console.log('paginationInfo reçue dans Display:', paginationInfo);
+  }, [paginationInfo]);
+
+  const paginatedResults = sortedResults;
 
   // Render expanded image modal
   const renderExpandedImageModal = () => {
@@ -169,8 +174,6 @@ export default function Display({
   };
 
   const renderPagination = () => {
-    if (totalPages <= 1) return null;
-
     // Détermine quels numéros de page afficher
     const getPageNumbers = () => {
       const pageNumbers = [];
@@ -278,7 +281,7 @@ export default function Display({
         </Button>
 
         <div className="ml-2 text-sm text-muted-foreground">
-          {sortedResults.length} résultats
+          {paginationInfo.total} résultats
         </div>
       </div>
     );

@@ -35,6 +35,12 @@ interface ResultsProps {
   onDeleteAllTabs?: () => void;
   currentPage: number;
   onPageChange: (page: number) => void;
+  paginationInfo: {
+    currentPage: number;
+    pageSize: number;
+    totalPages: number;
+    total: number;
+  };
 }
 
 export default function Results({
@@ -49,6 +55,7 @@ export default function Results({
   onDeleteAllTabs,
   currentPage,
   onPageChange,
+  paginationInfo,
 }: ResultsProps) {
   const [sortType, setSortType] = useState<SortType>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -316,6 +323,7 @@ export default function Results({
                   isTabLoading={isTabLoading || isInitialLoading}
                   currentPage={currentPage}
                   onPageChange={onPageChange}
+                  paginationInfo={paginationInfo}
                 />
               );
             } else {

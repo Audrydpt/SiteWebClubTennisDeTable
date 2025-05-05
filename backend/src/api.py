@@ -389,6 +389,7 @@ class FastAPIServer:
                     job_type = TaskManager.get_job_type(job_id)
                     size = TaskManager.get_job_size(job_id)
                     count = TaskManager.get_job_count(job_id)
+                    total_pages = TaskManager.get_job_total_pages(job_id)
 
                     task_info = {
                         "status": status,
@@ -397,6 +398,7 @@ class FastAPIServer:
                         "updated": updated,
                         "count": count,
                         "size": size,
+                        "total_pages": total_pages,
                     }
                     
                     if status == JobStatus.FAILURE:

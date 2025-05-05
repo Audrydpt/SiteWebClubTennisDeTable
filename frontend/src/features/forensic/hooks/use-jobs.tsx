@@ -17,7 +17,8 @@ export interface ForensicTaskResponse {
       type: string;
       created: string;
       count: number;
-      size?: number;
+      size: number;
+      total_pages: number;
     };
   };
 }
@@ -124,6 +125,7 @@ export default function useJobs() {
           created: task.created,
           count: task.count,
           size: task.size,
+          total_pages: task.total_pages,
         })
       );
 
