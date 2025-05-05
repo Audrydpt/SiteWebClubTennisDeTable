@@ -7,40 +7,14 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
-import { z } from 'zod';
 
 import { toast } from 'sonner';
 import IASettings from './ai-settings';
 
-import { useAIAPI } from '../hooks/use-ai';
+import useAIAPI from '../hooks/use-ai';
 
-// Mock the translation hook
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
-
-// Mock the toast
-vi.mock('sonner', () => ({
-  toast: vi.fn(),
-}));
-
-// Mock the AI API hook and Zod schema
-vi.mock('../hooks/use-ai', () => {
-  const mockSchema = z.object({
-    ip: z.string().min(7).ip(),
-    port: z.number().int().min(1).max(65535),
-    object: z.string().min(1),
-    vehicle: z.string().min(1),
-    person: z.string().min(1),
-  });
-
-  return {
-    aiSchema: mockSchema,
-    useAIAPI: vi.fn(),
-  };
-});
+// Mock the AI API hook
+vi.mock('../hooks/use-ai');
 
 describe('IASettings', () => {
   const mockAIAPI = {

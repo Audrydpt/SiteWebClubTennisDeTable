@@ -7,13 +7,6 @@ import { AcicAggregation, AcicEvent, ChartSize, ChartType } from '../lib/props';
 
 import { FormWidget } from './form-widget';
 
-// Mock translation function to return keys as-is
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
-
 // Mock chart components to prevent test errors
 vi.mock('../components/charts/bar', () => ({
   default: () => <div>Bar Chart Mock</div>,

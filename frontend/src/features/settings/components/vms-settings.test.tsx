@@ -7,45 +7,14 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
-import { z } from 'zod';
 
 import { toast } from 'sonner';
 
 import useVMSAPI from '../hooks/use-vms';
-import { vmsSchema } from '../lib/types';
 import VMSSettings from './vms-settings';
-
-// Mock the translation hook
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
-
-// Mock the toast
-vi.mock('sonner', () => ({
-  toast: vi.fn(),
-}));
 
 // Mock the VMS API hook
 vi.mock('../hooks/use-vms');
-
-// Mock the VMS schema from lib/types
-vi.mock('../lib/types', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../lib/types')>();
-  const mockSchema = z.object({
-    type: z.enum(['Genetec', 'Milestone']),
-    ip: z.string().ip(),
-    port: z.number().int().min(1).max(65535),
-    username: z.string().optional(),
-    password: z.string().optional(),
-  });
-
-  return {
-    ...actual,
-    vmsSchema: mockSchema,
-  };
-});
 
 describe('VMSSettings', () => {
   const mockVMSAPI = {
@@ -70,7 +39,6 @@ describe('VMSSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (useVMSAPI as jest.Mock).mockReturnValue(mockVMSAPI);
-    (vmsSchema.parse as jest.Mock) = vi.fn((data) => data); // Mock zod parse if needed for specific tests
   });
 
   const renderComponent = () => render(<VMSSettings />);

@@ -125,6 +125,22 @@ vi.mock('@/providers/auth-context', () => ({
   }),
 }));
 
+// Mock the i18n context
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: {
+      language: 'en',
+      changeLanguage: vi.fn(),
+    },
+  }),
+}));
+
+// Mock the toast
+vi.mock('sonner', () => ({
+  toast: vi.fn(),
+}));
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
