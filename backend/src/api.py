@@ -1,5 +1,6 @@
 import os
 import traceback
+import av
 import cv2
 import json
 import uuid
@@ -14,7 +15,8 @@ import aiohttp
 import threading
 import asyncio
 import logging
-
+import numpy as np
+import io
 from pydantic import Field, create_model
 
 from sqlalchemy import func, JSON, text
@@ -704,11 +706,26 @@ class FastAPIServer:
                     raise HTTPException(status_code=400, detail="VMS IP or port not configured. Please configure VMS settings before trying to access cameras.")
                 
                 VMS = CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type)
-                async with VMS() as client:
-                    streams = client.start_replay(guuid, from_time, to_time, gap)
-                    img, _ = await anext(streams)
-                    _, bytes = cv2.imencode('.jpg', img)
-                    return Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
+                async with VMS() as client:                    
+                    streams = client.start_replay(guuid, from_time.astimezone(datetime.timezone.utc), to_time.astimezone(datetime.timezone.utc), gap, True)
+                    
+                    container, codec = "webm", "vp8"
+                    buffer = io.BytesIO()
+                    output = av.open(buffer, mode='w', format=container)
+                    stream = output.add_stream(codec, rate=1)
+                    stream.pix_fmt = 'yuv420p'
+                    #stream.width = 640
+                    #stream.height = 480
+
+                    async for img, time_frame in streams:
+                        frame = av.VideoFrame.from_ndarray(img, format='bgr24')
+                        packet = stream.encode(frame)
+                        output.mux(packet)
+
+                    output.close()
+                    buffer.seek(0)
+
+                    return Response(content=buffer.getvalue(), status_code=200, headers={"Content-Type": f"video/{container}"})
             except Exception as e:
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
 
