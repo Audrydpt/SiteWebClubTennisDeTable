@@ -1161,7 +1161,6 @@ class FastAPIServer:
                         **where
                     )
 
-                
                 ret = []
                 for row in cursor:
                     data = {
@@ -1184,18 +1183,68 @@ class FastAPIServer:
                 if guid == "undefined":
                     return []
                 
-                time = str(kwargs.aggregate.value) if hasattr(kwargs.aggregate, 'value') else str(kwargs.aggregate)
-                between = kwargs.time_from, kwargs.time_to
                 group_by = kwargs.group_by.split(",") if kwargs.group_by is not None else None
                 matView = f"widget_{guid}"
                 
                 dal = GenericDAL()
-                aggregation = agg_func if agg_func is not None else func.count('*')
 
                 try:
-                    trend_data = await dal.async_get_trend(matView, _time=time, _group=group_by)
+                    trend_data = await dal.async_get_trend(view_name=matView, _group=group_by)
                     
                     return trend_data
+                except Exception as e:
+                    raise HTTPException(status_code=500, detail=str(e))
+                
+            except Exception as e:
+                logger.error(f"Error retrieving trend data for widget {guid}: {str(e)}")
+                raise HTTPException(status_code=500, detail=str(e))
+            
+        @self.app.get("/dashboard/widgets/{guid}/trend/{aggr}", tags=["dashboard", "materialized"])
+        async def get_trend_aggregation(guid: str, aggr: str, kwargs: Annotated[AggregateParam, Query()]):
+            try:
+                if guid == "undefined":
+                    return []
+                
+                try:
+                    aggregate_value = ModelName[aggr].value
+                except KeyError:
+                    if any(aggr == e.value for e in ModelName):
+                        aggregate_value = aggr
+                    else:
+                        raise HTTPException(status_code=400, 
+                                        detail=f"Invalid aggregation: {aggr}. Valid values: {[e.name for e in ModelName]}")
+                
+                group_by = kwargs.group_by.split(",") if kwargs.group_by is not None else None
+                matView = f"widget_{guid}"
+                
+                dal = GenericDAL()
+
+                try:
+                    trend_data_aggregate = await dal.async_get_trend_aggregate(
+                        view_name=matView, 
+                        _aggregate=aggregate_value, 
+                        _group=group_by)
+                    
+                    formatted_data = []
+                    for row in trend_data_aggregate:
+                        item = {
+                            "bucket": row[0],
+                            "avg": row[1],
+                            "std": row[2],
+                            "min": row[3],
+                            "max": row[4]
+                        }
+                        
+                        if group_by:
+                            if isinstance(group_by, list):
+                                for i, group_name in enumerate(group_by):
+                                    item[group_name] = row[i + 5]
+                            else:
+                                item[group_by] = row[5]
+                                
+                        formatted_data.append(item)
+                        
+                    return formatted_data
                 except Exception as e:
                     raise HTTPException(status_code=500, detail=str(e))
                 

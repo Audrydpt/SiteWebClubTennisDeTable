@@ -32,8 +32,8 @@ logger.addHandler(file_handler)
 
 def get_database_url(use_timescaledb=True, async_driver=False):
     load_dotenv()
-    db_host = os.getenv("DB_HOST", "localhost")
-    #db_host = os.getenv("DB_HOST", "192.168.20.145")
+    # db_host = os.getenv("DB_HOST", "localhost")
+    db_host = os.getenv("DB_HOST", "192.168.20.145")
     db_user = os.getenv("DB_USER", "postgres")
     db_pass = os.getenv("DB_PASS", "postgres")
     db_port = os.getenv("DB_PORT", "5432")
@@ -618,13 +618,72 @@ class GenericDAL:
 
                     combined_result = {
                         'global': global_stats,
-                        'group': group_stats
+                        'group': group_by_data
                     }
                     return combined_result
                 except Exception as e:
                     logger.error(f"Error executing trend query: {e}")
                     logger.error(f"Query was: {stmt}")
                     raise
+
+    async def async_get_trend_aggregate(self, view_name,_aggregate, _group=None) -> List[Any]:
+        async with GenericDAL.AsyncSession() as session:
+            #def des fonctions de calcul
+            avg_func = func.avg(column('counts'))
+            std_func = func.stddev(column('counts'))
+            min_func = func.min(column('counts'))
+            max_func = func.max(column('counts'))
+
+            match _aggregate:
+                case '1 minute':
+                    extract_func = func.extract('minute',column('bucket')).label('time_bucket')
+                case '15 minutes':
+                    extract_func = func.extract('minute',column('bucket')).label('time_bucket')
+                case '30 minutes':
+                    extract_func = func.extract('minute',column('bucket')).label('time_bucket')
+                case '1 hour':
+                    extract_func = func.extract('hour',column('bucket')).label('time_bucket')
+                case '1 day':
+                    extract_func = func.extract('day',column('bucket')).label('time_bucket')
+                case '1 week':
+                    extract_func = func.extract('week',column('bucket')).label('time_bucket')
+                case '1 month':
+                    extract_func = func.extract('month',column('bucket')).label('time_bucket')
+                case '3 months':
+                    extract_func = func.extract('month',column('bucket')).label('time_bucket')
+                case '6 months':
+                    extract_func = func.extract('month',column('bucket')).label('time_bucket')
+                case '1 year':
+                    extract_func = func.extract('year',column('bucket')).label('time_bucket')
+                case '100 years':
+                    extract_func = func.extract('year',column('bucket')).label('time_bucket')
+            
+            date_trunc_expr = text("date_trunc('day', now() - interval '1 day')")
+
+            stmt = select(extract_func,avg_func,std_func,min_func,max_func)
+            stmt = stmt.select_from(text(f'"{view_name}"'))
+            stmt = stmt.where(column('bucket') < date_trunc_expr)
+
+            if _group is not None:
+                if isinstance(_group, list):
+                    for g in _group:
+                        stmt = stmt.add_columns(column(g))
+                        stmt = stmt.group_by(extract_func, column(g))
+                else:
+                    stmt = stmt.add_columns(column(_group))
+                    stmt = stmt.group_by(extract_func, column(_group))
+            else:
+                stmt = stmt.group_by(column('time_bucket'))
+            
+            stmt = stmt.order_by(column('time_bucket'))
+            
+            try:
+                result = await session.execute(stmt)
+                return result.all()
+            except Exception as e:
+                logger.error(f"Error executing trend query: {e}")
+                logger.error(f"Query was: {stmt}")
+                raise
 
     async def async_update(self, obj) -> Any:
         async with GenericDAL.AsyncSession() as session:
