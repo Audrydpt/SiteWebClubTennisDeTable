@@ -13,7 +13,7 @@ alwaysApply: true
 ## Exécution Automatique des Tests
 1. Après chaque modification d'un fichier de test, exécuter automatiquement :
    ```bash
-   cd frontend && npm test <nom_du_fichier_test>
+   cd frontend ; npm test <nom_du_fichier_test>
    ```
 2. Si le test échoue :
    - Vérifier les messages d'erreur
