@@ -32,8 +32,7 @@ logger.addHandler(file_handler)
 
 def get_database_url(use_timescaledb=True, async_driver=False):
     load_dotenv()
-    # db_host = os.getenv("DB_HOST", "localhost")
-    db_host = os.getenv("DB_HOST", "192.168.20.145")
+    db_host = os.getenv("DB_HOST", "localhost")
     db_user = os.getenv("DB_USER", "postgres")
     db_pass = os.getenv("DB_PASS", "postgres")
     db_port = os.getenv("DB_PORT", "5432")

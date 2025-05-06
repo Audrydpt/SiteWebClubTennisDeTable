@@ -1120,14 +1120,16 @@ class FastAPIServer:
     def __create_endpoint2(self, agg_func=None):
         query = {}
 
-        aggregate = (ModelName, Field(default=ModelName.hour, description="The time interval to aggregate the data"))
+        aggregateMandatory = (ModelName, Field(description="The time interval to aggregate the data"))
         group = (str, Field(default=None, description="The column to group by"))
         date = (datetime.datetime, Field(default=None, description="The timestamp to filter by"))
 
-        AggregateParam = create_model(f"Aggregate", aggregate=aggregate, group_by=group, time_from=date, time_to=date, **query)    
+        AggregateMandatoryParam = create_model(f"AggregateMandatory", aggregate=aggregateMandatory, group_by=group, time_from=date, time_to=date, **query)  
+        AggregateParam = create_model(f"Aggregate", group_by=group, time_from=date, time_to=date, **query)    
         
         @self.app.get("/dashboard/widgets/{guid}", tags=["dashboard", "materialized"])
-        async def get_bucket(guid: str, kwargs: Annotated[AggregateParam, Query()]):
+        @self.app.get("/dashboard/tabs/{id}/widgets/{guid}", tags=["dashboard/tabs/widgets", "materialized"])
+        async def get_bucket(id: str, guid: str, kwargs: Annotated[AggregateMandatoryParam, Query()]):
             try:
                 if guid == "undefined":
                     return []
@@ -1177,8 +1179,8 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
     
-        @self.app.get("/dashboard/widgets/{guid}/trend", tags=["dashboard", "materialized"])
-        async def get_trend(guid: str, kwargs: Annotated[AggregateParam, Query()]):
+        @self.app.get("/dashboard/tabs/{id}/widgets/{guid}/trends", tags=["dashboard/tabs/widgets/trends", "materialized"])
+        async def get_trend(id: str, guid: str, kwargs: Annotated[AggregateParam, Query()]):
             try:
                 if guid == "undefined":
                     return []
@@ -1199,21 +1201,11 @@ class FastAPIServer:
                 logger.error(f"Error retrieving trend data for widget {guid}: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
             
-        @self.app.get("/dashboard/widgets/{guid}/trend/{aggr}", tags=["dashboard", "materialized"])
-        async def get_trend_aggregation(guid: str, aggr: str, kwargs: Annotated[AggregateParam, Query()]):
+        @self.app.get("/dashboard/tabs/{id}/widgets/{guid}/trends/{aggregate}", tags=["dashboard/tabs/widgets/trends", "materialized"])
+        async def get_trend_aggregation(id: str, guid: str, aggregate: ModelName, kwargs: Annotated[AggregateParam, Query()]):
             try:
                 if guid == "undefined":
                     return []
-                
-                try:
-                    aggregate_value = ModelName[aggr].value
-                except KeyError:
-                    if any(aggr == e.value for e in ModelName):
-                        aggregate_value = aggr
-                    else:
-                        raise HTTPException(status_code=400, 
-                                        detail=f"Invalid aggregation: {aggr}. Valid values: {[e.name for e in ModelName]}")
-                
                 group_by = kwargs.group_by.split(",") if kwargs.group_by is not None else None
                 matView = f"widget_{guid}"
                 
@@ -1222,7 +1214,7 @@ class FastAPIServer:
                 try:
                     trend_data_aggregate = await dal.async_get_trend_aggregate(
                         view_name=matView, 
-                        _aggregate=aggregate_value, 
+                        _aggregate=aggregate, 
                         _group=group_by)
                     
                     formatted_data = []
