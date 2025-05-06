@@ -122,7 +122,14 @@ export default function Display({
     console.log('paginationInfo reçue dans Display:', paginationInfo);
   }, [paginationInfo]);
 
-  const paginatedResults = sortedResults;
+  const paginatedResults = useMemo(() => {
+    // Pour la page 1 en cours de recherche active, on utilise les résultats du heap
+    if (currentPage === 1 && isSearching) {
+      return sortedResults;
+    }
+    // On fait confiance aux résultats déjà paginés côté serveur
+    return sortedResults;
+  }, [sortedResults, currentPage, isSearching]);
 
   // Render expanded image modal
   const renderExpandedImageModal = () => {

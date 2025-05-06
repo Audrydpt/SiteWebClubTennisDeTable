@@ -22,6 +22,7 @@ import forensicResultsHeap from '@/features/forensic/lib/data-structure/heap';
 import ForensicHeader from './ui/header';
 import { SortType } from './ui/buttons';
 import Display from '@/features/forensic/components/ui/display.tsx';
+// import replayVideo from '@/features/forensic/lib/test/replay.webm';
 
 interface ResultsProps {
   results: ForensicResult[];
@@ -43,6 +44,14 @@ interface ResultsProps {
   };
 }
 
+/* function VideoPlayer() {
+  return (
+    <video src={replayVideo} controls autoPlay className="w-full">
+      Votre navigateur ne supporte pas la balise vidéo.
+    </video>
+  );
+} */
+
 export default function Results({
   results: propsResults,
   isSearching,
@@ -60,7 +69,7 @@ export default function Results({
   const [sortType, setSortType] = useState<SortType>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSourceDetails, setShowSourceDetails] = useState(false);
-  const { resumeJob, displayResults, setDisplayResults, testResumeJob } =
+  const { /* resumeJob, */ displayResults, setDisplayResults, testResumeJob } =
     useSearch();
   const {
     tabJobs,
@@ -178,7 +187,7 @@ export default function Results({
         clearTimeout(requestTimeoutRef.current);
       }
     };
-  }, [activeTabIndex, tabJobs, resumeJob, testResumeJob]);
+  }, [activeTabIndex, tabJobs, /* resumeJob, */ testResumeJob]);
 
   const toggleSortOrder = () => {
     setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
@@ -284,6 +293,12 @@ export default function Results({
         <div className="space-y-4 pb-6">
           {/* Progress section inside ScrollArea */}
           {renderProgressSection()}
+
+          {/* Video Player
+          <VideoPlayer />
+           */}
+
+          {/* Results display */}
 
           {(() => {
             const activeTab = tabJobs.find(

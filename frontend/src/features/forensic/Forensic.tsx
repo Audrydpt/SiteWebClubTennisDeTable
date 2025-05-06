@@ -28,12 +28,14 @@ export default function Forensic() {
     results,
     isSearching,
     sourceProgress,
-    resumeJob,
+    // resumeJob,
     setDisplayResults,
     resetSearch,
     setResults,
     testResumeJob,
     paginationInfo,
+    handlePageChange,
+    currentPageTracked,
   } = useSearch();
 
   const {
@@ -48,10 +50,13 @@ export default function Forensic() {
     getActiveJobId,
   } = useJobs();
 
-  const handlePageChange = useCallback(
+  const handlePaginationChange = useCallback(
     async (page: number) => {
       console.log(`Changement vers page ${page}`);
       setCurrentPage(page);
+
+      // Utiliser la fonction handlePageChange du hook useSearch
+      handlePageChange(page);
 
       // Récupérer le job actif depuis l'onglet actif
       const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
@@ -66,8 +71,6 @@ export default function Forensic() {
 
       try {
         setIsLoading(true);
-        // Utiliser testResumeJob avec skipHistory à true pour ne pas effacer les résultats existants
-        // et skipLoadingState à true pour ne pas interférer avec l'état de recherche global
         await testResumeJob(activeJobId, page, true, true);
       } catch (error) {
         console.error(`Erreur lors du chargement de la page ${page}:`, error);
@@ -75,7 +78,7 @@ export default function Forensic() {
         setIsLoading(false);
       }
     },
-    [tabJobs, activeTabIndex, testResumeJob, setIsLoading]
+    [tabJobs, activeTabIndex, testResumeJob, setIsLoading, handlePageChange]
   );
 
   const handleDeleteAllTabs = () => {
@@ -303,7 +306,7 @@ export default function Forensic() {
             onDeleteTab={handleDeleteTab}
             onDeleteAllTabs={handleDeleteAllTabs}
             currentPage={currentPage}
-            onPageChange={handlePageChange}
+            onPageChange={handlePaginationChange}
             paginationInfo={paginationInfo}
           />
         </CardContent>

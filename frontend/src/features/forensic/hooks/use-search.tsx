@@ -39,6 +39,9 @@ export default function useSearch() {
     total: 0,
   });
 
+  // Ajoutez dans les states existants
+  const [currentPageTracked, setCurrentPageTracked] = useState<number>(1);
+
   const metadataQueue = useRef<{
     timestamp?: string;
     score?: number;
@@ -46,6 +49,22 @@ export default function useSearch() {
     progress?: number;
     attributes?: Record<string, unknown>;
   }>({});
+
+  const handlePageChange = useCallback((page: number) => {
+    // Mettre à jour la page courante
+    setCurrentPageTracked(page);
+
+    // Si on quitte la page 1, fermer le WebSocket
+    if (
+      page !== 1 &&
+      wsRef.current &&
+      wsRef.current.readyState === WebSocket.OPEN
+    ) {
+      console.log('🚫 Fermeture du WebSocket - navigation hors de la page 1');
+      wsRef.current.close(1000, 'Navigation vers une autre page');
+      wsRef.current = null;
+    }
+  }, []);
 
   const initializeSourceProgress = useCallback((selectedSources: string[]) => {
     setSourceProgress(
@@ -71,8 +90,45 @@ export default function useSearch() {
     }
   }, []);
 
+  const updateFirstPageWithRelevantResults = (newResult: ForensicResult) => {
+    const { currentPage } = paginationInfo;
+    // Vérifier si le résultat est plus pertinent que le minimum de la première page
+    const shouldAdd = forensicResultsHeap.shouldAddResult(
+      newResult,
+      1,
+      paginationInfo.pageSize
+    );
+
+    if (shouldAdd) {
+      // Ajouter le résultat au heap
+      forensicResultsHeap.addResult(newResult);
+
+      // Si nous sommes sur la première page, mettre à jour les résultats affichés
+      if (currentPage === 1) {
+        // Récupérer les meilleurs résultats pour la première page
+        const topResults = forensicResultsHeap.getPageResults(
+          1,
+          paginationInfo.pageSize
+        );
+
+        // Mettre à jour les résultats affichés
+        setDisplayResults([...topResults]);
+      }
+
+      return true;
+    }
+
+    return false;
+  };
+
   const initWebSocket = useCallback(
     (id: string) => {
+      // Vérifier si nous sommes sur la page 1, sinon ne pas initialiser le WebSocket
+      if (currentPageTracked !== 1) {
+        console.log('🚫 WebSocket non initialisé - page différente de 1');
+        return;
+      }
+
       if (!id) {
         console.error(
           '⚠️ Aucun jobId disponible pour initialiser le WebSocket'
@@ -239,10 +295,12 @@ export default function useSearch() {
               type: latestType.current === 'person' ? 'person' : 'vehicle',
             };
 
-            // Add to heap and get sorted results
-            forensicResultsHeap.addResult(newResult);
-            setResults(forensicResultsHeap.getBestResults());
-            setDisplayResults(forensicResultsHeap.getBestResults());
+            const wasRelevantAndAdded =
+              updateFirstPageWithRelevantResults(newResult);
+            // Mettre à jour la liste complète des résultats uniquement si nécessaire
+            if (wasRelevantAndAdded) {
+              setResults(forensicResultsHeap.getBestResults());
+            }
           }
         };
 
@@ -279,6 +337,7 @@ export default function useSearch() {
       latestJobId,
       latestType,
       isCancelling,
+      currentPageTracked,
     ]
   );
 
@@ -319,10 +378,10 @@ export default function useSearch() {
     setJobId(null);
     setResults([]);
     setDisplayResults([]);
-    resetPagination(); // Ajoutez cette ligne
+    resetPagination();
   }, [resetPagination]);
 
-  const resumeJob = async (jobId: string, skipHistory: boolean = false) => {
+  /* const resumeJob = async (jobId: string, skipHistory: boolean = false) => {
     try {
       setJobId(jobId);
 
@@ -480,7 +539,7 @@ export default function useSearch() {
       return [];
     }
   };
-
+ */
   const testResumeJob = async (
     jobId: string,
     page: number = 1,
@@ -495,8 +554,14 @@ export default function useSearch() {
         skipLoadingState,
       });
 
+      setCurrentPageTracked(page);
+
+      if (page !== 1) {
+        cleanupWebSocket();
+      }
+
       setJobId(jobId);
-      if (!skipHistory) {
+      if (!skipHistory && page === 1) {
         forensicResultsHeap.clear();
       }
       if (!skipLoadingState) setIsSearching(true);
@@ -581,6 +646,12 @@ export default function useSearch() {
       if (!skipHistory || isCompleted) {
         console.log('🔍 Chargement des données paginées pour la page:', page);
         // Appel de l'API paginée
+
+        // Vider le heap si on n'est pas sur la page 1
+        if (page > 1) {
+          forensicResultsHeap.clear();
+        }
+
         const paginatedResponse = await fetch(
           `${process.env.MAIN_API_URL}/forensics/${jobId}/pages/${page}`
         );
@@ -663,58 +734,34 @@ export default function useSearch() {
           (r) => r !== null
         ) as ForensicResult[];
 
-        console.log(
-          '📦 Détections valides récupérées après filtrage des null:',
-          validDetectionResults.length
-        );
+        setPaginationInfo(paginationData);
+        if (page === 1 && isSearching) {
+          // Pour la page 1 en recherche active: ajouter au heap
+          validDetectionResults.forEach((res: ForensicResult) =>
+            forensicResultsHeap.addResult(res)
+          );
 
-        validDetectionResults.forEach((res: ForensicResult) =>
-          forensicResultsHeap.addResult(res)
-        );
-
-        console.log('🧠 Résultats ajoutés au heap');
+          // Utiliser les meilleurs résultats du heap pour la page 1
+          const bestResults = forensicResultsHeap.getBestResults();
+          setResults(bestResults);
+          setDisplayResults(bestResults.slice(0, paginationData.pageSize)); // Limiter à 12
+        } else {
+          // Pour les autres pages: utiliser directement les résultats sans heap
+          setResults(validDetectionResults);
+          setDisplayResults(validDetectionResults);
+        }
       } else {
-        console.log('⏭️ Historique ignoré (skipHistory actif, tâche en cours)');
+        const returnObj = {
+          results: validDetectionResults,
+          pagination: paginationData,
+        };
+        console.log('🏁 Fin de testResumeJob - retourne:', {
+          resultCount: returnObj.results.length,
+          pagination: returnObj.pagination,
+        });
+
+        return returnObj;
       }
-
-      // Progression globale
-      if (isCompleted) {
-        setProgress(100);
-        console.log('✅ Progression globale définie à 100% (tâche terminée)');
-      } else {
-        const maxProgress = Math.max(
-          ...Object.values(sourcesProgress).map((s: any) => s.progress || 0),
-          0
-        );
-        setProgress(maxProgress);
-        console.log(`📈 Progression globale définie à ${maxProgress}%`);
-      }
-
-      // Gestion WebSocket si la tâche n'est pas terminée
-      if (!isCompleted) {
-        console.log('🔄 Tâche en cours, WebSocket lancé');
-        initWebSocket(jobId);
-        setIsSearching(true);
-      } else {
-        console.log('✅ Tâche terminée, arrêt WebSocket');
-        setIsSearching(false);
-      }
-
-      const bestResults = forensicResultsHeap.getBestResults();
-      setResults(bestResults);
-      setDisplayResults(bestResults);
-      console.log('📊 Mise à jour des résultats:', bestResults.length);
-
-      const returnObj = {
-        results: validDetectionResults,
-        pagination: paginationData,
-      };
-      console.log('🏁 Fin de testResumeJob - retourne:', {
-        resultCount: returnObj.results.length,
-        pagination: returnObj.pagination,
-      });
-
-      return returnObj;
     } catch (error) {
       console.error('❌ Erreur dans resumeJobWithPagination:', error);
       setResults([]);
@@ -827,11 +874,14 @@ export default function useSearch() {
     jobId,
     sourceProgress,
     displayResults,
-    resumeJob,
+    // resumeJob,
     setDisplayResults,
     setResults,
     resetSearch,
     testResumeJob,
     paginationInfo,
+    updateFirstPageWithRelevantResults,
+    handlePageChange,
+    currentPageTracked,
   };
 }
