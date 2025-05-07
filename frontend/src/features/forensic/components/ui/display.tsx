@@ -127,7 +127,7 @@ export default function Display({
     if (currentPage === 1 && isSearching) {
       return sortedResults;
     }
-    // On fait confiance aux résultats déjà paginés côté serveur
+    // Pour les autres pages ou recherche terminée, on utilise les résultats paginés côté serveur
     return sortedResults;
   }, [sortedResults, currentPage, isSearching]);
 

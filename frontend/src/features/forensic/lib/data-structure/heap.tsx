@@ -113,6 +113,10 @@ class ForensicResultsHeap {
     );
     return wouldBeBetterThan >= 0 && wouldBeBetterThan < currentPage * pageSize;
   }
+
+  getCount(): number {
+    return this.minHeap.size();
+  }
 }
 
 const forensicResultsHeap = new ForensicResultsHeap();

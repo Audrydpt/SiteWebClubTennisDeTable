@@ -50,22 +50,6 @@ export default function useSearch() {
     attributes?: Record<string, unknown>;
   }>({});
 
-  const handlePageChange = useCallback((page: number) => {
-    // Mettre à jour la page courante
-    setCurrentPageTracked(page);
-
-    // Si on quitte la page 1, fermer le WebSocket
-    if (
-      page !== 1 &&
-      wsRef.current &&
-      wsRef.current.readyState === WebSocket.OPEN
-    ) {
-      console.log('🚫 Fermeture du WebSocket - navigation hors de la page 1');
-      wsRef.current.close(1000, 'Navigation vers une autre page');
-      wsRef.current = null;
-    }
-  }, []);
-
   const initializeSourceProgress = useCallback((selectedSources: string[]) => {
     setSourceProgress(
       selectedSources.map((guid) => ({
@@ -91,7 +75,14 @@ export default function useSearch() {
   }, []);
 
   const updateFirstPageWithRelevantResults = (newResult: ForensicResult) => {
-    const { currentPage } = paginationInfo;
+    // Si nous ne sommes pas sur la page 1, ne pas mettre à jour l'affichage
+    if (currentPageTracked !== 1) {
+      // Ajouter quand même au heap pour futures références
+      console.log("💾 Résultat ajouté au heap (page ≠ 1, pas d'affichage)");
+      forensicResultsHeap.addResult(newResult);
+      return false;
+    }
+
     // Vérifier si le résultat est plus pertinent que le minimum de la première page
     const shouldAdd = forensicResultsHeap.shouldAddResult(
       newResult,
@@ -102,22 +93,39 @@ export default function useSearch() {
     if (shouldAdd) {
       // Ajouter le résultat au heap
       forensicResultsHeap.addResult(newResult);
+      console.log(`➕ Résultat ajouté au heap (score: ${newResult.score})`);
 
-      // Si nous sommes sur la première page, mettre à jour les résultats affichés
-      if (currentPage === 1) {
-        // Récupérer les meilleurs résultats pour la première page
-        const topResults = forensicResultsHeap.getPageResults(
-          1,
-          paginationInfo.pageSize
+      // Récupérer les meilleurs résultats pour la première page
+      const topResults = forensicResultsHeap.getPageResults(
+        1,
+        paginationInfo.pageSize
+      );
+
+      // S'assurer qu'on ne dépasse jamais la taille de la page
+      const limitedResults = topResults.slice(0, paginationInfo.pageSize);
+      console.log(
+        `🔢 Résultats WS: ${limitedResults.length}/${paginationInfo.pageSize} max`
+      );
+
+      // Mettre à jour les résultats affichés avec limitation stricte
+      setDisplayResults([...limitedResults]);
+
+      // Mettre à jour la liste complète des résultats uniquement si nécessaire
+      if (limitedResults.length > 0) {
+        // Ne pas mettre à jour results avec tous les résultats du heap
+        // Utiliser seulement les résultats paginés
+        setResults(limitedResults);
+        console.log(
+          `📊 Heap contient ${forensicResultsHeap.getCount()} résultats au total`
         );
-
-        // Mettre à jour les résultats affichés
-        setDisplayResults([...topResults]);
       }
 
       return true;
     }
 
+    console.log(
+      `⏭️ Résultat ignoré (score: ${newResult.score}) - pas assez pertinent`
+    );
     return false;
   };
 
@@ -347,6 +355,31 @@ export default function useSearch() {
       cleanupResources();
     },
     [cleanupResources]
+  );
+
+  const handlePageChange = useCallback(
+    (page: number) => {
+      const previousPage = currentPageTracked;
+      setCurrentPageTracked(page);
+
+      // Si on quitte la page 1, fermer le WebSocket
+      if (
+        page !== 1 &&
+        wsRef.current &&
+        wsRef.current.readyState === WebSocket.OPEN
+      ) {
+        console.log('🚫 Fermeture du WebSocket - navigation hors de la page 1');
+        wsRef.current.close(1000, 'Navigation vers une autre page');
+        wsRef.current = null;
+      }
+
+      // Si on revient à la page 1 et qu'une recherche est en cours, réinitialiser le WebSocket
+      if (page === 1 && previousPage !== 1 && isSearching && jobId) {
+        console.log('🔄 Retour à la page 1 - réinitialisation du WebSocket');
+        initWebSocket(jobId);
+      }
+    },
+    [currentPageTracked, isSearching, jobId, initWebSocket]
   );
 
   const cleanupWebSocket = useCallback(() => {
@@ -735,20 +768,39 @@ export default function useSearch() {
         ) as ForensicResult[];
 
         setPaginationInfo(paginationData);
+        // Dans testResumeJob, quand on définit les résultats:
         if (page === 1 && isSearching) {
           // Pour la page 1 en recherche active: ajouter au heap
-          validDetectionResults.forEach((res: ForensicResult) =>
-            forensicResultsHeap.addResult(res)
-          );
+          validDetectionResults.forEach((res: ForensicResult) => {
+            forensicResultsHeap.addResult(res);
+            console.log(
+              `➕ Résultat ajouté au heap depuis resumeJob: ${res.id}`
+            );
+          });
 
           // Utiliser les meilleurs résultats du heap pour la page 1
-          const bestResults = forensicResultsHeap.getBestResults();
+          const bestResults = forensicResultsHeap.getPageResults(
+            1,
+            paginationInfo.pageSize
+          );
+          console.log(
+            `📋 Résultats limités à ${bestResults.length}/${paginationInfo.pageSize} pour page 1`
+          );
+
           setResults(bestResults);
-          setDisplayResults(bestResults.slice(0, paginationData.pageSize)); // Limiter à 12
+          setDisplayResults(bestResults); // Déjà limité par getPageResults
         } else {
           // Pour les autres pages: utiliser directement les résultats sans heap
-          setResults(validDetectionResults);
-          setDisplayResults(validDetectionResults);
+          const limitedResults = validDetectionResults.slice(
+            0,
+            paginationData.pageSize
+          );
+          console.log(
+            `📑 Page ${page}: ${limitedResults.length}/${paginationData.pageSize} résultats`
+          );
+
+          setResults(limitedResults);
+          setDisplayResults(limitedResults);
         }
       } else {
         const returnObj = {

@@ -69,16 +69,27 @@ export default function Forensic() {
         return;
       }
 
-      try {
-        setIsLoading(true);
-        await testResumeJob(activeJobId, page, true, true);
-      } catch (error) {
-        console.error(`Erreur lors du chargement de la page ${page}:`, error);
-      } finally {
-        setIsLoading(false);
+      // Si nous ne sommes pas sur la page 1 ou si la recherche n'est plus active,
+      // charger explicitement les résultats via l'API
+      if (page !== 1 || !isSearching) {
+        try {
+          setIsLoading(true);
+          await testResumeJob(activeJobId, page, true, true);
+        } catch (error) {
+          console.error(`Erreur lors du chargement de la page ${page}:`, error);
+        } finally {
+          setIsLoading(false);
+        }
       }
     },
-    [tabJobs, activeTabIndex, testResumeJob, setIsLoading, handlePageChange]
+    [
+      tabJobs,
+      activeTabIndex,
+      testResumeJob,
+      setIsLoading,
+      handlePageChange,
+      isSearching,
+    ]
   );
 
   const handleDeleteAllTabs = () => {
@@ -154,17 +165,23 @@ export default function Forensic() {
         );
 
         // Utiliser testResumeJob pour charger à la fois les résultats et les infos de pagination
-        const { results: jobResults, pagination } = await testResumeJob(
+        const response = await testResumeJob(
           selectedTab.jobId,
           1, // Toujours commencer à la page 1 lors d'un changement d'onglet
           false,
           true // skipLoadingState pour éviter des états de chargement en double
         );
 
-        console.log(`Pagination reçue pour l'onglet ${tabIndex}:`, pagination);
-
-        // Maintenant les infos de pagination sont bien mises à jour via testResumeJob
-        // qui met à jour le state paginationInfo dans useSearch
+        // Vérification que l'objet existe avant d'accéder à ses propriétés
+        if (response) {
+          const { results: jobResults, pagination } = response;
+          console.log(
+            `Pagination reçue pour l'onglet ${tabIndex}:`,
+            pagination
+          );
+        } else {
+          console.log(`Aucune donnée reçue pour l'onglet ${tabIndex}`);
+        }
       } catch (error) {
         console.error(
           `Erreur lors du chargement de l'onglet ${tabIndex}:`,
