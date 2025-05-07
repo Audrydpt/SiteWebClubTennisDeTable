@@ -657,8 +657,9 @@ class GenericDAL:
                 case '100 years':
                     extract_func = func.extract('year',column('bucket')).label('time_bucket')
             
-            if _between[1] - _between[0] == timedelta(weeks=1) and _aggregate == '1 day':
-                extract_func = func.extract('isodow',column('bucket')).label('time_bucket')
+            if _between is not None and _between[0] is not None and _between[1] is not None:
+                if _between[1] - _between[0] == timedelta(weeks=1) and _aggregate == '1 day':
+                    extract_func = func.extract('isodow',column('bucket')).label('time_bucket')
 
             date_trunc_expr = text("date_trunc('day', now() - interval '1 day')")
 
