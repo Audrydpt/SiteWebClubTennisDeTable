@@ -1206,6 +1206,8 @@ class FastAPIServer:
             try:
                 if guid == "undefined":
                     return []
+                
+                between = kwargs.time_from, kwargs.time_to
                 group_by = kwargs.group_by.split(",") if kwargs.group_by is not None else None
                 matView = f"widget_{guid}"
                 
@@ -1215,7 +1217,9 @@ class FastAPIServer:
                     trend_data_aggregate = await dal.async_get_trend_aggregate(
                         view_name=matView, 
                         _aggregate=aggregate, 
-                        _group=group_by)
+                        _group=group_by,
+                        _between=between
+                    )
                     
                     formatted_data = []
                     for row in trend_data_aggregate:

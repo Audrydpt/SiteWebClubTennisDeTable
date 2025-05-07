@@ -625,7 +625,7 @@ class GenericDAL:
                     logger.error(f"Query was: {stmt}")
                     raise
 
-    async def async_get_trend_aggregate(self, view_name,_aggregate, _group=None) -> List[Any]:
+    async def async_get_trend_aggregate(self, view_name,_aggregate, _group=None, _between=None) -> List[Any]:
         async with GenericDAL.AsyncSession() as session:
             #def des fonctions de calcul
             avg_func = func.avg(column('counts'))
@@ -657,6 +657,9 @@ class GenericDAL:
                 case '100 years':
                     extract_func = func.extract('year',column('bucket')).label('time_bucket')
             
+            if _between[1] - _between[0] == timedelta(weeks=1) and _aggregate == '1 day':
+                extract_func = func.extract('isodow',column('bucket')).label('time_bucket')
+
             date_trunc_expr = text("date_trunc('day', now() - interval '1 day')")
 
             stmt = select(extract_func,avg_func,std_func,min_func,max_func)
