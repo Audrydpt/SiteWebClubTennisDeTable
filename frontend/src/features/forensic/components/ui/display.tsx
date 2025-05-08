@@ -4,15 +4,21 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Download,
+  Maximize2,
   Search,
+  X,
 } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { DateTime } from 'luxon';
+import { useEffect, useMemo, useState } from 'react';
+
+import { Button } from '@/components/ui/button';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
+
 import { ForensicResult } from '../../lib/types';
 import { SortType } from './buttons';
 
@@ -76,7 +82,9 @@ export default function Display({
   onPageChange,
   paginationInfo,
 }: DisplayProps) {
-  const [expandedImage, setExpandedImage] = useState<string | null>(null);
+  const [expandedImage, setExpandedImage] = useState<ForensicResult | null>(
+    null
+  );
 
   // Generate stable skeleton IDs
   const skeletonIds = useMemo(
@@ -135,6 +143,8 @@ export default function Display({
   const renderExpandedImageModal = () => {
     if (!expandedImage) return null;
 
+    const cameraUuid = expandedImage.cameraId;
+
     return (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
@@ -146,32 +156,42 @@ export default function Display({
         tabIndex={-1}
       >
         <div className="relative max-w-[90%] max-h-[90%]">
-          <button
-            className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white rounded-full p-2"
+          <Button
+            size="icon"
+            className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white"
             onClick={(e) => {
               e.stopPropagation();
               setExpandedImage(null);
             }}
-            aria-label="Fermer"
-            type="button"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+            <X className="h-5 w-5" />
+          </Button>
+          <Button
+            size="icon"
+            className="absolute top-4 left-4 bg-black/50 hover:bg-black/70 text-white"
+            onClick={(e) => {
+              e.stopPropagation();
+
+              const fromTimestamp = DateTime.fromISO(expandedImage.timestamp)
+                .minus({ seconds: 5 })
+                .toUTC()
+                .toISO({ includeOffset: false });
+              const toTimestamp = DateTime.fromISO(expandedImage.timestamp)
+                .plus({ seconds: 10 })
+                .toUTC()
+                .toISO({ includeOffset: false });
+
+              const link = document.createElement('a');
+              link.href = `${process.env.MAIN_API_URL}/vms/cameras/${cameraUuid}/replay?from_time=${fromTimestamp}&to_time=${toTimestamp}`;
+              link.download = 'export.webm';
+              link.target = '_blank';
+              link.click();
+            }}
+          >
+            <Download className="h-5 w-5" />
+          </Button>
           <img
-            src={expandedImage}
+            src={expandedImage.imageData}
             alt="Résultat agrandi"
             className="max-w-full max-h-[85vh] object-contain"
           />
@@ -378,32 +398,16 @@ export default function Display({
                             alt="Forensic result"
                             className="w-full h-auto object-cover object-[center_10%] aspect-[16/9]"
                           />
-                          <button
-                            className="absolute bottom-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1"
+                          <Button
+                            size="icon"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setExpandedImage(result.imageData);
+                              setExpandedImage(result);
                             }}
-                            aria-label="Agrandir l'image"
-                            type="button"
+                            className="absolute bottom-2 right-2 bg-black/50 hover:bg-black/70 text-white"
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <polyline points="15 3 21 3 21 9" />
-                              <polyline points="9 21 3 21 3 15" />
-                              <line x1="21" y1="3" x2="14" y2="10" />
-                              <line x1="3" y1="21" x2="10" y2="14" />
-                            </svg>
-                          </button>
+                            <Maximize2 className="h-5 w-5" />
+                          </Button>
                         </div>
                       ) : (
                         <div className="w-full aspect-[16/9] bg-muted flex items-center justify-center">
