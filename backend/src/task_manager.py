@@ -261,6 +261,20 @@ class ResultsStore:
             }
             await redis.publish(f"{channel_name}:frames", json.dumps(frame_notification))
 
+    @staticmethod
+    async def get_results_by_score(job_id: str, start: int = 0, end: int = -1, desc: bool = True):
+        """
+        Récupère les résultats triés par score de confiance
+        """
+        return await results_store.get_results_by_score(job_id, start, end, desc)
+
+    @staticmethod
+    async def get_results_by_date(job_id: str, start: int = 0, end: int = -1, desc: bool = True):
+        """
+        Récupère les résultats triés par date
+        """
+        return await results_store.get_results_by_date(job_id, start, end, desc)
+
     async def get_results(self, job_id: str, start: int = 0, end: int = -1) -> List[JobResult]:
         redis = await self._get_redis_1()
 
