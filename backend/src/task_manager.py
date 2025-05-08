@@ -116,27 +116,124 @@ class ResultsStore:
         self._redis = None
         self._pool = None
 
-    async def _get_redis(self) -> aioredis.Redis:
+    async def _get_redis_1(self) -> aioredis.Redis:
         if self._pool is None:
             self._pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/1')
         if self._redis is None:
             self._redis = aioredis.Redis(connection_pool=self._pool)
         return self._redis
 
-    async def _get_redis_0(self) -> aioredis.Redis:
+    async def _get_redis_2(self) -> aioredis.Redis:
+        if self._pool is None:
+            self._pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/2')
+        if self._redis is None:
+            self._redis = aioredis.Redis(connection_pool=self._pool)
+        return self._redis
+
+    async def _get_redis_all(self) -> aioredis.Redis:
         if self._pool is None:
             self._pool = aioredis.ConnectionPool.from_url('redis://localhost:6379/0')
         if self._redis is None:
             self._redis = aioredis.Redis(connection_pool=self._pool)
         return self._redis
 
+    async def store_result_sorted(self, job_id: str, result_id: str, result: JobResult):
+        """
+        Stocke un résultat dans deux ensembles triés différents (par date et par score)
+        """
+        # Obtenir les connections Redis
+        redis_scores = await self._get_redis_1()  # Pour les scores (confiance)
+        redis_dates = await self._get_redis_2()   # Pour les dates (chronologie)
+
+        # Extraire les valeurs de tri
+        timestamp = getattr(result, 'timestamp', time.time())
+        score = getattr(result, 'confidence', 0.5)  # Valeur par défaut si non définie
+
+        # Clés pour les ensembles triés
+        score_key = f"job:{job_id}:results_by_score"
+        date_key = f"job:{job_id}:results_by_date"
+
+        # Stocker la référence dans les deux ensembles triés
+        await redis_scores.zadd(score_key, {result_id: score})
+        await redis_dates.zadd(date_key, {result_id: timestamp})
+
+        # Stocker les données complètes du résultat
+        data_key = f"job:{job_id}:result:{result_id}"
+        result_dict = {
+            "job_id": job_id,
+            "metadata": result.metadata,
+            "frame_uuid": result.frame_uuid,
+            "final": result.final
+        }
+        await redis_scores.set(data_key, json.dumps(result_dict))
+
+        # Stocker la frame si elle existe
+        if result.frame is not None:
+            frame_key = f"job:{job_id}:frame:{result.frame_uuid}"
+            await redis_scores.set(frame_key, result.frame)
+            await redis_scores.expire(frame_key, 3600)
+
+        # Mettre à jour le compteur
+        await redis_scores.hincrby(f"job:{job_id}:stats", "count", 1)
+
+        return result_id
+
+    async def get_results_by_score(self, job_id: str, start: int = 0, end: int = -1, desc: bool = True):
+        """
+        Récupère les résultats triés par score (meilleur score en premier par défaut)
+        """
+        redis = await self._get_redis_1()
+        key = f"job:{job_id}:results_by_score"
+
+        # Récupérer les IDs triés par score
+        if desc:
+            result_ids = await redis.zrevrange(key, start, end, withscores=True)
+        else:
+            result_ids = await redis.zrange(key, start, end, withscores=True)
+
+        # Récupérer les données complètes
+        results = []
+        for result_id, score in result_ids:
+            data_key = f"job:{job_id}:result:{result_id.decode()}"
+            data = await redis.get(data_key)
+            if data:
+                result = json.loads(data)
+                results.append(result)
+
+        return results
+
+    async def get_results_by_date(self, job_id: str, start: int = 0, end: int = -1, desc: bool = True):
+        """
+        Récupère les résultats triés par date (plus récent en premier par défaut)
+        """
+        redis = await self._get_redis_2()
+        key = f"job:{job_id}:results_by_date"
+
+        # Récupérer les IDs triés par date
+        if desc:
+            result_ids = await redis.zrevrange(key, start, end, withscores=True)
+        else:
+            result_ids = await redis.zrange(key, start, end, withscores=True)
+
+        # Récupérer les données complètes depuis redis_1
+        redis_data = await self._get_redis_1()
+        results = []
+        for result_id, timestamp in result_ids:
+            data_key = f"job:{job_id}:result:{result_id.decode()}"
+            data = await redis_data.get(data_key)
+            if data:
+                result = json.loads(data)
+                results.append(result)
+
+        return results
+
     async def get_frame(self, job_id: str, frame_uuid: str) -> Optional[bytes]:
-        redis = await self._get_redis()
+        redis = await self._get_redis_1()
         frame_key = f"task:{job_id}:frame:{frame_uuid}"
         return await redis.get(frame_key)
 
     async def add_result(self, result: JobResult) -> None:
-        redis = await self._get_redis()
+        redis = await self._get_redis_1()
 
         # Clés Redis pour cette tâche
         result_list_key = f"task:{result.job_id}:results"
@@ -164,8 +261,22 @@ class ResultsStore:
             }
             await redis.publish(f"{channel_name}:frames", json.dumps(frame_notification))
 
+    @staticmethod
+    async def get_results_by_score(job_id: str, start: int = 0, end: int = -1, desc: bool = True):
+        """
+        Récupère les résultats triés par score de confiance
+        """
+        return await results_store.get_results_by_score(job_id, start, end, desc)
+
+    @staticmethod
+    async def get_results_by_date(job_id: str, start: int = 0, end: int = -1, desc: bool = True):
+        """
+        Récupère les résultats triés par date
+        """
+        return await results_store.get_results_by_date(job_id, start, end, desc)
+
     async def get_results(self, job_id: str, start: int = 0, end: int = -1) -> List[JobResult]:
-        redis = await self._get_redis()
+        redis = await self._get_redis_1()
 
         result_list_key = f"task:{job_id}:results"
 
@@ -186,7 +297,7 @@ class ResultsStore:
         return results
     
     async def subscribe_to_results(self, job_id: str):
-        redis = await self._get_redis()
+        redis = await self._get_redis_1()
         pubsub = redis.pubsub()
         
         channel_name = f"task:{job_id}:updates"
@@ -532,8 +643,8 @@ class TaskManager:
         Retourne un dictionnaire avec le statut de l'opération.
         Lève une ValueError si aucune tâche n'est trouvée avec cet ID.
         """
-        redis_db1 = await results_store._get_redis()
-        redis_db0 = await results_store._get_redis_0()
+        redis_db1 = await results_store._get_redis_1()
+        redis_db0 = await results_store._get_redis_all()
 
         try:
             # Clés à supprimer dans DB1
@@ -572,8 +683,8 @@ class TaskManager:
         Supprime toutes les données Redis associées à toutes les tâches dans les bases 0 et 1.
         Retourne un dictionnaire avec le statut de l'opération.
         """
-        redis_db1 = await results_store._get_redis()
-        redis_db0 = await results_store._get_redis_0()
+        redis_db1 = await results_store._get_redis_1()
+        redis_db0 = await results_store._get_redis_all()
 
         deleted_keys = 0
         deleted_tasks = 0
