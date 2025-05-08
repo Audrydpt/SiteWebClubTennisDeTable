@@ -1,3 +1,4 @@
+/* eslint-disable no-unreachable */
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
@@ -71,6 +72,7 @@ export default function useSources(initialSelectedCameras: string[] = []) {
       await Promise.all(
         cameras.map(async (camera) => {
           try {
+            throw new Error('test');
             const response = await fetch(
               `${BASE_URL}/vms/cameras/${camera.id}/live`,
               { headers: { Authorization: sessionId } }

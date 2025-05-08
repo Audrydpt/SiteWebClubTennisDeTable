@@ -1,6 +1,6 @@
 /* eslint-disable no-console,react-hooks/exhaustive-deps,@typescript-eslint/no-explicit-any,no-plusplus */
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 // Number of maximum results to keep
 const FORENSIC_PAGINATION_ITEMS = parseInt(
@@ -52,10 +52,19 @@ export default function useJobs() {
   const [tasks, setTasks] = useState<ForensicTask[]>([]);
   const [tabJobs, setTabJobs] = useState<TabJob[]>([]);
   const [activeTabIndex, setActiveTabIndex] = useState<number>(1);
-  const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const { taskId: activeJobId } = useParams();
+
+  const setActiveJobId = (jobId?: string) => {
+    if (jobId) {
+      navigate(`/forensic/${jobId}`);
+    } else {
+      navigate('/forensic');
+    }
+  };
 
   // Dans useJobs.ts, modifiez la fonction selectLeftmostTab
   const selectLeftmostTab = () =>
@@ -95,7 +104,7 @@ export default function useJobs() {
         } else {
           // Cas par défaut si aucun onglet n'existe
           setActiveTabIndex(1);
-          setActiveJobId(null);
+          setActiveJobId();
           resolve(1);
         }
       }, 1500); // Délai de 1.5 secondes
@@ -250,7 +259,7 @@ export default function useJobs() {
     // Activer immédiatement le nouvel onglet
     setActiveTabIndex(nextTabIndex);
     // Réinitialiser explicitement jobId à null
-    setActiveJobId(null);
+    setActiveJobId();
   };
 
   const handleTabChange = (tabIndex: number) => {
@@ -259,7 +268,6 @@ export default function useJobs() {
 
     // Récupérer le TabJob complet pour le nouvel onglet
     const selectedTab = tabJobs.find((tab) => tab.tabIndex === tabIndex);
-    navigate(`/forensic/${selectedTab?.jobId}`);
 
     // Vérification explicite de l'état isNew
     const isNewTab = selectedTab?.isNew === true;
@@ -277,7 +285,7 @@ export default function useJobs() {
       setActiveJobId(selectedTab.jobId);
       console.log(`JobId mis à jour: ${selectedTab.jobId}`);
     } else {
-      setActiveJobId(null);
+      setActiveJobId();
       console.log(
         `JobId effacé (onglet ${isNewTab ? 'nouveau' : 'sans job associé'})`
       );
@@ -366,12 +374,12 @@ export default function useJobs() {
         if (newActiveTab.jobId) {
           setActiveJobId(newActiveTab.jobId);
         } else {
-          setActiveJobId(null);
+          setActiveJobId();
         }
       } else {
         // Pas d'onglets restants
         setActiveTabIndex(1);
-        setActiveJobId(null);
+        setActiveJobId();
       }
     }
   };
@@ -388,16 +396,13 @@ export default function useJobs() {
     return activeTab?.jobId ? getTaskById(activeTab.jobId) : undefined;
   };
 
-  // Fonction utilitaire pour accéder au jobId actif
-  const getActiveJobId = (): string | null => activeJobId;
-
   // Rafraîchissement périodique des tâches
   useEffect(() => {
     // Chargement initial
     fetchTasks();
 
     // Rafraîchissement toutes les 3 secondes
-    const interval = setInterval(fetchTasks, 3000);
+    const interval = setInterval(fetchTasks, 10000);
 
     return () => clearInterval(interval);
   }, []);
@@ -437,7 +442,6 @@ export default function useJobs() {
     fetchTasks,
     getTaskById,
     getActiveTask,
-    getActiveJobId,
     getActivePaginationInfo,
     handleTabChange,
     resumeActiveJob,

@@ -153,9 +153,6 @@ export default function JobTabs({
                         <Button
                           variant="destructive"
                           className="h-4 w-4 p-0"
-                          disabled={
-                            isLoading || !isForensicTaskCompleted(tab.status)
-                          }
                           title="Supprimer cette recherche"
                           aria-label="Supprimer cette recherche"
                         >

@@ -67,7 +67,7 @@ export default function Results({
   const {
     tabJobs,
     handleTabChange: defaultHandleTabChange,
-    getActiveJobId,
+    activeJobId,
   } = useJobs();
   const isLoadingRef = useRef(false);
   const requestTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -92,14 +92,13 @@ export default function Results({
   };
 
   const hasActiveJob = useMemo(() => {
-    const activeJobId = getActiveJobId();
     const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
     if (activeTab?.isNew === true) {
       return false;
     }
 
     return !!activeJobId || (resultsToDisplay && resultsToDisplay.length > 0);
-  }, [getActiveJobId, resultsToDisplay, tabJobs, activeTabIndex]);
+  }, [activeJobId, resultsToDisplay, tabJobs, activeTabIndex]);
 
   // Effet pour nettoyer les résultats lors du changement d'onglet
   useEffect(() => {
@@ -286,10 +285,6 @@ export default function Results({
         <div className="space-y-4 pb-6">
           {/* Progress section inside ScrollArea */}
           {renderProgressSection()}
-
-          {/* Video Player
-          <VideoPlayer />
-           */}
 
           {/* Results display */}
 

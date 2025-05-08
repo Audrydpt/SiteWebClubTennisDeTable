@@ -88,7 +88,7 @@ export default function App() {
           <Route element={<ProtectedRoute role={UserPrivileges.Operator} />}>
             <Route path="/forensic">
               <Route index element={<ForensicMain />} />
-              <Route path=":forensicId/*" element={<ForensicMain />} />
+              <Route path=":taskId/*" element={<ForensicMain />} />
             </Route>
           </Route>
         </Route>

@@ -1,16 +1,16 @@
 /* eslint-disable no-console,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
-import { useRef, useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import useSearch from './hooks/use-search';
 import useJobs from './hooks/use-jobs';
+import useSearch from './hooks/use-search';
 import { createSearchFormData } from './lib/format-query';
 
 import ForensicForm from './components/form';
 import Results from './components/results';
+import forensicResultsHeap from './lib/data-structure/heap.tsx';
 import ForensicFormProvider from './lib/provider/forensic-form-provider';
 import { ForensicFormValues } from './lib/types';
-import forensicResultsHeap from './lib/data-structure/heap.tsx';
 
 export default function Forensic() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -42,11 +42,11 @@ export default function Forensic() {
     tabJobs,
     handleTabChange: jobsHandleTabChange,
     activeTabIndex,
+    activeJobId,
     addNewTab,
     selectLeftmostTab,
     deleteTab,
     deleteAllTasks,
-    getActiveJobId,
     getActivePaginationInfo,
   } = useJobs();
 
@@ -55,7 +55,6 @@ export default function Forensic() {
       console.log(`Changement vers page ${page}`);
       setCurrentPage(page);
 
-      const activeJobId = getActiveJobId();
       if (!activeJobId) {
         console.error('Impossible de charger la page : aucun job actif');
         return;
@@ -71,7 +70,7 @@ export default function Forensic() {
         setIsLoading(false);
       }
     },
-    [testResumeJob, getActiveJobId]
+    [testResumeJob, activeJobId]
   );
 
   const handleDeleteAllTabs = () => {
@@ -82,9 +81,8 @@ export default function Forensic() {
   };
 
   const handleStopSearch = async () => {
-    const activeJob = getActiveJobId();
-    if (activeJob) {
-      stopSearch(activeJob);
+    if (activeJobId) {
+      stopSearch(activeJobId);
     }
   };
 
@@ -202,7 +200,6 @@ export default function Forensic() {
     if (isTabLoading) return;
 
     const dynamicPaginationInfo = getActivePaginationInfo();
-    const activeJobId = getActiveJobId();
 
     // Vérifier si une mise à jour est réellement nécessaire
     if (
@@ -237,7 +234,7 @@ export default function Forensic() {
   }, [
     activeTabIndex,
     getActivePaginationInfo,
-    getActiveJobId,
+    activeJobId,
     isTabLoading,
     isSearching,
   ]);
@@ -265,18 +262,13 @@ export default function Forensic() {
                   isCollapsed ? 'scale-0 w-0' : 'scale-100 w-auto'
                 } transition-all text-xl font-bold tracking-tight`}
               >
-                {isCollapsed ? '' : 'Recherche vidéo'}
+                Recherche vidéo
               </h1>
             </div>
 
             <ForensicFormProvider>
               <ForensicForm
                 onSubmit={handleSearch}
-                isSearching={isSearching}
-                stopSearch={handleStopSearch}
-                isCollapsed={isCollapsed}
-                addNewTab={handleAddNewTab}
-                tabLength={activeTabsCount}
               />
             </ForensicFormProvider>
           </CardContent>
