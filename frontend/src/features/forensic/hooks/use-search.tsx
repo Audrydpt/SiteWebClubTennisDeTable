@@ -7,6 +7,7 @@ import { useAuth } from '@/providers/auth-context';
 import forensicResultsHeap from '../lib/data-structure/heap.tsx';
 import { FormData as CustomFormData, formatQuery } from '../lib/format-query';
 import { ForensicResult, SourceProgress } from '../lib/types';
+import { isForensicTaskCompleted } from './use-jobs.tsx';
 
 // Number of maximum results to keep
 const FORENSIC_PAGINATION_ITEMS = parseInt(
@@ -629,9 +630,7 @@ export default function useSearch() {
       }
 
       const taskStatus = resultsData.status || 'PENDING';
-      const isCompleted = ['SUCCESS', 'FAILURE', 'REVOKED'].includes(
-        taskStatus
-      );
+      const isCompleted = isForensicTaskCompleted(taskStatus);
 
       console.log(
         `🔍 État de la tâche ${jobId}: ${taskStatus}, isCompleted:`,
