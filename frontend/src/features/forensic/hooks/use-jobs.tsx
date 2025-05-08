@@ -1,5 +1,11 @@
 /* eslint-disable no-console,react-hooks/exhaustive-deps,@typescript-eslint/no-explicit-any,no-plusplus */
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
+// Number of maximum results to keep
+const FORENSIC_PAGINATION_ITEMS = parseInt(
+  process.env.FORENSIC_PAGINATION_ITEMS || '12',
+  10
+);
 
 export interface ForensicTask {
   id: string;
@@ -422,7 +428,7 @@ export default function useJobs() {
 
     return {
       currentPage: 1, // À gérer ailleurs
-      pageSize: 12, // Ajustez selon votre configuration
+      pageSize: FORENSIC_PAGINATION_ITEMS, // Ajustez selon votre configuration
       totalPages: activeTask?.total_pages || 0,
       total: activeTask?.count || 0,
     };

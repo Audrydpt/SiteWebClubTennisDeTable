@@ -8,6 +8,12 @@ import forensicResultsHeap from '../lib/data-structure/heap.tsx';
 import { FormData as CustomFormData, formatQuery } from '../lib/format-query';
 import { ForensicResult, SourceProgress } from '../lib/types';
 
+// Number of maximum results to keep
+const FORENSIC_PAGINATION_ITEMS = parseInt(
+  process.env.FORENSIC_PAGINATION_ITEMS || '12',
+  10
+);
+
 export default function useSearch() {
   const { sessionId = '' } = useAuth();
   const [progress, setProgress] = useState<number | null>(null);
@@ -34,7 +40,7 @@ export default function useSearch() {
 
   const [paginationInfo, setPaginationInfo] = useState({
     currentPage: 1,
-    pageSize: 12,
+    pageSize: FORENSIC_PAGINATION_ITEMS,
     totalPages: 0,
     total: 0,
   });
@@ -377,7 +383,7 @@ export default function useSearch() {
   const resetPagination = useCallback(() => {
     setPaginationInfo({
       currentPage: 1,
-      pageSize: 12, // ou la valeur par défaut que vous utilisez
+      pageSize: FORENSIC_PAGINATION_ITEMS,
       totalPages: 1,
       total: 0,
     });
@@ -666,7 +672,7 @@ export default function useSearch() {
       let validDetectionResults: ForensicResult[] = [];
       let paginationData = {
         currentPage: page,
-        pageSize: 12,
+        pageSize: FORENSIC_PAGINATION_ITEMS,
         totalPages: 0,
         total: 0,
       };
@@ -693,7 +699,7 @@ export default function useSearch() {
         total = 0,
         total_pages = 0,
         page: currentPage = page,
-        page_size = 12,
+        page_size = FORENSIC_PAGINATION_ITEMS,
       } = pageData;
 
       console.log(
@@ -811,7 +817,7 @@ export default function useSearch() {
         results: [],
         pagination: {
           currentPage: page,
-          pageSize: 12,
+          pageSize: FORENSIC_PAGINATION_ITEMS,
           totalPages: 0,
           total: 0,
         },

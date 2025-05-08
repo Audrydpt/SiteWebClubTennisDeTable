@@ -16,6 +16,7 @@ import asyncio
 import logging
 
 from pydantic import Field, create_model
+from dotenv import load_dotenv
 
 from sqlalchemy import func, JSON, text
 from sqlalchemy.inspection import inspect
@@ -62,7 +63,8 @@ class ModelName(str, Enum):
     year = "1 year"
     lifetime = "100 years"
 
-
+load_dotenv()
+FORENSIC_PAGINATION_ITEMS = int(os.getenv("FORENSIC_PAGINATION_ITEMS", "12"))
 
 # Please follow: https://www.belgif.be/specification/rest/api-guide/#resource-uri
 class FastAPIServer:
@@ -574,7 +576,7 @@ class FastAPIServer:
                     result.frame = None
 
                 # Pagination
-                page_size = 12
+                page_size = FORENSIC_PAGINATION_ITEMS
                 start = (number - 1) * page_size
                 end = start + page_size
                 paginated_results = results[start:end]

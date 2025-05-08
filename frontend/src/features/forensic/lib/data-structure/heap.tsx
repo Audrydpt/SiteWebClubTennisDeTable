@@ -3,7 +3,10 @@ import { MinHeap } from '@datastructures-js/heap';
 import { ForensicResult } from '../types';
 
 // Number of maximum results to keep
-const MAX_RESULTS = 12;
+const FORENSIC_PAGINATION_ITEMS = parseInt(
+  process.env.FORENSIC_PAGINATION_ITEMS || '12',
+  10
+);
 
 class ForensicResultsHeap {
   private minHeap: MinHeap<ForensicResult>;
@@ -23,7 +26,7 @@ class ForensicResultsHeap {
     }
 
     // If we haven't reached capacity yet, simply add the new result
-    if (this.minHeap.size() < MAX_RESULTS) {
+    if (this.minHeap.size() < FORENSIC_PAGINATION_ITEMS) {
       this.minHeap.insert(result);
       this.resultMap.set(result.id, true);
       return true;
@@ -80,7 +83,7 @@ class ForensicResultsHeap {
     this.resultMap.clear();
   }
 
-  getPageResults(page: number, pageSize: number = 12) {
+  getPageResults(page: number, pageSize: number = FORENSIC_PAGINATION_ITEMS) {
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     return this.getBestResults().slice(startIndex, endIndex);
@@ -89,7 +92,7 @@ class ForensicResultsHeap {
   shouldAddResult(
     newResult: ForensicResult,
     currentPage: number,
-    pageSize: number = 12
+    pageSize: number = FORENSIC_PAGINATION_ITEMS
   ) {
     if (currentPage === 1) {
       // En première page, on vérifie si le résultat est meilleur que le moins bon affiché

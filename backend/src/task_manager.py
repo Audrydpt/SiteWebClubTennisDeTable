@@ -7,7 +7,7 @@ import datetime
 import uuid
 from aiostream import stream
 from functools import wraps
-
+from dotenv import load_dotenv
 from celery.worker.state import total_count
 from fastapi.websockets import WebSocketState
 import numpy as np
@@ -29,6 +29,9 @@ from fastapi import WebSocket, WebSocketDisconnect
 from database import GenericDAL, Settings
 from service_ai import ServiceAI
 from vms import CameraClient, GenetecCameraClient, MilestoneCameraClient
+
+load_dotenv()
+FORENSIC_PAGINATION_ITEMS = int(os.getenv("FORENSIC_PAGINATION_ITEMS", "12"))
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -361,7 +364,7 @@ class TaskManager:
             result_list_key = f"task:{job_id}:results"
             count = redis_client.llen(result_list_key)
             
-            page_size = 12
+            page_size = FORENSIC_PAGINATION_ITEMS
             total = (count + page_size - 1) // page_size if count > 0 else 0
             return total
             
