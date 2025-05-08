@@ -1,14 +1,20 @@
 /* eslint-disable no-console */
 import { Loader2, Trash2 } from 'lucide-react';
-import React, { useEffect, useRef } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button.tsx';
+import { useEffect, useRef } from 'react';
+
 import DeleteConfirmation from '@/components/confirm-delete';
+import { Button } from '@/components/ui/button.tsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+import {
+  ForensicTaskStatus,
+  isForensicTaskCompleted,
+} from '../../hooks/use-jobs';
 
 export interface TabJob {
   tabIndex: number;
   jobId?: string;
-  status?: 'idle' | 'running' | 'completed' | 'error';
+  status: ForensicTaskStatus;
   isNew?: boolean;
 }
 
@@ -59,31 +65,17 @@ export default function JobTabs({
   let displayTabs = [...tabJobs];
 
   if (displayTabs.length === 0) {
-    displayTabs = [{ tabIndex: 1, status: 'idle' }];
+    displayTabs = [{ tabIndex: 1, status: ForensicTaskStatus.PENDING }];
   }
 
   if (!displayTabs.some((tab) => tab.tabIndex === activeTabIndex)) {
-    displayTabs.push({ tabIndex: activeTabIndex, status: 'idle' });
+    displayTabs.push({
+      tabIndex: activeTabIndex,
+      status: ForensicTaskStatus.PENDING,
+    });
   }
 
   displayTabs = displayTabs.slice(0, MAX_TABS);
-
-  const getGridClass = (count: number) => {
-    switch (count) {
-      case 1:
-        return 'grid-cols-1';
-      case 2:
-        return 'grid-cols-2';
-      case 3:
-        return 'grid-cols-3';
-      case 4:
-        return 'grid-cols-4';
-      case 5:
-        return 'grid-cols-5';
-      default:
-        return 'grid-cols-1';
-    }
-  };
 
   if (isLoading && tabJobs.length === 0) {
     return (
@@ -110,7 +102,7 @@ export default function JobTabs({
         className="w-full"
         onValueChange={(value) => onTabChange(parseInt(value, 10))}
       >
-        <TabsList className={`grid w-full ${getGridClass(displayTabs.length)}`}>
+        <TabsList className="grid w-full grid-cols-5">
           {displayTabs.map((tab) => {
             const hasJob = !!tab.jobId;
             let tabDisplay = 'Nouvel onglet';
@@ -118,13 +110,17 @@ export default function JobTabs({
 
             if (hasJob) {
               tabDisplay = `R${tab.tabIndex}`;
-              if (tab.status === 'running') {
+              if (!isForensicTaskCompleted(tab.status)) {
                 statusIndicator = (
                   <Loader2 className="ml-1 h-3 w-3 animate-spin" />
                 );
-              } else if (tab.status === 'completed') {
+              } else if (tab.status === ForensicTaskStatus.SUCCESS) {
                 statusIndicator = <span className="ml-1 text-primary">✓</span>;
-              } else if (tab.status === 'error') {
+              } else if (tab.status === ForensicTaskStatus.REVOKED) {
+                statusIndicator = (
+                  <span className="ml-1 text-destructive">✗</span>
+                );
+              } else if (tab.status === ForensicTaskStatus.FAILURE) {
                 statusIndicator = (
                   <span className="ml-1 text-destructive">⚠️</span>
                 );
@@ -133,8 +129,9 @@ export default function JobTabs({
             const activeTabClass =
               activeTabIndex === tab.tabIndex ? 'ring-1 ring-primary' : '';
 
-            const runningClass =
-              tab.status === 'running' ? 'bg-muted/50 animate-pulse' : '';
+            const runningClass = !isForensicTaskCompleted(tab.status)
+              ? 'bg-muted/50 animate-pulse'
+              : '';
 
             return (
               <TabsTrigger
@@ -157,7 +154,9 @@ export default function JobTabs({
                         <Button
                           variant="destructive"
                           className="h-4 w-4 p-0"
-                          disabled={isLoading || tab.status === 'running'}
+                          disabled={
+                            isLoading || !isForensicTaskCompleted(tab.status)
+                          }
                           title="Supprimer cette recherche"
                           aria-label="Supprimer cette recherche"
                         >

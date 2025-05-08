@@ -7,33 +7,43 @@ const FORENSIC_PAGINATION_ITEMS = parseInt(
   10
 );
 
+export enum ForensicTaskStatus {
+  PENDING = 'PENDING', // Tâche créée, pas encore préparée pour l'exécution
+  RECEIVED = 'RECEIVED', // Tâche reçue, prête à être exécutée
+  STARTED = 'STARTED', // Tâche en cours d'exécution
+  SUCCESS = 'SUCCESS', // Tâche terminée avec succès
+  FAILURE = 'FAILURE', // Tâche échouée
+  REVOKED = 'REVOKED', // Tâche annulée
+  RETRY = 'RETRY', // Tâche en cours de nouvelle tentative après échec
+}
+export function isForensicTaskCompleted(status: ForensicTaskStatus): boolean {
+  return (
+    status === ForensicTaskStatus.SUCCESS ||
+    status === ForensicTaskStatus.REVOKED ||
+    status === ForensicTaskStatus.FAILURE
+  );
+}
+
 export interface ForensicTask {
-  id: string;
-  status: 'SUCCESS' | 'PENDING' | 'REVOKED' | 'FAILURE' | string;
+  id?: string;
+  status: ForensicTaskStatus;
   type: string;
   created: string;
   count: number;
   size: number;
-  total_pages?: number;
+  total_pages: number;
 }
 
 export interface ForensicTaskResponse {
   tasks: {
-    [key: string]: {
-      status: string;
-      type: string;
-      created: string;
-      count: number;
-      size: number;
-      total_pages: number;
-    };
+    [key: string]: ForensicTask;
   };
 }
 
 export interface TabJob {
   tabIndex: number;
   jobId?: string;
-  status?: 'idle' | 'running' | 'completed' | 'error';
+  status?: ForensicTaskStatus;
   isNew?: boolean;
 }
 
@@ -44,24 +54,6 @@ export default function useJobs() {
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Conversion du statut de l'API vers le statut du TabJob
-  const mapTaskStatusToTabStatus = (
-    taskStatus: string
-  ): 'idle' | 'running' | 'completed' | 'error' => {
-    switch (taskStatus) {
-      case 'SUCCESS':
-        return 'completed';
-      case 'PENDING':
-      case 'STARTED':
-        return 'running';
-      case 'REVOKED':
-      case 'FAILURE':
-        return 'error';
-      default:
-        return 'idle';
-    }
-  };
 
   // Dans useJobs.ts, modifiez la fonction selectLeftmostTab
   const selectLeftmostTab = () =>
@@ -154,7 +146,7 @@ export default function useJobs() {
             if (updatedTask) {
               return {
                 ...tab,
-                status: mapTaskStatusToTabStatus(updatedTask.status),
+                status: updatedTask.status,
                 count: updatedTask.count,
                 total_pages: updatedTask.total_pages,
               };
@@ -177,12 +169,10 @@ export default function useJobs() {
       const newTaskTabJobs = newTasks
         .slice(0, 5 - tabJobs.length)
         .map((task, index) => ({
-          tabIndex: Math.max(...tabJobs.map((t) => t.tabIndex), 0) + index + 1,
+          ...task,
           jobId: task.id,
-          status: mapTaskStatusToTabStatus(task.status),
+          tabIndex: Math.max(...tabJobs.map((t) => t.tabIndex), 0) + index + 1,
           isNew: false,
-          count: task.count,
-          total_pages: task.total_pages,
         }));
 
       // Conserver les onglets "isNew" existants
@@ -249,7 +239,7 @@ export default function useJobs() {
     const newTab: TabJob = {
       tabIndex: nextTabIndex,
       isNew: true,
-      status: 'idle',
+      status: ForensicTaskStatus.PENDING,
     };
 
     // Mettre à jour la liste des onglets
