@@ -1,16 +1,16 @@
 /* eslint-disable no-console,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
-import { useRef, useState, useEffect, useCallback } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import useSearch from './hooks/use-search';
-import useJobs from './hooks/use-jobs';
-import { createSearchFormData } from './lib/format-query';
+import { Card, CardContent } from '@/components/ui/card';
 
 import ForensicForm from './components/form';
 import Results from './components/results';
+import useJobs from './hooks/use-jobs';
+import useSearch from './hooks/use-search';
+import forensicResultsHeap from './lib/data-structure/heap.tsx';
+import { createSearchFormData } from './lib/format-query';
 import ForensicFormProvider from './lib/provider/forensic-form-provider';
 import { ForensicFormValues } from './lib/types';
-import forensicResultsHeap from './lib/data-structure/heap.tsx';
 
 export default function Forensic() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -154,14 +154,20 @@ export default function Forensic() {
         );
 
         // Utiliser testResumeJob pour charger à la fois les résultats et les infos de pagination
-        const { results: jobResults, pagination } = await testResumeJob(
+        const response = await testResumeJob(
           selectedTab.jobId,
           1, // Toujours commencer à la page 1 lors d'un changement d'onglet
           false,
           true // skipLoadingState pour éviter des états de chargement en double
         );
 
-        console.log(`Pagination reçue pour l'onglet ${tabIndex}:`, pagination);
+        if (response) {
+          const { results: jobResults, pagination } = response;
+          console.log(
+            `Pagination reçue pour l'onglet ${tabIndex}:`,
+            pagination
+          );
+        }
 
         // Maintenant les infos de pagination sont bien mises à jour via testResumeJob
         // qui met à jour le state paginationInfo dans useSearch

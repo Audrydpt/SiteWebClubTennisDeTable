@@ -72,6 +72,7 @@ export function getTimeFormattingConfig(
 
 type DashboardQuery = {
   widgetId?: string;
+  dashboardId?: string;
   table: string;
   aggregation: AcicAggregation;
   duration?: AcicAggregation;
@@ -167,7 +168,7 @@ export async function getWidgetData(
     );
   }
 
-  const queryVue = `${process.env.MAIN_API_URL}/dashboard/widgets/${props.widgetId}`;
+  const queryVue = `${process.env.MAIN_API_URL}/dashboard/tabs/${props.dashboardId}/widgets/${props.widgetId}`;
   const queryRaw = `${process.env.MAIN_API_URL}/dashboard/widgets/${props.table}`;
 
   let params = '?';

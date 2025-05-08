@@ -1159,7 +1159,6 @@ class FastAPIServer:
         AggregateMandatoryParam = create_model(f"AggregateMandatory", aggregate=aggregateMandatory, group_by=group, time_from=date, time_to=date, **query)  
         AggregateParam = create_model(f"Aggregate", group_by=group, time_from=date, time_to=date, **query)    
         
-        @self.app.get("/dashboard/widgets/{guid}", tags=["dashboard", "materialized"])
         @self.app.get("/dashboard/tabs/{id}/widgets/{guid}", tags=["dashboard/tabs/widgets", "materialized"])
         async def get_bucket(id: str, guid: str, kwargs: Annotated[AggregateMandatoryParam, Query()]):
             try:
