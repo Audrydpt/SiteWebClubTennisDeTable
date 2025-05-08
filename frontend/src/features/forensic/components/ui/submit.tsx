@@ -1,69 +1,16 @@
-import { Search, Plus } from 'lucide-react';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { Search } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 
-interface SubmitProps {
-  isSearching: boolean;
-  onCancel: () => Promise<void>;
-  onAddTab?: () => void;
-  activeTabCount?: number;
-}
-
-export default function Submit({
-  isSearching,
-  onCancel,
-  onAddTab,
-  activeTabCount = 0,
-}: SubmitProps) {
-  const renderButtonContent = () => {
-    if (isSearching) {
-      return (
-        <>
-          <span className="animate-spin mr-2">◌</span> Recherche en cours...
-        </>
-      );
-    }
-    return (
-      <>
-        <Search className="mr-2" size={16} /> Lancer la recherche
-      </>
-    );
-  };
-
-  const canAddTab = activeTabCount < 5;
-
+export default function Submit() {
   return (
-    <div className="sticky bottom-0 left-0 right-0 pt-4 pb-4 z-50">
-      <div className="flex items-center gap-2">
-        <Button type="submit" className="w-full flex-1" disabled={isSearching}>
-          {renderButtonContent()}
+    <div className="sticky bottom-0 left-0 right-0 z-50">
+      <div className="flex items-center mb-2">
+        <Button type="submit" className="w-full flex-1">
+          <Search className="mr-2" size={16} /> Lancer la recherche
         </Button>
-        {onAddTab && (
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="flex-shrink-0 h-10 w-10"
-            onClick={onAddTab}
-            disabled={!canAddTab}
-            title={
-              canAddTab
-                ? 'Ajouter un nouvel onglet'
-                : "Nombre maximum d'onglets atteint"
-            }
-          >
-            <Plus size={16} />
-          </Button>
-        )}
       </div>
-      <Button
-        onClick={onCancel}
-        variant="outline"
-        size="sm"
-        className="w-full mt-2"
-        disabled={!isSearching}
-      >
-        Annuler la recherche
-      </Button>
     </div>
   );
 }

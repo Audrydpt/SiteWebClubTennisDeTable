@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ForensicTaskStatus,
   isForensicTaskCompleted,
+  isForensicTaskRunning,
 } from '../../hooks/use-jobs';
 
 export interface TabJob {
@@ -129,7 +130,7 @@ export default function JobTabs({
             const activeTabClass =
               activeTabIndex === tab.tabIndex ? 'ring-1 ring-primary' : '';
 
-            const runningClass = !isForensicTaskCompleted(tab.status)
+            const runningClass = isForensicTaskRunning(tab.status)
               ? 'bg-muted/50 animate-pulse'
               : '';
 
@@ -154,9 +155,6 @@ export default function JobTabs({
                         <Button
                           variant="destructive"
                           className="h-4 w-4 p-0"
-                          disabled={
-                            isLoading || !isForensicTaskCompleted(tab.status)
-                          }
                           title="Supprimer cette recherche"
                           aria-label="Supprimer cette recherche"
                         >
