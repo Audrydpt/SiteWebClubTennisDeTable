@@ -567,57 +567,59 @@ class FastAPIServer:
 
         @self.app.get("/forensics/{guid}/by-score", tags=["forensics"])
         async def get_results_sorted_by_score(guid: str, page: int = 1, desc: bool = True):
-            """Récupère les résultats triés par score de confiance"""
             try:
-                if not TaskManager.get_job_status(guid):
-                    raise HTTPException(status_code=404, detail="Tâche introuvable")
+                # Calcul des indices de début et de fin pour la pagination
+                start = (page - 1) * FORENSIC_PAGINATION_ITEMS
+                end = page * FORENSIC_PAGINATION_ITEMS - 1
 
-                page_size = FORENSIC_PAGINATION_ITEMS
-                start = (page - 1) * page_size
-                end = start + page_size - 1
+                # Récupérer les résultats triés par score
+                results = await TaskManager.get_sorted_results(guid, sort_by="score", desc=desc, start=start, end=end)
 
-                # Utiliser la méthode de tri par score
-                results = await TaskManager.get_by_score(guid, start, end, desc)
+                # Calculer le nombre total de pages
+                total_pages = (TaskManager.get_job_count(guid) + FORENSIC_PAGINATION_ITEMS - 1) // FORENSIC_PAGINATION_ITEMS
+
                 total = TaskManager.get_job_count(guid)
 
                 return {
-                    "guid": guid,
-                    "results": results,
-                    "total": total,
-                    "total_pages": (total + page_size - 1) // page_size if total else 0,
-                    "page": page,
-                    "page_size": page_size,
+                    "results": [result.metadata for result in results if not result.final],
+                    "pagination": {
+                        "currentPage": page,
+                        "totalPages": total_pages,
+                        "pageSize": FORENSIC_PAGINATION_ITEMS,
+                        "total": total,
+                    }
                 }
             except Exception as e:
-                logger.error(f"Erreur: {e}")
+                logger.error(f"Erreur lors de la récupération des résultats triés par score: {e}")
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.get("/forensics/{guid}/by-date", tags=["forensics"])
         async def get_results_sorted_by_date(guid: str, page: int = 1, desc: bool = True):
-            """Récupère les résultats triés par date"""
             try:
-                if not TaskManager.get_job_status(guid):
-                    raise HTTPException(status_code=404, detail="Tâche introuvable")
+                # Calcul des indices de début et de fin pour la pagination
+                start = (page - 1) * FORENSIC_PAGINATION_ITEMS
+                end = page * FORENSIC_PAGINATION_ITEMS - 1
 
-                page_size = FORENSIC_PAGINATION_ITEMS
-                start = (page - 1) * page_size
-                end = start + page_size - 1
+                # Récupérer les résultats triés par date
+                results = await TaskManager.get_sorted_results(guid, sort_by="date", desc=desc, start=start, end=end)
 
-                # Utiliser la méthode de tri par date
-                results = await TaskManager.get_by_date(guid, start, end, desc)
-                total = await TaskManager.get_job_count(guid)
+                # Calculer le nombre total de pages
+                total_pages = (TaskManager.get_job_count(guid) + FORENSIC_PAGINATION_ITEMS - 1) // FORENSIC_PAGINATION_ITEMS
+
+                total = TaskManager.get_job_count(guid)
 
                 return {
-                    "guid": guid,
-                    "results": results,
-                    "total": total,
-                    "total_pages": (total + page_size - 1) // page_size,
-                    "page": page,
-                    "page_size": page_size,
+                    "results": [result.metadata for result in results if not result.final],
+                    "pagination": {
+                        "currentPage": page,
+                        "totalPages": total_pages,
+                        "pageSize": FORENSIC_PAGINATION_ITEMS,
+                        "total": total,
+                    }
                 }
             except Exception as e:
-                logger.error(f"Erreur: {e}")
+                logger.error(f"Erreur lors de la récupération des résultats triés par date: {e}")
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=str(e))
 
