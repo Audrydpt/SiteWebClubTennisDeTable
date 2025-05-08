@@ -137,71 +137,43 @@ class ResultsStore:
             self._redis = aioredis.Redis(connection_pool=self._pool)
         return self._redis
 
-    async def get_results_by_score(self, job_id: str, start: int = 0, end: int = -1, desc: bool = True):
+    async def get_sorted_results(self, job_id: str, sort_by: str = "date", desc: bool = True, start: int = 0, end: int = -1) -> List[JobResult]:
         """
-        Récupère les résultats triés par score (meilleur score en premier par défaut)
+        Récupère tous les résultats d'un job et les trie selon le critère spécifié.
+
+        Args:
+            job_id: Identifiant du job
+            sort_by: Critère de tri ('date' ou 'score')
+            desc: Ordre décroissant si True, croissant si False
+            start: Index de début
+            end: Index de fin
+
+        Returns:
+            Liste triée des résultats
         """
-        redis = await self._get_redis_1()
-        key = f"job:{job_id}:results_by_score"
+        # Récupération de tous les résultats
+        results = await self.get_results(job_id)
 
-        # Récupérer les IDs triés par score
-        if desc:
-            result_ids = await redis.zrevrange(key, start, end, withscores=True)
-        else:
-            result_ids = await redis.zrange(key, start, end, withscores=True)
+        # Tri selon le critère spécifié
+        if sort_by == "score" and results:
+            # Vérifier que le score est présent dans les métadonnées
+            results = sorted(
+                results,
+                key=lambda x: float(x.metadata.get('score', 0)),
+                reverse=desc
+            )
+        elif sort_by == "date" and results:
+            # Tri par timestamp dans les métadonnées
+            results = sorted(
+                results,
+                key=lambda x: x.metadata.get('timestamp', ''),
+                reverse=desc
+            )
 
-        # Récupérer les données complètes
-        results = []
-        for result_id, score in result_ids:
-            result_id_str = result_id.decode() if isinstance(result_id, bytes) else result_id
-
-            # Récupérer les données du résultat
-            data_key = f"job:{job_id}:result:{result_id_str}"
-            data = await redis.get(data_key)
-
-            if data:
-                result_data = json.loads(data)
-                metadata = result_data.get('metadata', {})
-                frame_uuid = result_data.get('frame_uuid')
-
-                # Formater le résultat comme attendu par le frontend
-                formatted_result = {
-                    "id": result_id_str,
-                    "score": float(score),
-                    "timestamp": metadata.get('timestamp'),
-                    "cameraId": metadata.get('source_guid', ''),
-                    "type": "detection",
-                    "frame_uuid": frame_uuid
-                }
-
-                results.append(formatted_result)
-
-        return results
-
-    async def get_results_by_date(self, job_id: str, start: int = 0, end: int = -1, desc: bool = True):
-        """
-        Récupère les résultats triés par date (plus récent en premier par défaut)
-        """
-        redis = await self._get_redis_2()
-        key = f"job:{job_id}:results_by_date"
-
-        # Récupérer les IDs triés par date
-        if desc:
-            result_ids = await redis.zrevrange(key, start, end, withscores=True)
-        else:
-            result_ids = await redis.zrange(key, start, end, withscores=True)
-
-        # Récupérer les données complètes depuis redis_1
-        redis_data = await self._get_redis_1()
-        results = []
-        for result_id, timestamp in result_ids:
-            data_key = f"job:{job_id}:result:{result_id.decode()}"
-            data = await redis_data.get(data_key)
-            if data:
-                result = json.loads(data)
-                results.append(result)
-
-        return results
+        # Application de la pagination après le tri
+        if end == -1:
+            end = len(results)
+        return results[start:end+1]
 
     async def get_frame(self, job_id: str, frame_uuid: str) -> Optional[bytes]:
         redis = await self._get_redis_1()
@@ -377,18 +349,21 @@ class TaskManager:
     """Gestionnaire de tâches façade pour les opérations Celery/Redis"""
 
     @staticmethod
-    async def get_by_score( guid, start, end, desc):
+    async def get_sorted_results(job_id: str, sort_by: str = "date", desc: bool = True, start: int = 0, end: int = -1) -> List[JobResult]:
         """
-        Récupère les résultats d'une tâche triés par score de confiance.
-        """
-        return await results_store.get_results_by_score(guid, start, end, desc)
+        Récupère les résultats d'une tâche triés par date ou score.
 
-    @staticmethod
-    async def get_by_date(guid, start, end, desc):
+        Args:
+            job_id: Identifiant du job
+            sort_by: Critère de tri ('date' ou 'score')
+            desc: Ordre décroissant si True, croissant si False
+            start: Index de début
+            end: Index de fin
+
+        Returns:
+            Liste des résultats triés
         """
-        Récupère les résultats d'une tâche triés par date.
-        """
-        return await results_store.get_results_by_date(guid, start, end, desc)
+        return await results_store.get_sorted_results(job_id, sort_by, desc, start, end)
     
     @staticmethod
     def submit_job(job_type: str, job_params: Dict[str, Any]) -> str:
