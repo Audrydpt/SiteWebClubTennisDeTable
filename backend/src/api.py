@@ -578,13 +578,13 @@ class FastAPIServer:
 
                 # Utiliser la méthode de tri par score
                 results = await TaskManager.get_by_score(guid, start, end, desc)
-                total = await TaskManager.get_job_count(guid)
+                total = TaskManager.get_job_count(guid)
 
                 return {
                     "guid": guid,
                     "results": results,
                     "total": total,
-                    "total_pages": (total + page_size - 1) // page_size,
+                    "total_pages": (total + page_size - 1) // page_size if total else 0,
                     "page": page,
                     "page_size": page_size,
                 }

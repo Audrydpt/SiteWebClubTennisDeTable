@@ -408,7 +408,7 @@ class TaskManager:
         return await results_store.get_results_by_score(guid, start, end, desc)
 
     @staticmethod
-    async def get_by_score(guid, start, end, desc):
+    async def get_by_date(guid, start, end, desc):
         """
         Récupère les résultats d'une tâche triés par date.
         """
