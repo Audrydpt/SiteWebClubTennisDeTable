@@ -1,5 +1,6 @@
-import JobTabs, { TabJob } from './job-tabs';
+import { TabJob } from '../../hooks/use-jobs';
 import { SortButtons, SortType } from './buttons';
+import JobTabs from './job-tabs';
 
 interface HeaderProps {
   sortType: SortType;
@@ -8,11 +9,11 @@ interface HeaderProps {
   toggleSortOrder: () => void;
   clearResults: () => void;
   tabJobs?: TabJob[];
-  activeTabIndex?: number;
-  onTabChange?: (tabIndex: number) => void;
+  activeTabIndex?: string;
+  onTabChange?: (tabIndex: string) => void;
   loading: boolean;
   setIsLoading: (isLoading: boolean) => void;
-  onDeleteTab?: (tabIndex: number) => void;
+  onDeleteTab?: (tabIndex: string) => void;
   onDeleteAllTabs?: () => void;
 }
 
@@ -23,7 +24,7 @@ export default function ForensicHeader({
   toggleSortOrder,
   clearResults,
   tabJobs = [],
-  activeTabIndex = 1,
+  activeTabIndex = '',
   onTabChange = () => {},
   loading = false,
   setIsLoading = () => {},

@@ -22,10 +22,10 @@ interface ResultsProps {
   isSearching: boolean;
   progress: number | null;
   sourceProgress: SourceProgress[];
-  onTabChange?: (tabIndex: number) => void;
-  activeTabIndex?: number;
+  onTabChange?: (tabIndex: string) => void;
+  activeTabIndex?: string;
   isTabLoading?: boolean;
-  onDeleteTab?: (tabIndex: number) => void;
+  onDeleteTab?: (tabIndex: string) => void;
   onDeleteAllTabs?: () => void;
   currentPage: number;
   onPageChange: (page: number) => void;
@@ -77,7 +77,7 @@ export default function Results({
 
   // Fonction modifiée pour éviter les logs excessifs
   const resultsToDisplay = useMemo(() => {
-    const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
+    const activeTab = tabJobs.find((tab) => tab.jobId === activeTabIndex);
     if (activeTab?.isNew === true || (activeTabIndex && !activeTab)) {
       return [];
     }
@@ -92,7 +92,7 @@ export default function Results({
   };
 
   const hasActiveJob = useMemo(() => {
-    const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
+    const activeTab = tabJobs.find((tab) => tab.jobId === activeTabIndex);
     if (activeTab?.isNew === true) {
       return false;
     }
@@ -102,7 +102,7 @@ export default function Results({
 
   // Effet pour nettoyer les résultats lors du changement d'onglet
   useEffect(() => {
-    const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
+    const activeTab = tabJobs.find((tab) => tab.jobId === activeTabIndex);
     const isNewTab = activeTab?.isNew === true;
     if (isNewTab) {
       forceCleanupResults();
@@ -147,7 +147,7 @@ export default function Results({
         );
         return;
       }
-      const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
+      const activeTab = tabJobs.find((tab) => tab.jobId === activeTabIndex);
       const jobId = activeTab?.jobId;
       if (!jobId) {
         return;
@@ -195,7 +195,7 @@ export default function Results({
     setDisplayResults([]);
   };
 
-  const handleDeleteTab = (tabIndex: number) => {
+  const handleDeleteTab = (tabIndex: string) => {
     if (onDeleteTab) {
       onDeleteTab(tabIndex);
     }
@@ -290,7 +290,7 @@ export default function Results({
 
           {(() => {
             const activeTab = tabJobs.find(
-              (tab) => tab.tabIndex === activeTabIndex
+              (tab) => tab.jobId === activeTabIndex
             );
             const isNew = activeTab?.isNew === true;
 

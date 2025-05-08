@@ -9,20 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ForensicTaskStatus,
   isForensicTaskCompleted,
+  TabJob,
 } from '../../hooks/use-jobs';
-
-export interface TabJob {
-  tabIndex: number;
-  jobId?: string;
-  status: ForensicTaskStatus;
-  isNew?: boolean;
-}
 
 interface JobTabsProps {
   tabJobs: TabJob[];
-  activeTabIndex: number;
-  onTabChange: (tabIndex: number) => void;
-  onDeleteTab: (tabIndex: number) => void;
+  activeTabIndex: string;
+  onTabChange: (tabIndex: string) => void;
+  onDeleteTab: (tabIndex: string) => void;
   hideTitle?: boolean;
   isLoading?: boolean;
   setIsLoading?: (isLoading: boolean) => void;
@@ -30,7 +24,7 @@ interface JobTabsProps {
 
 export default function JobTabs({
   tabJobs = [],
-  activeTabIndex = 1,
+  activeTabIndex = '',
   onTabChange,
   onDeleteTab,
   hideTitle = false,
@@ -65,14 +59,7 @@ export default function JobTabs({
   let displayTabs = [...tabJobs];
 
   if (displayTabs.length === 0) {
-    displayTabs = [{ tabIndex: 1, status: ForensicTaskStatus.PENDING }];
-  }
-
-  if (!displayTabs.some((tab) => tab.tabIndex === activeTabIndex)) {
-    displayTabs.push({
-      tabIndex: activeTabIndex,
-      status: ForensicTaskStatus.PENDING,
-    });
+    displayTabs = [{ jobId: '', status: ForensicTaskStatus.PENDING }];
   }
 
   displayTabs = displayTabs.slice(0, MAX_TABS);
@@ -97,18 +84,18 @@ export default function JobTabs({
       )}
 
       <Tabs
-        value={activeTabIndex.toString()}
+        value={activeTabIndex}
         className="w-full"
-        onValueChange={(value) => onTabChange(parseInt(value, 10))}
+        onValueChange={(value) => onTabChange(value)}
       >
         <TabsList className="grid w-full grid-cols-5">
-          {displayTabs.map((tab) => {
+          {displayTabs.map((tab, index) => {
             const hasJob = !!tab.jobId;
             let tabDisplay = 'Nouvel onglet';
             let statusIndicator = null;
 
             if (hasJob) {
-              tabDisplay = `R${tab.tabIndex}`;
+              tabDisplay = `R${index + 1}`;
               if (!isForensicTaskCompleted(tab.status)) {
                 statusIndicator = (
                   <Loader2 className="ml-1 h-3 w-3 animate-spin" />
@@ -126,7 +113,7 @@ export default function JobTabs({
               }
             }
             const activeTabClass =
-              activeTabIndex === tab.tabIndex ? 'ring-1 ring-primary' : '';
+              activeTabIndex === tab.jobId ? 'ring-1 ring-primary' : '';
 
             const runningClass = !isForensicTaskCompleted(tab.status)
               ? 'bg-muted/50 animate-pulse'
@@ -134,8 +121,8 @@ export default function JobTabs({
 
             return (
               <TabsTrigger
-                key={tab.tabIndex}
-                value={tab.tabIndex.toString()}
+                key={tab.jobId}
+                value={tab.jobId || ''}
                 className={`${hasJob ? 'font-medium' : ''} ${activeTabClass} ${runningClass} transition-all relative group`}
                 disabled={isLoading}
               >
@@ -145,7 +132,7 @@ export default function JobTabs({
                   {hasJob && (
                     <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       <DeleteConfirmation
-                        onDelete={() => onDeleteTab(tab.tabIndex)}
+                        onDelete={() => onDeleteTab(tab.jobId || '')}
                         title="Supprimer cette recherche"
                         description="Êtes-vous sûr de vouloir supprimer cet onglet de recherche ?"
                         confirmText="Supprimer"
@@ -167,7 +154,7 @@ export default function JobTabs({
           })}
         </TabsList>
         {displayTabs.map((tab) => (
-          <TabsContent key={tab.tabIndex} value={tab.tabIndex.toString()} />
+          <TabsContent key={tab.jobId} value={tab.jobId || ''} />
         ))}
       </Tabs>
     </div>

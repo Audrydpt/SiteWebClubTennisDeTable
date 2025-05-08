@@ -1,14 +1,14 @@
 /* eslint-disable no-console,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
-import { Card, CardContent } from '@/components/ui/card';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import useJobs from './hooks/use-jobs';
-import useSearch from './hooks/use-search';
-import { createSearchFormData } from './lib/format-query';
+import { Card, CardContent } from '@/components/ui/card';
 
 import ForensicForm from './components/form';
 import Results from './components/results';
+import useJobs from './hooks/use-jobs';
+import useSearch from './hooks/use-search';
 import forensicResultsHeap from './lib/data-structure/heap.tsx';
+import { createSearchFormData } from './lib/format-query';
 import ForensicFormProvider from './lib/provider/forensic-form-provider';
 import { ForensicFormValues } from './lib/types';
 
@@ -44,7 +44,6 @@ export default function Forensic() {
     activeTabIndex,
     activeJobId,
     addNewTab,
-    selectLeftmostTab,
     deleteTab,
     deleteAllTasks,
     getActivePaginationInfo,
@@ -86,9 +85,9 @@ export default function Forensic() {
     }
   };
 
-  const handleDeleteTab = (tabIndex: number) => {
+  const handleDeleteTab = (tabIndex: string) => {
     if (activeTabIndex === tabIndex) {
-      const newActiveTabIndex = tabJobs[0]?.tabIndex || 1;
+      const newActiveTabIndex = tabJobs[0]?.jobId || '';
       jobsHandleTabChange(newActiveTabIndex);
     }
     deleteTab(tabIndex);
@@ -119,11 +118,11 @@ export default function Forensic() {
     setIsCollapsed(!isCollapsed);
   };
 
-  const handleTabChange = async (tabIndex: number) => {
+  const handleTabChange = async (tabIndex: string) => {
     setIsTabLoading(true);
     setCurrentPage(1);
 
-    const selectedTab = tabJobs.find((tab) => tab.tabIndex === tabIndex);
+    const selectedTab = tabJobs.find((tab) => tab.jobId === tabIndex);
     const isNewTab = selectedTab?.isNew === true;
 
     resetSearch(); // Cette fonction doit maintenant réinitialiser également la pagination
@@ -181,11 +180,7 @@ export default function Forensic() {
     try {
       const searchFormData = createSearchFormData(data);
       const jobId = await startSearch(searchFormData);
-
-      if (jobId) {
-        const selectedTabIndex = await selectLeftmostTab();
-        jobsHandleTabChange(selectedTabIndex);
-      }
+      handleTabChange(jobId);
     } catch (error) {
       console.error('Failed to start search:', error);
     }
@@ -267,9 +262,7 @@ export default function Forensic() {
             </div>
 
             <ForensicFormProvider>
-              <ForensicForm
-                onSubmit={handleSearch}
-              />
+              <ForensicForm onSubmit={handleSearch} />
             </ForensicFormProvider>
           </CardContent>
         </Card>
