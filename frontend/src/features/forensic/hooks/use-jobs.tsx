@@ -124,9 +124,9 @@ export default function useJobs() {
           status: task.status,
           type: task.type,
           created: task.created,
-          count: task.count,
-          size: task.size,
-          total_pages: task.total_pages,
+          count: task.count || 0,
+          size: task.size || 0,
+          total_pages: task.total_pages || 0,
         })
       );
 
@@ -137,21 +137,56 @@ export default function useJobs() {
 
       setTasks(tasksArray);
 
-      // Créer les onglets à partir des tâches
-      const taskTabJobs = tasksArray.slice(0, 5).map((task, index) => ({
-        tabIndex: index + 1,
-        jobId: task.id,
-        status: mapTaskStatusToTabStatus(task.status),
-        isNew: false,
-        count: task.count,
-        total_pages: task.total_pages,
-      }));
+      // Mettre à jour les onglets existants avec les nouvelles données
+      setTabJobs((prevTabJobs) =>
+        prevTabJobs.map((tab) => {
+          if (tab.jobId) {
+            // Chercher la tâche correspondante dans tasksArray
+            const updatedTask = tasksArray.find(
+              (task) => task.id === tab.jobId
+            );
+            if (updatedTask) {
+              return {
+                ...tab,
+                status: mapTaskStatusToTabStatus(updatedTask.status),
+                count: updatedTask.count,
+                total_pages: updatedTask.total_pages,
+              };
+            }
+          }
+          return tab;
+        })
+      );
+
+      // Créer les onglets à partir des tâches pour les nouveaux jobs
+      // qu'on ne connaissait pas encore
+      const existingJobIds = tabJobs
+        .filter((tab) => tab.jobId)
+        .map((tab) => tab.jobId);
+
+      const newTasks = tasksArray.filter(
+        (task) => !existingJobIds.includes(task.id)
+      );
+
+      const newTaskTabJobs = newTasks
+        .slice(0, 5 - tabJobs.length)
+        .map((task, index) => ({
+          tabIndex: Math.max(...tabJobs.map((t) => t.tabIndex), 0) + index + 1,
+          jobId: task.id,
+          status: mapTaskStatusToTabStatus(task.status),
+          isNew: false,
+          count: task.count,
+          total_pages: task.total_pages,
+        }));
 
       // Conserver les onglets "isNew" existants
       const existingNewTabs = tabJobs.filter((tab) => tab.isNew);
 
-      // Fusionner les deux types d'onglets, en évitant les doublons d'index
-      let combinedTabs: TabJob[] = [...taskTabJobs];
+      // Fusionner les trois types d'onglets: existants mis à jour, nouveaux, et nouveaux vides
+      let combinedTabs: TabJob[] = [
+        ...tabJobs.filter((tab) => tab.jobId),
+        ...newTaskTabJobs,
+      ];
 
       existingNewTabs.forEach((newTab) => {
         if (!combinedTabs.some((tab) => tab.tabIndex === newTab.tabIndex)) {
@@ -175,9 +210,16 @@ export default function useJobs() {
         }
       }
 
-      setError(null);
+      // Mise à jour du jobId actif si l'onglet actif a changé
+      const activeTab = combinedTabs.find(
+        (tab) => tab.tabIndex === activeTabIndex
+      );
+      if (activeTab?.jobId && activeTab.jobId !== activeJobId) {
+        setActiveJobId(activeTab.jobId);
+        console.log(`JobId actif mis à jour: ${activeTab.jobId}`);
+      }
 
-      // Retourner les onglets combinés pour usage immédiat
+      setError(null);
       return combinedTabs;
     } catch (err) {
       console.error('Erreur lors de la récupération des tâches:', err);
@@ -377,9 +419,16 @@ export default function useJobs() {
 
   const getActivePaginationInfo = () => {
     const activeTask = getActiveTask();
+
+    console.log('Informations de pagination actualisées:', {
+      jobId: activeJobId,
+      count: activeTask?.count || 0,
+      totalPages: activeTask?.total_pages || 0,
+    });
+
     return {
-      currentPage: 1, // À gérer ailleurs dans l'application
-      pageSize: 12, // Nombre de résultats par page (à ajuster selon votre configuration)
+      currentPage: 1, // À gérer ailleurs
+      pageSize: 12, // Ajustez selon votre configuration
       totalPages: activeTask?.total_pages || 0,
       total: activeTask?.count || 0,
     };

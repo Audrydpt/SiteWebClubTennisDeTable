@@ -6,7 +6,7 @@ import {
   ChevronsRight,
   Search,
 } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Popover,
   PopoverContent,
@@ -77,6 +77,8 @@ export default function Display({
   paginationInfo,
 }: DisplayProps) {
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
+  const lastCheckedTotalPages = useRef(paginationInfo.totalPages);
+  const logTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Generate stable skeleton IDs
   const skeletonIds = useMemo(
@@ -109,17 +111,48 @@ export default function Display({
     if (currentPage !== 1) {
       onPageChange(1);
     }
-  }, [sortType, sortOrder]);
+  }, [sortType, sortOrder, currentPage, onPageChange]);
 
-  // Assurer que currentPage ne dépasse jamais totalPages
   useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      onPageChange(totalPages);
+    const { totalPages } = paginationInfo;
+
+    // N'effectuer le changement que si toutes ces conditions sont respectées
+    if (
+      currentPage > totalPages &&
+      totalPages > 0 &&
+      !isSearching &&
+      lastCheckedTotalPages.current !== totalPages
+    ) {
+      lastCheckedTotalPages.current = totalPages;
+
+      // Utiliser requestAnimationFrame au lieu de setTimeout
+      requestAnimationFrame(() => {
+        onPageChange(totalPages);
+      });
+    } else {
+      // Mettre à jour la référence même sans changement de page
+      lastCheckedTotalPages.current = totalPages;
     }
-  }, [totalPages, currentPage, onPageChange]);
+  }, [paginationInfo.totalPages, currentPage, isSearching]);
 
+  // Log avec debounce pour éviter le spam de console
   useEffect(() => {
-    console.log('paginationInfo reçue dans Display:', paginationInfo);
+    // Annuler le timer précédent s'il existe
+    if (logTimerRef.current) {
+      clearTimeout(logTimerRef.current);
+    }
+
+    // Créer un nouveau timer
+    logTimerRef.current = setTimeout(() => {
+      console.log('paginationInfo reçue dans Display:', paginationInfo);
+      logTimerRef.current = null;
+    }, 300);
+
+    return () => {
+      if (logTimerRef.current) {
+        clearTimeout(logTimerRef.current);
+      }
+    };
   }, [paginationInfo]);
 
   const paginatedResults = useMemo(() => {

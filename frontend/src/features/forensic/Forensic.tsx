@@ -35,7 +35,7 @@ export default function Forensic() {
     testResumeJob,
     paginationInfo,
     handlePageChange,
-    currentPageTracked,
+    setPaginationInfo,
   } = useSearch();
 
   const {
@@ -45,9 +45,9 @@ export default function Forensic() {
     addNewTab,
     selectLeftmostTab,
     deleteTab,
-    fetchTasks,
     deleteAllTasks,
     getActiveJobId,
+    getActivePaginationInfo,
   } = useJobs();
 
   const handlePaginationChange = useCallback(
@@ -55,41 +55,23 @@ export default function Forensic() {
       console.log(`Changement vers page ${page}`);
       setCurrentPage(page);
 
-      // Utiliser la fonction handlePageChange du hook useSearch
-      handlePageChange(page);
-
-      // Récupérer le job actif depuis l'onglet actif
-      const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
-      const activeJobId = activeTab?.jobId;
-
+      const activeJobId = getActiveJobId();
       if (!activeJobId) {
-        console.error(
-          `Impossible de charger la page ${page} : aucun job actif`
-        );
+        console.error('Impossible de charger la page : aucun job actif');
         return;
       }
 
-      // Si nous ne sommes pas sur la page 1 ou si la recherche n'est plus active,
-      // charger explicitement les résultats via l'API
-      if (page !== 1 || !isSearching) {
-        try {
-          setIsLoading(true);
-          await testResumeJob(activeJobId, page, true, true);
-        } catch (error) {
-          console.error(`Erreur lors du chargement de la page ${page}:`, error);
-        } finally {
-          setIsLoading(false);
-        }
+      try {
+        setIsLoading(true);
+        // Récupérer les données pour la page demandée
+        await testResumeJob(activeJobId, page, true);
+      } catch (error) {
+        console.error(`Erreur lors du chargement de la page ${page}:`, error);
+      } finally {
+        setIsLoading(false);
       }
     },
-    [
-      tabJobs,
-      activeTabIndex,
-      testResumeJob,
-      setIsLoading,
-      handlePageChange,
-      isSearching,
-    ]
+    [testResumeJob, getActiveJobId]
   );
 
   const handleDeleteAllTabs = () => {
@@ -216,39 +198,49 @@ export default function Forensic() {
   const activeTabsCount = tabJobs.filter((tab) => tab.jobId).length;
 
   useEffect(() => {
-    const loadExistingJobs = async () => {
-      try {
-        setIsTabLoading(true);
-        const updatedTabJobs = await fetchTasks();
+    // Ne pas effectuer la mise à jour durant le chargement d'un onglet
+    if (isTabLoading) return;
 
-        const tabWithJob =
-          updatedTabJobs?.find((tab) => tab.jobId) ||
-          tabJobs.find((tab) => tab.jobId);
+    const dynamicPaginationInfo = getActivePaginationInfo();
+    const activeJobId = getActiveJobId();
 
-        if (tabWithJob) {
-          console.log('✅ Onglet avec jobId trouvé:', tabWithJob);
+    // Vérifier si une mise à jour est réellement nécessaire
+    if (
+      activeJobId &&
+      dynamicPaginationInfo?.totalPages > 0 &&
+      (paginationInfo.totalPages !== dynamicPaginationInfo.totalPages ||
+        paginationInfo.total !== dynamicPaginationInfo.total ||
+        paginationInfo.pageSize !== dynamicPaginationInfo.pageSize)
+    ) {
+      // Mettre à jour uniquement si les valeurs ont réellement changé
+      const updatedPaginationInfo = {
+        ...dynamicPaginationInfo,
+        currentPage, // Garder la page courante
+      };
 
-          handleTabChange(tabWithJob.tabIndex);
-          await new Promise((resolve) => {
-            setTimeout(resolve, 50);
-          });
-          if (tabWithJob.jobId) {
-            // await resumeJob(tabWithJob.jobId, false);
-            await testResumeJob(tabWithJob.jobId, currentPage, false);
-          }
-        } else if (updatedTabJobs?.length > 0) {
-          handleTabChange(updatedTabJobs[0].tabIndex);
-        }
-      } catch (error) {
-        console.error('❌ Erreur lors du chargement des jobs:', error);
-      } finally {
+      setPaginationInfo(updatedPaginationInfo);
+
+      // Mettre à jour la page courante UNIQUEMENT si nécessaire
+      // et avec une condition stricte pour éviter les boucles
+      if (
+        currentPage > dynamicPaginationInfo.totalPages &&
+        dynamicPaginationInfo.totalPages > 0 &&
+        !isSearching // Important: ne pas modifier pendant une recherche
+      ) {
+        // Utiliser setTimeout pour briser la boucle de rendu
         setTimeout(() => {
-          setIsTabLoading(false);
-        }, 300);
+          setCurrentPage(dynamicPaginationInfo.totalPages);
+          handlePageChange(dynamicPaginationInfo.totalPages);
+        }, 0);
       }
-    };
-    loadExistingJobs();
-  }, []);
+    }
+  }, [
+    activeTabIndex,
+    getActivePaginationInfo,
+    getActiveJobId,
+    isTabLoading,
+    isSearching,
+  ]);
 
   return (
     <div ref={containerRef} className="flex h-full">

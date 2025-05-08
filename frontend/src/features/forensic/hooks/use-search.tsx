@@ -935,5 +935,6 @@ export default function useSearch() {
     updateFirstPageWithRelevantResults,
     handlePageChange,
     currentPageTracked,
+    setPaginationInfo,
   };
 }
