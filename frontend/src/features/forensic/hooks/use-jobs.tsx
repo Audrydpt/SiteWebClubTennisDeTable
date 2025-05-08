@@ -7,7 +7,8 @@ export interface ForensicTask {
   type: string;
   created: string;
   count: number;
-  size?: number;
+  size: number;
+  total_pages?: number;
 }
 
 export interface ForensicTaskResponse {
@@ -17,7 +18,8 @@ export interface ForensicTaskResponse {
       type: string;
       created: string;
       count: number;
-      size?: number;
+      size: number;
+      total_pages: number;
     };
   };
 }
@@ -124,6 +126,7 @@ export default function useJobs() {
           created: task.created,
           count: task.count,
           size: task.size,
+          total_pages: task.total_pages,
         })
       );
 
@@ -140,6 +143,8 @@ export default function useJobs() {
         jobId: task.id,
         status: mapTaskStatusToTabStatus(task.status),
         isNew: false,
+        count: task.count,
+        total_pages: task.total_pages,
       }));
 
       // Conserver les onglets "isNew" existants
@@ -370,6 +375,16 @@ export default function useJobs() {
     return resumeCallback(activeJobId);
   };
 
+  const getActivePaginationInfo = () => {
+    const activeTask = getActiveTask();
+    return {
+      currentPage: 1, // À gérer ailleurs dans l'application
+      pageSize: 12, // Nombre de résultats par page (à ajuster selon votre configuration)
+      totalPages: activeTask?.total_pages || 0,
+      total: activeTask?.count || 0,
+    };
+  };
+
   return {
     tasks,
     tabJobs,
@@ -381,6 +396,7 @@ export default function useJobs() {
     getTaskById,
     getActiveTask,
     getActiveJobId,
+    getActivePaginationInfo,
     handleTabChange,
     resumeActiveJob,
     setTabJobs,

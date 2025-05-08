@@ -1,4 +1,4 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-shadow,consistent-return,no-promise-executor-return,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
+/* eslint-disable no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-shadow,consistent-return,no-promise-executor-return,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps,@typescript-eslint/naming-convention */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import useLatest from '@/hooks/use-latest';
@@ -32,6 +32,16 @@ export default function useSearch() {
 
   const [displayResults, setDisplayResults] = useState<ForensicResult[]>([]);
 
+  const [paginationInfo, setPaginationInfo] = useState({
+    currentPage: 1,
+    pageSize: 12,
+    totalPages: 0,
+    total: 0,
+  });
+
+  // Ajoutez dans les states existants
+  const [currentPageTracked, setCurrentPageTracked] = useState<number>(1);
+
   const metadataQueue = useRef<{
     timestamp?: string;
     score?: number;
@@ -39,6 +49,22 @@ export default function useSearch() {
     progress?: number;
     attributes?: Record<string, unknown>;
   }>({});
+
+  const handlePageChange = useCallback((page: number) => {
+    // Mettre à jour la page courante
+    setCurrentPageTracked(page);
+
+    // Si on quitte la page 1, fermer le WebSocket
+    if (
+      page !== 1 &&
+      wsRef.current &&
+      wsRef.current.readyState === WebSocket.OPEN
+    ) {
+      console.log('🚫 Fermeture du WebSocket - navigation hors de la page 1');
+      wsRef.current.close(1000, 'Navigation vers une autre page');
+      wsRef.current = null;
+    }
+  }, []);
 
   const initializeSourceProgress = useCallback((selectedSources: string[]) => {
     setSourceProgress(
@@ -64,8 +90,45 @@ export default function useSearch() {
     }
   }, []);
 
+  const updateFirstPageWithRelevantResults = (newResult: ForensicResult) => {
+    const { currentPage } = paginationInfo;
+    // Vérifier si le résultat est plus pertinent que le minimum de la première page
+    const shouldAdd = forensicResultsHeap.shouldAddResult(
+      newResult,
+      1,
+      paginationInfo.pageSize
+    );
+
+    if (shouldAdd) {
+      // Ajouter le résultat au heap
+      forensicResultsHeap.addResult(newResult);
+
+      // Si nous sommes sur la première page, mettre à jour les résultats affichés
+      if (currentPage === 1) {
+        // Récupérer les meilleurs résultats pour la première page
+        const topResults = forensicResultsHeap.getPageResults(
+          1,
+          paginationInfo.pageSize
+        );
+
+        // Mettre à jour les résultats affichés
+        setDisplayResults([...topResults]);
+      }
+
+      return true;
+    }
+
+    return false;
+  };
+
   const initWebSocket = useCallback(
     (id: string) => {
+      // Vérifier si nous sommes sur la page 1, sinon ne pas initialiser le WebSocket
+      if (currentPageTracked !== 1) {
+        console.log('🚫 WebSocket non initialisé - page différente de 1');
+        return;
+      }
+
       if (!id) {
         console.error(
           '⚠️ Aucun jobId disponible pour initialiser le WebSocket'
@@ -232,10 +295,12 @@ export default function useSearch() {
               type: latestType.current === 'person' ? 'person' : 'vehicle',
             };
 
-            // Add to heap and get sorted results
-            forensicResultsHeap.addResult(newResult);
-            setResults(forensicResultsHeap.getBestResults());
-            setDisplayResults(forensicResultsHeap.getBestResults());
+            const wasRelevantAndAdded =
+              updateFirstPageWithRelevantResults(newResult);
+            // Mettre à jour la liste complète des résultats uniquement si nécessaire
+            if (wasRelevantAndAdded) {
+              setResults(forensicResultsHeap.getBestResults());
+            }
           }
         };
 
@@ -272,6 +337,7 @@ export default function useSearch() {
       latestJobId,
       latestType,
       isCancelling,
+      currentPageTracked,
     ]
   );
 
@@ -294,13 +360,28 @@ export default function useSearch() {
     }
   }, []);
 
-  const resetSearch = () => {
-    cleanupWebSocket();
+  // Dans use-search.tsx, ajoutez une fonction pour réinitialiser la pagination
+  const resetPagination = useCallback(() => {
+    setPaginationInfo({
+      currentPage: 1,
+      pageSize: 12, // ou la valeur par défaut que vous utilisez
+      totalPages: 1,
+      total: 0,
+    });
+  }, []);
+
+  // Modifiez la fonction resetSearch pour inclure la réinitialisation de la pagination
+  const resetSearch = useCallback(() => {
+    setSourceProgress([]);
+    setProgress(null);
+    setIsSearching(false);
+    setJobId(null);
     setResults([]);
     setDisplayResults([]);
-  };
+    resetPagination();
+  }, [resetPagination]);
 
-  const resumeJob = async (jobId: string, skipHistory: boolean = false) => {
+  /* const resumeJob = async (jobId: string, skipHistory: boolean = false) => {
     try {
       setJobId(jobId);
 
@@ -458,6 +539,242 @@ export default function useSearch() {
       return [];
     }
   };
+ */
+  const testResumeJob = async (
+    jobId: string,
+    page: number = 1,
+    skipHistory: boolean = false,
+    skipLoadingState: boolean = false
+  ) => {
+    try {
+      console.log('📌 testResumeJob démarré avec params:', {
+        jobId,
+        page,
+        skipHistory,
+        skipLoadingState,
+      });
+
+      setCurrentPageTracked(page);
+
+      if (page !== 1) {
+        cleanupWebSocket();
+      }
+
+      setJobId(jobId);
+      if (!skipHistory && page === 1) {
+        forensicResultsHeap.clear();
+      }
+      if (!skipLoadingState) setIsSearching(true);
+
+      // Infos globales sur la tâche
+      const resultsResponse = await fetch(
+        `${process.env.MAIN_API_URL}/forensics/${jobId}`
+      );
+      if (!resultsResponse.ok)
+        throw new Error(`Erreur API: ${resultsResponse.status}`);
+
+      const resultsData = await resultsResponse.json();
+      console.log('📋 Données globales récupérées:', resultsData);
+
+      if (!resultsData?.results) {
+        console.log('⚠️ Aucun résultat trouvé dans resultsData');
+        return {
+          results: [],
+          pagination: {
+            currentPage: page,
+            pageSize: 0,
+            totalPages: 0,
+            total: 0,
+          },
+        };
+      }
+
+      const taskStatus = resultsData.status || 'PENDING';
+      const isCompleted = ['SUCCESS', 'FAILURE', 'REVOKED'].includes(
+        taskStatus
+      );
+
+      console.log(
+        `🔍 État de la tâche ${jobId}: ${taskStatus}, isCompleted:`,
+        isCompleted
+      );
+
+      // Traitement de la progression des sources
+      const sourcesProgress = resultsData.results
+        .filter((r: { type: string }) => r.type === 'progress')
+        .reduce((acc: any, curr: any) => {
+          if (!acc[curr.guid]) {
+            acc[curr.guid] = {
+              sourceId: curr.guid,
+              sourceName:
+                curr.source_name || `Source ${curr.guid.slice(0, 8)}...`,
+              progress: curr.progress,
+              timestamp: curr.timestamp || new Date().toISOString(),
+              startTime: curr.start_time || new Date().toISOString(),
+            };
+          } else if (curr.progress > acc[curr.guid].progress) {
+            acc[curr.guid].progress = curr.progress;
+            acc[curr.guid].timestamp = curr.timestamp;
+          }
+          return acc;
+        }, {});
+
+      console.log('📊 Sources avec progression:', sourcesProgress);
+
+      if (isCompleted) {
+        Object.keys(sourcesProgress).forEach((key) => {
+          sourcesProgress[key].progress = 100;
+        });
+        console.log('✅ Toutes les sources mises à 100% car tâche terminée');
+      }
+
+      setSourceProgress(Object.values(sourcesProgress));
+      console.log(
+        '🔄 SourceProgress mis à jour avec:',
+        Object.values(sourcesProgress).length,
+        'sources'
+      );
+
+      let validDetectionResults: ForensicResult[] = [];
+      let paginationData = {
+        currentPage: page,
+        pageSize: 0,
+        totalPages: 0,
+        total: 0,
+      };
+
+      if (!skipHistory || isCompleted) {
+        console.log('🔍 Chargement des données paginées pour la page:', page);
+        // Appel de l'API paginée
+
+        // Vider le heap si on n'est pas sur la page 1
+        if (page > 1) {
+          forensicResultsHeap.clear();
+        }
+
+        const paginatedResponse = await fetch(
+          `${process.env.MAIN_API_URL}/forensics/${jobId}/pages/${page}`
+        );
+        if (!paginatedResponse.ok)
+          throw new Error(`Erreur API pagination: ${paginatedResponse.status}`);
+
+        const pageData = await paginatedResponse.json();
+        console.log('📄 Données de pagination reçues:', pageData);
+
+        const {
+          results = [],
+          total = 0,
+          total_pages = 0,
+          page: currentPage = page,
+          page_size = 0,
+        } = pageData;
+
+        console.log(
+          `📊 Pagination: ${results.length} résultats sur ${total} total (page ${currentPage}/${total_pages})`
+        );
+
+        // Mise à jour des données de pagination
+        paginationData = {
+          currentPage,
+          pageSize: page_size,
+          totalPages: total_pages,
+          total,
+        };
+
+        setPaginationInfo(paginationData);
+        console.log('Pagination mise à jour:', paginationData);
+
+        if (skipHistory) {
+          forensicResultsHeap.clear();
+        }
+
+        const detectionFiltered = results.filter(
+          (r: any) => r.metadata?.type === 'detection'
+        );
+        console.log(
+          `🔍 Filtrage: ${detectionFiltered.length} détections trouvées sur ${results.length} résultats`
+        );
+
+        const detectionResults = await Promise.all(
+          detectionFiltered.map(async (result: any) => {
+            const frameId = result.frame_uuid;
+            if (!frameId) {
+              console.log('⚠️ Detection sans frameId trouvée');
+              return null;
+            }
+
+            const imageResponse = await fetch(
+              `${process.env.MAIN_API_URL}/forensics/${jobId}/frames/${frameId}`
+            );
+            if (!imageResponse.ok) {
+              console.log(
+                `❌ Échec chargement image pour frame ${frameId}: ${imageResponse.status}`
+              );
+              return null;
+            }
+
+            const imageBlob = await imageResponse.blob();
+            const imageUrl = URL.createObjectURL(imageBlob);
+
+            return {
+              id: frameId,
+              imageData: imageUrl,
+              timestamp: result.metadata?.timestamp || new Date().toISOString(),
+              score: result.metadata?.score || 0,
+              cameraId:
+                result.metadata?.camera || result.metadata?.source || 'unknown',
+              type: 'detection',
+              attributes: result.metadata?.attributes || {},
+              progress: result.metadata?.progress || 0,
+            };
+          })
+        );
+
+        validDetectionResults = detectionResults.filter(
+          (r) => r !== null
+        ) as ForensicResult[];
+
+        setPaginationInfo(paginationData);
+        if (page === 1 && isSearching) {
+          // Pour la page 1 en recherche active: ajouter au heap
+          validDetectionResults.forEach((res: ForensicResult) =>
+            forensicResultsHeap.addResult(res)
+          );
+
+          // Utiliser les meilleurs résultats du heap pour la page 1
+          const bestResults = forensicResultsHeap.getBestResults();
+          setResults(bestResults);
+          setDisplayResults(bestResults.slice(0, paginationData.pageSize)); // Limiter à 12
+        } else {
+          // Pour les autres pages: utiliser directement les résultats sans heap
+          setResults(validDetectionResults);
+          setDisplayResults(validDetectionResults);
+        }
+      } else {
+        const returnObj = {
+          results: validDetectionResults,
+          pagination: paginationData,
+        };
+        console.log('🏁 Fin de testResumeJob - retourne:', {
+          resultCount: returnObj.results.length,
+          pagination: returnObj.pagination,
+        });
+
+        return returnObj;
+      }
+    } catch (error) {
+      console.error('❌ Erreur dans resumeJobWithPagination:', error);
+      setResults([]);
+      setDisplayResults([]);
+      setProgress(null);
+      setSourceProgress([]);
+      setIsSearching(false);
+      return {
+        results: [],
+        pagination: { currentPage: page, pageSize: 0, totalPages: 0, total: 0 },
+      };
+    }
+  };
 
   const startSearch = useCallback(
     async (formData: CustomFormData) => {
@@ -557,9 +874,14 @@ export default function useSearch() {
     jobId,
     sourceProgress,
     displayResults,
-    resumeJob,
+    // resumeJob,
     setDisplayResults,
     setResults,
     resetSearch,
+    testResumeJob,
+    paginationInfo,
+    updateFirstPageWithRelevantResults,
+    handlePageChange,
+    currentPageTracked,
   };
 }

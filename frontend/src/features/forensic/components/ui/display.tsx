@@ -1,11 +1,18 @@
-/* eslint-disable no-console,@typescript-eslint/no-unused-vars */
-import { Search } from 'lucide-react';
-import { useState, useMemo } from 'react';
+/* eslint-disable no-console,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Search,
+} from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 import { ForensicResult } from '../../lib/types';
 import { SortType } from './buttons';
 
@@ -17,7 +24,14 @@ const getScoreBackgroundColor = (score: number) => {
 };
 
 // Helper to extract camera name and IP from camera ID
-const extractCameraInfo = (cameraId: string) => {
+const extractCameraInfo = (cameraId: string | undefined) => {
+  if (!cameraId) {
+    return {
+      name: 'Caméra inconnue',
+      ip: 'IP inconnue',
+    };
+  }
+
   // If cameraId has a structure like "Camera Name (192.168.1.1)"
   const match = cameraId.match(/^(.+?)\s*\(([^)]+)\)$/);
   if (match) {
@@ -34,18 +48,6 @@ const extractCameraInfo = (cameraId: string) => {
   };
 };
 
-const containerClassMap: Record<string, string> = {
-  vehicle:
-    'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4',
-  person:
-    'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4',
-};
-
-const childClassMap: Record<string, string> = {
-  vehicle: 'w-full h-auto object-cover object-[center_10%] aspect-[16/9]',
-  person: 'w-full h-auto object-cover object-[center_10%] aspect-[9/16]',
-};
-
 interface DisplayProps {
   results: ForensicResult[];
   isSearching: boolean;
@@ -53,6 +55,14 @@ interface DisplayProps {
   sortType: SortType;
   sortOrder: 'asc' | 'desc';
   isTabLoading?: boolean;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+  paginationInfo: {
+    currentPage: number;
+    pageSize: number;
+    totalPages: number;
+    total: number;
+  };
 }
 
 export default function Display({
@@ -62,6 +72,9 @@ export default function Display({
   sortType,
   sortOrder,
   isTabLoading = false,
+  currentPage,
+  onPageChange,
+  paginationInfo,
 }: DisplayProps) {
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
 
@@ -87,6 +100,36 @@ export default function Display({
       return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
   }, [results, sortType, sortOrder]);
+
+  // Pagination calculations
+  const { totalPages } = paginationInfo;
+
+  // Reset to first page when sorting or filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      onPageChange(1);
+    }
+  }, [sortType, sortOrder]);
+
+  // Assurer que currentPage ne dépasse jamais totalPages
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      onPageChange(totalPages);
+    }
+  }, [totalPages, currentPage, onPageChange]);
+
+  useEffect(() => {
+    console.log('paginationInfo reçue dans Display:', paginationInfo);
+  }, [paginationInfo]);
+
+  const paginatedResults = useMemo(() => {
+    // Pour la page 1 en cours de recherche active, on utilise les résultats du heap
+    if (currentPage === 1 && isSearching) {
+      return sortedResults;
+    }
+    // On fait confiance aux résultats déjà paginés côté serveur
+    return sortedResults;
+  }, [sortedResults, currentPage, isSearching]);
 
   // Render expanded image modal
   const renderExpandedImageModal = () => {
@@ -136,6 +179,121 @@ export default function Display({
       </div>
     );
   };
+
+  const renderPagination = () => {
+    // Détermine quels numéros de page afficher
+    const getPageNumbers = () => {
+      const pageNumbers = [];
+      const maxPagesToShow = 5; // Nombre de pages à afficher autour de la page courante
+
+      if (totalPages <= maxPagesToShow + 2) {
+        // Si le nombre total de pages est petit, afficher toutes les pages
+        // eslint-disable-next-line no-plusplus
+        for (let i = 1; i <= totalPages; i++) {
+          pageNumbers.push(i);
+        }
+      } else {
+        // Toujours afficher la première page
+        pageNumbers.push(1);
+
+        // Calculer la plage à afficher autour de la page courante
+        const leftBound = Math.max(
+          2,
+          currentPage - Math.floor(maxPagesToShow / 2)
+        );
+        const rightBound = Math.min(
+          totalPages - 1,
+          leftBound + maxPagesToShow - 1
+        );
+
+        // Ajouter des points de suspension si nécessaire
+        if (leftBound > 2) {
+          pageNumbers.push('...');
+        }
+
+        // Ajouter les pages dans la plage calculée
+        // eslint-disable-next-line no-plusplus
+        for (let i = leftBound; i <= rightBound; i++) {
+          pageNumbers.push(i);
+        }
+
+        // Ajouter des points de suspension si nécessaire
+        if (rightBound < totalPages - 1) {
+          pageNumbers.push('...');
+        }
+
+        // Toujours afficher la dernière page
+        pageNumbers.push(totalPages);
+      }
+
+      return pageNumbers;
+    };
+
+    return (
+      <div className="flex justify-center items-center mt-6 space-x-1 flex-wrap">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => onPageChange(1)}
+          disabled={currentPage === 1}
+        >
+          <ChevronsLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
+          disabled={currentPage === 1}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+
+        {/* Affichage des numéros de page */}
+        <div className="flex space-x-1 mx-1">
+          {getPageNumbers().map((page, index) =>
+            typeof page === 'number' ? (
+              <Button
+                key={`page-${page}`}
+                variant={currentPage === page ? 'default' : 'outline'}
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => onPageChange(page)}
+              >
+                {page}
+              </Button>
+            ) : (
+              // eslint-disable-next-line react/no-array-index-key
+              <span key={`ellipsis-${index}`} className="px-1 self-center">
+                ...
+              </span>
+            )
+          )}
+        </div>
+
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
+          disabled={currentPage === totalPages}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => onPageChange(totalPages)}
+          disabled={currentPage === totalPages}
+        >
+          <ChevronsRight className="h-4 w-4" />
+        </Button>
+
+        <div className="ml-2 text-sm text-muted-foreground">
+          {paginationInfo.total} résultats
+        </div>
+      </div>
+    );
+  };
+
   if (isTabLoading) {
     return (
       <div className="space-y-6">
@@ -204,12 +362,12 @@ export default function Display({
   // Si nous avons des résultats à afficher, on les montre quelle que soit la progression
   if (results && results.length > 0) {
     return (
-      <div className={containerClassMap[results[0].type || 'vehicle']}>
+      <div className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {sortedResults.map((result: ForensicResult) => {
+          {paginatedResults.map((result: ForensicResult, index) => {
             const timestamp = new Date(result.timestamp);
             return (
-              <Popover key={result.id}>
+              <Popover key={result.id || `result-${index}`}>
                 <PopoverTrigger asChild>
                   <div className="border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-card cursor-pointer relative group">
                     <div className="relative">
@@ -218,9 +376,7 @@ export default function Display({
                           <img
                             src={result.imageData}
                             alt="Forensic result"
-                            className={
-                              childClassMap[results[0].type || 'vehicle']
-                            }
+                            className="w-full h-auto object-cover object-[center_10%] aspect-[16/9]"
                           />
                           <button
                             className="absolute bottom-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1"
@@ -284,8 +440,9 @@ export default function Display({
                       <div className="text-muted-foreground">Caméra:</div>
                       <div>
                         {
-                          extractCameraInfo(result.camera || result.cameraId)
-                            .name
+                          extractCameraInfo(
+                            result.camera || result.cameraId || 'unknown'
+                          ).name
                         }
                       </div>
 
@@ -324,6 +481,10 @@ export default function Display({
             );
           })}
         </div>
+
+        {/* Pagination controls */}
+        {renderPagination()}
+
         {renderExpandedImageModal()}
       </div>
     );
