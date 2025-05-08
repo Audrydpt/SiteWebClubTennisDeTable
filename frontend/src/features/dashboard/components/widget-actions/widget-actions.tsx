@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import DeleteConfirmation from '@/components/confirm-delete';
 import { Button } from '@/components/ui/button';
-import { FormWidget, StoredWidget } from './form-widget';
+import { FormWidget, StoredWidget } from '../form-widget';
 import QuickExport from './quick-export';
 
 type ChartTiles = {

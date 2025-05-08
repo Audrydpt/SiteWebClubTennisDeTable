@@ -2,8 +2,8 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as reactQuery from '@tanstack/react-query';
-import exportDataModule from '../lib/exportData';
-import { AcicAggregation, AcicEvent } from '../lib/props';
+import exportDataModule from '../../lib/exportData';
+import { AcicAggregation, AcicEvent } from '../../lib/props';
 import QuickExport from './quick-export';
 
 // Mock dependencies

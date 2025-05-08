@@ -28,9 +28,9 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { ExportStep } from '../lib/export';
-import { AcicAggregation, AcicEvent } from '../lib/props';
-import { getWidgetData } from '../lib/utils';
+import { ExportStep } from '../../lib/export';
+import { AcicAggregation, AcicEvent } from '../../lib/props';
+import { getWidgetData } from '../../lib/utils';
 
 const exportStepSourceSchema = z.object({
   table: z.nativeEnum(AcicEvent),

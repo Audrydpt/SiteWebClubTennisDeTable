@@ -136,7 +136,7 @@ export default function BarComponent({
   return (
     <Card className="w-full h-full flex flex-col justify-center">
       <CardHeader>
-        <CardTitle className="text-left">
+        <CardTitle className="text-center">
           {title ?? `Bar ${layout.toString()}`}
         </CardTitle>
       </CardHeader>

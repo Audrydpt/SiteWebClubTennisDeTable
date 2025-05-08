@@ -2,7 +2,7 @@ import * as ReactQuery from '@tanstack/react-query';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AcicEvent } from '../lib/props';
+import { AcicEvent } from '../../lib/props';
 import ExportStepSource from './export-source';
 
 // Mock the getWidgetData function

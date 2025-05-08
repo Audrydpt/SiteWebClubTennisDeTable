@@ -6,9 +6,9 @@ import Header from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { defineStepper } from '@/components/ui/stepper';
 
-import ExportStepFormat from './components/export-format';
-import ExportStepOptions from './components/export-options';
-import ExportStepSource from './components/export-source';
+import ExportStepFormat from './components/export/export-format';
+import ExportStepOptions from './components/export/export-options';
+import ExportStepSource from './components/export/export-source';
 import { StepperFormData } from './lib/export';
 import { AcicAggregation, AcicEvent } from './lib/props';
 

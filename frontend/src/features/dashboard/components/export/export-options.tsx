@@ -21,9 +21,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { WhereClausesWithSearch } from '@/components/where-clauses-with-search';
-import { ExportStep } from '../lib/export';
-import { AcicAggregation } from '../lib/props';
-import { getWidgetData, getWidgetDescription } from '../lib/utils';
+import { ExportStep } from '../../lib/export';
+import { AcicAggregation } from '../../lib/props';
+import { getWidgetData, getWidgetDescription } from '../../lib/utils';
 
 const exportStepSourceSchema = z.object({
   aggregation: z.nativeEnum(AcicAggregation),

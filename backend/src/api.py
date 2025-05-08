@@ -868,8 +868,8 @@ class FastAPIServer:
             """
 
             sql2 = f"""
-            SELECT add_continuous_aggregate_policy('widget_{widget_id}'::regclass,
-              start_offset => NULL, 
+            SELECT add_continuous_aggregate_policy('"widget_{widget_id}"'::regclass,
+              start_offset => NULL,
               end_offset => '{aggregation}'::interval,
               schedule_interval => '{aggregation}'::interval);
             """
@@ -1233,13 +1233,14 @@ class FastAPIServer:
                 if guid == "undefined":
                     return []
                 
+                between = kwargs.time_from, kwargs.time_to
                 group_by = kwargs.group_by.split(",") if kwargs.group_by is not None else None
                 matView = f"widget_{guid}"
                 
                 dal = GenericDAL()
 
                 try:
-                    trend_data = await dal.async_get_trend(view_name=matView, _group=group_by)
+                    trend_data = await dal.async_get_trend(view_name=matView, _between=between, _group=group_by)
                     
                     return trend_data
                 except Exception as e:

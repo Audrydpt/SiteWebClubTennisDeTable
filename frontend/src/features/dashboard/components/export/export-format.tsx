@@ -6,10 +6,10 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
-import { ExportStep } from '../lib/export';
-import exportData from '../lib/exportData';
-import { AcicAggregation } from '../lib/props';
-import { getWidgetDataForExport } from '../lib/utils';
+import { ExportStep } from '../../lib/export';
+import exportData from '../../lib/exportData';
+import { AcicAggregation } from '../../lib/props';
+import { getWidgetDataForExport } from '../../lib/utils';
 
 export default function ExportStepFormat({
   storedWidget,

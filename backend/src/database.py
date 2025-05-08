@@ -549,7 +549,7 @@ class GenericDAL:
                 logger.error(f"Query was: {stmt}")
                 raise
 
-    async def async_get_trend(self, view_name, _group=None, **filters) -> JSON:
+    async def async_get_trend(self, view_name, _between=None, _group=None, **filters) -> JSON:
         async with GenericDAL.AsyncSession() as session:
             #def des fonctions de calcul
             avg_func = func.avg(column('counts'))
@@ -573,6 +573,9 @@ class GenericDAL:
 
             if _group is None:
                 stmt = select(stats_obj).select_from(text(f'"{view_name}"'))
+                if _between is not None and _between[0] is not None and _between[1] is not None:
+                    stmt = stmt.where(column('bucket') >= _between[0], column('bucket') < _between[1])
+                
                 try:
                     result = await session.execute(stmt)
                     global_stats = { 'global': result.scalar_one_or_none()}
@@ -594,6 +597,11 @@ class GenericDAL:
 
                 stmt = stmt.select_from(text(f'"{view_name}"'))
                 stmt2 = select(stats_obj).select_from(text(f'"{view_name}"'))
+
+                if _between is not None and _between[0] is not None and _between[1] is not None:
+                    stmt = stmt.where(column('bucket') >= _between[0], column('bucket') < _between[1])
+                    stmt2 = stmt2.where(column('bucket') >= _between[0], column('bucket') < _between[1])
+
                 try:
                     result = await session.execute(stmt)
                     result2 = await session.execute(stmt2)

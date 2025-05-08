@@ -3,8 +3,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Loader2 } from 'lucide-react';
 import { vi } from 'vitest';
-import { AcicAggregation, AcicEvent } from '../lib/props';
-import { getWidgetData } from '../lib/utils';
+import { AcicAggregation, AcicEvent } from '../../lib/props';
+import { getWidgetData } from '../../lib/utils';
 import ExportStepSource from './export-options';
 
 // Mock the modules
