@@ -130,9 +130,14 @@ export default function useSearch() {
   };
 
   const initWebSocket = useCallback(
-    (id: string) => {
+    (id: string, page1 = false) => {
+      const shouldInit = page1 || currentPageTracked === 1;
+
+      console.log(
+        `🔍 Tentative d'initialisation WebSocket pour job ${id}, page ${currentPageTracked}`
+      );
       // Vérifier si nous sommes sur la page 1, sinon ne pas initialiser le WebSocket
-      if (currentPageTracked !== 1) {
+      if (!shouldInit) {
         console.log('🚫 WebSocket non initialisé - page différente de 1');
         return;
       }
@@ -562,10 +567,30 @@ export default function useSearch() {
         skipLoadingState,
       });
 
+      console.log(`🔄 Changement de page: ${currentPageTracked} -> ${page}`);
       setCurrentPageTracked(page);
 
       if (page !== 1) {
+        console.log('📴 Page différente de 1, fermeture du WebSocket');
         cleanupWebSocket();
+      } else {
+        console.log('📱 Page 1 détectée, vérification du WebSocket');
+        // Vérifions l'état actuel du WebSocket
+        if (wsRef.current) {
+          console.log(`💬 État actuel WebSocket: ${wsRef.current.readyState}`);
+          // 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
+          if (wsRef.current.readyState === WebSocket.CLOSED) {
+            console.log('🔌 WebSocket fermé, tentative de réinitialisation');
+            initWebSocket(jobId, true);
+          } else {
+            console.log(
+              '🔄 WebSocket déjà actif, pas de réinitialisation nécessaire'
+            );
+          }
+        } else {
+          console.log('🆕 Aucun WebSocket existant, initialisation');
+          initWebSocket(jobId, true);
+        }
       }
 
       setJobId(jobId);

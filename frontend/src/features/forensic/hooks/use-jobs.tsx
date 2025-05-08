@@ -420,12 +420,6 @@ export default function useJobs() {
   const getActivePaginationInfo = () => {
     const activeTask = getActiveTask();
 
-    console.log('Informations de pagination actualisées:', {
-      jobId: activeJobId,
-      count: activeTask?.count || 0,
-      totalPages: activeTask?.total_pages || 0,
-    });
-
     return {
       currentPage: 1, // À gérer ailleurs
       pageSize: 12, // Ajustez selon votre configuration
