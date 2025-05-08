@@ -1,23 +1,19 @@
 /* eslint-disable no-console,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Download,
-  Search,
-  X,
-} from 'lucide-react';
+import { Download, Search } from 'lucide-react';
 import { DateTime } from 'luxon';
 import { useEffect, useMemo } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 import { ForensicResult } from '../../lib/types';
 import { SortType } from './buttons';
@@ -171,7 +167,7 @@ export default function Display({
             </div>
             <div className="p-4">
               <div className="text-xs text-muted-foreground">
-                {timestamp.toLocaleString('fr-FR')}
+                {timestamp.toLocaleString()}
               </div>
             </div>
           </div>
@@ -180,14 +176,6 @@ export default function Display({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Image Section */}
             <div className="relative">
-              <DialogClose asChild>
-                <Button
-                  size="icon"
-                  className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              </DialogClose>
               <Button
                 size="icon"
                 className="absolute top-4 left-4 bg-black/50 hover:bg-black/70 text-white"
@@ -319,64 +307,61 @@ export default function Display({
     };
 
     return (
-      <div className="flex justify-center items-center mt-6 space-x-1 flex-wrap">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => onPageChange(1)}
-          disabled={currentPage === 1}
-        >
-          <ChevronsLeft className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
-          disabled={currentPage === 1}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
+      <div className="flex flex-col items-center gap-4 mt-6">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onPageChange(currentPage - 1);
+                }}
+                className={
+                  currentPage === 1 ? 'pointer-events-none text-muted' : ''
+                }
+              />
+            </PaginationItem>
 
-        {/* Affichage des numéros de page */}
-        <div className="flex space-x-1 mx-1">
-          {getPageNumbers().map((page, index) =>
-            typeof page === 'number' ? (
-              <Button
-                key={`page-${page}`}
-                variant={currentPage === page ? 'default' : 'outline'}
-                size="sm"
-                className="h-8 w-8 p-0"
-                onClick={() => onPageChange(page)}
-              >
-                {page}
-              </Button>
-            ) : (
-              // eslint-disable-next-line react/no-array-index-key
-              <span key={`ellipsis-${index}`} className="px-1 self-center">
-                ...
-              </span>
-            )
-          )}
-        </div>
+            {getPageNumbers().map((page, index) =>
+              typeof page === 'number' ? (
+                <PaginationItem key={`page-${page}`}>
+                  <PaginationLink
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onPageChange(page);
+                    }}
+                    isActive={currentPage === page}
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              ) : (
+                // eslint-disable-next-line react/no-array-index-key
+                <PaginationItem key={`ellipsis-${index}`}>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              )
+            )}
 
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
-          disabled={currentPage === totalPages}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => onPageChange(totalPages)}
-          disabled={currentPage === totalPages}
-        >
-          <ChevronsRight className="h-4 w-4" />
-        </Button>
-
-        <div className="ml-2 text-sm text-muted-foreground">
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onPageChange(currentPage + 1);
+                }}
+                className={
+                  currentPage === totalPages
+                    ? 'pointer-events-none text-muted'
+                    : ''
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+        <div className="text-sm text-muted-foreground">
           {paginationInfo.total} résultats
         </div>
       </div>
