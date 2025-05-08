@@ -577,7 +577,7 @@ class FastAPIServer:
                 end = start + page_size - 1
 
                 # Utiliser la méthode de tri par score
-                results = await TaskManager.get_results_by_score(guid, start, end, desc)
+                results = await TaskManager.get_by_score(guid, start, end, desc)
                 total = await TaskManager.get_job_count(guid)
 
                 return {
@@ -605,7 +605,7 @@ class FastAPIServer:
                 end = start + page_size - 1
 
                 # Utiliser la méthode de tri par date
-                results = await TaskManager.get_results_by_date(guid, start, end, desc)
+                results = await TaskManager.get_by_date(guid, start, end, desc)
                 total = await TaskManager.get_job_count(guid)
 
                 return {
