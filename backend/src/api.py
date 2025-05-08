@@ -565,6 +565,62 @@ class FastAPIServer:
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
 
+        @self.app.get("/forensics/{guid}/by-score", tags=["forensics"])
+        async def get_results_sorted_by_score(guid: str, page: int = 1, desc: bool = True):
+            """Récupère les résultats triés par score de confiance"""
+            try:
+                if not TaskManager.get_job_status(guid):
+                    raise HTTPException(status_code=404, detail="Tâche introuvable")
+
+                page_size = FORENSIC_PAGINATION_ITEMS
+                start = (page - 1) * page_size
+                end = start + page_size - 1
+
+                # Utiliser la méthode de tri par score
+                results = await TaskManager.get_results_by_score(guid, start, end, desc)
+                total = await TaskManager.get_job_count(guid)
+
+                return {
+                    "guid": guid,
+                    "results": results,
+                    "total": total,
+                    "total_pages": (total + page_size - 1) // page_size,
+                    "page": page,
+                    "page_size": page_size,
+                }
+            except Exception as e:
+                logger.error(f"Erreur: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.get("/forensics/{guid}/by-date", tags=["forensics"])
+        async def get_results_sorted_by_date(guid: str, page: int = 1, desc: bool = True):
+            """Récupère les résultats triés par date"""
+            try:
+                if not TaskManager.get_job_status(guid):
+                    raise HTTPException(status_code=404, detail="Tâche introuvable")
+
+                page_size = FORENSIC_PAGINATION_ITEMS
+                start = (page - 1) * page_size
+                end = start + page_size - 1
+
+                # Utiliser la méthode de tri par date
+                results = await TaskManager.get_results_by_date(guid, start, end, desc)
+                total = await TaskManager.get_job_count(guid)
+
+                return {
+                    "guid": guid,
+                    "results": results,
+                    "total": total,
+                    "total_pages": (total + page_size - 1) // page_size,
+                    "page": page,
+                    "page_size": page_size,
+                }
+            except Exception as e:
+                logger.error(f"Erreur: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=str(e))
+
         @self.app.get("/forensics/{guid}/pages/{number}", tags=["forensics"])
         async def get_page(guid: str, number: int):
             try:
