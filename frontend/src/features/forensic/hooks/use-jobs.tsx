@@ -16,11 +16,6 @@ export enum ForensicTaskStatus {
   REVOKED = 'REVOKED', // Tâche annulée
   RETRY = 'RETRY', // Tâche en cours de nouvelle tentative après échec
 }
-
-export function isForensicTaskRunning(status: ForensicTaskStatus): boolean {
-  return status === ForensicTaskStatus.STARTED;
-}
-
 export function isForensicTaskCompleted(status: ForensicTaskStatus): boolean {
   return (
     status === ForensicTaskStatus.SUCCESS ||

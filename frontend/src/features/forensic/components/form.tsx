@@ -7,9 +7,21 @@ import Submit from './ui/submit';
 
 interface ForensicFormProps {
   onSubmit: (data: ForensicFormValues) => Promise<void>;
+  isSearching: boolean;
+  stopSearch: () => Promise<void>;
+  isCollapsed: boolean;
+  addNewTab: () => void;
+  tabLength?: number;
 }
 
-export default function ForensicForm({ onSubmit }: ForensicFormProps) {
+export default function ForensicForm({
+  onSubmit,
+  isSearching,
+  stopSearch,
+  isCollapsed,
+  addNewTab,
+  tabLength = 0,
+}: ForensicFormProps) {
   const { formMethods } = useForensicForm();
 
   return (
@@ -18,8 +30,13 @@ export default function ForensicForm({ onSubmit }: ForensicFormProps) {
         onSubmit={formMethods.handleSubmit(onSubmit)}
         className="flex flex-col h-full relative"
       >
-        <Params />
-        <Submit />
+        <Params isCollapsed={isCollapsed} />
+        <Submit
+          isSearching={isSearching}
+          onCancel={stopSearch}
+          onAddTab={addNewTab}
+          activeTabCount={tabLength}
+        />
       </form>
     </Form>
   );

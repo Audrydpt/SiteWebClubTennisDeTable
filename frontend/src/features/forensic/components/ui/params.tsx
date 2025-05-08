@@ -7,7 +7,15 @@ import Sources from '../paramsForm/sources';
 import Times from '../paramsForm/times';
 import Types from '../paramsForm/types';
 
-export default function Params() {
+interface ParamsProps {
+  isCollapsed: boolean;
+}
+
+export default function Params({ isCollapsed }: ParamsProps) {
+  if (isCollapsed) {
+    return <div className="flex flex-col h-full" />;
+  }
+
   return (
     <ScrollArea className="flex-1" scrollHideDelay={0}>
       <div className="space-y-4">
