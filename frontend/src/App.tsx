@@ -52,9 +52,9 @@ const ForensicSettings = lazyLoadFeature(
   'settings',
   () => import('./features/settings/components/forensic-settings')
 );
-const Forensic = lazyLoadFeature(
+const ForensicMain = lazyLoadFeature(
   'forensic',
-  () => import('./features/forensic/Forensic')
+  () => import('./features/forensic/ForensicMain')
 );
 const Configuration = lazyLoadFeature(
   'forensic',
@@ -76,6 +76,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
         </Route>
 
+        {/* Routes with mandatory sidebar */}
         <Route
           element={
             <CollapsedSidebarLayout
@@ -85,9 +86,13 @@ export default function App() {
           }
         >
           <Route element={<ProtectedRoute role={UserPrivileges.Operator} />}>
-            <Route path="/forensic" element={<Forensic />} />
+            <Route path="/forensic">
+              <Route index element={<ForensicMain />} />
+              <Route path=":forensicId/*" element={<ForensicMain />} />
+            </Route>
           </Route>
         </Route>
+
         {/* Routes with optional sidebar */}
         <Route
           element={

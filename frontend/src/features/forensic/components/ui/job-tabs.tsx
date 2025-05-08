@@ -90,7 +90,6 @@ export default function JobTabs({
     <div className="flex flex-col">
       {!hideTitle && (
         <div className="flex items-center gap-2 mb-2">
-          <h2 className="text-lg font-semibold">Résultats de recherche</h2>
           {isLoading && (
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
           )}
