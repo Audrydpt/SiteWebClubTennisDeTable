@@ -606,7 +606,7 @@ class FastAPIServer:
 
                 # Utiliser la méthode de tri par date
                 results = await TaskManager.get_by_date(guid, start, end, desc)
-                total = await TaskManager.get_job_count(guid)
+                total = TaskManager.get_job_count(guid)
 
                 return {
                     "guid": guid,

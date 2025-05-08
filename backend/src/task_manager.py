@@ -137,47 +137,6 @@ class ResultsStore:
             self._redis = aioredis.Redis(connection_pool=self._pool)
         return self._redis
 
-    async def store_result_sorted(self, job_id: str, result_id: str, result: JobResult):
-        """
-        Stocke un résultat dans deux ensembles triés différents (par date et par score)
-        """
-        # Obtenir les connections Redis
-        redis_scores = await self._get_redis_1()  # Pour les scores (confiance)
-        redis_dates = await self._get_redis_2()   # Pour les dates (chronologie)
-
-        # Extraire les valeurs de tri
-        timestamp = getattr(result, 'timestamp', time.time())
-        score = getattr(result, 'confidence', 0.5)  # Valeur par défaut si non définie
-
-        # Clés pour les ensembles triés
-        score_key = f"job:{job_id}:results_by_score"
-        date_key = f"job:{job_id}:results_by_date"
-
-        # Stocker la référence dans les deux ensembles triés
-        await redis_scores.zadd(score_key, {result_id: score})
-        await redis_dates.zadd(date_key, {result_id: timestamp})
-
-        # Stocker les données complètes du résultat
-        data_key = f"job:{job_id}:result:{result_id}"
-        result_dict = {
-            "job_id": job_id,
-            "metadata": result.metadata,
-            "frame_uuid": result.frame_uuid,
-            "final": result.final
-        }
-        await redis_scores.set(data_key, json.dumps(result_dict))
-
-        # Stocker la frame si elle existe
-        if result.frame is not None:
-            frame_key = f"job:{job_id}:frame:{result.frame_uuid}"
-            await redis_scores.set(frame_key, result.frame)
-            await redis_scores.expire(frame_key, 3600)
-
-        # Mettre à jour le compteur
-        await redis_scores.hincrby(f"job:{job_id}:stats", "count", 1)
-
-        return result_id
-
     async def get_results_by_score(self, job_id: str, start: int = 0, end: int = -1, desc: bool = True):
         """
         Récupère les résultats triés par score (meilleur score en premier par défaut)
@@ -194,11 +153,28 @@ class ResultsStore:
         # Récupérer les données complètes
         results = []
         for result_id, score in result_ids:
-            data_key = f"job:{job_id}:result:{result_id.decode()}"
+            result_id_str = result_id.decode() if isinstance(result_id, bytes) else result_id
+
+            # Récupérer les données du résultat
+            data_key = f"job:{job_id}:result:{result_id_str}"
             data = await redis.get(data_key)
+
             if data:
-                result = json.loads(data)
-                results.append(result)
+                result_data = json.loads(data)
+                metadata = result_data.get('metadata', {})
+                frame_uuid = result_data.get('frame_uuid')
+
+                # Formater le résultat comme attendu par le frontend
+                formatted_result = {
+                    "id": result_id_str,
+                    "score": float(score),
+                    "timestamp": metadata.get('timestamp'),
+                    "cameraId": metadata.get('source_guid', ''),
+                    "type": "detection",
+                    "frame_uuid": frame_uuid
+                }
+
+                results.append(formatted_result)
 
         return results
 
