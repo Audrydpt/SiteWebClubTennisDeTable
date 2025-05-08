@@ -739,6 +739,8 @@ class FastAPIServer:
                 
                 VMS = CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type)
                 async with VMS() as client:
+                    from_time = from_time.astimezone(datetime.timezone.utc)
+                    to_time = to_time.astimezone(datetime.timezone.utc)
                     streams = client.start_replay(guuid, from_time, to_time, gap)
                     img, _ = await anext(streams)
                     _, bytes = cv2.imencode('.jpg', img)
