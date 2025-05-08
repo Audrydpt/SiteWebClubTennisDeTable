@@ -576,9 +576,9 @@ class FastAPIServer:
                 results = await TaskManager.get_sorted_results(guid, sort_by="score", desc=desc, start=start, end=end)
 
                 # Calculer le nombre total de pages
-                total_pages = (await TaskManager.get_job_count(guid) + FORENSIC_PAGINATION_ITEMS - 1) // FORENSIC_PAGINATION_ITEMS
+                total_pages = (TaskManager.get_job_count(guid) + FORENSIC_PAGINATION_ITEMS - 1) // FORENSIC_PAGINATION_ITEMS
 
-                total = await TaskManager.get_job_count(guid)
+                total = TaskManager.get_job_count(guid)
 
                 return {
                     "results": [result.metadata for result in results if not result.final],
@@ -605,9 +605,9 @@ class FastAPIServer:
                 results = await TaskManager.get_sorted_results(guid, sort_by="date", desc=desc, start=start, end=end)
 
                 # Calculer le nombre total de pages
-                total_pages = (await TaskManager.get_job_count(guid) + FORENSIC_PAGINATION_ITEMS - 1) // FORENSIC_PAGINATION_ITEMS
+                total_pages = (TaskManager.get_job_count(guid) + FORENSIC_PAGINATION_ITEMS - 1) // FORENSIC_PAGINATION_ITEMS
 
-                total = await TaskManager.get_job_count(guid)
+                total = TaskManager.get_job_count(guid)
 
                 return {
                     "results": [result.metadata for result in results if not result.final],
