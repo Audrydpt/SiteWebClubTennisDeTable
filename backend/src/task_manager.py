@@ -261,20 +261,6 @@ class ResultsStore:
             }
             await redis.publish(f"{channel_name}:frames", json.dumps(frame_notification))
 
-    @staticmethod
-    async def get_results_by_score(job_id: str, start: int = 0, end: int = -1, desc: bool = True):
-        """
-        Récupère les résultats triés par score de confiance
-        """
-        return await results_store.get_results_by_score(job_id, start, end, desc)
-
-    @staticmethod
-    async def get_results_by_date(job_id: str, start: int = 0, end: int = -1, desc: bool = True):
-        """
-        Récupère les résultats triés par date
-        """
-        return await results_store.get_results_by_date(job_id, start, end, desc)
-
     async def get_results(self, job_id: str, start: int = 0, end: int = -1) -> List[JobResult]:
         redis = await self._get_redis_1()
 
@@ -413,6 +399,20 @@ def execute_job(self, job_type: str, job_params: Dict[str, Any]):
 
 class TaskManager:
     """Gestionnaire de tâches façade pour les opérations Celery/Redis"""
+
+    @staticmethod
+    async def get_by_score( guid, start, end, desc):
+        """
+        Récupère les résultats d'une tâche triés par score de confiance.
+        """
+        return await results_store.get_results_by_score(guid, start, end, desc)
+
+    @staticmethod
+    async def get_by_date(guid, start, end, desc):
+        """
+        Récupère les résultats d'une tâche triés par date.
+        """
+        return await results_store.get_results_by_date(guid, start, end, desc)
     
     @staticmethod
     def submit_job(job_type: str, job_params: Dict[str, Any]) -> str:
@@ -867,6 +867,10 @@ class TaskManager:
                     "type": "error",
                     "message": f"Erreur de streaming: {str(e)}"
                 })
+
+
+
+
 
 class VehicleReplayJob:
     """
