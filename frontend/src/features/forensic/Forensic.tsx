@@ -1,16 +1,16 @@
 /* eslint-disable no-console,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
-import { useRef, useState, useEffect, useCallback } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import useSearch from './hooks/use-search';
-import useJobs from './hooks/use-jobs';
-import { createSearchFormData } from './lib/format-query';
+import { Card, CardContent } from '@/components/ui/card';
 
 import ForensicForm from './components/form';
 import Results from './components/results';
+import useJobs from './hooks/use-jobs';
+import useSearch from './hooks/use-search';
+import forensicResultsHeap from './lib/data-structure/heap.tsx';
+import { createSearchFormData } from './lib/format-query';
 import ForensicFormProvider from './lib/provider/forensic-form-provider';
 import { ForensicFormValues } from './lib/types';
-import forensicResultsHeap from './lib/data-structure/heap.tsx';
 
 export default function Forensic() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -270,14 +270,7 @@ export default function Forensic() {
             </div>
 
             <ForensicFormProvider>
-              <ForensicForm
-                onSubmit={handleSearch}
-                isSearching={isSearching}
-                stopSearch={handleStopSearch}
-                isCollapsed={isCollapsed}
-                addNewTab={handleAddNewTab}
-                tabLength={activeTabsCount}
-              />
+              <ForensicForm onSubmit={handleSearch} />
             </ForensicFormProvider>
           </CardContent>
         </Card>
