@@ -1,27 +1,20 @@
 /* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier,@typescript-eslint/no-explicit-any,no-console,no-else-return,consistent-return,react-hooks/exhaustive-deps,import/no-named-as-default */
-import {
-  ChevronDown,
-  ChevronUp,
-  Search,
-  SortAsc,
-  SortDesc,
-  Trash2,
-} from 'lucide-react';
-import { useMemo, useRef, useEffect, useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-import { ForensicResult, SourceProgress } from '../lib/types';
-import { calculateTimeRemaining } from '@/features/forensic/lib/estimation/estimation';
-import useSearch from '../hooks/use-search.tsx';
-import useJobs from '../hooks/use-jobs';
+import Display from '@/features/forensic/components/ui/display.tsx';
 import MultiProgress from '@/features/forensic/components/ui/multi-progress';
 import forensicResultsHeap from '@/features/forensic/lib/data-structure/heap';
-import ForensicHeader from './ui/header';
+import { calculateTimeRemaining } from '@/features/forensic/lib/estimation/estimation';
+import useJobs from '../hooks/use-jobs';
+import useSearch from '../hooks/use-search.tsx';
+import { ForensicResult, SourceProgress } from '../lib/types';
 import { SortType } from './ui/buttons';
-import Display from '@/features/forensic/components/ui/display.tsx';
+import ForensicHeader from './ui/header';
 // import replayVideo from '@/features/forensic/lib/test/replay.webm';
 
 interface ResultsProps {

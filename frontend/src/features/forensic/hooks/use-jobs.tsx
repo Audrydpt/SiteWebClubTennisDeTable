@@ -1,5 +1,6 @@
 /* eslint-disable no-console,react-hooks/exhaustive-deps,@typescript-eslint/no-explicit-any,no-plusplus */
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // Number of maximum results to keep
 const FORENSIC_PAGINATION_ITEMS = parseInt(
@@ -16,11 +17,6 @@ export enum ForensicTaskStatus {
   REVOKED = 'REVOKED', // Tâche annulée
   RETRY = 'RETRY', // Tâche en cours de nouvelle tentative après échec
 }
-
-export function isForensicTaskRunning(status: ForensicTaskStatus): boolean {
-  return status === ForensicTaskStatus.STARTED;
-}
-
 export function isForensicTaskCompleted(status: ForensicTaskStatus): boolean {
   return (
     status === ForensicTaskStatus.SUCCESS ||
@@ -59,6 +55,7 @@ export default function useJobs() {
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   // Dans useJobs.ts, modifiez la fonction selectLeftmostTab
   const selectLeftmostTab = () =>
@@ -262,6 +259,7 @@ export default function useJobs() {
 
     // Récupérer le TabJob complet pour le nouvel onglet
     const selectedTab = tabJobs.find((tab) => tab.tabIndex === tabIndex);
+    navigate(`/forensic/${selectedTab?.jobId}`);
 
     // Vérification explicite de l'état isNew
     const isNewTab = selectedTab?.isNew === true;

@@ -82,31 +82,56 @@ export default function useSearch() {
   }, []);
 
   const updateFirstPageWithRelevantResults = (newResult: ForensicResult) => {
-    // Ajouter le résultat au heap quelle que soit la page
-    forensicResultsHeap.addResult(newResult);
-    console.log(`➕ Résultat ajouté au heap (score: ${newResult.score})`);
+    // Si nous ne sommes pas sur la page 1, ne pas mettre à jour l'affichage
+    if (currentPageTracked !== 1) {
+      // Ajouter quand même au heap pour futures références
+      console.log("💾 Résultat ajouté au heap (page ≠ 1, pas d'affichage)");
+      forensicResultsHeap.addResult(newResult);
+      return false;
+    }
 
-    // Mettre à jour les résultats affichés seulement si on est sur la page 1
-    if (currentPageTracked === 1) {
+    // Vérifier si le résultat est plus pertinent que le minimum de la première page
+    const shouldAdd = forensicResultsHeap.shouldAddResult(
+      newResult,
+      1,
+      paginationInfo.pageSize
+    );
+
+    if (shouldAdd) {
+      // Ajouter le résultat au heap
+      forensicResultsHeap.addResult(newResult);
+      console.log(`➕ Résultat ajouté au heap (score: ${newResult.score})`);
+
       // Récupérer les meilleurs résultats pour la première page
       const topResults = forensicResultsHeap.getPageResults(
         1,
         paginationInfo.pageSize
       );
 
+      // S'assurer qu'on ne dépasse jamais la taille de la page
+      const limitedResults = topResults.slice(0, paginationInfo.pageSize);
       console.log(
-        `🔢 Résultats WS mis à jour: ${topResults.length}/${paginationInfo.pageSize} max`
+        `🔢 Résultats WS: ${limitedResults.length}/${paginationInfo.pageSize} max`
       );
 
-      // Mettre à jour les résultats affichés
-      setDisplayResults([...topResults]);
-      setResults(topResults);
+      // Mettre à jour les résultats affichés avec limitation stricte
+      setDisplayResults([...limitedResults]);
+
+      // Mettre à jour la liste complète des résultats uniquement si nécessaire
+      if (limitedResults.length > 0) {
+        // Ne pas mettre à jour results avec tous les résultats du heap
+        // Utiliser seulement les résultats paginés
+        setResults(limitedResults);
+        console.log(
+          `📊 Heap contient ${forensicResultsHeap.getCount()} résultats au total`
+        );
+      }
 
       return true;
     }
 
     console.log(
-      `⏭️ Page ${currentPageTracked} active - résultat ajouté au heap mais pas affiché`
+      `⏭️ Résultat ignoré (score: ${newResult.score}) - pas assez pertinent`
     );
     return false;
   };
@@ -376,6 +401,165 @@ export default function useSearch() {
     resetPagination();
   }, [resetPagination]);
 
+  /* const resumeJob = async (jobId: string, skipHistory: boolean = false) => {
+    try {
+      setJobId(jobId);
+
+      // Ne pas effacer le heap si on veut simplement changer d'onglet
+      if (!skipHistory) {
+        forensicResultsHeap.clear();
+      }
+
+      // Récupérer les informations de la tâche
+      const resultsResponse = await fetch(
+        `${process.env.MAIN_API_URL}/forensics/${jobId}`
+      );
+      if (!resultsResponse.ok)
+        throw new Error(`Erreur API: ${resultsResponse.status}`);
+
+      const resultsData = await resultsResponse.json();
+
+      if (resultsData?.results) {
+        // Vérifier l'état de la tâche pour déterminer le comportement
+        const taskStatus = resultsData.status || 'PENDING';
+        const isCompleted = ['SUCCESS', 'FAILURE', 'REVOKED'].includes(
+          taskStatus
+        );
+
+        console.log(`🔍 État de la tâche ${jobId}: ${taskStatus}`);
+
+        // Traitement des données de progression des sources
+        const sourcesProgress = resultsData.results
+          .filter((r: { type: string }) => r.type === 'progress')
+          .reduce((acc: any, curr: any) => {
+            if (!acc[curr.guid]) {
+              acc[curr.guid] = {
+                sourceId: curr.guid,
+                sourceName:
+                  curr.source_name || `Source ${curr.guid.slice(0, 8)}...`,
+                progress: curr.progress,
+                timestamp: curr.timestamp || new Date().toISOString(),
+                startTime: curr.start_time || new Date().toISOString(),
+              };
+            } else if (curr.progress > acc[curr.guid].progress) {
+              acc[curr.guid].progress = curr.progress;
+              acc[curr.guid].timestamp = curr.timestamp;
+            }
+            return acc;
+          }, {});
+
+        // Forcer la progression à 100% pour toutes les sources si la tâche est terminée
+        if (isCompleted) {
+          Object.keys(sourcesProgress).forEach((key) => {
+            sourcesProgress[key].progress = 100;
+          });
+        }
+
+        setSourceProgress(Object.values(sourcesProgress));
+
+        let validDetectionResults: ForensicResult[] = [];
+
+        // IMPORTANT: Pour les tâches terminées, toujours charger l'historique complet
+        if (!skipHistory || isCompleted) {
+          // Récupérer les résultats de détection avec leurs images
+          const detectionResults = await Promise.all(
+            resultsData.results
+              .filter((r: any) => r.metadata?.type === 'detection')
+              .map(async (result: any) => {
+                const frameId = result.frame_uuid;
+                const imageResponse = await fetch(
+                  `${process.env.MAIN_API_URL}/forensics/${jobId}/frames/${frameId}`
+                );
+
+                if (!imageResponse.ok) {
+                  console.error(
+                    `Erreur lors du chargement de l'image pour ${frameId}`
+                  );
+                  return null;
+                }
+
+                const imageBlob = await imageResponse.blob();
+                const imageUrl = URL.createObjectURL(imageBlob);
+
+                return {
+                  id: frameId,
+                  imageData: imageUrl,
+                  timestamp:
+                    result.metadata?.timestamp || new Date().toISOString(),
+                  score: result.metadata?.score || 0,
+                  cameraId:
+                    result.metadata?.camera ||
+                    result.metadata?.source ||
+                    'unknown',
+                  type: 'detection',
+                  attributes: result.metadata?.attributes || {},
+                  progress: result.metadata?.progress || 0,
+                };
+              })
+          );
+
+          // Filtrer les nulls résultant de l'échec de chargement d'images
+          validDetectionResults = detectionResults.filter(
+            (result) => result !== null
+          ) as ForensicResult[];
+
+          validDetectionResults.forEach((res: ForensicResult) =>
+            forensicResultsHeap.addResult(res)
+          );
+
+          console.log(
+            '🧠 Détections valides récupérées:',
+            validDetectionResults.length
+          );
+        } else {
+          // En mode skipHistory pour tâches en cours uniquement, ne pas charger les images
+          console.log(
+            '⏭️ Chargement des résultats historiques ignoré (mode skipHistory, tâche en cours)'
+          );
+        }
+
+        // Définir la progression à 100% si la tâche est terminée
+        if (isCompleted) {
+          setProgress(100);
+        } else {
+          const maxProgress = Math.max(
+            ...Object.values(sourcesProgress).map((s: any) => s.progress || 0),
+            0
+          );
+          setProgress(maxProgress);
+        }
+
+        // Si la tâche n'est pas terminée, relancer le WebSocket
+        if (!isCompleted) {
+          console.log('🔄 Tâche en cours, initialisation du WebSocket...');
+          setIsSearching(true);
+          initWebSocket(jobId);
+        } else {
+          console.log('✅ Tâche terminée, affichage des résultats uniquement');
+          setIsSearching(false);
+        }
+        // Ne pas conditionner cette mise à jour par validDetectionResults.length > 0
+        const bestResults = forensicResultsHeap.getBestResults();
+        setResults(bestResults);
+        setDisplayResults(bestResults);
+
+        console.log('📊 Mise à jour des résultats:', bestResults.length);
+
+        return skipHistory && !isCompleted ? [] : validDetectionResults;
+      }
+
+      return [];
+    } catch (error) {
+      console.error('Erreur lors de la reprise du job:', error);
+      setResults([]);
+      setDisplayResults([]);
+      setProgress(null);
+      setSourceProgress([]);
+      setIsSearching(false);
+      return [];
+    }
+  };
+ */
   const testResumeJob = async (
     jobId: string,
     page: number = 1,
@@ -393,19 +577,33 @@ export default function useSearch() {
       console.log(`🔄 Changement de page: ${currentPageTracked} -> ${page}`);
       setCurrentPageTracked(page);
 
-      // Gestion du WebSocket selon la page
       if (page !== 1) {
+        console.log('📴 Page différente de 1, fermeture du WebSocket');
         cleanupWebSocket();
-      } else if (wsRef.current?.readyState === WebSocket.CLOSED && jobId) {
-        initWebSocket(jobId, true);
-      } else if (!wsRef.current && jobId) {
-        initWebSocket(jobId, true);
+      } else {
+        console.log('📱 Page 1 détectée, vérification du WebSocket');
+        // Vérifions l'état actuel du WebSocket
+        if (wsRef.current) {
+          console.log(`💬 État actuel WebSocket: ${wsRef.current.readyState}`);
+          // 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
+          if (wsRef.current.readyState === WebSocket.CLOSED) {
+            console.log('🔌 WebSocket fermé, tentative de réinitialisation');
+            initWebSocket(jobId, true);
+          } else {
+            console.log(
+              '🔄 WebSocket déjà actif, pas de réinitialisation nécessaire'
+            );
+          }
+        } else {
+          console.log('🆕 Aucun WebSocket existant, initialisation');
+          initWebSocket(jobId, true);
+        }
       }
 
       setJobId(jobId);
-      // Ne vidons le heap que lors d'une nouvelle recherche, pas lors des changements de page
-      // Ne plus vider le heap ici
-
+      if (!skipHistory && page === 1) {
+        forensicResultsHeap.clear();
+      }
       if (!skipLoadingState) setIsSearching(true);
 
       // Infos globales sur la tâche
@@ -480,7 +678,12 @@ export default function useSearch() {
 
       console.log('🔍 Chargement des données paginées pour la page:', page);
 
-      // Appel de l'API paginée
+      // Vider le heap si on n'est pas sur la page 1
+      if (page > 1) {
+        forensicResultsHeap.clear();
+      }
+
+      // Appel de l'API paginée - CETTE PARTIE DOIT TOUJOURS S'EXÉCUTER
       const paginatedResponse = await fetch(
         `${process.env.MAIN_API_URL}/forensics/${jobId}/pages/${page}`
       );
@@ -559,24 +762,38 @@ export default function useSearch() {
         (r) => r !== null
       ) as ForensicResult[];
 
-      // TOUJOURS ajouter les résultats au heap, quelle que soit la page
-      validDetectionResults.forEach((res: ForensicResult) => {
-        forensicResultsHeap.addResult(res);
-        console.log(`➕ Résultat ajouté au heap: ${res.id}`);
-      });
+      // Gestion des résultats selon la page
+      if (page === 1 && isSearching) {
+        // Pour la page 1 en recherche active: ajouter au heap
+        validDetectionResults.forEach((res: ForensicResult) => {
+          forensicResultsHeap.addResult(res);
+          console.log(`➕ Résultat ajouté au heap depuis resumeJob: ${res.id}`);
+        });
 
-      // Récupérer les résultats du heap pour la page actuelle
-      const pageResults = forensicResultsHeap.getPageResults(
-        page,
-        paginationData.pageSize
-      );
-      console.log(
-        `📋 Affichage de ${pageResults.length}/${paginationData.pageSize} résultats pour page ${page}`
-      );
+        // Utiliser les meilleurs résultats du heap pour la page 1
+        const bestResults = forensicResultsHeap.getPageResults(
+          1,
+          paginationData.pageSize
+        );
+        console.log(
+          `📋 Résultats limités à ${bestResults.length}/${paginationData.pageSize} pour page 1`
+        );
 
-      setResults(pageResults);
-      setDisplayResults(pageResults);
+        setResults(bestResults);
+        setDisplayResults(bestResults);
+      } else {
+        // Pour les autres pages: utiliser directement les résultats sans heap
+        const limitedResults = validDetectionResults.slice(
+          0,
+          paginationData.pageSize
+        );
+        console.log(
+          `📑 Page ${page}: ${limitedResults.length}/${paginationData.pageSize} résultats`
+        );
 
+        setResults(limitedResults);
+        setDisplayResults(limitedResults);
+      }
       const returnObj = {
         results: validDetectionResults,
         pagination: paginationData,
@@ -618,9 +835,8 @@ export default function useSearch() {
         setIsSearching(true);
         setIsCancelling(false);
         setType(formData.subjectType);
-
-        // C'est ici qu'on vide le heap, uniquement au début d'une nouvelle recherche
         forensicResultsHeap.clear();
+
         resetSearch();
 
         // Attendre un court délai pour s'assurer que les ressources sont bien libérées
@@ -670,7 +886,7 @@ export default function useSearch() {
         throw error;
       }
     },
-    [sessionId, resetSearch, initializeSourceProgress, initWebSocket]
+    [sessionId, cleanupWebSocket, initializeSourceProgress, initWebSocket]
   );
   const stopSearch = async (jobId: string) => {
     try {
@@ -700,26 +916,37 @@ export default function useSearch() {
 
   const handlePageChange = useCallback(
     (page: number) => {
-      if (currentPageTracked === page) return; // Éviter le rechargement inutile
-
       const previousPage = currentPageTracked;
       setCurrentPageTracked(page);
 
-      // Gérer le WebSocket selon la page
+      // Si on quitte la page 1, fermer le WebSocket
       if (
         page !== 1 &&
         wsRef.current &&
         wsRef.current.readyState === WebSocket.OPEN
       ) {
+        console.log('🚫 Fermeture du WebSocket - navigation hors de la page 1');
         wsRef.current.close(1000, 'Navigation vers une autre page');
         wsRef.current = null;
-      } else if (page === 1 && previousPage !== 1 && isSearching && jobId) {
-        // Réinitialiser le WebSocket uniquement si on revient à la page 1 et qu'une recherche est active
+      }
+
+      // Si on revient à la page 1 et qu'une recherche est en cours, forcer la réinitialisation du WebSocket
+      if (page === 1 && previousPage !== 1 && isSearching && jobId) {
+        console.log('🔄 Retour à la page 1 - réinitialisation du WebSocket');
+
+        // Forcer la fermeture de toute connexion existante
+        if (wsRef.current) {
+          wsRef.current.close(1000, 'Réinitialisation pour page 1');
+          wsRef.current = null;
+        }
+
+        // Différer légèrement l'initialisation pour s'assurer que currentPageTracked est mis à jour
         setTimeout(() => {
-          if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
-            initWebSocket(jobId);
-          }
+          console.log('⚡ Initialisation forcée du WebSocket pour la page 1');
+          initWebSocket(jobId);
         }, 50);
+
+        return;
       }
 
       // Charger les données de la nouvelle page
