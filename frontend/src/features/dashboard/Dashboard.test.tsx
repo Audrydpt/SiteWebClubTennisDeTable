@@ -28,12 +28,6 @@ vi.mock('./TestDashboard', () => ({
   default: () => <div data-testid="test-dashboard">Test Dashboard Mock</div>,
 }));
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
-
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>();

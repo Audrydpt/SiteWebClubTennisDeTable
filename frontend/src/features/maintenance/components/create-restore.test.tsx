@@ -19,6 +19,28 @@ vi.mock('@/components/reboot-status', () => ({
   ),
 }));
 
+// Mock the RestoreBackupWizard component
+vi.mock('./backup/restore', () => ({
+  default: ({ onClose }: { onClose: (skipReboot: boolean) => void }) => (
+    <div data-testid="restore-wizard">
+      <button
+        type="button"
+        data-testid="with-reboot-button"
+        onClick={() => onClose(false)}
+      >
+        Complete Restore (with reboot)
+      </button>
+      <button
+        type="button"
+        data-testid="skip-reboot-button"
+        onClick={() => onClose(true)}
+      >
+        Complete Restore (skip reboot)
+      </button>
+    </div>
+  ),
+}));
+
 // No need to mock useState, we'll use a simpler approach for testing
 
 describe('CreateRestoreBackup Component', () => {
@@ -58,8 +80,13 @@ describe('CreateRestoreBackup Component', () => {
   };
 
   beforeEach(() => {
+    vi.resetAllMocks();
     (useBackup as ReturnType<typeof vi.fn>).mockReturnValue(mockBackupHook);
     (useRestore as ReturnType<typeof vi.fn>).mockReturnValue(mockRestoreHook);
+  });
+
+  afterEach(() => {
+    vi.resetAllMocks();
   });
 
   const renderComponent = (props = {}) =>
@@ -140,6 +167,78 @@ describe('CreateRestoreBackup Component', () => {
       // Dialog should disappear
       await waitFor(() => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should show reboot status when restore wizard closes with skipRebootDialog=false', async () => {
+      renderComponent();
+
+      // Open restore dialog
+      const restoreButton = screen.getByRole('button', {
+        name: (content) => content.includes('Restore Backup'),
+      });
+      await userEvent.click(restoreButton);
+
+      // Check for the restore wizard
+      const restoreWizard = screen.getByTestId('restore-wizard');
+      expect(restoreWizard).toBeInTheDocument();
+
+      // Complete restore with reboot
+      const withRebootButton = screen.getByTestId('with-reboot-button');
+      await userEvent.click(withRebootButton);
+
+      // Check that reboot status is shown
+      expect(screen.getByTestId('reboot-status')).toBeInTheDocument();
+    });
+
+    it('should close dialog without showing reboot status when restore wizard closes with skipRebootDialog=true', async () => {
+      renderComponent();
+
+      // Open restore dialog
+      const restoreButton = screen.getByRole('button', {
+        name: (content) => content.includes('Restore Backup'),
+      });
+      await userEvent.click(restoreButton);
+
+      // Find the restore wizard component
+      const restoreWizard = screen.getByTestId('restore-wizard');
+      expect(restoreWizard).toBeInTheDocument();
+
+      // Find the skip-reboot button and click it
+      const skipRebootButton = screen.getByTestId('skip-reboot-button');
+      await userEvent.click(skipRebootButton);
+
+      // Check that dialog is closed and reboot status is not shown
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('reboot-status')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should close reboot status when reboot completes', async () => {
+      renderComponent();
+
+      // Open restore dialog
+      const restoreButton = screen.getByRole('button', {
+        name: (content) => content.includes('Restore Backup'),
+      });
+      await userEvent.click(restoreButton);
+
+      // Find the restore wizard and click the with-reboot button
+      const withRebootButton = screen.getByTestId('with-reboot-button');
+      await userEvent.click(withRebootButton);
+
+      // Check that reboot status is shown
+      const rebootStatus = screen.getByTestId('reboot-status');
+      expect(rebootStatus).toBeInTheDocument();
+
+      // Complete the reboot
+      const completeRebootButton = within(rebootStatus).getByRole('button');
+      await userEvent.click(completeRebootButton);
+
+      // Check that reboot status is closed
+      await waitFor(() => {
+        expect(screen.queryByTestId('reboot-status')).not.toBeInTheDocument();
       });
     });
   });

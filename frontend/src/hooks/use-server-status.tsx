@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function useServerStatus(sessionId: string) {
   const [isOnline, setIsOnline] = useState(false);
@@ -17,11 +17,12 @@ export default function useServerStatus(sessionId: string) {
       }
     };
 
+    // Check status immediately on mount
+    checkServerStatus().then(setIsOnline);
+
     const interval = setInterval(async () => {
       const status = await checkServerStatus();
-      if (status) {
-        setIsOnline(true);
-      }
+      setIsOnline(status);
     }, 10000);
 
     return () => clearInterval(interval);

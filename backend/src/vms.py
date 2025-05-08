@@ -112,7 +112,7 @@ class CameraClient(ABC):
         pass
 
     @abstractmethod
-    async def start_replay(self, camera_guid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0) -> AsyncGenerator[Tuple[np.ndarray, str], None]:
+    async def start_replay(self, camera_guid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0, only_key_frames: bool = True) -> AsyncGenerator[Tuple[np.ndarray, str], None]:
         pass
 
     @staticmethod
@@ -309,7 +309,7 @@ class GenetecCameraClient(CameraClient):
 
             yield img
 
-    async def start_replay(self, camera_guid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0) -> AsyncGenerator[Tuple[np.ndarray, str], None]:
+    async def start_replay(self, camera_guid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0, only_key_frames: bool = True) -> AsyncGenerator[Tuple[np.ndarray, str], None]:
         if from_time > to_time:
             raise ValueError("from_time must be before to_time")
         if from_time > datetime.datetime.now().astimezone(datetime.timezone.utc):
@@ -739,7 +739,7 @@ class MilestoneCameraClient(CameraClient):
                 self.writer.write(connectupdate)
                 await asyncio.wait_for(self.writer.drain(), timeout=TIMEOUT)
         
-    async def start_replay(self, camera_guid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0) -> AsyncGenerator[Tuple[np.ndarray, str], None]:
+    async def start_replay(self, camera_guid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0, only_key_frames: bool = True) -> AsyncGenerator[Tuple[np.ndarray, str], None]:
         if not self.__token:
             raise Exception("Not logged in")
         if from_time > to_time:
@@ -777,7 +777,7 @@ class MilestoneCameraClient(CameraClient):
             f"<methodname>connect</methodname>"
             f"<username />"
             f"<password />"
-            f"<alwaysstdjpeg>{'yes' if False else 'no'}</alwaysstdjpeg>"            # yes for jpeg, no for h264
+            f"<alwaysstdjpeg>{'yes' if only_key_frames else 'no'}</alwaysstdjpeg>"                  # yes for jpeg, no for h264
             f"<transcode><allframes>no</allframes></transcode>"
             f"<connectparam>id={camera_guid}&amp;connectiontoken={self.__token}</connectparam>"
             f"<clientcapabilities>"
@@ -801,7 +801,7 @@ class MilestoneCameraClient(CameraClient):
             f"<requestid>{self.requestid}</requestid>"
             f"<methodname>goto</methodname>"
             f"<time>{int(from_time.timestamp() * 1000)}</time>"
-            f"<keyframesonly>yes</keyframesonly>"
+            f"<keyframesonly>{'yes' if only_key_frames else 'no'}</keyframesonly>"
             f"</methodcall>\r\n\r\n"
         ).encode("utf-8")
         self.requestid += 1
