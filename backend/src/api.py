@@ -1143,8 +1143,8 @@ class FastAPIServer:
 
         AggregateParam = create_model(f"Aggregate", aggregate=aggregate, group_by=group, time_from=date, time_to=date, **query)    
         
-        @self.app.get("/dashboard/widgets/{guid}", tags=["dashboard", "materialized"])
-        async def get_bucket(guid: str, kwargs: Annotated[AggregateParam, Query()]):
+        @self.app.get("/dashboard/tabs/{id}/widgets/{guid}", tags=["dashboard/tabs/widgets", "materialized"])
+        async def get_bucket(id: str, guid: str, kwargs: Annotated[AggregateMandatoryParam, Query()]):
             try:
                 if guid == "undefined":
                     return []
