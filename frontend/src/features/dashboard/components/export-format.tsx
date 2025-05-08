@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { useQuery } from '@tanstack/react-query';
 import { FileSpreadsheet, FileType, Loader2 } from 'lucide-react';
 import { useState } from 'react';

@@ -32,7 +32,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import { aiSchema, AISettings, useAIAPI } from '../hooks/use-ai';
+import useAIAPI from '../hooks/use-ai';
+import { aiSchema, AISettings } from '../lib/types';
 
 export default function IASettings() {
   const { t } = useTranslation('settings');

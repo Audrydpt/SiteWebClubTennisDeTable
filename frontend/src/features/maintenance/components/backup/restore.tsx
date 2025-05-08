@@ -246,6 +246,7 @@ export default function RestoreBackupWizard({
                   className="hidden"
                   onChange={handleFileChange}
                   disabled={isLoading}
+                  aria-label="Backup File"
                 />
                 <Button
                   onClick={() =>

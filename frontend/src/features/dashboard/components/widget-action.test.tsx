@@ -8,12 +8,6 @@ import type { StoredWidget } from './form-widget';
 import WidgetActions from './widget-actions';
 
 // Mock dependencies
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
-
 vi.mock('@/components/confirm-delete', () => ({
   default: ({
     children,

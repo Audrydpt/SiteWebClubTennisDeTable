@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { useState } from 'react';
 
 import { useAuth } from '@/providers/auth-context';
@@ -45,8 +44,6 @@ function useDump() {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
       }, 100);
-    } catch (error) {
-      console.error('Error downloading report:', error);
     } finally {
       setLoading(false);
     }

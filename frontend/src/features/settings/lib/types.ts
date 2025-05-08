@@ -32,3 +32,13 @@ export const vmsSchema = z.discriminatedUnion('type', [
 export type MilestoneVMSFormValues = z.infer<typeof milestoneVMSSchema>;
 export type GenetecVMSFormValues = z.infer<typeof genetecVMSSchema>;
 export type VMSFormValues = z.infer<typeof vmsSchema>;
+
+export const aiSchema = z.object({
+  ip: z.string().min(7).ip(),
+  port: z.number().int().min(1).max(65535),
+  object: z.string().min(1),
+  vehicle: z.string().min(1),
+  person: z.string().min(1),
+});
+
+export type AISettings = z.infer<typeof aiSchema>;
