@@ -3,7 +3,7 @@ import { MinHeap } from '@datastructures-js/heap';
 import { ForensicResult } from '../types';
 
 // Number of maximum results to keep
-const MAX_RESULTS = 100;
+const MAX_RESULTS = 5000;
 
 class ForensicResultsHeap {
   private minHeap: MinHeap<ForensicResult>;
@@ -78,6 +78,40 @@ class ForensicResultsHeap {
   clear(): void {
     this.minHeap.clear();
     this.resultMap.clear();
+  }
+
+  getPageResults(page: number, pageSize: number = 12) {
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return this.getBestResults().slice(startIndex, endIndex);
+  }
+
+  shouldAddResult(
+    newResult: ForensicResult,
+    currentPage: number,
+    pageSize: number = 12
+  ) {
+    if (currentPage === 1) {
+      // En première page, on vérifie si le résultat est meilleur que le moins bon affiché
+      const pageResults = this.getPageResults(currentPage, pageSize);
+      if (pageResults.length < pageSize) return true;
+
+      const minScore = Math.min(...pageResults.map((r) => r.score));
+      return newResult.score > minScore;
+    }
+
+    // Pour les autres pages, il faut vérifier si le nouveau résultat serait dans cette page
+    const allResults = this.getBestResults();
+    const pageStartRank = (currentPage - 1) * pageSize;
+
+    // Si on a moins de résultats que l'indice de début de la page actuelle
+    if (allResults.length <= pageStartRank) return false;
+
+    // On simule l'ajout du résultat pour voir s'il se placerait dans cette page
+    const wouldBeBetterThan = allResults.findIndex(
+      (r) => newResult.score > r.score
+    );
+    return wouldBeBetterThan >= 0 && wouldBeBetterThan < currentPage * pageSize;
   }
 }
 

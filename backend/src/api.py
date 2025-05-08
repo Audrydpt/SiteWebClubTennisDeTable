@@ -391,6 +391,7 @@ class FastAPIServer:
                     job_type = TaskManager.get_job_type(job_id)
                     size = TaskManager.get_job_size(job_id)
                     count = TaskManager.get_job_count(job_id)
+                    total_pages = TaskManager.get_job_total_pages(job_id)
 
                     task_info = {
                         "status": status,
@@ -399,6 +400,7 @@ class FastAPIServer:
                         "updated": updated,
                         "count": count,
                         "size": size,
+                        "total_pages": total_pages,
                     }
                     
                     if status == JobStatus.FAILURE:
@@ -544,9 +546,10 @@ class FastAPIServer:
                 status = TaskManager.get_job_status(guid)
                 if not status:
                     raise HTTPException(status_code=404, detail="Tâche introuvable")
-                    
+
+                # Récupérer les résultats de la tâche
                 results = await TaskManager.get_job_results(guid)
-                
+
                 # Ne pas inclure les données binaires dans la réponse
                 for result in results:
                     result.frame = None
@@ -554,11 +557,40 @@ class FastAPIServer:
                 return {
                     "guid": guid,
                     "status": status,
-                    "results": results
+                    "results": results,
                 }
             
             except Exception as e:
                 logger.error(f"Erreur lors de la récupération des résultats de la tâche {guid}: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=traceback.format_exc())
+
+        @self.app.get("/forensics/{guid}/pages/{number}", tags=["forensics"])
+        async def get_page(guid: str, number: int):
+            try:
+                # Récupérer les résultats de la tâche
+                results = await TaskManager.get_job_results(guid)
+
+                # Ne pas inclure les données binaires dans la réponse
+                for result in results:
+                    result.frame = None
+
+                # Pagination
+                page_size = 12
+                start = (number - 1) * page_size
+                end = start + page_size
+                paginated_results = results[start:end]
+
+                return {
+                    "guid": guid,
+                    "results": paginated_results,
+                    "total": len(results),
+                    "total_pages": (len(results) + page_size - 1) // page_size,
+                    "page": number,
+                    "page_size": page_size,
+                }
+            except Exception as e:
+                logger.error(f"Erreur lors de la récupération de la page {number} pour la tâche {guid}: {e}")
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
         
@@ -1137,11 +1169,12 @@ class FastAPIServer:
     def __create_endpoint2(self, agg_func=None):
         query = {}
 
-        aggregate = (ModelName, Field(default=ModelName.hour, description="The time interval to aggregate the data"))
+        aggregateMandatory = (ModelName, Field(description="The time interval to aggregate the data"))
         group = (str, Field(default=None, description="The column to group by"))
         date = (datetime.datetime, Field(default=None, description="The timestamp to filter by"))
 
-        AggregateParam = create_model(f"Aggregate", aggregate=aggregate, group_by=group, time_from=date, time_to=date, **query)    
+        AggregateMandatoryParam = create_model(f"AggregateMandatory", aggregate=aggregateMandatory, group_by=group, time_from=date, time_to=date, **query)  
+        AggregateParam = create_model(f"Aggregate", group_by=group, time_from=date, time_to=date, **query)    
         
         @self.app.get("/dashboard/tabs/{id}/widgets/{guid}", tags=["dashboard/tabs/widgets", "materialized"])
         async def get_bucket(id: str, guid: str, kwargs: Annotated[AggregateMandatoryParam, Query()]):
@@ -1178,7 +1211,6 @@ class FastAPIServer:
                         **where
                     )
 
-                
                 ret = []
                 for row in cursor:
                     data = {
@@ -1195,24 +1227,68 @@ class FastAPIServer:
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
     
-        @self.app.get("/dashboard/widgets/{guid}/trend", tags=["dashboard", "materialized"])
-        async def get_trend(guid: str, kwargs: Annotated[AggregateParam, Query()]):
+        @self.app.get("/dashboard/tabs/{id}/widgets/{guid}/trends", tags=["dashboard/tabs/widgets/trends", "materialized"])
+        async def get_trend(id: str, guid: str, kwargs: Annotated[AggregateParam, Query()]):
             try:
                 if guid == "undefined":
                     return []
                 
-                time = str(kwargs.aggregate.value) if hasattr(kwargs.aggregate, 'value') else str(kwargs.aggregate)
+                group_by = kwargs.group_by.split(",") if kwargs.group_by is not None else None
+                matView = f"widget_{guid}"
+                
+                dal = GenericDAL()
+
+                try:
+                    trend_data = await dal.async_get_trend(view_name=matView, _group=group_by)
+                    
+                    return trend_data
+                except Exception as e:
+                    raise HTTPException(status_code=500, detail=str(e))
+                
+            except Exception as e:
+                logger.error(f"Error retrieving trend data for widget {guid}: {str(e)}")
+                raise HTTPException(status_code=500, detail=str(e))
+            
+        @self.app.get("/dashboard/tabs/{id}/widgets/{guid}/trends/{aggregate}", tags=["dashboard/tabs/widgets/trends", "materialized"])
+        async def get_trend_aggregation(id: str, guid: str, aggregate: ModelName, kwargs: Annotated[AggregateParam, Query()]):
+            try:
+                if guid == "undefined":
+                    return []
+                
                 between = kwargs.time_from, kwargs.time_to
                 group_by = kwargs.group_by.split(",") if kwargs.group_by is not None else None
                 matView = f"widget_{guid}"
                 
                 dal = GenericDAL()
-                aggregation = agg_func if agg_func is not None else func.count('*')
 
                 try:
-                    trend_data = await dal.async_get_trend(matView, _time=time, _group=group_by)
+                    trend_data_aggregate = await dal.async_get_trend_aggregate(
+                        view_name=matView, 
+                        _aggregate=aggregate, 
+                        _group=group_by,
+                        _between=between
+                    )
                     
-                    return trend_data
+                    formatted_data = []
+                    for row in trend_data_aggregate:
+                        item = {
+                            "bucket": row[0],
+                            "avg": row[1],
+                            "std": row[2],
+                            "min": row[3],
+                            "max": row[4]
+                        }
+                        
+                        if group_by:
+                            if isinstance(group_by, list):
+                                for i, group_name in enumerate(group_by):
+                                    item[group_name] = row[i + 5]
+                            else:
+                                item[group_by] = row[5]
+                                
+                        formatted_data.append(item)
+                        
+                    return formatted_data
                 except Exception as e:
                     raise HTTPException(status_code=500, detail=str(e))
                 

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier,@typescript-eslint/no-explicit-any,no-console,no-else-return,consistent-return,react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier,@typescript-eslint/no-explicit-any,no-console,no-else-return,consistent-return,react-hooks/exhaustive-deps,import/no-named-as-default */
 import {
   ChevronDown,
   ChevronUp,
@@ -8,7 +8,6 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useMemo, useRef, useEffect, useState } from 'react';
-
 
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -23,6 +22,7 @@ import forensicResultsHeap from '@/features/forensic/lib/data-structure/heap';
 import ForensicHeader from './ui/header';
 import { SortType } from './ui/buttons';
 import Display from '@/features/forensic/components/ui/display.tsx';
+// import replayVideo from '@/features/forensic/lib/test/replay.webm';
 
 interface ResultsProps {
   results: ForensicResult[];
@@ -34,7 +34,23 @@ interface ResultsProps {
   isTabLoading?: boolean;
   onDeleteTab?: (tabIndex: number) => void;
   onDeleteAllTabs?: () => void;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+  paginationInfo: {
+    currentPage: number;
+    pageSize: number;
+    totalPages: number;
+    total: number;
+  };
 }
+
+/* function VideoPlayer() {
+  return (
+    <video src={replayVideo} controls autoPlay className="w-full">
+      Votre navigateur ne supporte pas la balise vidéo.
+    </video>
+  );
+} */
 
 export default function Results({
   results: propsResults,
@@ -46,12 +62,20 @@ export default function Results({
   isTabLoading,
   onDeleteTab,
   onDeleteAllTabs,
+  currentPage,
+  onPageChange,
+  paginationInfo,
 }: ResultsProps) {
   const [sortType, setSortType] = useState<SortType>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSourceDetails, setShowSourceDetails] = useState(false);
-  const { resumeJob, displayResults, setDisplayResults } = useSearch();
-  const { tabJobs, handleTabChange: defaultHandleTabChange, getActiveJobId } = useJobs();
+  const { /* resumeJob, */ displayResults, setDisplayResults, testResumeJob } =
+    useSearch();
+  const {
+    tabJobs,
+    handleTabChange: defaultHandleTabChange,
+    getActiveJobId,
+  } = useJobs();
   const isLoadingRef = useRef(false);
   const requestTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const loadedJobsRef = useRef<Set<string>>(new Set());
@@ -60,11 +84,13 @@ export default function Results({
 
   // Fonction modifiée pour éviter les logs excessifs
   const resultsToDisplay = useMemo(() => {
-    const activeTab = tabJobs.find(tab => tab.tabIndex === activeTabIndex);
+    const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
     if (activeTab?.isNew === true || (activeTabIndex && !activeTab)) {
       return [];
     }
-    return propsResults && propsResults.length > 0 ? propsResults : displayResults;
+    return propsResults && propsResults.length > 0
+      ? propsResults
+      : displayResults;
   }, [displayResults, propsResults, activeTabIndex, tabJobs]);
 
   const forceCleanupResults = () => {
@@ -74,7 +100,7 @@ export default function Results({
 
   const hasActiveJob = useMemo(() => {
     const activeJobId = getActiveJobId();
-    const activeTab = tabJobs.find(tab => tab.tabIndex === activeTabIndex);
+    const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
     if (activeTab?.isNew === true) {
       return false;
     }
@@ -94,8 +120,10 @@ export default function Results({
   // Effet pour désactiver l'état de chargement initial
   useEffect(() => {
     // Cas 1: Si nous avons des résultats
-    if ((propsResults && propsResults.length > 0) ||
-      (displayResults && displayResults.length > 0)) {
+    if (
+      (propsResults && propsResults.length > 0) ||
+      (displayResults && displayResults.length > 0)
+    ) {
       const timer = setTimeout(() => {
         setIsInitialLoading(false);
       }, 300);
@@ -122,7 +150,9 @@ export default function Results({
   useEffect(() => {
     const autoLoadResults = async () => {
       if (isLoadingRef.current) {
-        console.log('❌ Chargement déjà en cours, abandon du chargement automatique');
+        console.log(
+          '❌ Chargement déjà en cours, abandon du chargement automatique'
+        );
         return;
       }
       const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
@@ -137,7 +167,8 @@ export default function Results({
 
       try {
         loadedJobsRef.current.add(jobId);
-        await resumeJob(jobId, false);
+        // await resumeJob(jobId, false);
+        await testResumeJob(jobId, 1, false);
       } catch (error) {
         console.error('Erreur lors du chargement des résultats:', error);
       } finally {
@@ -156,7 +187,7 @@ export default function Results({
         clearTimeout(requestTimeoutRef.current);
       }
     };
-  }, [activeTabIndex, tabJobs, resumeJob]);
+  }, [activeTabIndex, tabJobs, /* resumeJob, */ testResumeJob]);
 
   const toggleSortOrder = () => {
     setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
@@ -258,13 +289,21 @@ export default function Results({
         loading={isInitialLoading}
         setIsLoading={setIsInitialLoading}
       />
-      <ScrollArea className="h-[calc(100%-3rem)] pb-1">
-        <div className="space-y-4">
+      <ScrollArea className="h-[calc(100%-3rem)] pb-6">
+        <div className="space-y-4 pb-6">
           {/* Progress section inside ScrollArea */}
           {renderProgressSection()}
 
+          {/* Video Player
+          <VideoPlayer />
+           */}
+
+          {/* Results display */}
+
           {(() => {
-            const activeTab = tabJobs.find(tab => tab.tabIndex === activeTabIndex);
+            const activeTab = tabJobs.find(
+              (tab) => tab.tabIndex === activeTabIndex
+            );
             const isNew = activeTab?.isNew === true;
 
             if (isNew) {
@@ -273,14 +312,22 @@ export default function Results({
                   Sélectionnez une caméra et lancez une recherche
                 </div>
               );
-            } else if (hasActiveJob && !isSearching && progress === 100 &&
-              (!resultsToDisplay || resultsToDisplay.length === 0)) {
+            } else if (
+              hasActiveJob &&
+              !isSearching &&
+              progress === 100 &&
+              (!resultsToDisplay || resultsToDisplay.length === 0)
+            ) {
               return (
                 <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
                   Aucun résultat trouvé
                 </div>
               );
-            } else if (hasActiveJob || isSearching || resultsToDisplay?.length > 0) {
+            } else if (
+              hasActiveJob ||
+              isSearching ||
+              resultsToDisplay?.length > 0
+            ) {
               return (
                 <Display
                   results={resultsToDisplay}
@@ -289,6 +336,9 @@ export default function Results({
                   sortType={sortType}
                   sortOrder={sortOrder}
                   isTabLoading={isTabLoading || isInitialLoading}
+                  currentPage={currentPage}
+                  onPageChange={onPageChange}
+                  paginationInfo={paginationInfo}
                 />
               );
             } else {

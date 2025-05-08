@@ -8,6 +8,7 @@ import uuid
 from aiostream import stream
 from functools import wraps
 
+from celery.worker.state import total_count
 from fastapi.websockets import WebSocketState
 import numpy as np
 import cv2
@@ -107,7 +108,7 @@ class JobResult:
         )
 
 class ResultsStore:
-    def __init__(self, max_results: int = 1000):
+    def __init__(self, max_results: int = 5000):
         self.max_results = max_results
         self._redis = None
         self._pool = None
@@ -352,6 +353,21 @@ class TaskManager:
         except Exception as e:
             logger.error(f"Erreur lors de la récupération de la date de création du job {job_id}: {e}")
             return None
+        
+    @staticmethod
+    def get_job_total_pages(job_id: str) -> Optional[int]:
+        try:
+            redis_client = redis.Redis(host='localhost', port=6379, db=1)
+            result_list_key = f"task:{job_id}:results"
+            count = redis_client.llen(result_list_key)
+            
+            page_size = 12
+            total = (count + page_size - 1) // page_size if count > 0 else 0
+            return total
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération du nombre total de pages pour le job {job_id}: {e}")
+            return None
 
     @staticmethod
     def get_job_type(job_id: str) -> Optional[str]:
@@ -528,8 +544,6 @@ class TaskManager:
             if not exists and not results_exist:
                 raise ValueError(f"Aucune tâche trouvée avec l'ID {job_id}")
 
-            await asyncio.to_thread(lambda: AsyncResult(job_id).forget())
-
             # Supprimer les métadonnées et résultats dans DB1
             await redis_db1.delete(job_key)
             await redis_db1.delete(result_list_key)
@@ -540,10 +554,15 @@ class TaskManager:
             if frame_keys:
                 await redis_db1.delete(*frame_keys)
 
+            # Supprimer directement les clés Celery dans DB0
+            celery_meta_key = f"celery-task-meta-{job_id}"
+            await redis_db0.delete(celery_meta_key)
+
             return {"success": True, "message": f"Tâche {job_id} supprimée avec succès"}
         except Exception as e:
             logger.error(f"Erreur lors de la suppression des données de la tâche {job_id}: {e}")
             return {"success": False, "message": str(e)}
+
     @staticmethod
     async def delete_all_task_data() -> dict:
         """
@@ -576,9 +595,6 @@ class TaskManager:
 
             # Étape 2: Supprimer toutes les données associées aux tâches
             for task_id in task_ids:
-                # Supprimer les métadonnées Celery dans DB0
-                await asyncio.to_thread(lambda id=task_id: AsyncResult(id).forget())
-
                 # Supprimer les résultats de la tâche
                 deleted = await redis_db1.delete(f"task:{task_id}:results")
                 if deleted > 0:
@@ -600,6 +616,12 @@ class TaskManager:
 
                 # Supprimer les autres métadonnées
                 deleted = await redis_db1.delete(f"task:{task_id}")
+                if deleted > 0:
+                    deleted_keys += deleted
+
+                # Supprimer directement les métadonnées Celery dans DB0
+                celery_meta_key = f"celery-task-meta-{task_id}"
+                deleted = await redis_db0.delete(celery_meta_key)
                 if deleted > 0:
                     deleted_keys += deleted
 

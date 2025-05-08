@@ -1,5 +1,6 @@
 import { SortAsc, SortDesc, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import DeleteConfirmation from '@/components/confirm-delete';
 
 export type SortType = 'score' | 'date';
 
@@ -61,16 +62,22 @@ export function SortButtons({
         )}
       </Button>
 
-      {/* Bouton pour vider les résultats */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={handleReset}
-        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-        title="Vider les résultats"
+      {/* Bouton pour vider les résultats avec confirmation */}
+      <DeleteConfirmation
+        onDelete={handleReset}
+        title="Supprimer tous les résultats"
+        description="Êtes-vous sûr de vouloir supprimer tous les onglets et résultats ? Cette action est irréversible."
+        confirmText="Supprimer tout"
       >
-        <Trash2 className="h-4 w-4" />
-      </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+          title="Vider les résultats"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </DeleteConfirmation>
     </div>
   );
 }

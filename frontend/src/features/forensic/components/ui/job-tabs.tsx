@@ -3,6 +3,7 @@ import { Loader2, Trash2 } from 'lucide-react';
 import React, { useEffect, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button.tsx';
+import DeleteConfirmation from '@/components/confirm-delete';
 
 export interface TabJob {
   tabIndex: number;
@@ -67,10 +68,6 @@ export default function JobTabs({
 
   displayTabs = displayTabs.slice(0, MAX_TABS);
 
-  const handleDeleteTab = (tabIndex: number, event: React.MouseEvent) => {
-    event.stopPropagation();
-    onDeleteTab(tabIndex);
-  };
   const getGridClass = (count: number) => {
     switch (count) {
       case 1:
@@ -151,16 +148,22 @@ export default function JobTabs({
                   {statusIndicator}
                   {hasJob && (
                     <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="destructive"
-                        className="h-4 w-4 p-0"
-                        onClick={(e) => handleDeleteTab(tab.tabIndex, e)}
-                        disabled={isLoading || tab.status === 'running'}
+                      <DeleteConfirmation
+                        onDelete={() => onDeleteTab(tab.tabIndex)}
                         title="Supprimer cette recherche"
-                        aria-label="Supprimer cette recherche"
+                        description="Êtes-vous sûr de vouloir supprimer cet onglet de recherche ?"
+                        confirmText="Supprimer"
                       >
-                        <Trash2 className="!h-3 !w-3" />
-                      </Button>
+                        <Button
+                          variant="destructive"
+                          className="h-4 w-4 p-0"
+                          disabled={isLoading || tab.status === 'running'}
+                          title="Supprimer cette recherche"
+                          aria-label="Supprimer cette recherche"
+                        >
+                          <Trash2 className="!h-3 !w-3" />
+                        </Button>
+                      </DeleteConfirmation>
                     </div>
                   )}
                 </div>
