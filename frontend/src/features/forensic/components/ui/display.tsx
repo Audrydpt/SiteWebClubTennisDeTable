@@ -118,10 +118,6 @@ export default function Display({
     }
   }, [totalPages, currentPage, onPageChange]);
 
-  useEffect(() => {
-    console.log('paginationInfo reçue dans Display:', paginationInfo);
-  }, [paginationInfo]);
-
   const paginatedResults = useMemo(() => {
     // Pour la page 1 en cours de recherche active, on utilise les résultats du heap
     if (currentPage === 1 && isSearching) {
