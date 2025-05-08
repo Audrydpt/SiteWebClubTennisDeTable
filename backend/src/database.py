@@ -643,7 +643,8 @@ class GenericDAL:
                 case '1 hour':
                     extract_func = func.extract('hour',column('bucket')).label('time_bucket')
                 case '1 day':
-                    extract_func = func.extract('day',column('bucket')).label('time_bucket')
+                    #extract_func = func.extract('day',column('bucket')).label('time_bucket')
+                    extract_func = func.extract('isodow',column('bucket')).label('time_bucket')
                 case '1 week':
                     extract_func = func.extract('week',column('bucket')).label('time_bucket')
                 case '1 month':
@@ -657,13 +658,15 @@ class GenericDAL:
                 case '100 years':
                     extract_func = func.extract('year',column('bucket')).label('time_bucket')
             
+            """
             if _between is not None and _between[0] is not None and _between[1] is not None:
                 if _between[1] - _between[0] == timedelta(weeks=1) and _aggregate == '1 day':
                     extract_func = func.extract('isodow',column('bucket')).label('time_bucket')
+            """
 
             date_trunc_expr = text("date_trunc('day', now() - interval '1 day')")
 
-            stmt = select(extract_func,avg_func,std_func,min_func,max_func)
+            stmt = select(extract_func, avg_func, std_func, min_func, max_func)
             stmt = stmt.select_from(text(f'"{view_name}"'))
             stmt = stmt.where(column('bucket') < date_trunc_expr)
 
