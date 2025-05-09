@@ -246,7 +246,7 @@ export default function Forensic() {
             progress={progress}
             sourceProgress={sourceProgress}
             onTabChange={handleTabChange}
-            isTabLoading={isTabLoading}
+            isTabLoading={isTabLoading || isLoading}
             currentPage={currentPage}
             onPageChange={handlePaginationChange}
             paginationInfo={paginationInfo}

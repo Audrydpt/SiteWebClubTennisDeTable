@@ -1,8 +1,8 @@
-/* eslint-disable no-console */
 import { Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
 import DeleteConfirmation from '@/components/confirm-delete';
+import Loading from '@/components/loading';
 import { Button } from '@/components/ui/button.tsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -60,12 +60,7 @@ export default function JobTabs({
   displayTabs = displayTabs.slice(0, MAX_TABS);
 
   if (isLoading && tabJobs.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8 space-y-4">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="text-lg">Chargement des tâches...</p>
-      </div>
-    );
+    return <Loading />;
   }
 
   return (

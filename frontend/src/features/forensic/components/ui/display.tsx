@@ -81,7 +81,7 @@ export default function Display({
   // Generate stable skeleton IDs
   const skeletonIds = useMemo(
     () =>
-      Array.from({ length: 8 }, () =>
+      Array.from({ length: 12 }, () =>
         Math.random().toString(36).substring(2, 15)
       ),
     []
@@ -367,31 +367,6 @@ export default function Display({
   if (isTabLoading) {
     return (
       <div className="space-y-6">
-        {/* Barre de progression pulsante */}
-        <div className="space-y-2 mb-6">
-          <div className="flex justify-between items-center">
-            <div className="h-4 bg-muted/80 rounded w-32 animate-pulse" />
-            <div className="h-3 bg-muted/60 rounded w-24 animate-pulse" />
-          </div>
-          <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted/40">
-            <div
-              className="absolute inset-y-0 left-0 w-1/3 bg-primary/50 rounded-full"
-              style={{
-                animation: 'pulse 1.5s infinite ease-in-out',
-                opacity: 0.7,
-              }}
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-2 mt-3">
-            {[1, 2, 3].map((n) => (
-              <div key={`source-${n}`} className="flex flex-col space-y-1">
-                <div className="h-3 bg-muted/60 rounded w-3/4 animate-pulse" />
-                <div className="h-2 bg-muted/40 rounded w-full animate-pulse" />
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Skeletons avec animations */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {skeletonIds.map((id, index) => (
