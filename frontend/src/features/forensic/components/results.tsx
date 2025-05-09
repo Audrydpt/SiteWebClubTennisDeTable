@@ -6,16 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-import Display from '@/features/forensic/components/ui/display.tsx';
-import MultiProgress from '@/features/forensic/components/ui/multi-progress';
-import forensicResultsHeap from '@/features/forensic/lib/data-structure/heap';
-import { calculateTimeRemaining } from '@/features/forensic/lib/estimation/estimation';
 import useJobs from '../hooks/use-jobs';
 import useSearch from '../hooks/use-search.tsx';
+import forensicResultsHeap from '../lib/data-structure/heap';
+import { calculateTimeRemaining } from '../lib/estimation/estimation';
 import { ForensicResult, SourceProgress } from '../lib/types';
 import { SortType } from './ui/buttons';
+import Display from './ui/display.tsx';
 import ForensicHeader from './ui/header';
-// import replayVideo from '@/features/forensic/lib/test/replay.webm';
+import MultiProgress from './ui/multi-progress';
 
 interface ResultsProps {
   results: ForensicResult[];
@@ -23,10 +22,7 @@ interface ResultsProps {
   progress: number | null;
   sourceProgress: SourceProgress[];
   onTabChange?: (tabIndex: string) => void;
-  activeTabIndex?: string;
   isTabLoading?: boolean;
-  onDeleteTab?: (tabIndex: string) => void;
-  onDeleteAllTabs?: () => void;
   currentPage: number;
   onPageChange: (page: number) => void;
   paginationInfo: {
@@ -37,24 +33,13 @@ interface ResultsProps {
   };
 }
 
-/* function VideoPlayer() {
-  return (
-    <video src={replayVideo} controls autoPlay className="w-full">
-      Votre navigateur ne supporte pas la balise vidéo.
-    </video>
-  );
-} */
-
 export default function Results({
   results: propsResults,
   isSearching,
   progress,
   sourceProgress,
   onTabChange,
-  activeTabIndex,
   isTabLoading,
-  onDeleteTab,
-  onDeleteAllTabs,
   currentPage,
   onPageChange,
   paginationInfo,
@@ -65,9 +50,9 @@ export default function Results({
   const { /* resumeJob, */ displayResults, setDisplayResults, testResumeJob } =
     useSearch();
   const {
-    tabJobs,
+    tasks: tabJobs,
     handleTabChange: defaultHandleTabChange,
-    activeJobId,
+    activeTabIndex,
   } = useJobs();
   const isLoadingRef = useRef(false);
   const requestTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -77,8 +62,8 @@ export default function Results({
 
   // Fonction modifiée pour éviter les logs excessifs
   const resultsToDisplay = useMemo(() => {
-    const activeTab = tabJobs.find((tab) => tab.jobId === activeTabIndex);
-    if (activeTab?.isNew === true || (activeTabIndex && !activeTab)) {
+    const activeTab = tabJobs.find((tab) => tab.id === activeTabIndex);
+    if (activeTabIndex && !activeTab) {
       return [];
     }
     return propsResults && propsResults.length > 0
@@ -86,28 +71,10 @@ export default function Results({
       : displayResults;
   }, [displayResults, propsResults, activeTabIndex, tabJobs]);
 
-  const forceCleanupResults = () => {
-    forensicResultsHeap.clear();
-    setDisplayResults([]);
-  };
-
-  const hasActiveJob = useMemo(() => {
-    const activeTab = tabJobs.find((tab) => tab.jobId === activeTabIndex);
-    if (activeTab?.isNew === true) {
-      return false;
-    }
-
-    return !!activeJobId || (resultsToDisplay && resultsToDisplay.length > 0);
-  }, [activeJobId, resultsToDisplay, tabJobs, activeTabIndex]);
-
-  // Effet pour nettoyer les résultats lors du changement d'onglet
-  useEffect(() => {
-    const activeTab = tabJobs.find((tab) => tab.jobId === activeTabIndex);
-    const isNewTab = activeTab?.isNew === true;
-    if (isNewTab) {
-      forceCleanupResults();
-    }
-  }, [activeTabIndex, tabJobs]);
+  const hasActiveJob = useMemo(
+    () => !!activeTabIndex || (resultsToDisplay && resultsToDisplay.length > 0),
+    [activeTabIndex, resultsToDisplay, tabJobs, activeTabIndex]
+  );
 
   // Effet pour désactiver l'état de chargement initial
   useEffect(() => {
@@ -147,8 +114,8 @@ export default function Results({
         );
         return;
       }
-      const activeTab = tabJobs.find((tab) => tab.jobId === activeTabIndex);
-      const jobId = activeTab?.jobId;
+      const activeTab = tabJobs.find((tab) => tab.id === activeTabIndex);
+      const jobId = activeTab?.id;
       if (!jobId) {
         return;
       }
@@ -193,18 +160,6 @@ export default function Results({
   const clearResults = () => {
     forensicResultsHeap.clear();
     setDisplayResults([]);
-  };
-
-  const handleDeleteTab = (tabIndex: string) => {
-    if (onDeleteTab) {
-      onDeleteTab(tabIndex);
-    }
-  };
-
-  const handleDeleteAllTabs = () => {
-    if (onDeleteAllTabs) {
-      onDeleteAllTabs();
-    }
   };
 
   const renderProgressSection = () => {
@@ -268,15 +223,11 @@ export default function Results({
   return (
     <>
       <ForensicHeader
-        tabJobs={tabJobs}
-        activeTabIndex={activeTabIndex}
         onTabChange={handleTabChange}
         sortType={sortType}
         setSortType={setSortType}
         sortOrder={sortOrder}
         toggleSortOrder={toggleSortOrder}
-        onDeleteTab={handleDeleteTab}
-        onDeleteAllTabs={handleDeleteAllTabs}
         clearResults={clearResults}
         loading={isInitialLoading}
         setIsLoading={setIsInitialLoading}
@@ -289,12 +240,9 @@ export default function Results({
           {/* Results display */}
 
           {(() => {
-            const activeTab = tabJobs.find(
-              (tab) => tab.jobId === activeTabIndex
-            );
-            const isNew = activeTab?.isNew === true;
+            const activeTab = tabJobs.find((tab) => tab.id === activeTabIndex);
 
-            if (isNew) {
+            if (!activeTabIndex) {
               return (
                 <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
                   Sélectionnez une caméra et lancez une recherche

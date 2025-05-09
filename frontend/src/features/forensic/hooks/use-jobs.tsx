@@ -1,4 +1,5 @@
 /* eslint-disable no-console,react-hooks/exhaustive-deps,@typescript-eslint/no-explicit-any,no-plusplus */
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -26,7 +27,7 @@ export function isForensicTaskCompleted(status: ForensicTaskStatus): boolean {
 }
 
 export interface ForensicTask {
-  id?: string;
+  id: string;
   status: ForensicTaskStatus;
   type: string;
   created: string;
@@ -41,25 +42,15 @@ export interface ForensicTaskResponse {
   };
 }
 
-export interface TabJob {
-  jobId?: string;
-  status: ForensicTaskStatus;
-  isNew?: boolean;
-}
-
 export default function useJobs() {
   const [tasks, setTasks] = useState<ForensicTask[]>([]);
-  const [tabJobs, setTabJobs] = useState<TabJob[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const { taskId: activeJobId } = useParams();
-
+  const { taskId: activeTabIndex } = useParams();
   const setActiveJobId = (jobId?: string) => {
-    if (jobId === activeJobId) return;
-    console.warn(`JobId mis à jour: ${jobId}`);
-
+    if (jobId === activeTabIndex) return;
     if (jobId) {
       navigate(`/forensic/${jobId}`);
     } else {
@@ -67,130 +58,166 @@ export default function useJobs() {
     }
   };
 
-  const fetchTasks = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${process.env.MAIN_API_URL}/forensics`);
+  // Fetch tasks using Tanstack Query
+  const {
+    data: tasksArray,
+    isLoading: loading,
+    refetch: fetchTasks,
+  } = useQuery({
+    queryKey: ['forensicTasks'],
+    queryFn: async () => {
+      try {
+        const response = await fetch(`${process.env.MAIN_API_URL}/forensics`);
 
-      if (!response.ok) {
-        throw new Error(`API returned status ${response.status}`);
-      }
+        if (!response.ok) {
+          throw new Error(`API returned status ${response.status}`);
+        }
 
-      const data: ForensicTaskResponse = await response.json();
+        const data: ForensicTaskResponse = await response.json();
 
-      if (!data.tasks) {
-        setTasks([]);
+        if (!data.tasks) {
+          return [];
+        }
+        // Transform tasks into array
+        const transformedTasks: ForensicTask[] = Object.entries(data.tasks).map(
+          ([id, task]) => ({
+            id,
+            status: task.status,
+            type: task.type,
+            created: task.created,
+            count: task.count || 0,
+            size: task.size || 0,
+            total_pages: task.total_pages || 0,
+          })
+        );
+        return transformedTasks.sort(
+          (a, b) =>
+            new Date(b.created).getTime() - new Date(a.created).getTime()
+        );
+      } catch (err) {
+        console.error('Erreur lors de la récupération des tâches:', err);
+        setError('Impossible de charger les tâches forensiques');
         return [];
       }
+    },
+    refetchInterval: 10000, // Refetch every 10 seconds
+  });
 
-      // Transformer les tâches en tableau
-      const tasksArray: ForensicTask[] = Object.entries(data.tasks).map(
-        ([id, task]) => ({
-          id,
-          status: task.status,
-          type: task.type,
-          created: task.created,
-          count: task.count || 0,
-          size: task.size || 0,
-          total_pages: task.total_pages || 0,
-        })
-      );
-
-      // Trier par date de création (plus récent en premier)
-      tasksArray.sort(
-        (a, b) => new Date(b.created).getTime() - new Date(a.created).getTime()
-      );
-
+  // Update tasks state when query data changes
+  useEffect(() => {
+    if (tasksArray) {
       setTasks(tasksArray);
+    }
+  }, [tasksArray]);
 
-      // Mettre à jour les onglets en une seule opération fonctionnelle
-      setTabJobs((prevTabJobs) => {
-        // 1. Mettre à jour les tabs existants
-        const updatedExistingTabs = prevTabJobs.map((tab) => {
-          if (!tab.jobId) return tab;
-          const updatedTask = tasksArray.find((t) => t.id === tab.jobId);
-          return updatedTask ? { ...tab, ...updatedTask } : tab;
-        });
+  // Update tabJobs when tasks change
+  useEffect(() => {
+    if (!tasksArray || tasksArray.length === 0) return;
 
-        // 2. Récupérer IDs de jobs déjà représentés
-        const existingJobIds = updatedExistingTabs
-          .filter((tab) => tab.jobId)
-          .map((tab) => tab.jobId as string);
-
-        // 3. Créer de nouveaux tabs pour les jobs backend non encore représentés
-        const freeSlots = Math.max(0, 5 - updatedExistingTabs.length);
-        const newTasks = tasksArray.filter(
-          (task) => !existingJobIds.includes(task.id as string)
-        );
-        const newTaskTabs = newTasks.slice(0, freeSlots).map((task) => ({
-          tabIndex: task.id,
-          jobId: task.id,
-          status: task.status,
-          isNew: false,
-        }));
-
-        // 4. Conserver les onglets 'isNew' que l'utilisateur a créés
-        const existingNewTabs = updatedExistingTabs.filter((tab) => tab.isNew);
-
-        // 5. Fusionner et limiter à 5 onglets
-        return [
-          ...updatedExistingTabs.filter((tab) => tab.jobId),
-          ...newTaskTabs,
-          ...existingNewTabs,
-        ].slice(0, 5);
+    setTasks((prevTabJobs) => {
+      // 1. Update existing tabs
+      const updatedExistingTabs = prevTabJobs.map((tab) => {
+        if (!tab.id) return tab;
+        const updatedTask = tasksArray.find((t) => t.id === tab.id);
+        return updatedTask ? { ...tab, status: updatedTask.status } : tab;
       });
 
-      setError(null);
-      return [];
-    } catch (err) {
-      console.error('Erreur lors de la récupération des tâches:', err);
-      setError('Impossible de charger les tâches forensiques');
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  };
+      // 2. Get IDs of jobs already represented
+      const existingJobIds = updatedExistingTabs
+        .filter((tab) => tab.id)
+        .map((tab) => tab.id as string);
 
-  const addNewTab = (cleanupCallback?: () => void) => {
-    if (cleanupCallback) cleanupCallback();
+      // 3. Create new tabs for backend jobs not yet represented
+      const freeSlots = Math.max(0, 5 - updatedExistingTabs.length);
+      const newTasks = tasksArray.filter(
+        (task) => !existingJobIds.includes(task.id as string)
+      );
+      const newTaskTabs = newTasks.slice(0, freeSlots).map((task) => ({
+        ...task,
+        isNew: false,
+      }));
 
-    // Utiliser un UUID ou un timestamp comme identifiant unique
-    const nextTabIndex = crypto.randomUUID();
+      // 5. Merge and limit to 5 tabs
+      return [
+        ...updatedExistingTabs.filter((tab) => tab.id),
+        ...newTaskTabs,
+      ].slice(0, 5);
+    });
 
-    const newTab: TabJob = {
-      jobId: nextTabIndex,
-      isNew: true,
-      status: ForensicTaskStatus.PENDING,
-    };
+    setError(null);
+  }, [tasksArray]);
 
-    setTabJobs([...tabJobs, newTab]);
-    setActiveJobId(nextTabIndex);
-  };
+  const { mutateAsync: addNewTab } = useMutation({
+    mutationFn: async (tabIndex: string) => tabIndex,
+    onMutate: async (tabIndex: string) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['forensicTasks'] });
+
+      // Snapshot the previous state
+      const previousTasks = [...tasks];
+
+      // Get current tasks from cache
+      const cachedTasks =
+        queryClient.getQueryData<ForensicTask[]>(['forensicTasks']) || [];
+
+      // Create the new tab
+      const newTab: ForensicTask = {
+        id: tabIndex,
+        status: ForensicTaskStatus.PENDING,
+        type: '',
+        created: new Date().toISOString(),
+        count: 0,
+        size: 0,
+        total_pages: 0,
+      };
+
+      // Update the cache
+      queryClient.setQueryData<ForensicTask[]>(
+        ['forensicTasks'],
+        [...cachedTasks, newTab]
+      );
+
+      // Optimistically update the UI
+      setTasks([...tasks, newTab]);
+      setActiveJobId(tabIndex);
+
+      return { previousTasks, cachedTasks };
+    },
+    onError: (_err, _variables, context) => {
+      // If the mutation fails, use the context to roll back
+      if (context?.previousTasks) {
+        setTasks(context.previousTasks);
+      }
+
+      // Restore the cache
+      if (context?.cachedTasks) {
+        queryClient.setQueryData(['forensicTasks'], context.cachedTasks);
+      }
+
+      setError("Impossible d'ajouter un nouvel onglet");
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure we have the correct server state
+      queryClient.invalidateQueries({ queryKey: ['forensicTasks'] });
+    },
+  });
 
   const handleTabChange = (tabIndex: string) => {
     console.log(`⚡ Changement vers l'onglet ${tabIndex}`);
     setActiveJobId(tabIndex);
 
-    const selectedTab = tabJobs.find((tab) => tab.jobId === tabIndex);
-
-    // Vérification explicite de l'état isNew
-    const isNewTab = selectedTab?.isNew === true;
+    const selectedTab = tasks.find((tab) => tab.id === tabIndex);
 
     // Log complet de l'état de l'onglet
     console.log('⚡ Changement onglet - État complet:', {
       activeTabIndex: tabIndex,
-      isNew: isNewTab,
-      hasJobId: Boolean(selectedTab?.jobId),
+      hasJobId: Boolean(selectedTab?.id),
       ongletComplet: selectedTab,
     });
-
-    if (isNewTab) {
-      console.log("Initialisation d'un nouvel onglet");
-    }
   };
 
-  const deleteAllTasks = async () => {
-    try {
+  const { mutateAsync: deleteAllTasks } = useMutation({
+    mutationFn: async () => {
       const response = await fetch(
         `${process.env.MAIN_API_URL}/forensics/tasks/delete-all`,
         {
@@ -202,71 +229,122 @@ export default function useJobs() {
       );
 
       if (!response.ok) {
-        console.error('Erreur lors de la suppression de toutes les tâches');
+        throw new Error('Erreur lors de la suppression de toutes les tâches');
       }
-      // eslint-disable-next-line @typescript-eslint/no-shadow
-    } catch (error) {
-      console.error('Erreur lors de la communication avec le serveur:', error);
-    }
-  };
+    },
+    onMutate: async () => {
+      // Cancel any outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: ['forensicTasks'] });
+
+      // Snapshot the previous value
+      const previousTasks = queryClient.getQueryData<ForensicTask[]>([
+        'forensicTasks',
+      ]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData<ForensicTask[]>(['forensicTasks'], []);
+
+      // Set tasks and tabJobs to empty
+      setTasks([]);
+
+      console.log('Tâches supprimées optimistiquement');
+
+      // Return a context with the previous value
+      return { previousTasks };
+    },
+    onError: (_err, _variables, context) => {
+      // If the mutation fails, use the context we returned above
+      if (context?.previousTasks) {
+        queryClient.setQueryData(['forensicTasks'], context.previousTasks);
+        setTasks(context.previousTasks);
+      }
+      setError('Impossible de supprimer les tâches forensiques');
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure we have the correct server state
+      queryClient.invalidateQueries({ queryKey: ['forensicTasks'] });
+    },
+  });
 
   // Fonction pour supprimer un onglet
-  const deleteTab = async (tabIndex: string) => {
-    // Trouver l'onglet à supprimer
-    const tabToDelete = tabJobs.find((tab) => tab.jobId === tabIndex);
-
-    // Si l'onglet a un jobId associé, supprimer la tâche forensique
-    if (tabToDelete?.jobId) {
-      try {
-        // Appeler l'API backend pour supprimer les données de la tâche
-        const response = await fetch(
-          `${process.env.MAIN_API_URL}/forensics/delete/${tabToDelete.jobId}`,
-          {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        if (!response.ok) {
-          console.error(
-            `Erreur lors de la suppression de la tâche ${tabToDelete.jobId}:`,
-            await response.text()
-          );
+  const { mutateAsync: deleteTab } = useMutation({
+    mutationFn: async (tabIndex: string) => {
+      const response = await fetch(
+        `${process.env.MAIN_API_URL}/forensics/delete/${tabIndex}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         }
-        setTabJobs((prevTabJobs) =>
-          prevTabJobs.filter((tab) => tab.jobId !== tabIndex)
-        );
+      );
 
-        // eslint-disable-next-line @typescript-eslint/no-shadow
-      } catch (error) {
-        console.error(
-          'Erreur lors de la communication avec le serveur:',
-          error
+      if (!response.ok) {
+        throw new Error(
+          `Erreur lors de la suppression de la tâche ${tabIndex}`
         );
       }
-    }
 
-    // Vérifier si l'onglet à supprimer est l'onglet actif
-    const isActiveTab = tabIndex === activeJobId;
+      return tabIndex;
+    },
+    onMutate: async (tabIndex: string) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['forensicTasks'] });
 
-    // Supprimer l'onglet de la liste
-    setTabJobs((prev) => prev.filter((tab) => tab.jobId !== tabIndex));
+      // Get current state
+      const previousTasks = queryClient.getQueryData<ForensicTask[]>([
+        'forensicTasks',
+      ]);
+      const previousTabJobs = [...tasks];
+      const tabToDelete = tasks.find((tab) => tab.id === tabIndex);
 
-    // Si c'était l'onglet actif, sélectionner un autre onglet
-    if (isActiveTab) {
-      const remainingTabs = tabJobs.filter((tab) => tab.jobId !== tabIndex);
-      if (remainingTabs.length > 0) {
-        const newActiveTab = [...remainingTabs].sort(
-          (a, b) => a.jobId?.localeCompare(b.jobId || '') || 0
+      // Optimistically update UI
+      // 1. Remove tab from tabJobs
+      const updatedTabJobs = tasks.filter((tab) => tab.id !== tabIndex);
+      setTasks(updatedTabJobs);
+
+      // 2. If this was the active tab, select another tab
+      const isActiveTab = tabIndex === activeTabIndex;
+      if (isActiveTab && updatedTabJobs.length > 0) {
+        const newActiveTab = [...updatedTabJobs].sort(
+          (a, b) => a.id?.localeCompare(b.id || '') || 0
         )[0];
-        setActiveJobId(newActiveTab.jobId);
-      } else {
+        setActiveJobId(newActiveTab.id);
+      } else if (isActiveTab) {
         setActiveJobId('');
       }
-    }
-  };
+
+      // 3. Also update tasks list if we have a jobId
+      if (tabToDelete?.id && previousTasks) {
+        console.log(previousTasks);
+        const updatedTasks = previousTasks.filter(
+          (task) => task.id !== tabToDelete.id
+        );
+        queryClient.setQueryData(['forensicTasks'], updatedTasks);
+        setTasks(updatedTasks);
+      }
+
+      return { previousTasks, previousTabJobs, tabIndex, isActiveTab };
+    },
+    onError: (_err, _variables, context) => {
+      // Restore previous state
+      if (context?.previousTasks) {
+        queryClient.setQueryData(['forensicTasks'], context.previousTasks);
+        setTasks(context.previousTasks);
+      }
+      if (context?.previousTabJobs) {
+        setTasks(context.previousTabJobs);
+      }
+      if (context?.isActiveTab && context.tabIndex) {
+        setActiveJobId(context.tabIndex);
+      }
+      setError(`Impossible de supprimer la tâche ${context?.tabIndex}`);
+    },
+    onSettled: () => {
+      // Always refetch to ensure we have the correct server state
+      queryClient.invalidateQueries({ queryKey: ['forensicTasks'] });
+    },
+  });
 
   // Récupération d'une tâche par ID
   const getTaskById = (id?: string): ForensicTask | undefined => {
@@ -275,34 +353,21 @@ export default function useJobs() {
   };
 
   // Récupération de la tâche associée à l'onglet actif
-  const getActiveTask = (): ForensicTask | undefined => {
-    const activeTab = tabJobs.find((tab) => tab.jobId === activeJobId);
-    return activeTab?.jobId ? getTaskById(activeTab.jobId) : undefined;
-  };
-
-  // Rafraîchissement périodique des tâches
-  useEffect(() => {
-    // Chargement initial
-    fetchTasks();
-
-    // Rafraîchissement toutes les 3 secondes
-    const interval = setInterval(fetchTasks, 10000);
-
-    return () => clearInterval(interval);
-  }, []);
+  const getActiveTask = (): ForensicTask | undefined =>
+    tasks.find((tab) => tab.id === activeTabIndex);
 
   const resumeActiveJob = async (
     resumeCallback: (id: string) => Promise<any>
   ) => {
-    if (!activeJobId) {
+    if (!activeTabIndex) {
       console.log('Aucun job associé à cet onglet');
       return null;
     }
 
-    console.log(`Reprise du job ${activeJobId}`);
+    console.log(`Reprise du job ${activeTabIndex}`);
 
     // Appeler resumeJob avec le jobId de l'onglet actif
-    return resumeCallback(activeJobId);
+    return resumeCallback(activeTabIndex);
   };
 
   const getActivePaginationInfo = () => {
@@ -318,9 +383,7 @@ export default function useJobs() {
 
   return {
     tasks,
-    tabJobs,
-    activeTabIndex: activeJobId,
-    activeJobId,
+    activeTabIndex,
     loading,
     error,
     fetchTasks,
@@ -329,7 +392,6 @@ export default function useJobs() {
     getActivePaginationInfo,
     handleTabChange,
     resumeActiveJob,
-    setTabJobs,
     addNewTab,
     deleteTab,
     deleteAllTasks,

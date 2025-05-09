@@ -6,33 +6,28 @@ import DeleteConfirmation from '@/components/confirm-delete';
 import { Button } from '@/components/ui/button.tsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import {
+import useJobs, {
   ForensicTaskStatus,
   isForensicTaskCompleted,
-  TabJob,
 } from '../../hooks/use-jobs';
 
 interface JobTabsProps {
-  tabJobs: TabJob[];
-  activeTabIndex: string;
   onTabChange: (tabIndex: string) => void;
-  onDeleteTab: (tabIndex: string) => void;
   hideTitle?: boolean;
   isLoading?: boolean;
   setIsLoading?: (isLoading: boolean) => void;
 }
 
 export default function JobTabs({
-  tabJobs = [],
-  activeTabIndex = '',
   onTabChange,
-  onDeleteTab,
   hideTitle = false,
   isLoading = false,
   setIsLoading,
 }: JobTabsProps) {
   const MAX_TABS = 5;
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { tasks: tabJobs, activeTabIndex, deleteTab } = useJobs();
+
   useEffect(() => {
     if (isLoading && tabJobs.length === 0) {
       if (loadingTimeoutRef.current) {
@@ -58,9 +53,9 @@ export default function JobTabs({
 
   let displayTabs = [...tabJobs];
 
-  if (displayTabs.length === 0) {
-    displayTabs = [{ jobId: '', status: ForensicTaskStatus.PENDING }];
-  }
+  // if (displayTabs.length === 0) {
+  //  displayTabs = [{ jobId: '', status: ForensicTaskStatus.PENDING }];
+  // }
 
   displayTabs = displayTabs.slice(0, MAX_TABS);
 
@@ -90,7 +85,7 @@ export default function JobTabs({
       >
         <TabsList className="grid w-full grid-cols-5">
           {displayTabs.map((tab, index) => {
-            const hasJob = !!tab.jobId;
+            const hasJob = !!tab.id;
             let tabDisplay = 'Nouvel onglet';
             let statusIndicator = null;
 
@@ -113,7 +108,7 @@ export default function JobTabs({
               }
             }
             const activeTabClass =
-              activeTabIndex === tab.jobId ? 'ring-1 ring-primary' : '';
+              activeTabIndex === tab.id ? 'ring-1 ring-primary' : '';
 
             const runningClass = !isForensicTaskCompleted(tab.status)
               ? 'bg-muted/50 animate-pulse'
@@ -121,8 +116,8 @@ export default function JobTabs({
 
             return (
               <TabsTrigger
-                key={tab.jobId}
-                value={tab.jobId || ''}
+                key={tab.id}
+                value={tab.id || ''}
                 className={`${hasJob ? 'font-medium' : ''} ${activeTabClass} ${runningClass} transition-all relative group`}
                 disabled={isLoading}
               >
@@ -132,7 +127,7 @@ export default function JobTabs({
                   {hasJob && (
                     <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       <DeleteConfirmation
-                        onDelete={() => onDeleteTab(tab.jobId || '')}
+                        onDelete={() => deleteTab(tab.id || '')}
                         title="Supprimer cette recherche"
                         description="Êtes-vous sûr de vouloir supprimer cet onglet de recherche ?"
                         confirmText="Supprimer"
@@ -154,7 +149,7 @@ export default function JobTabs({
           })}
         </TabsList>
         {displayTabs.map((tab) => (
-          <TabsContent key={tab.jobId} value={tab.jobId || ''} />
+          <TabsContent key={tab.id} value={tab.id || ''} />
         ))}
       </Tabs>
     </div>

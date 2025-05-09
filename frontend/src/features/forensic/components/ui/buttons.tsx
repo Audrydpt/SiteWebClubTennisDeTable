@@ -1,6 +1,9 @@
 import { SortAsc, SortDesc, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
 import DeleteConfirmation from '@/components/confirm-delete';
+import { Button } from '@/components/ui/button';
+
+import useJobs from '../../hooks/use-jobs';
 
 export type SortType = 'score' | 'date';
 
@@ -10,7 +13,6 @@ interface SortButtonsProps {
   sortOrder: 'asc' | 'desc';
   toggleSortOrder: () => void;
   clearResults: () => void;
-  onDeleteAllTabs: () => void;
 }
 
 export function SortButtons({
@@ -19,11 +21,13 @@ export function SortButtons({
   sortOrder,
   toggleSortOrder,
   clearResults,
-  onDeleteAllTabs,
 }: SortButtonsProps) {
   // Fonction pour gérer le reset complet
+
+  const { deleteAllTasks } = useJobs();
+
   const handleReset = () => {
-    onDeleteAllTabs();
+    deleteAllTasks();
     clearResults();
   };
 

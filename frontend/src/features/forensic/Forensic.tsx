@@ -39,14 +39,11 @@ export default function Forensic() {
   } = useSearch();
 
   const {
-    tabJobs,
+    tasks: tabJobs,
     handleTabChange: jobsHandleTabChange,
     activeTabIndex,
-    activeJobId,
-    addNewTab,
-    deleteTab,
-    deleteAllTasks,
     getActivePaginationInfo,
+    addNewTab,
   } = useJobs();
 
   const handlePaginationChange = useCallback(
@@ -54,7 +51,7 @@ export default function Forensic() {
       console.log(`Changement vers page ${page}`);
       setCurrentPage(page);
 
-      if (!activeJobId) {
+      if (!activeTabIndex) {
         console.error('Impossible de charger la page : aucun job actif');
         return;
       }
@@ -62,57 +59,15 @@ export default function Forensic() {
       try {
         setIsLoading(true);
         // Récupérer les données pour la page demandée
-        await testResumeJob(activeJobId, page, true);
+        await testResumeJob(activeTabIndex, page, true);
       } catch (error) {
         console.error(`Erreur lors du chargement de la page ${page}:`, error);
       } finally {
         setIsLoading(false);
       }
     },
-    [testResumeJob, activeJobId]
+    [testResumeJob, activeTabIndex]
   );
-
-  const handleDeleteAllTabs = () => {
-    deleteAllTasks();
-    forensicResultsHeap.clear();
-    setDisplayResults([]);
-    setIsTabLoading(false);
-  };
-
-  const handleStopSearch = async () => {
-    if (activeJobId) {
-      stopSearch(activeJobId);
-    }
-  };
-
-  const handleDeleteTab = (tabIndex: string) => {
-    if (activeTabIndex === tabIndex) {
-      const newActiveTabIndex = tabJobs[0]?.jobId || '';
-      jobsHandleTabChange(newActiveTabIndex);
-    }
-    deleteTab(tabIndex);
-    resetSearch();
-    forensicResultsHeap.clear();
-    setDisplayResults([]);
-  };
-
-  const handleAddNewTab = () => {
-    forensicResultsHeap.clear();
-    setDisplayResults([]);
-    setCurrentPage(1);
-
-    setIsTabLoading(false);
-
-    addNewTab(() => {
-      resetSearch();
-      forensicResultsHeap.clear();
-      setDisplayResults([]);
-
-      setTimeout(() => {
-        setDisplayResults([]);
-      }, 100);
-    });
-  };
 
   const handleToggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
@@ -122,8 +77,7 @@ export default function Forensic() {
     setIsTabLoading(true);
     setCurrentPage(1);
 
-    const selectedTab = tabJobs.find((tab) => tab.jobId === tabIndex);
-    const isNewTab = selectedTab?.isNew === true;
+    const selectedTab = tabJobs.find((tab) => tab.id === tabIndex);
 
     resetSearch(); // Cette fonction doit maintenant réinitialiser également la pagination
     forensicResultsHeap.clear();
@@ -132,20 +86,15 @@ export default function Forensic() {
 
     jobsHandleTabChange(tabIndex);
 
-    if (isNewTab) {
-      setIsTabLoading(false);
-      return;
-    }
-
-    if (selectedTab?.jobId) {
+    if (selectedTab?.id) {
       try {
         console.log(
-          `Chargement des résultats pour l'onglet ${tabIndex} avec jobId ${selectedTab.jobId}`
+          `Chargement des résultats pour l'onglet ${tabIndex} avec jobId ${selectedTab.id}`
         );
 
         // Utiliser testResumeJob pour charger à la fois les résultats et les infos de pagination
         const response = await testResumeJob(
-          selectedTab.jobId,
+          selectedTab.id,
           1, // Toujours commencer à la page 1 lors d'un changement d'onglet
           false,
           true // skipLoadingState pour éviter des états de chargement en double
@@ -180,6 +129,8 @@ export default function Forensic() {
     try {
       const searchFormData = createSearchFormData(data);
       const jobId = await startSearch(searchFormData);
+
+      addNewTab(jobId);
       handleTabChange(jobId);
     } catch (error) {
       console.error('Failed to start search:', error);
@@ -188,7 +139,7 @@ export default function Forensic() {
 
   const currentWidth = isCollapsed ? collapsedWidth : expandedWidth;
 
-  const activeTabsCount = tabJobs.filter((tab) => tab.jobId).length;
+  const activeTabsCount = tabJobs.filter((tab) => tab.id).length;
 
   useEffect(() => {
     // Ne pas effectuer la mise à jour durant le chargement d'un onglet
@@ -198,7 +149,7 @@ export default function Forensic() {
 
     // Vérifier si une mise à jour est réellement nécessaire
     if (
-      activeJobId &&
+      activeTabIndex &&
       dynamicPaginationInfo?.totalPages > 0 &&
       (paginationInfo.totalPages !== dynamicPaginationInfo.totalPages ||
         paginationInfo.total !== dynamicPaginationInfo.total ||
@@ -229,7 +180,7 @@ export default function Forensic() {
   }, [
     activeTabIndex,
     getActivePaginationInfo,
-    activeJobId,
+    activeTabIndex,
     isTabLoading,
     isSearching,
   ]);
@@ -295,10 +246,7 @@ export default function Forensic() {
             progress={progress}
             sourceProgress={sourceProgress}
             onTabChange={handleTabChange}
-            activeTabIndex={activeTabIndex}
             isTabLoading={isTabLoading}
-            onDeleteTab={handleDeleteTab}
-            onDeleteAllTabs={handleDeleteAllTabs}
             currentPage={currentPage}
             onPageChange={handlePaginationChange}
             paginationInfo={paginationInfo}
