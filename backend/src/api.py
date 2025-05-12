@@ -580,8 +580,14 @@ class FastAPIServer:
 
                 total = TaskManager.get_job_count(guid)
 
+                # Inclure le frame_uuid avec les métadonnées pour chaque résultat non final
+                formatted_results = [
+                    {**result.metadata, "frame_uuid": result.frame_uuid}
+                    for result in results if not result.final
+                ]
+
                 return {
-                    "results": [result.metadata for result in results if not result.final],
+                    "results": formatted_results,
                     "pagination": {
                         "currentPage": page,
                         "totalPages": total_pages,
@@ -609,8 +615,14 @@ class FastAPIServer:
 
                 total = TaskManager.get_job_count(guid)
 
+                # Inclure le frame_uuid avec les métadonnées pour chaque résultat non final
+                formatted_results = [
+                    {**result.metadata, "frame_uuid": result.frame_uuid}
+                    for result in results if not result.final
+                ]
+
                 return {
-                    "results": [result.metadata for result in results if not result.final],
+                    "results": formatted_results,
                     "pagination": {
                         "currentPage": page,
                         "totalPages": total_pages,

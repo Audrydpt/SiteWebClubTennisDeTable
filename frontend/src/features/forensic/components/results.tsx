@@ -127,7 +127,7 @@ export default function Results({
       try {
         loadedJobsRef.current.add(jobId);
         // await resumeJob(jobId, false);
-        await testResumeJob(jobId, 1, false);
+        await testResumeJob(jobId, 1, false, false, 'score', 'desc');
       } catch (error) {
         console.error('Erreur lors du chargement des résultats:', error);
       } finally {

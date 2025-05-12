@@ -6,11 +6,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import ForensicForm from './components/form';
 import Results from './components/results';
 import useJobs from './hooks/use-jobs';
+// eslint-disable-next-line import/no-named-as-default
 import useSearch from './hooks/use-search';
 import forensicResultsHeap from './lib/data-structure/heap.tsx';
 import { createSearchFormData } from './lib/format-query';
 import ForensicFormProvider from './lib/provider/forensic-form-provider';
 import { ForensicFormValues } from './lib/types';
+import { SortType } from './components/ui/buttons';
 
 export default function Forensic() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -59,7 +61,7 @@ export default function Forensic() {
       try {
         setIsLoading(true);
         // Récupérer les données pour la page demandée
-        await testResumeJob(activeTabIndex, page, true);
+        await testResumeJob(activeTabIndex, page, true, false, 'score', 'desc');
       } catch (error) {
         console.error(`Erreur lors du chargement de la page ${page}:`, error);
       } finally {
@@ -97,7 +99,9 @@ export default function Forensic() {
           selectedTab.id,
           1, // Toujours commencer à la page 1 lors d'un changement d'onglet
           false,
-          true // skipLoadingState pour éviter des états de chargement en double
+          true, // skipLoadingState pour éviter des états de chargement en double
+          'score',
+          'desc'
         );
 
         // Vérification que l'objet existe avant d'accéder à ses propriétés
