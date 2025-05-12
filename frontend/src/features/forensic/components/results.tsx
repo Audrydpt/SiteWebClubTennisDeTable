@@ -165,7 +165,9 @@ export default function Results({
   };
 
   const renderProgressSection = () => {
-    if (!isSearching) return null;
+    if (!activeTabIndex && !hasActiveJob && !isSearching) {
+      return null;
+    }
 
     if (!hasActiveJob || progress === null || isTabLoading) {
       return (

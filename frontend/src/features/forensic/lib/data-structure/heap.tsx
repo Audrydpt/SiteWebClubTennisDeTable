@@ -120,6 +120,20 @@ class ForensicResultsHeap {
   getCount(): number {
     return this.minHeap.size();
   }
+
+  getAllResults(): ForensicResult[] {
+    const results: ForensicResult[] = [];
+    const tempHeap = this.minHeap.clone();
+
+    while (!tempHeap.isEmpty()) {
+      const item = tempHeap.extractRoot();
+      if (item) {
+        results.push(item);
+      }
+    }
+
+    return results;
+  }
 }
 
 const forensicResultsHeap = new ForensicResultsHeap();
