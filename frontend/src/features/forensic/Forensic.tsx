@@ -22,6 +22,12 @@ export default function Forensic() {
   const [isTabLoading, setIsTabLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [sortType, setSortType] = useState<SortType>('score');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  const toggleSortOrder = useCallback(() => {
+    setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+  }, []);
 
   const {
     startSearch,
@@ -60,15 +66,22 @@ export default function Forensic() {
 
       try {
         setIsLoading(true);
-        // Récupérer les données pour la page demandée
-        await testResumeJob(activeTabIndex, page, true, false, 'score', 'desc');
+        // Utiliser les variables de tri actuelles
+        await testResumeJob(
+          activeTabIndex,
+          page,
+          true,
+          false,
+          sortType,
+          'desc'
+        );
       } catch (error) {
         console.error(`Erreur lors du chargement de la page ${page}:`, error);
       } finally {
         setIsLoading(false);
       }
     },
-    [testResumeJob, activeTabIndex]
+    [testResumeJob, activeTabIndex, sortType, sortOrder]
   );
 
   const handleToggleCollapse = () => {
@@ -81,7 +94,7 @@ export default function Forensic() {
 
     const selectedTab = tabJobs.find((tab) => tab.id === tabIndex);
 
-    resetSearch(); // Cette fonction doit maintenant réinitialiser également la pagination
+    resetSearch();
     forensicResultsHeap.clear();
     setDisplayResults([]);
     setResults([]);
@@ -94,17 +107,16 @@ export default function Forensic() {
           `Chargement des résultats pour l'onglet ${tabIndex} avec jobId ${selectedTab.id}`
         );
 
-        // Utiliser testResumeJob pour charger à la fois les résultats et les infos de pagination
+        // Utiliser les variables de tri actuelles
         const response = await testResumeJob(
           selectedTab.id,
-          1, // Toujours commencer à la page 1 lors d'un changement d'onglet
+          1,
           false,
-          true, // skipLoadingState pour éviter des états de chargement en double
-          'score',
+          true,
+          sortType,
           'desc'
         );
 
-        // Vérification que l'objet existe avant d'accéder à ses propriétés
         if (response) {
           const { results: jobResults, pagination } = response;
           console.log(
@@ -144,6 +156,28 @@ export default function Forensic() {
   const currentWidth = isCollapsed ? collapsedWidth : expandedWidth;
 
   const activeTabsCount = tabJobs.filter((tab) => tab.id).length;
+
+  useEffect(() => {
+    // Ne recharger que si un onglet est actif et qu'on n'est pas déjà en train de charger
+    if (activeTabIndex && !isLoading && !isTabLoading) {
+      console.log(
+        `🔄 Rechargement suite au changement de tri: ${sortType} (${sortOrder})`
+      );
+
+      // Réinitialiser à la première page
+      setCurrentPage(1);
+
+      // Recharger les données avec le nouveau tri
+      testResumeJob(
+        activeTabIndex,
+        1, // Toujours revenir à la première page
+        true, // skipHistory pour ne pas effacer le heap
+        false, // Ne pas ignorer l'état de chargement
+        sortType,
+        'desc'
+      );
+    }
+  }, [sortType, sortOrder]);
 
   useEffect(() => {
     // Ne pas effectuer la mise à jour durant le chargement d'un onglet
@@ -254,6 +288,10 @@ export default function Forensic() {
             currentPage={currentPage}
             onPageChange={handlePaginationChange}
             paginationInfo={paginationInfo}
+            sortType={sortType}
+            setSortType={setSortType}
+            sortOrder={sortOrder}
+            toggleSortOrder={toggleSortOrder}
           />
         </CardContent>
       </Card>

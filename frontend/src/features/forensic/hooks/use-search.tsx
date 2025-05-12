@@ -1,4 +1,4 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-shadow,consistent-return,no-promise-executor-return,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps,@typescript-eslint/naming-convention */
+/* eslint-disable no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-shadow,consistent-return,no-promise-executor-return,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps,@typescript-eslint/naming-convention,@stylistic/indent */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import useLatest from '@/hooks/use-latest';
@@ -571,8 +571,8 @@ export default function useSearch() {
     page: number = 1,
     skipHistory: boolean = false,
     skipLoadingState: boolean = false,
-    sortType: SortType = 'score', // Nouveau paramètre avec valeur par défaut
-    sortOrder: 'asc' | 'desc' = 'desc' // Nouveau paramètre avec valeur par défaut
+    sortType: SortType = 'score',
+    sortOrder: 'asc' | 'desc' = 'desc'
   ) => {
     try {
       console.log('📌 testResumeJob démarré avec params:', {
@@ -665,9 +665,9 @@ export default function useSearch() {
       setPaginationInfo(paginationData);
       console.log('Pagination mise à jour:', paginationData);
 
-      // Traitement des résultats de détection
+      // Traitement des résultats de détection - ajustement pour correspondre à la structure API
       const detectionFiltered = results.filter(
-        (r: any) => r.metadata?.type === 'detection'
+        (r: any) => r.type === 'detection'
       );
       console.log(
         `🔍 Filtrage: ${detectionFiltered.length} détections trouvées sur ${results.length} résultats`
@@ -700,11 +700,11 @@ export default function useSearch() {
               id: frameId,
               timestamp: result.timestamp,
               score: result.score || 0,
-              type: result.metadata?.type || 'detection',
-              cameraId: result.camera_id,
+              type: result.type || 'detection',
+              cameraId: result.camera_id || result.camera,
               camera: result.camera,
               imageData: imageUrl,
-              metadata: result.metadata,
+              metadata: result.attributes || {},
             };
           } catch (error) {
             console.error(`Erreur traitement image ${frameId}:`, error);
@@ -733,9 +733,8 @@ export default function useSearch() {
         setDisplayResults(bestResults);
       } else {
         // Autres pages: utiliser directement les résultats
-        const limitedResults = validDetectionResults;
-        setResults(limitedResults);
-        setDisplayResults(limitedResults);
+        setResults(validDetectionResults);
+        setDisplayResults(validDetectionResults);
       }
 
       return {
