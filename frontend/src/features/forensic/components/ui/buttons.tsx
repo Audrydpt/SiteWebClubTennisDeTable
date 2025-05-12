@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars,react/no-unused-prop-types */
 import { SortAsc, SortDesc, Trash2 } from 'lucide-react';
 
 import DeleteConfirmation from '@/components/confirm-delete';
@@ -18,8 +19,8 @@ interface SortButtonsProps {
 export function SortButtons({
   sortType,
   setSortType,
-  sortOrder,
-  toggleSortOrder,
+  /* sortOrder,
+  toggleSortOrder, */
   clearResults,
 }: SortButtonsProps) {
   // Fonction pour gérer le reset complet
@@ -51,7 +52,7 @@ export function SortButtons({
         </Button>
       </div>
 
-      {/* Bouton pour basculer l'ordre */}
+      {/* Bouton pour basculer l'ordre 
       <Button
         variant="outline"
         size="icon"
@@ -65,6 +66,7 @@ export function SortButtons({
           <SortAsc className="h-4 w-4" />
         )}
       </Button>
+      */}
 
       {/* Bouton pour vider les résultats avec confirmation */}
       <DeleteConfirmation

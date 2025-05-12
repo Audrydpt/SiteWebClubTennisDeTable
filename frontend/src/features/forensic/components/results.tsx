@@ -31,6 +31,10 @@ interface ResultsProps {
     totalPages: number;
     total: number;
   };
+  sortType: SortType;
+  setSortType: (type: SortType) => void;
+  sortOrder: 'asc' | 'desc';
+  toggleSortOrder: () => void;
 }
 
 export default function Results({
@@ -43,9 +47,11 @@ export default function Results({
   currentPage,
   onPageChange,
   paginationInfo,
+  sortType,
+  setSortType,
+  sortOrder,
+  toggleSortOrder,
 }: ResultsProps) {
-  const [sortType, setSortType] = useState<SortType>('score');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSourceDetails, setShowSourceDetails] = useState(false);
   const { /* resumeJob, */ displayResults, setDisplayResults, testResumeJob } =
     useSearch();
@@ -127,7 +133,7 @@ export default function Results({
       try {
         loadedJobsRef.current.add(jobId);
         // await resumeJob(jobId, false);
-        await testResumeJob(jobId, 1, false, false, 'score', 'desc');
+        await testResumeJob(jobId, 1, false, false, sortType, 'desc');
       } catch (error) {
         console.error('Erreur lors du chargement des résultats:', error);
       } finally {
@@ -147,10 +153,6 @@ export default function Results({
       }
     };
   }, [activeTabIndex, tabJobs, /* resumeJob, */ testResumeJob]);
-
-  const toggleSortOrder = () => {
-    setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
-  };
 
   const timeEstimates = useMemo(
     () => calculateTimeRemaining(sourceProgress),
