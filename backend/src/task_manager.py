@@ -1220,9 +1220,10 @@ class VehicleReplayJob:
 
                     previous_boxes = []
                     frame_count = 0
-                    
                     if self.cancel_event.is_set():
                         return
+                    
+                    next_progress_to_send = self.time_from
                     
                     async for img, time in client.start_replay(
                         source_guid, 
@@ -1234,8 +1235,10 @@ class VehicleReplayJob:
                         
                         progress = self._calculate_progress(time, self.time_from, self.time_to)
                         frame_count += 1
-                        
-                        yield {"type": "progress", "progress": progress, "guid": source_guid, "timestamp": time.isoformat()}, None
+
+                        if next_progress_to_send > time:
+                            yield {"type": "progress", "progress": progress, "guid": source_guid, "timestamp": time.isoformat()}, None
+                            next_progress_to_send = time + time.timedelta(seconds=5)
                         
                         async for metadata, frame_bytes, current_boxes in self.__process_image(forensic, img, time, previous_boxes, progress,source_guid):
                             previous_boxes = current_boxes
