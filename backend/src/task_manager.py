@@ -1238,7 +1238,7 @@ class VehicleReplayJob:
 
                         if next_progress_to_send > time:
                             yield {"type": "progress", "progress": progress, "guid": source_guid, "timestamp": time.isoformat()}, None
-                            next_progress_to_send = time + time.timedelta(seconds=5)
+                            next_progress_to_send = time + datetime.timedelta(seconds=5)
                         
                         async for metadata, frame_bytes, current_boxes in self.__process_image(forensic, img, time, previous_boxes, progress,source_guid):
                             previous_boxes = current_boxes
