@@ -158,24 +158,22 @@ export default function Forensic() {
   const activeTabsCount = tabJobs.filter((tab) => tab.id).length;
 
   useEffect(() => {
-    // Ne recharger que si un onglet est actif et qu'on n'est pas déjà en train de charger
+    // Ne recharger que si un onglet est actif et qu'on n'est pas en train de charger
     if (activeTabIndex && !isLoading && !isTabLoading) {
       console.log(
-        `🔄 Rechargement suite au changement de tri: ${sortType} (${sortOrder})`
+        `🔄 Rechargement complet suite au changement de tri: ${sortType} (${sortOrder})`
       );
 
       // Réinitialiser à la première page
       setCurrentPage(1);
 
-      // Recharger les données avec le nouveau tri
-      testResumeJob(
-        activeTabIndex,
-        1, // Toujours revenir à la première page
-        true, // skipHistory pour ne pas effacer le heap
-        false, // Ne pas ignorer l'état de chargement
-        sortType,
-        'desc'
-      );
+      // Réinitialiser complètement le heap et les résultats affichés
+      forensicResultsHeap.clear();
+      setDisplayResults([]);
+      setResults([]);
+
+      // Forcer un rechargement complet avec les nouveaux paramètres de tri
+      testResumeJob(activeTabIndex, 1, false, false, sortType, sortOrder);
     }
   }, [sortType, sortOrder]);
 
@@ -196,7 +194,7 @@ export default function Forensic() {
       // Mettre à jour uniquement si les valeurs ont réellement changé
       const updatedPaginationInfo = {
         ...dynamicPaginationInfo,
-        currentPage, // Garder la page courante
+        currentPage,
       };
 
       setPaginationInfo(updatedPaginationInfo);
