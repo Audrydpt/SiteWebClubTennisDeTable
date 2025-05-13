@@ -7,33 +7,43 @@ import { roundDateTime } from '../lib/utils';
 export default function useTrendAPI(
   dashboardKey: string,
   widgetId: string,
-  widget: StoredWidget
+  widget: StoredWidget,
+  rounded: boolean = true
 ) {
-  return useQuery({
-    queryKey: ['trend', dashboardKey, widgetId, widget],
+  let timeFrom;
+  let timeTo;
+
+  if (widget.aggregation && widget.duration) {
+    const now = rounded
+      ? roundDateTime(DateTime.now(), widget.aggregation)
+      : DateTime.now();
+
+    timeFrom = now.minus(AggregationTypeToObject[widget.duration]);
+    timeTo = now;
+  } else {
+    throw new Error(
+      'Either aggregation and duration or range must be provided'
+    );
+  }
+
+  let params = '?';
+  params += `&time_from=${timeFrom.toUTC().toISO({ includeOffset: true })}`;
+  params += `&time_to=${timeTo.toUTC().toISO({ includeOffset: true })}`;
+  if (widget.groupBy) params += `&group_by=${widget.groupBy}`;
+
+  const baseUrl = `${process.env.MAIN_API_URL}/dashboard/tabs/${dashboardKey}/widgets/${widgetId}/trends`;
+  const globalAvgQueryKey = [
+    'trend',
+    dashboardKey,
+    widgetId,
+    widget,
+    baseUrl,
+    params,
+  ];
+
+  const trendAvg = useQuery({
+    queryKey: globalAvgQueryKey,
     queryFn: async () => {
-      const baseUrl = `${process.env.MAIN_API_URL}/dashboard/tabs/${dashboardKey}/widgets/${widgetId}/trends`;
-      let timeFrom;
-      let timeTo;
-      const rounded = true; // Définir la variable manquante
-
-      if (widget.aggregation && widget.duration) {
-        const now = rounded
-          ? roundDateTime(DateTime.now(), widget.aggregation)
-          : DateTime.now();
-
-        timeFrom = now.minus(AggregationTypeToObject[widget.duration]);
-        timeTo = now;
-      } else {
-        throw new Error(
-          'Either aggregation and duration or range must be provided'
-        );
-      }
-
-      let params = '?';
-      params += `&time_from=${timeFrom.toUTC().toISO({ includeOffset: true })}`;
-      params += `&time_to=${timeTo.toUTC().toISO({ includeOffset: true })}`;
-
       const queryActualTrend = fetch(baseUrl + params).then((res) => {
         if (!res.ok) throw new Error(res.statusText);
         return res.json();
@@ -52,6 +62,36 @@ export default function useTrendAPI(
       const data = (actualTrend.global.avg / globalTrend.global.avg) * 100;
       return Number(data.toFixed(2));
     },
-    staleTime: 300000,
   });
+
+  const globalQueryKey = ['trend', dashboardKey, widgetId, widget, baseUrl];
+  const globalTrend = useQuery({
+    queryKey: globalQueryKey,
+    queryFn: async () =>
+      fetch(baseUrl).then((res) => {
+        if (!res.ok) throw new Error(res.statusText);
+        return res.json();
+      }),
+  });
+
+  const trendInfoUrl = `${baseUrl}/${widget.aggregation}`;
+  const trendInfoQueryKey = [
+    'trend',
+    dashboardKey,
+    widgetId,
+    widget,
+    trendInfoUrl,
+    params,
+  ];
+
+  const trendInfo = useQuery({
+    queryKey: trendInfoQueryKey,
+    queryFn: async () =>
+      fetch(trendInfoUrl + params).then((res) => {
+        if (!res.ok) throw new Error(res.statusText);
+        return res.json();
+      }),
+  });
+
+  return { trendAvg, globalTrend, trendInfo };
 }

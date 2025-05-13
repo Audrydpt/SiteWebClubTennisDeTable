@@ -133,6 +133,7 @@ export default function DashboardTab({
             dashboardKey={dashboardKey}
             widgetId={item.id}
             widget={item.widget}
+            chart={item.content}
           />
           <WidgetActions
             isOperator={isOperator}

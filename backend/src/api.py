@@ -866,13 +866,21 @@ class FastAPIServer:
             {where_clause}
             {group_by_clause};
             """
+            if aggregation == "1 minute" or aggregation == "15 minutes" or aggregation == "30 minutes" or aggregation == "1 hour":
+                sql2 = f"""
+                SELECT add_continuous_aggregate_policy('"widget_{widget_id}"'::regclass,
+                start_offset => '1 day'::interval,
+                end_offset => NULL,
+                schedule_interval => '{aggregation}'::interval);
+                """
+            else:
+                sql2 = f"""
+                SELECT add_continuous_aggregate_policy('"widget_{widget_id}"'::regclass,
+                start_offset => '1 day'::interval,
+                end_offset => NULL
+                schedule_interval => '1 hour'::interval);
+                """
 
-            sql2 = f"""
-            SELECT add_continuous_aggregate_policy('"widget_{widget_id}"'::regclass,
-              start_offset => NULL,
-              end_offset => '{aggregation}'::interval,
-              schedule_interval => '{aggregation}'::interval);
-            """
             # Execute the statement using SQLAlchemy
             dal = GenericDAL()
             await dal.async_raw(sql, without_transaction=True)

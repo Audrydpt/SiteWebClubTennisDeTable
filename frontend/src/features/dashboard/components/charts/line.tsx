@@ -113,7 +113,7 @@ export default function LineComponent({
   return (
     <Card className="w-full h-full flex flex-col justify-center">
       <CardHeader>
-        <CardTitle className="text-left">
+        <CardTitle className="text-center">
           {title ?? `Line ${layout.toString()}`}
         </CardTitle>
       </CardHeader>
