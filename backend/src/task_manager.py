@@ -142,7 +142,7 @@ class ResultsStore:
 
     async def __get_redis(self) -> aioredis.Redis:
         if self.__pool is None:
-            self.__pool = aioredis.ConnectionPool.from_url('redis://{self.__host}:6379/1')
+            self.__pool = aioredis.ConnectionPool.from_url(f'redis://{self.__host}:6379/1')
         if self.__redis is None:
             self.__redis = aioredis.Redis(connection_pool=self.__pool)
         return self.__redis
