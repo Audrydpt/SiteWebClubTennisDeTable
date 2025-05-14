@@ -27,8 +27,7 @@ dist: build
 	docker save localhost/newfront > dist/newfront.tar
 	cp acic-database.service dist/
 
-run: build
-	docker run -d --restart unless-stopped --shm-size=512m --net host -v /opt/ACIC/front/database:/var/lib/postgresql/16/main:z localhost/newfront
+run:
 	make venv CMD="python src/main.py --port 5021"	
 
 install:
