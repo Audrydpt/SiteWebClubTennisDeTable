@@ -240,7 +240,7 @@ class ResultsStore:
             
         return results
     
-    async def subscribe_to_results_old(self, job_id: str):
+    async def subscribe_to_results(self, job_id: str):
         redis = await self.__get_redis()
         pubsub = redis.pubsub()
         
@@ -262,34 +262,6 @@ class ResultsStore:
 
                 job_result = await JobResult.from_redis_message(update_data, redis_client=redis)
                 yield job_result
-        
-        except Exception as e:
-            logger.error(f"Erreur lors de la souscription aux mises à jour de résultats: {e}")
-            logger.error(traceback.format_exc())
-        finally:
-            await pubsub.unsubscribe(channel_name)
-
-    async def subscribe_to_results(self, job_id: str):
-        redis = await self.__get_redis()
-        pubsub = redis.pubsub()
-        
-        channel_name = f"task:{job_id}:updates"
-        await pubsub.subscribe(channel_name)
-        logger.info("Souscription aux mises à jour de résultats")
-
-        try:
-            # Utiliser listen() qui gère déjà un buffer interne
-            async for message in pubsub.listen():
-                # Ignorer les messages de contrôle du système
-                if message['type'] == 'message':
-                    try:
-                        update_data = json.loads(message["data"])
-                    except Exception as ex:
-                        logger.error(f"Erreur lors de la désérialisation du message: {ex}")
-                        continue
-
-                    job_result = await JobResult.from_redis_message(update_data, redis_client=redis)
-                    yield job_result
         
         except Exception as e:
             logger.error(f"Erreur lors de la souscription aux mises à jour de résultats: {e}")
