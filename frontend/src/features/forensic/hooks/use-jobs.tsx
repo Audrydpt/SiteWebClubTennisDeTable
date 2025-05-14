@@ -219,7 +219,7 @@ export default function useJobs() {
   const { mutateAsync: deleteAllTasks } = useMutation({
     mutationFn: async () => {
       const response = await fetch(
-        `${process.env.MAIN_API_URL}/forensics/tasks`,
+        `${process.env.MAIN_API_URL}/forensics/tasks/delete_all`,
         {
           method: 'DELETE',
           headers: {
