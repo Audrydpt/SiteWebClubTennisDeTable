@@ -112,6 +112,7 @@ export default function useSearch() {
     }
   };
 
+  // Dans la fonction updateFirstPageWithRelevantResults de use-search.tsx
   const updateFirstPageWithRelevantResults = (
     newResult: ForensicResult,
     currentSortType: SortType = 'score',
@@ -119,77 +120,52 @@ export default function useSearch() {
   ) => {
     // Si nous ne sommes pas sur la page 1, ne pas mettre à jour l'affichage
     if (currentPageRef.current !== 1) {
-      console.log("💾 Résultat ajouté au heap (page ≠ 1, pas d'affichage)");
       forensicResultsHeap.addResult(newResult);
       return false;
     }
 
-    let shouldAdd = false;
+    // Toujours ajouter le résultat au heap pour le conserver
+    forensicResultsHeap.addResult(newResult);
 
-    // Pour le tri par date, on veut toujours ajouter le résultat
+    // Récupérer les résultats pour la première page selon le critère de tri actuel
+    let topResults;
     if (currentSortType === 'date') {
-      shouldAdd = true;
+      // Pour le tri par date, récupérer tous les résultats et les trier par date
+      const allResults = [...forensicResultsHeap.getAllResults()];
+      allResults.sort((a, b) => {
+        const dateA = new Date(a.timestamp).getTime();
+        const dateB = new Date(b.timestamp).getTime();
+        return currentSortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+      });
+      topResults = allResults.slice(0, paginationInfo.pageSize);
+
+      // Vérifier si le nouveau résultat fait partie des résultats à afficher
+      const isInTopResults = topResults.some((r) => r.id === newResult.id);
+      if (!isInTopResults) {
+        return false;
+      }
     } else {
-      // Pour le tri par score, on utilise la logique existante
-      shouldAdd = forensicResultsHeap.shouldAddResult(
+      // Pour le tri par score, utiliser la méthode existante
+      const shouldAdd = forensicResultsHeap.shouldAddResult(
         newResult,
+        1,
+        paginationInfo.pageSize
+      );
+
+      if (!shouldAdd) {
+        return false;
+      }
+
+      topResults = forensicResultsHeap.getPageResults(
         1,
         paginationInfo.pageSize
       );
     }
 
-    if (shouldAdd) {
-      // Ajouter le résultat au heap
-      forensicResultsHeap.addResult(newResult);
-      console.log(
-        `➕ Résultat ajouté au heap (${currentSortType === 'date' ? `date: ${newResult.timestamp}` : `score: ${newResult.score}`})`
-      );
-
-      // Récupérer les résultats pour la première page selon le critère de tri
-      let topResults;
-      if (currentSortType === 'date') {
-        // Pour le tri par date, récupérer tous les résultats et les trier par date
-        const allResults = [...forensicResultsHeap.getAllResults()];
-        allResults.sort((a, b) => {
-          const dateA = new Date(a.timestamp).getTime();
-          const dateB = new Date(b.timestamp).getTime();
-          return currentSortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-        });
-        topResults = allResults.slice(0, paginationInfo.pageSize);
-      } else {
-        // Pour le tri par score, utiliser la méthode existante
-        topResults = forensicResultsHeap.getPageResults(
-          1,
-          paginationInfo.pageSize
-        );
-      }
-
-      // S'assurer qu'on ne dépasse jamais la taille de la page
-      const limitedResults = topResults.slice(0, paginationInfo.pageSize);
-      console.log(
-        `🔢 Résultats WS: ${limitedResults.length}/${paginationInfo.pageSize} max (tri: ${currentSortType})`
-      );
-
-      // Mettre à jour les résultats affichés avec limitation stricte
-      setDisplayResults([...limitedResults]);
-
-      // Mettre à jour la liste complète des résultats uniquement si nécessaire
-      if (limitedResults.length > 0) {
-        setResults(limitedResults);
-        console.log(
-          `📊 Heap contient ${forensicResultsHeap.getCount()} résultats au total`
-        );
-      }
-
-      return true;
-    }
-
-    if (currentSortType === 'score') {
-      console.log(
-        `⏭️ Résultat ignoré (score: ${newResult.score}) - pas assez pertinent`
-      );
-    }
-    return false;
+    // Mettre à jour les résultats affichés
+    setDisplayResults([...topResults]);
+    setResults(topResults);
+    return true;
   };
 
   const initWebSocket = useCallback(
