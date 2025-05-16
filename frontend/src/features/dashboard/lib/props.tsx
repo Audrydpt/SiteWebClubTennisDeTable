@@ -73,6 +73,7 @@ export type ChartProps = {
   duration: AcicAggregation;
   where?: WhereClause[];
   page?: number;
+  trendData?: JSON;
 };
 export type GroupByChartProps = ChartProps & {
   groupBy?: string;

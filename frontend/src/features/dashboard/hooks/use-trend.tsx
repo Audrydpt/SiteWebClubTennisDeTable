@@ -59,8 +59,8 @@ export default function useTrendAPI(
         queryGlobalTrend,
       ]);
 
-      const data = (actualTrend.global.avg / globalTrend.global.avg) * 100;
-      return Number(data.toFixed(2));
+      const data = actualTrend.global.avg / globalTrend.global.avg;
+      return Number(data);
     },
   });
 

@@ -21,7 +21,7 @@ export default function GlobalTrend({
   const { trendAvg: trendValue } = useTrendAPI(dashboardKey, widgetId, widget);
 
   if (trendValue.error) {
-    return <div className="text-red-500">Error loading trend data</div>;
+    return null;
   }
 
   return (
@@ -37,13 +37,15 @@ export default function GlobalTrend({
             {trendValue.data > 0 ? (
               <div className="flex items-center text-green-500 cursor-pointer hover:underline">
                 <MoveUpRight className="h-4 w-4" />
-                <span className="font-medium">{trendValue.data} %</span>
+                <span className="font-medium">
+                  {(trendValue.data * 100).toFixed(2)} %
+                </span>
               </div>
             ) : (
               <div className="flex items-center text-red-500 cursor-pointer hover:underline">
                 <MoveDownRight className="h-4 w-4" />
                 <span className="font-medium">
-                  {Math.abs(trendValue.data)} %
+                  {(Math.abs(trendValue.data) * 100).toFixed(2)} %
                 </span>
               </div>
             )}

@@ -140,7 +140,7 @@ export default function ExportStepSource({
             name="aggregation"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Table:</FormLabel>
+                <FormLabel>Aggregation:</FormLabel>
                 <FormControl>
                   <Select
                     onValueChange={(value) => {
@@ -150,7 +150,7 @@ export default function ExportStepSource({
                     value={field.value}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a table" />
+                      <SelectValue placeholder="Select an aggregation" />
                     </SelectTrigger>
                     <SelectContent>
                       {Object.values(AcicAggregation).map((item) => (

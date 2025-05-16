@@ -109,6 +109,29 @@ export default function LineComponent({
     Object.keys(dataMerged).length,
     data.size
   );
+  console.log('Line component : dataMerged = ', dataMerged);
+  const trendStats = props.trendData;
+  const chartData = Object.values(dataMerged);
+  console.log('Line component : chartData = ', chartData);
+
+  const getStatForBucket = (bucket: number) => {
+    if (Array.isArray(trendStats)) {
+      return trendStats.find((s) => s.bucket === bucket);
+    }
+    return undefined;
+  };
+
+  const makeStatLine = (statKey: 'avg' | 'min' | 'max' | 'std') =>
+    chartData.map((d) => {
+      const bucket = DateTime.fromISO(d.timestamp).weekday;
+      const stat = getStatForBucket(bucket);
+      return { timestamp: d.timestamp, value: stat?.[statKey] };
+    });
+
+  const avgLine = trendStats ? makeStatLine('avg') : [];
+  const minLine = trendStats ? makeStatLine('min') : [];
+  const maxLine = trendStats ? makeStatLine('max') : [];
+  const stdLine = trendStats ? makeStatLine('std') : [];
 
   return (
     <Card className="w-full h-full flex flex-col justify-center">
@@ -120,7 +143,7 @@ export default function LineComponent({
       <CardContent className="flex-grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <LineChart
-            data={Object.values(dataMerged)}
+            data={chartData}
             margin={{
               left: 12,
               right: 12,
@@ -175,6 +198,52 @@ export default function LineComponent({
                 unit={table === 'AcicOccupancy' ? '%' : ''}
               />
             ))}
+
+            {trendStats && console.log('Line component : data = ', trendStats)}
+            {avgLine.length > 0 && (
+              <Line
+                data={avgLine}
+                dataKey="value"
+                stroke="blue"
+                strokeDasharray="5 5"
+                dot={false}
+                name="Moyenne"
+                isAnimationActive={false}
+              />
+            )}
+            {minLine.length > 0 && (
+              <Line
+                data={minLine}
+                dataKey="value"
+                stroke="green"
+                strokeDasharray="2 2"
+                dot={false}
+                name="Min"
+                isAnimationActive={false}
+              />
+            )}
+            {maxLine.length > 0 && (
+              <Line
+                data={maxLine}
+                dataKey="value"
+                stroke="red"
+                strokeDasharray="2 2"
+                dot={false}
+                name="Max"
+                isAnimationActive={false}
+              />
+            )}
+            {stdLine.length > 0 && (
+              <Line
+                data={stdLine}
+                dataKey="value"
+                stroke="orange"
+                strokeDasharray="1 1"
+                dot={false}
+                name="Écart-type"
+                isAnimationActive={false}
+              />
+            )}
           </LineChart>
         </ChartContainer>
       </CardContent>

@@ -1,4 +1,4 @@
-import { JSX, useState } from 'react';
+import React, { JSX, useState } from 'react';
 
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -36,11 +36,13 @@ export default function TrendInfos({
   );
 
   if (globalTrend.error || trendInfo.error) {
-    return <div className="text-red-500">Error loading trend data</div>;
+    return <div className="text-destructive">Error loading trend data</div>;
   }
 
   const trendMetrics = globalTrend.data?.global;
-  console.log('trendInfo widget ', widgetId, ' : ', trendMetrics);
+  const trendInfoData = trendInfo.data;
+  console.log('trendInfo component : Data = ', trendInfoData);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger>{children}</DialogTrigger>
@@ -51,47 +53,76 @@ export default function TrendInfos({
             This is the trend information for the selected widget.
           </DialogDescription>
         </DialogHeader>
-        {chart}
+        {React.cloneElement(chart, { trendData: trendInfoData })}
+
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
           <Card>
-            <CardContent>
-              <Label>Moyenne: {trendMetrics?.avg.toFixed(2)} %</Label>
+            <CardContent className="flex h-full">
+              <div className="flex justify-center items-center h-full w-full">
+                <Label className="text-center whitespace-normal break-words">
+                  Moyenne: {trendMetrics?.avg.toFixed(2)}
+                </Label>
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent>
-              <Label>Médiane: {trendMetrics?.med.toFixed(2)}</Label>
+            <CardContent className="flex h-full">
+              <div className="flex justify-center items-center h-full w-full">
+                <Label className="text-center whitespace-normal break-words">
+                  Médiane: {trendMetrics?.med.toFixed(2)}
+                </Label>
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent>
-              <Label>Variance: {trendMetrics?.std.toFixed(2)}</Label>
+            <CardContent className="flex h-full">
+              <div className="flex justify-center items-center h-full w-full">
+                <Label className="text-center whitespace-normal break-words">
+                  Variance: {trendMetrics?.std.toFixed(2)}
+                </Label>
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent>
-              <Label>Percentile 5%: {trendMetrics?.pc5.toFixed(2)}</Label>
+            <CardContent className="flex h-full">
+              <div className="flex justify-center items-center h-full w-full">
+                <Label className="text-center whitespace-normal break-words">
+                  Percentile 5%: {trendMetrics?.pc5.toFixed(2)}
+                </Label>
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent>
-              <Label>Percentile 95%: {trendMetrics?.pc95.toFixed(2)}</Label>
+            <CardContent className="flex h-full">
+              <div className="flex justify-center items-center h-full w-full">
+                <Label className="text-center whitespace-normal break-words">
+                  Percentile 95%: {trendMetrics?.pc95.toFixed(2)}
+                </Label>
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent>
-              <Label>Minimum: {trendMetrics?.min}</Label>
+            <CardContent className="flex h-full">
+              <div className="flex justify-center items-center h-full w-full">
+                <Label className="text-center whitespace-normal break-words">
+                  Minimum: {trendMetrics?.min}
+                </Label>
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent>
-              <Label>Maximum: {trendMetrics?.max}</Label>
+            <CardContent className="flex h-full">
+              <div className="flex justify-center items-center h-full w-full">
+                <Label className="text-center whitespace-normal break-words">
+                  Maximum: {trendMetrics?.max}
+                </Label>
+              </div>
             </CardContent>
           </Card>
         </div>
