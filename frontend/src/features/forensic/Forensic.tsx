@@ -19,15 +19,6 @@ export default function Forensic() {
   const collapsedWidth = 1;
   const expandedWidth = 350;
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isTabLoading, setIsTabLoading] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [sortType, setSortType] = useState<SortType>('score');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-
-  const toggleSortOrder = useCallback(() => {
-    setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-  }, []);
 
   const {
     startSearch,
@@ -36,14 +27,7 @@ export default function Forensic() {
     results,
     isSearching,
     sourceProgress,
-    // resumeJob,
-    setDisplayResults,
     resetSearch,
-    setResults,
-    testResumeJob,
-    paginationInfo,
-    handlePageChange,
-    setPaginationInfo,
   } = useSearch();
 
   const {
@@ -53,36 +37,6 @@ export default function Forensic() {
     getActivePaginationInfo,
     addNewTab,
   } = useJobs();
-
-  const handlePaginationChange = useCallback(
-    async (page: number) => {
-      console.log(`Changement vers page ${page}`);
-      setCurrentPage(page);
-
-      if (!activeTabIndex) {
-        console.error('Impossible de charger la page : aucun job actif');
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        // Utiliser les variables de tri actuelles
-        await testResumeJob(
-          activeTabIndex,
-          page,
-          true,
-          false,
-          sortType,
-          'desc'
-        );
-      } catch (error) {
-        console.error(`Erreur lors du chargement de la page ${page}:`, error);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [testResumeJob, activeTabIndex, sortType, sortOrder]
-  );
 
   const handleToggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
@@ -156,26 +110,6 @@ export default function Forensic() {
   const currentWidth = isCollapsed ? collapsedWidth : expandedWidth;
 
   const activeTabsCount = tabJobs.filter((tab) => tab.id).length;
-
-  useEffect(() => {
-    // Ne recharger que si un onglet est actif et qu'on n'est pas en train de charger
-    if (activeTabIndex && !isLoading && !isTabLoading) {
-      console.log(
-        `🔄 Rechargement complet suite au changement de tri: ${sortType} (${sortOrder})`
-      );
-
-      // Réinitialiser à la première page
-      setCurrentPage(1);
-
-      // Réinitialiser complètement le heap et les résultats affichés
-      forensicResultsHeap.clear();
-      setDisplayResults([]);
-      setResults([]);
-
-      // Forcer un rechargement complet avec les nouveaux paramètres de tri
-      testResumeJob(activeTabIndex, 1, false, false, sortType, sortOrder);
-    }
-  }, [sortType, sortOrder]);
 
   useEffect(() => {
     // Ne pas effectuer la mise à jour durant le chargement d'un onglet

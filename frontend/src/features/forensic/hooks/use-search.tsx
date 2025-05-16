@@ -1,705 +1,240 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-shadow,consistent-return,no-promise-executor-return,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps,@typescript-eslint/naming-convention,@stylistic/indent */
+// useSearch.tsx - Hook de recherche indépendant
 import { useCallback, useEffect, useRef, useState } from 'react';
-
-import useLatest from '@/hooks/use-latest';
 import { useAuth } from '@/providers/auth-context';
-
-import forensicResultsHeap from '../lib/data-structure/heap.tsx';
 import { FormData as CustomFormData, formatQuery } from '../lib/format-query';
-import { ForensicResult, SourceProgress } from '../lib/types';
-import { isForensicTaskCompleted, ForensicTaskStatus } from './use-jobs.tsx';
-import { SortType } from '../components/ui/buttons.tsx';
+import { SourceProgress } from '../lib/types';
+import { ForensicTaskStatus } from './use-jobs';
+import { SortType } from '../components/ui/buttons';
 
-// Number of maximum results to keep
-const FORENSIC_PAGINATION_ITEMS = parseInt(
-  process.env.FORENSIC_PAGINATION_ITEMS || '12',
-  10
-);
+// Types pour les callbacks
+interface UseSearchOptions {
+  onResultsReceived?: (result: any) => void;
+  onSourceProgressUpdate?: (sourceProgress: SourceProgress[]) => void;
+  onStatusChange?: (isSearching: boolean) => void;
+  onJobIdChange?: (jobId: string | null) => void;
+  onProgressUpdate?: (progress: number | null) => void;
+}
 
-export default function useSearch() {
+export default function useSearch(options: UseSearchOptions = {}) {
   const { sessionId = '' } = useAuth();
   const [progress, setProgress] = useState<number | null>(null);
-  const [results, setResults] = useState<ForensicResult[]>([]);
   const [sourceProgress, setSourceProgress] = useState<SourceProgress[]>([]);
-
   const [jobId, setJobId] = useState<string | null>(null);
-  const latestJobId = useLatest(jobId);
-
   const [isSearching, setIsSearching] = useState(false);
-  const latestIsSearching = useLatest(isSearching);
-
   const [isCancelling, setIsCancelling] = useState(false);
-  const latestIsCancelling = useLatest(isCancelling);
-
   const [type, setType] = useState<string | null>(null);
-  const latestType = useLatest(type);
 
   // Références pour WebSocket et AbortController
   const wsRef = useRef<WebSocket | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-
-  const [displayResults, setDisplayResults] = useState<ForensicResult[]>([]);
-
-  const currentPageRef = useRef<number>(1);
-  const [sortType, setSortType] = useState<SortType>('score');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-
-  const [paginationInfo, setPaginationInfo] = useState({
-    currentPage: 1,
-    pageSize: FORENSIC_PAGINATION_ITEMS,
-    totalPages: 0,
-    total: 0,
-  });
-
-  // Ajoutez dans les states existants
-  const [currentPageTracked, setCurrentPageTracked] = useState<number>(1);
-
-  const metadataQueue = useRef<{
-    timestamp?: string;
-    score?: number;
-    camera?: string;
-    progress?: number;
-    attributes?: Record<string, unknown>;
-  }>({});
-
-  const initializeSourceProgress = useCallback((selectedSources: string[]) => {
-    setSourceProgress(
-      selectedSources.map((guid) => ({
-        sourceId: guid,
-        sourceName: `Source ${guid.slice(0, 8)}...`,
-        progress: 0,
-        startTime: new Date().toISOString(),
-      }))
-    );
-  }, []);
-
-  const cleanupResources = useCallback(() => {
-    // Fermer WebSocket s'il existe
-    if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
-      wsRef.current.close(1000, 'Component unmounted');
-      wsRef.current = null;
-    }
-    // Annuler toute requête fetch en cours
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort('Cleanup');
-      abortControllerRef.current = null;
-    }
-  }, []);
-
-  const getJobStatus = async (jobId: string): Promise<string> => {
-    if (!jobId) {
-      console.error('❌ Impossible de récupérer le statut: aucun jobId fourni');
-      return 'ERROR';
-    }
-
-    try {
-      const response = await fetch(
-        `${process.env.MAIN_API_URL}/forensics/${jobId}`
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `Erreur lors de la récupération du statut: ${response.status}`
-        );
-      }
-
-      const data = await response.json();
-      console.log(`📊 Statut du job ${jobId}: ${data.status}`);
-      return data.status;
-    } catch (error) {
-      console.error('❌ Erreur lors de la récupération du statut:', error);
-      return 'ERROR';
-    }
-  };
-
-  // Dans la fonction updateFirstPageWithRelevantResults de use-search.tsx
-  const updateFirstPageWithRelevantResults = (
-    newResult: ForensicResult,
-    currentSortType: SortType = 'score',
-    currentSortOrder: 'asc' | 'desc' = 'desc'
-  ) => {
-    // Si nous ne sommes pas sur la page 1, ne pas mettre à jour l'affichage
-    if (currentPageRef.current !== 1) {
-      forensicResultsHeap.addResult(newResult);
-      return false;
-    }
-
-    // Toujours ajouter le résultat au heap pour le conserver
-    forensicResultsHeap.addResult(newResult);
-
-    // Récupérer les résultats pour la première page selon le critère de tri actuel
-    let topResults;
-    if (currentSortType === 'date') {
-      // Pour le tri par date, récupérer tous les résultats et les trier par date
-      const allResults = [...forensicResultsHeap.getAllResults()];
-      allResults.sort((a, b) => {
-        const dateA = new Date(a.timestamp).getTime();
-        const dateB = new Date(b.timestamp).getTime();
-        return currentSortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-      });
-      topResults = allResults.slice(0, paginationInfo.pageSize);
-
-      // Vérifier si le nouveau résultat fait partie des résultats à afficher
-      const isInTopResults = topResults.some((r) => r.id === newResult.id);
-      if (!isInTopResults) {
-        return false;
-      }
-    } else {
-      // Pour le tri par score, utiliser la méthode existante
-      const shouldAdd = forensicResultsHeap.shouldAddResult(
-        newResult,
-        1,
-        paginationInfo.pageSize
-      );
-
-      if (!shouldAdd) {
-        return false;
-      }
-
-      topResults = forensicResultsHeap.getPageResults(
-        1,
-        paginationInfo.pageSize
-      );
-    }
-
-    // Mettre à jour les résultats affichés
-    setDisplayResults([...topResults]);
-    setResults(topResults);
-    return true;
-  };
-
-  const initWebSocket = useCallback(
-    (id: string, page1 = false) => {
-      const shouldInit = page1 || currentPageRef.current === 1;
-
-      console.log(
-        `🔍 Tentative d'initialisation WebSocket pour job ${id}, page ${currentPageRef.current}`
-      );
-
-      if (!shouldInit) {
-        console.log('🚫 WebSocket non initialisé - page différente de 1');
-        return;
-      }
-
-      if (!id) {
-        console.error(
-          '⚠️ Aucun jobId disponible pour initialiser le WebSocket'
-        );
-        return;
-      }
-
-      if (latestIsCancelling.current) {
-        console.log(
-          '🚫 Initialisation du WebSocket ignorée – annulation en cours'
-        );
-        return;
-      }
-
-      // AMÉLIORATION : Ajouter un délai avant de fermer une connexion existante
-      const closeExistingConnection = () =>
-        new Promise<void>((resolve) => {
-          if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
-            console.log('🔄 Fermeture de la connexion WebSocket existante...');
-
-            // Gérer l'événement de fermeture pour résoudre la promesse
-            const onCloseHandler = () => {
-              wsRef.current = null;
-              resolve();
-            };
-
-            wsRef.current.addEventListener('close', onCloseHandler, {
-              once: true,
-            });
-            wsRef.current.close(1000, 'Nouvelle connexion demandée');
-
-            // Timeout de sécurité si la fermeture ne se produit pas
-            setTimeout(() => {
-              if (wsRef.current) {
-                console.log('⚠️ Timeout sur la fermeture WebSocket');
-                wsRef.current = null;
-                resolve();
-              }
-            }, 500);
-          } else {
-            resolve();
-          }
-        });
-
-      // AMÉLIORATION : Fermer proprement la connexion existante avant d'en créer une nouvelle
-      closeExistingConnection().then(() => {
-        // Ne pas créer de nouvelle connexion si l'état a changé pendant la fermeture
-        if (latestIsCancelling.current || currentPageRef.current !== 1) {
-          console.log(
-            '🛑 Création de WebSocket annulée - conditions ont changé'
-          );
-          return;
-        }
-
-        // Déterminer le hostname en privilégiant la variable d'environnement si possible
-        let { hostname } = window.location;
-        try {
-          hostname =
-            new URL(process.env.MAIN_API_URL || '').hostname || hostname;
-        } catch {
-          // En cas d'erreur, on garde le hostname par défaut
-        }
-
-        try {
-          const ws = new WebSocket(
-            `wss://${hostname}/front-api/forensics/${id}`
-          );
-          wsRef.current = ws;
-
-          ws.onopen = () => {
-            console.log('✅ WebSocket connecté pour le job', id);
-          };
-
-          ws.onmessage = (event) => {
-            // Skip processing if cancelling
-            if (isCancelling) {
-              return;
-            }
-
-            if (typeof event.data === 'string') {
-              try {
-                const data = JSON.parse(event.data);
-
-                // Store metadata for next image
-                if (data.timestamp)
-                  metadataQueue.current.timestamp = data.timestamp;
-                if (data.score !== undefined)
-                  metadataQueue.current.score = data.score;
-                if (data.camera) metadataQueue.current.camera = data.camera;
-                if (data.attributes)
-                  metadataQueue.current.attributes = data.attributes;
-
-                if (data.type === 'progress' && data.progress !== undefined) {
-                  // Ajouter ici la logique de mise à jour de la progression
-                  metadataQueue.current.progress = data.progress;
-
-                  // Mettre à jour l'état de progression global
-                  setProgress(data.progress);
-
-                  // Si les informations de source sont disponibles, mettre à jour la progression de cette source
-                  if (data.source_id) {
-                    setSourceProgress((prevSourcesProgress) =>
-                      prevSourcesProgress.map((source) =>
-                        source.sourceId === data.source_id
-                          ? { ...source, progress: data.progress }
-                          : source
-                      )
-                    );
-                  }
-                } else if (data.error) {
-                  // Logique de gestion d'erreur existante
-                }
-              } catch (error) {
-                console.error('❌ WebSocket data parsing error:', error);
-              }
-            } else if (event.data instanceof Blob) {
-              const blob = event.data;
-              const imageUrl = URL.createObjectURL(blob);
-
-              // Use current metadata for this image
-              const newResult: ForensicResult = {
-                id: crypto.randomUUID(),
-                imageData: imageUrl,
-                timestamp: metadataQueue.current.timestamp
-                  ? new Date(metadataQueue.current.timestamp).toISOString()
-                  : new Date().toISOString(),
-                score: metadataQueue.current.score ?? 0,
-                progress: metadataQueue.current.progress,
-                attributes: metadataQueue.current.attributes,
-                cameraId: metadataQueue.current.camera ?? 'unknown',
-                type: latestType.current === 'person' ? 'person' : 'vehicle',
-              };
-
-              const wasRelevantAndAdded = updateFirstPageWithRelevantResults(
-                newResult,
-                sortType,
-                sortOrder
-              );
-              // Mettre à jour la liste complète des résultats uniquement si nécessaire
-              if (wasRelevantAndAdded) {
-                setResults(forensicResultsHeap.getBestResults());
-              }
-            }
-          };
-
-          ws.onerror = (event) => {
-            console.error('❌ Erreur sur le WebSocket', event);
-          };
-
-          ws.onclose = (event) => {
-            console.log(
-              `🔴 WebSocket fermé – Code: ${event.code}, Raison: ${event.reason || 'Non spécifiée'}`
-            );
-
-            // force reconnexion
-            if (
-              event.code === 1006 &&
-              !isForensicTaskCompleted(ForensicTaskStatus.PENDING)
-            ) {
-              setTimeout(() => initWebSocket(id), 1000);
-            }
-
-            // On reconnecte le WS seulement en cas de fermeture anormale
-            if (
-              latestJobId.current === id &&
-              !latestIsCancelling.current &&
-              latestIsSearching.current &&
-              event.code !== 1000 &&
-              event.code !== 1001
-            ) {
-              setTimeout(() => initWebSocket(id), 1000);
-            } else {
-              setIsSearching(false);
-            }
-          };
-        } catch (error) {
-          console.error('❌ Erreur lors de la création du WebSocket:', error);
-          setIsSearching(false);
-        }
-      });
-    },
-    [
-      latestIsCancelling,
-      latestIsSearching,
-      latestJobId,
-      latestType,
-      isCancelling,
-      currentPageTracked,
-    ]
-  );
-
-  // Clean up WebSocket et AbortController on unmount
-  useEffect(
-    () => () => {
-      cleanupResources();
-    },
-    [cleanupResources]
-  );
-
-  const cleanupWebSocket = useCallback(() => {
-    // Fermer WebSocket s'il existe
-    if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
-      console.log(
-        '🔒 Fermeture de la connexion WebSocket sans annuler la recherche'
-      );
-      wsRef.current.close(1000, "Changement d'onglet");
-      wsRef.current = null;
-    }
-  }, []);
-
-  // Dans use-search.tsx, ajoutez une fonction pour réinitialiser la pagination
-  const resetPagination = useCallback(() => {
-    setPaginationInfo({
-      currentPage: 1,
-      pageSize: FORENSIC_PAGINATION_ITEMS,
-      totalPages: 1,
-      total: 0,
-    });
-  }, []);
-
-  // Modifiez la fonction resetSearch pour inclure la réinitialisation de la pagination
-  const resetSearch = useCallback(() => {
-    setSourceProgress([]);
-    setProgress(null);
-    setIsSearching(false);
-    setJobId(null);
-    setResults([]);
-    setDisplayResults([]);
-    resetPagination();
-  }, [resetPagination]);
-
-  const testResumeJob = async (
-    jobId: string,
-    page: number = 1,
-    skipHistory: boolean = false,
-    skipLoadingState: boolean = false,
-    sortType: SortType = 'score',
-    sortOrder: 'asc' | 'desc' = 'desc'
-  ) => {
-    try {
-      console.log('📌 testResumeJob démarré avec params:', {
-        jobId,
-        page,
-        skipHistory,
-        skipLoadingState,
-        sortType,
-        sortOrder,
-      });
-
-      currentPageRef.current = page;
-
-      console.log(`🔄 Changement de page: ${currentPageTracked} -> ${page}`);
-      setCurrentPageTracked(page);
-
-      // Récupérer le statut actuel de la tâche
-      const jobStatus = await getJobStatus(jobId);
-      console.log(`📊 Statut actuel du job ${jobId}: ${jobStatus}`);
-
-      const taskIsStillRunning = jobStatus === 'STARTED';
-
-      // Gestion du WebSocket pour la page 1
-      if (page !== 1) {
-        console.log('📴 Page différente de 1, fermeture du WebSocket');
-        cleanupWebSocket();
-      } else if (taskIsStillRunning) {
-        console.log(
-          '🔄 Page 1 avec recherche active, initialisation forcée du WebSocket'
-        );
-        // Fermer d'abord toute connexion existante
-        if (wsRef.current) {
-          wsRef.current.close(1000, 'Réinitialisation pour page 1');
-          wsRef.current = null;
-        }
-        // Puis forcer la réinitialisation
-        setTimeout(() => {
-          initWebSocket(jobId, true);
-        }, 50);
-      }
-
-      setJobId(jobId);
-      if (!skipHistory && page === 1) {
-        forensicResultsHeap.clear();
-      }
-      if (!skipLoadingState) setIsSearching(taskIsStillRunning);
-
-      // Utilisation des nouveaux endpoints avec paramètres de tri
-      const endpoint = sortType === 'date' ? 'by-date' : 'by-score';
-      const paginatedResponse = await fetch(
-        `${process.env.MAIN_API_URL}/forensics/${jobId}/${endpoint}?page=${page}&desc=${sortOrder === 'desc'}`
-      );
-
-      if (!paginatedResponse.ok)
-        throw new Error(`Erreur API pagination: ${paginatedResponse.status}`);
-
-      const pageData = await paginatedResponse.json();
-      console.log('📄 Données de pagination reçues:', pageData);
-
-      const {
-        results = [],
-        total = 0,
-        total_pages = 0,
-        page: currentPage = page,
-        page_size = FORENSIC_PAGINATION_ITEMS,
-        status = jobStatus, // Utiliser le statut récupéré ou celui de la réponse
-        sources_progress = [],
-      } = pageData;
-
-      // Traitement des informations de progression
-      const sourcesProgressData = sources_progress.map((source: any) => ({
-        sourceId: source.guid,
-        sourceName:
-          source.source_name || `Source ${source.guid.slice(0, 8)}...`,
-        progress: isForensicTaskCompleted(status) ? 100 : source.progress,
-        timestamp: source.timestamp || new Date().toISOString(),
-        startTime: source.start_time || new Date().toISOString(),
-      }));
-
-      setSourceProgress(sourcesProgressData);
-      setProgress(
-        isForensicTaskCompleted(status)
-          ? 100
-          : Math.max(
-              ...sourcesProgressData.map(
-                (s: { progress: any }) => s.progress || 0
-              ),
-              0
-            )
-      );
-
-      // Mise à jour des données de pagination
-      const paginationData = {
-        currentPage,
-        pageSize: page_size,
-        totalPages: total_pages,
-        total,
-      };
-
-      setPaginationInfo(paginationData);
-      console.log('Pagination mise à jour:', paginationData);
-
-      // Traitement des résultats de détection - ajustement pour correspondre à la structure API
-      const detectionFiltered = results.filter(
-        (r: any) => r.type === 'detection'
-      );
-      console.log(
-        `🔍 Filtrage: ${detectionFiltered.length} détections trouvées sur ${results.length} résultats`
-      );
-
-      // Récupération des images pour les résultats filtrés
-      const detectionResults = await Promise.all(
-        detectionFiltered.map(async (result: any) => {
-          const frameId = result.frame_uuid;
-          if (!frameId) {
-            return null;
-          }
-
-          try {
-            const imageResponse = await fetch(
-              `${process.env.MAIN_API_URL}/forensics/${jobId}/frames/${frameId}`
-            );
-
-            if (!imageResponse.ok) {
-              console.error(
-                `Erreur chargement image ${frameId}: ${imageResponse.status}`
-              );
-              return null;
-            }
-
-            const imageBlob = await imageResponse.blob();
-            const imageUrl = URL.createObjectURL(imageBlob);
-
-            return {
-              id: frameId,
-              timestamp: result.timestamp,
-              score: result.score || 0,
-              type: result.type || 'detection',
-              cameraId: result.camera_id || result.camera,
-              camera: result.camera,
-              imageData: imageUrl,
-              metadata: result.attributes || {},
-            };
-          } catch (error) {
-            console.error(`Erreur traitement image ${frameId}:`, error);
-            return null;
-          }
+  const metadataQueue = useRef<{ [key: string]: any }>({});
+
+  // Fonctions de rappel extraites des options
+  const {
+    onResultsReceived,
+    onSourceProgressUpdate,
+    onStatusChange,
+    onJobIdChange,
+    onProgressUpdate,
+  } = options;
+
+  // Mise à jour des callbacks externes
+  useEffect(() => {
+    if (onStatusChange) onStatusChange(isSearching);
+  }, [isSearching, onStatusChange]);
+
+  useEffect(() => {
+    if (onJobIdChange) onJobIdChange(jobId);
+  }, [jobId, onJobIdChange]);
+
+  useEffect(() => {
+    if (onProgressUpdate) onProgressUpdate(progress);
+  }, [progress, onProgressUpdate]);
+
+  useEffect(() => {
+    if (onSourceProgressUpdate) onSourceProgressUpdate(sourceProgress);
+  }, [sourceProgress, onSourceProgressUpdate]);
+
+  // Initialisation de la progression des sources
+  const initializeSourceProgress = useCallback(
+    (selectedSources: string[]) => {
+      const initialProgress: SourceProgress[] = selectedSources.map(
+        (sourceId) => ({
+          sourceId,
+          sourceName: `Source ${sourceId.slice(0, 8)}...`,
+          progress: 0,
+          timestamp: new Date().toISOString(),
+          startTime: new Date().toISOString(),
         })
       );
 
-      const validDetectionResults = detectionResults.filter(
-        (r) => r !== null
-      ) as ForensicResult[];
+      setSourceProgress(initialProgress);
+      if (onSourceProgressUpdate) onSourceProgressUpdate(initialProgress);
+    },
+    [onSourceProgressUpdate]
+  );
 
-      // Gestion des résultats selon la page
-      if (page === 1) {
-        validDetectionResults.forEach((res: ForensicResult) => {
-          forensicResultsHeap.addResult(res);
-        });
+  // Nettoyage des ressources
+  const cleanupResources = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
 
-        // Toujours obtenir les résultats du heap pour la cohérence
-        const bestResults = forensicResultsHeap.getPageResults(
-          1,
-          paginationInfo.pageSize
-        );
+    metadataQueue.current = {};
+  }, []);
 
-        setResults(bestResults);
-        setDisplayResults(bestResults);
+  // Requête pour obtenir le statut d'un job
+  const getJobStatus = async (jobId: string): Promise<string> => {
+    try {
+      const response = await fetch(
+        `${process.env.MAIN_API_URL}/forensics/${jobId}/status`
+      );
 
-        if (taskIsStillRunning) {
-          console.log(
-            '🔄 Tâche toujours en cours, réinitialisation forcée du WebSocket'
-          );
-          initWebSocket(jobId, true);
-          setIsSearching(true);
-        } else {
-          setIsSearching(false);
-        }
-      } else {
-        setResults(validDetectionResults);
-        setDisplayResults(validDetectionResults);
+      if (!response.ok) {
+        throw new Error(`Échec récupération statut: ${response.statusText}`);
       }
 
-      return {
-        results: validDetectionResults,
-        pagination: paginationData,
-      };
+      const data = await response.json();
+      return data.status;
     } catch (error) {
-      console.error('❌ Erreur dans testResumeJob:', error);
-      setResults([]);
-      setDisplayResults([]);
-      setProgress(null);
-      setSourceProgress([]);
-      setIsSearching(false);
-      return {
-        results: [],
-        pagination: {
-          currentPage: page,
-          pageSize: FORENSIC_PAGINATION_ITEMS,
-          totalPages: 0,
-          total: 0,
-        },
-      };
-    } finally {
-      if (!skipLoadingState) {
-        setIsSearching(false);
-        setProgress(100);
-      }
+      console.error(`Erreur récupération statut pour job ${jobId}:`, error);
+      return ForensicTaskStatus.FAILURE;
     }
   };
 
+  // Initialisation du WebSocket
+  const initWebSocket = useCallback(
+    (jobId: string, page1 = false) => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        console.log('WebSocket déjà ouvert, fermeture avant réinitialisation');
+        wsRef.current.close(1000, 'Réinitialisation');
+      }
+
+      // Création d'une nouvelle connexion WebSocket
+      const wsUrl = `${process.env.WS_API_URL}/ws/forensics/${jobId}`;
+      console.log(`Initialisation WebSocket: ${wsUrl}`);
+
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => console.log(`WebSocket connecté pour ${jobId}`);
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'detection') {
+          if (onResultsReceived) {
+            onResultsReceived(data);
+          }
+        } else if (data.type === 'progress') {
+          // Mise à jour de la progression
+          const updatedProgress = [...sourceProgress];
+          const sourceIndex = updatedProgress.findIndex(
+            (src) => src.sourceId === data.source_id
+          );
+
+          if (sourceIndex !== -1) {
+            updatedProgress[sourceIndex].progress = data.progress || 0;
+            setSourceProgress(updatedProgress);
+            if (onSourceProgressUpdate) onSourceProgressUpdate(updatedProgress);
+          }
+
+          // Calcul de la progression globale
+          const globalProgress = Math.round(
+            updatedProgress.reduce((acc, src) => acc + (src.progress || 0), 0) /
+              updatedProgress.length
+          );
+
+          setProgress(globalProgress);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket erreur:', error);
+      };
+
+      ws.onclose = (event) => {
+        console.log(`WebSocket fermé: ${event.code} - ${event.reason}`);
+        wsRef.current = null;
+      };
+    },
+    [sourceProgress, onResultsReceived, onSourceProgressUpdate]
+  );
+
+  // Nettoyage du WebSocket
+  const cleanupWebSocket = useCallback(() => {
+    if (wsRef.current) {
+      console.log('Fermeture du WebSocket');
+      wsRef.current.close(1000, 'Nettoyage');
+      wsRef.current = null;
+    }
+  }, []);
+
+  // Démarrage d'une recherche
   const startSearch = useCallback(
     async (formData: CustomFormData) => {
       try {
-        // Reset states
-        setResults([]);
-        setDisplayResults([]);
+        cleanupWebSocket();
+        cleanupResources();
+
+        setProgress(0);
         setIsSearching(true);
-        setIsCancelling(false);
-        setType(formData.subjectType);
-        forensicResultsHeap.clear();
 
-        resetSearch();
+        const payload = formatQuery(formData);
+        console.log('Lancement recherche avec payload:', payload);
 
-        // Attendre un court délai pour s'assurer que les ressources sont bien libérées
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        // Initialiser la progression des sources
+        initializeSourceProgress(
+          payload.sources.map((source: any) => source.source_id)
+        );
 
-        // Créer un nouvel AbortController pour cette requête
-        abortControllerRef.current = new AbortController();
-
-        // Format query and make API call
-        const queryData = formatQuery(formData);
         const response = await fetch(`${process.env.MAIN_API_URL}/forensics`, {
           method: 'POST',
           headers: {
-            Accept: 'application/json',
             'Content-Type': 'application/json',
-            Authorization: `X-Session-Id ${sessionId}`,
+            Authorization: sessionId,
           },
-          body: JSON.stringify(queryData),
-          signal: abortControllerRef.current.signal,
+          body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
-          throw new Error(`API returned status ${response.status}`);
+          throw new Error(`Échec démarrage recherche: ${response.statusText}`);
         }
 
         const data = await response.json();
-        const { guid } = data;
+        const newJobId = data.task_id;
 
-        if (!guid) {
-          throw new Error('No job ID returned from API');
-        }
+        console.log(`Recherche démarrée, ID: ${newJobId}`);
+        setJobId(newJobId);
 
-        // Initialize source progress with selected sources
-        const selectedSources = formData.cameras || [];
-        initializeSourceProgress(selectedSources);
+        // Initialiser le WebSocket pour les résultats en temps réel
+        setTimeout(() => initWebSocket(newJobId, true), 500);
 
-        setJobId(guid);
-
-        // Initialiser automatiquement le WebSocket après avoir obtenu le guid
-        initWebSocket(guid);
-        return guid;
+        return newJobId;
       } catch (error) {
-        if (error instanceof Error && error.name !== 'AbortError') {
-          console.error('❌ Erreur lors du démarrage de la recherche:', error);
-        }
+        console.error('Erreur démarrage recherche:', error);
         setIsSearching(false);
+        setProgress(null);
         throw error;
       }
     },
-    [sessionId, cleanupWebSocket, initializeSourceProgress, initWebSocket]
+    [
+      cleanupWebSocket,
+      cleanupResources,
+      initializeSourceProgress,
+      sessionId,
+      initWebSocket,
+    ]
   );
+
+  // Arrêt d'une recherche
   const stopSearch = async (jobId: string) => {
     try {
       setIsSearching(false);
 
       if (!jobId) {
-        console.error(
-          "❌ Impossible d'annuler la recherche: aucun jobId fourni"
-        );
+        console.error("Impossible d'arrêter la recherche: ID manquant");
         return;
       }
 
@@ -707,6 +242,10 @@ export default function useSearch() {
         `${process.env.MAIN_API_URL}/forensics/${jobId}`,
         {
           method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: sessionId,
+          },
         }
       );
 
@@ -714,74 +253,39 @@ export default function useSearch() {
         throw new Error(`Échec de l'annulation: ${response.statusText}`);
       }
     } catch (error) {
-      console.error("❌ Erreur lors de l'annulation de la recherche:", error);
+      console.error("Erreur lors de l'annulation de la recherche:", error);
     }
   };
 
-  const handlePageChange = useCallback(
-    (page: number) => {
-      const previousPage = currentPageTracked;
-      setCurrentPageTracked(page);
-      currentPageRef.current = page;
+  // Réinitialisation de la recherche
+  const resetSearch = useCallback(() => {
+    cleanupWebSocket();
+    cleanupResources();
+    setSourceProgress([]);
+    setProgress(null);
+    setIsSearching(false);
+    setJobId(null);
+  }, [cleanupWebSocket, cleanupResources]);
 
-      // Si on quitte la page 1, fermer le WebSocket
-      if (
-        page !== 1 &&
-        wsRef.current &&
-        wsRef.current.readyState === WebSocket.OPEN
-      ) {
-        console.log('🚫 Fermeture du WebSocket - navigation hors de la page 1');
-        wsRef.current.close(1000, 'Navigation vers une autre page');
-        wsRef.current = null;
-      }
-
-      // Si on revient à la page 1 et qu'une recherche est en cours, forcer la réinitialisation du WebSocket
-      if (page === 1 && previousPage !== 1 && isSearching && jobId) {
-        console.log('🔄 Retour à la page 1 - réinitialisation du WebSocket');
-        setIsSearching(true);
-
-        // Forcer la fermeture de toute connexion existante
-        if (wsRef.current) {
-          wsRef.current.close(1000, 'Réinitialisation pour page 1');
-          wsRef.current = null;
-        }
-
-        // Différer légèrement l'initialisation pour s'assurer que currentPageTracked est mis à jour
-        setTimeout(() => {
-          console.log('⚡ Initialisation forcée du WebSocket pour la page 1');
-          initWebSocket(jobId);
-        }, 50);
-
-        return;
-      }
-
-      // Charger les données de la nouvelle page
-      if (jobId) {
-        testResumeJob(jobId, page, isSearching);
-      }
+  // Nettoyage au démontage du composant
+  useEffect(
+    () => () => {
+      cleanupWebSocket();
+      cleanupResources();
     },
-    [currentPageTracked, isSearching, jobId, initWebSocket, testResumeJob]
+    [cleanupWebSocket, cleanupResources]
   );
 
   return {
     startSearch,
     stopSearch,
-    cleanupResources,
-    progress,
-    results,
-    isSearching,
-    jobId,
-    sourceProgress,
-    displayResults,
-    // resumeJob,
-    setDisplayResults,
-    setResults,
     resetSearch,
-    testResumeJob,
-    paginationInfo,
-    updateFirstPageWithRelevantResults,
-    handlePageChange,
-    currentPageTracked,
-    setPaginationInfo,
+    isSearching,
+    progress,
+    sourceProgress,
+    jobId,
+    getJobStatus,
+    initWebSocket,
+    cleanupWebSocket,
   };
 }

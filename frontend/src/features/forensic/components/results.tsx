@@ -53,8 +53,6 @@ export default function Results({
   toggleSortOrder,
 }: ResultsProps) {
   const [showSourceDetails, setShowSourceDetails] = useState(false);
-  const { /* resumeJob, */ displayResults, setDisplayResults, testResumeJob } =
-    useSearch();
   const {
     tasks: tabJobs,
     handleTabChange: defaultHandleTabChange,
@@ -110,49 +108,6 @@ export default function Results({
 
     return () => clearTimeout(fallbackTimer);
   }, [propsResults, displayResults, progress, isSearching]);
-
-  // Effet pour charger automatiquement les résultats
-  useEffect(() => {
-    const autoLoadResults = async () => {
-      if (isLoadingRef.current) {
-        console.log(
-          '❌ Chargement déjà en cours, abandon du chargement automatique'
-        );
-        return;
-      }
-      const activeTab = tabJobs.find((tab) => tab.id === activeTabIndex);
-      const jobId = activeTab?.id;
-      if (!jobId) {
-        return;
-      }
-      if (loadedJobsRef.current.has(jobId)) {
-        return;
-      }
-      isLoadingRef.current = true;
-
-      try {
-        loadedJobsRef.current.add(jobId);
-        // await resumeJob(jobId, false);
-        await testResumeJob(jobId, 1, false, false, sortType, 'desc');
-      } catch (error) {
-        console.error('Erreur lors du chargement des résultats:', error);
-      } finally {
-        setTimeout(() => {
-          isLoadingRef.current = false;
-        }, 500);
-      }
-    };
-    if (requestTimeoutRef.current) {
-      clearTimeout(requestTimeoutRef.current);
-    }
-    requestTimeoutRef.current = setTimeout(autoLoadResults, 100);
-
-    return () => {
-      if (requestTimeoutRef.current) {
-        clearTimeout(requestTimeoutRef.current);
-      }
-    };
-  }, [activeTabIndex, tabJobs, /* resumeJob, */ testResumeJob]);
 
   const timeEstimates = useMemo(
     () => calculateTimeRemaining(sourceProgress),
