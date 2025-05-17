@@ -1,3 +1,4 @@
+/* eslint-disable @stylistic/indent */
 import { useQuery } from '@tanstack/react-query';
 import { DateTime, Duration } from 'luxon';
 import { useMemo } from 'react';
@@ -85,6 +86,52 @@ export default function LineComponent({
     );
   }, [translatedCount, data, groupBy]);
 
+  const { format, interval } = getTimeFormattingConfig(
+    duration,
+    Object.keys(dataMerged).length,
+    data?.size
+  );
+
+  const trendStats = props.trendData;
+
+  // Enhanced chartData with stats integrated into each point
+  const chartData = useMemo(() => {
+    const baseData = Object.values(dataMerged);
+
+    // If no trend stats, just return the original data
+    if (!trendStats || !Array.isArray(trendStats)) {
+      return baseData;
+    }
+
+    // Add stat properties to each data point
+    return baseData.map((dataPoint) => {
+      const bucket = DateTime.fromISO(dataPoint.timestamp as string).weekday;
+      const stat = trendStats.find((s) => s.bucket === bucket);
+
+      return {
+        ...dataPoint,
+        avg: stat?.avg,
+        min: stat?.min,
+        max: stat?.max,
+        std: stat?.std,
+      };
+    });
+  }, [dataMerged, trendStats]);
+
+  // Enhanced chart config with stat lines
+  const enhancedChartConfig = useMemo(() => {
+    const config = { ...chartConfig };
+
+    if (trendStats && Array.isArray(trendStats)) {
+      config.avg = { label: 'Moyenne' };
+      config.min = { label: 'Min' };
+      config.max = { label: 'Max' };
+      config.std = { label: 'Écart-type' };
+    }
+
+    return config;
+  }, [chartConfig, trendStats]);
+
   if (isLoading || isError) {
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
@@ -104,35 +151,6 @@ export default function LineComponent({
     );
   }
 
-  const { format, interval } = getTimeFormattingConfig(
-    duration,
-    Object.keys(dataMerged).length,
-    data.size
-  );
-  console.log('Line component : dataMerged = ', dataMerged);
-  const trendStats = props.trendData;
-  const chartData = Object.values(dataMerged);
-  console.log('Line component : chartData = ', chartData);
-
-  const getStatForBucket = (bucket: number) => {
-    if (Array.isArray(trendStats)) {
-      return trendStats.find((s) => s.bucket === bucket);
-    }
-    return undefined;
-  };
-
-  const makeStatLine = (statKey: 'avg' | 'min' | 'max' | 'std') =>
-    chartData.map((d) => {
-      const bucket = DateTime.fromISO(d.timestamp).weekday;
-      const stat = getStatForBucket(bucket);
-      return { timestamp: d.timestamp, value: stat?.[statKey] };
-    });
-
-  const avgLine = trendStats ? makeStatLine('avg') : [];
-  const minLine = trendStats ? makeStatLine('min') : [];
-  const maxLine = trendStats ? makeStatLine('max') : [];
-  const stdLine = trendStats ? makeStatLine('std') : [];
-
   return (
     <Card className="w-full h-full flex flex-col justify-center">
       <CardHeader>
@@ -141,7 +159,7 @@ export default function LineComponent({
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-grow w-full">
-        <ChartContainer config={chartConfig} className="h-full w-full">
+        <ChartContainer config={enhancedChartConfig} className="h-full w-full">
           <LineChart
             data={chartData}
             margin={{
@@ -173,7 +191,9 @@ export default function LineComponent({
               content={
                 <ChartTooltipContent
                   cursor={false}
-                  formatter={(...d) => CustomChartTooltip(...d, chartConfig)}
+                  formatter={(...d) =>
+                    CustomChartTooltip(...d, enhancedChartConfig)
+                  }
                   labelFormatter={(value, payload) =>
                     DateTime.fromISO(
                       payload[0]?.payload?.timestamp
@@ -199,51 +219,46 @@ export default function LineComponent({
               />
             ))}
 
-            {trendStats && console.log('Line component : data = ', trendStats)}
-            {avgLine.length > 0 && (
-              <Line
-                data={avgLine}
-                dataKey="value"
-                stroke="blue"
-                strokeDasharray="5 5"
-                dot={false}
-                name="Moyenne"
-                isAnimationActive={false}
-              />
-            )}
-            {minLine.length > 0 && (
-              <Line
-                data={minLine}
-                dataKey="value"
-                stroke="green"
-                strokeDasharray="2 2"
-                dot={false}
-                name="Min"
-                isAnimationActive={false}
-              />
-            )}
-            {maxLine.length > 0 && (
-              <Line
-                data={maxLine}
-                dataKey="value"
-                stroke="red"
-                strokeDasharray="2 2"
-                dot={false}
-                name="Max"
-                isAnimationActive={false}
-              />
-            )}
-            {stdLine.length > 0 && (
-              <Line
-                data={stdLine}
-                dataKey="value"
-                stroke="orange"
-                strokeDasharray="1 1"
-                dot={false}
-                name="Écart-type"
-                isAnimationActive={false}
-              />
-            )}
+            {trendStats &&
+              Array.isArray(trendStats) &&
+              trendStats.length > 0 && [
+                <Line
+                  key="avg"
+                  dataKey="avg"
+                  type="linear"
+                  stroke="blue"
+                  strokeDasharray="5 5"
+                  dot={false}
+                  isAnimationActive={false}
+                />,
+                <Line
+                  key="min"
+                  dataKey="min"
+                  type="linear"
+                  stroke="green"
+                  strokeDasharray="2 2"
+                  dot={false}
+                  isAnimationActive={false}
+                />,
+                <Line
+                  key="max"
+                  dataKey="max"
+                  type="linear"
+                  stroke="red"
+                  strokeDasharray="2 2"
+                  dot={false}
+                  isAnimationActive={false}
+                />,
+                <Line
+                  key="std"
+                  dataKey="std"
+                  type="linear"
+                  stroke="orange"
+                  strokeDasharray="1 1"
+                  dot={false}
+                  isAnimationActive={false}
+                />,
+              ]}
           </LineChart>
         </ChartContainer>
       </CardContent>
