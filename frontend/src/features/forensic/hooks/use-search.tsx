@@ -331,7 +331,7 @@ export default function useSearch(options: UseSearchOptions = {}) {
   // Nettoyage du WebSocket
   const cleanupWebSocket = useCallback(() => {
     if (wsRef.current) {
-      wsRef.current.close(1000, 'Nettoyage manuel');
+      wsRef.current.close(100, 'Nettoyage manuel');
       wsRef.current = null;
     }
   }, []);

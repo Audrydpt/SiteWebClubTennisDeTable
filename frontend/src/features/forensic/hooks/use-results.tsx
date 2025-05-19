@@ -418,6 +418,7 @@ export default function useForensicResults(
     setIsTabLoading,
     setCurrentPage,
     setSortType,
+    setPaginationInfo,
 
     // Actions
     loadJobResults,

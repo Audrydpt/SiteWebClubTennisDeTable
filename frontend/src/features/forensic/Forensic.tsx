@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import ForensicForm from './components/form';
 import Results from './components/results';
 import useJobs from './hooks/use-jobs';
+import forensicResultsHeap from './lib/data-structure/heap';
 // eslint-disable-next-line import/no-named-as-default
 import useSearch from './hooks/use-search';
 import useForensicResults from './hooks/use-results';
@@ -38,9 +39,13 @@ export default function Forensic() {
     resetResults,
     setResults,
     setDisplayResults,
+    setPaginationInfo,
+    updateFirstPageWithRelevantResults,
   } = useForensicResults();
 
   // Hook pour la recherche (démarrage/arrêt)
+  // Dans Forensic.tsx, modifiez l'appel à useSearch pour passer un callback onResultReceived:
+
   const {
     startSearch,
     stopSearch,
@@ -48,7 +53,41 @@ export default function Forensic() {
     isSearching,
     sourceProgress,
     resetSearch,
-  } = useSearch();
+  } = useSearch({
+    onResultReceived: (result) => {
+      // Ajoute le résultat au heap et met à jour l'affichage si nécessaire
+      if (updateFirstPageWithRelevantResults(result)) {
+        // Seulement mettre à jour l'état si nous sommes sur la première page
+        if (currentPage === 1) {
+          // Récupérer les résultats triés depuis le heap
+          let topResults;
+          if (sortType === 'date') {
+            topResults = forensicResultsHeap.getTopByDate(
+              paginationInfo.pageSize,
+              sortOrder === 'desc'
+            );
+          } else {
+            topResults = forensicResultsHeap.getTopByScore(
+              paginationInfo.pageSize,
+              sortOrder === 'desc'
+            );
+          }
+
+          // Mise à jour synchronisée des résultats affichés
+          setResults(topResults);
+          setDisplayResults(topResults);
+
+          // Mise à jour des informations de pagination
+          // Dans la fonction onResultReceived du hook useSearch, corrigez la mise à jour de paginationInfo
+          setPaginationInfo((prev) => ({
+            ...prev, // Garde toutes les propriétés existantes y compris currentPage
+            total: forensicResultsHeap.size(),
+            totalPages: Math.ceil(forensicResultsHeap.size() / prev.pageSize),
+          }));
+        }
+      }
+    },
+  });
 
   // Hook pour la gestion des onglets/tâches
   const {
@@ -98,15 +137,6 @@ export default function Forensic() {
   };
 
   const currentWidth = isCollapsed ? collapsedWidth : expandedWidth;
-
-  // Synchroniser la pagination avec les informations du job actif
-  useEffect(() => {
-    // Ne pas effectuer la mise à jour durant le chargement d'un onglet ou une recherche
-    if (isTabLoading || isSearching) return;
-
-    // Nous n'avons plus besoin de cette logique car useForensicResults gère déjà la pagination
-    // La pagination est maintenant entièrement gérée par useForensicResults
-  }, [activeTabIndex, isTabLoading, isSearching]);
 
   return (
     <div ref={containerRef} className="flex h-full">
