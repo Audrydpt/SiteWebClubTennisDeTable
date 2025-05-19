@@ -41,6 +41,7 @@ export default function TrendInfos({
 
   const trendMetrics = globalTrend.data?.global;
   const trendInfoData = trendInfo.data;
+  console.log('trendInfo component : Data = ', trendInfoData);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

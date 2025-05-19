@@ -3,7 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { DateTime, Duration } from 'luxon';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Area, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
+import {
+  Area,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { CurveType } from 'recharts/types/shape/Curve';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -105,9 +112,48 @@ export default function LineComponent({
 
     // Add stat properties to each data point
     return baseData.map((dataPoint) => {
-      const bucket = DateTime.fromISO(dataPoint.timestamp as string).weekday;
+      let bucket;
+      switch (aggregation) {
+        case '1 minute':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).minute;
+          break;
+        case '15 minutes':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).minute;
+          break;
+        case '30 minutes':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).minute;
+          break;
+        case '1 hour':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).hour;
+          break;
+        case '1 day':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).weekday;
+          break;
+        case '1 month':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).month;
+          break;
+        case '1 week':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).weekNumber;
+          break;
+        case '3 months':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).month;
+          break;
+        case '6 months':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).month;
+          break;
+        case '1 year':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).year;
+          break;
+        case '100 years':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).year;
+          break;
+        default:
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).weekday;
+          break;
+      }
+
       const stat = trendStats.find((s) => s.bucket === bucket);
-      const valeurAsNumber = Number(dataPoint.Valeur || 0);
+      const valeurAsNumber = Number(stat?.avg || 0);
 
       return {
         ...dataPoint,
@@ -120,7 +166,7 @@ export default function LineComponent({
         ],
       };
     });
-  }, [dataMerged, trendStats]);
+  }, [dataMerged, trendStats, aggregation]);
 
   // Enhanced chart config with stat lines
   const enhancedChartConfig = useMemo(() => {
@@ -164,7 +210,7 @@ export default function LineComponent({
       </CardHeader>
       <CardContent className="flex-grow w-full">
         <ChartContainer config={enhancedChartConfig} className="h-full w-full">
-          <LineChart
+          <ComposedChart
             data={chartData}
             margin={{
               left: 12,
@@ -261,10 +307,10 @@ export default function LineComponent({
                   strokeDasharray="1 1"
                   dot={false}
                   isAnimationActive={false}
-                  fillOpacity={0.5}
+                  fillOpacity={0.2}
                 />,
               ]}
-          </LineChart>
+          </ComposedChart>
         </ChartContainer>
       </CardContent>
     </Card>
