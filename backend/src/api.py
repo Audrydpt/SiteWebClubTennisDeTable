@@ -459,7 +459,7 @@ class FastAPIServer:
                 # Utiliser la fonction de streaming du TaskManager
                 logger.info(f"Démarrage du streaming pour la tâche {guid}")
                 try:
-                    await TaskManager.stream_job_results(websocket, guid, False)
+                    await TaskManager.stream_job_results(websocket, guid)
                     logger.info(f"Streaming terminé pour la tâche {guid}")
                 except WebSocketDisconnect:
                     logger.info(f"Client déconnecté pour la tâche {guid} (WebSocketDisconnect)")
