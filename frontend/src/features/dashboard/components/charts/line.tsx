@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { DateTime, Duration } from 'luxon';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
+import { Area, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 import { CurveType } from 'recharts/types/shape/Curve';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -107,13 +107,17 @@ export default function LineComponent({
     return baseData.map((dataPoint) => {
       const bucket = DateTime.fromISO(dataPoint.timestamp as string).weekday;
       const stat = trendStats.find((s) => s.bucket === bucket);
+      const valeurAsNumber = Number(dataPoint.Valeur || 0);
 
       return {
         ...dataPoint,
         avg: stat?.avg,
         min: stat?.min,
         max: stat?.max,
-        std: stat?.std,
+        std: [
+          valeurAsNumber - (stat?.std || 0),
+          valeurAsNumber + (stat?.std || 0),
+        ],
       };
     });
   }, [dataMerged, trendStats]);
@@ -206,7 +210,6 @@ export default function LineComponent({
               content={<ChartLegendContent />}
               className="flex-wrap"
             />
-
             {Object.keys(chartConfig).map((group, index) => (
               <Line
                 key={group}
@@ -218,7 +221,7 @@ export default function LineComponent({
                 unit={table === 'AcicOccupancy' ? '%' : ''}
               />
             ))}
-
+            {console.log('chartData', chartData)}
             {trendStats &&
               Array.isArray(trendStats) &&
               trendStats.length > 0 && [
@@ -249,14 +252,16 @@ export default function LineComponent({
                   dot={false}
                   isAnimationActive={false}
                 />,
-                <Line
+                <Area
                   key="std"
+                  type="monotone"
                   dataKey="std"
-                  type="linear"
                   stroke="orange"
+                  fill="orange"
                   strokeDasharray="1 1"
                   dot={false}
                   isAnimationActive={false}
+                  fillOpacity={0.5}
                 />,
               ]}
           </LineChart>
