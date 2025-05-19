@@ -127,6 +127,44 @@ class ResultsStore:
             self._redis = aioredis.Redis(connection_pool=self._pool)
         return self._redis
 
+    async def get_sorted_results(self, job_id: str, sort_by: str = "date", desc: bool = True, start: int = 0, end: int = -1) -> List[JobResult]:
+        """
+        Récupère tous les résultats d'un job et les trie selon le critère spécifié.
+
+        Args:
+            job_id: Identifiant du job
+            sort_by: Critère de tri ('date' ou 'score')
+            desc: Ordre décroissant si True, croissant si False
+            start: Index de début
+            end: Index de fin
+
+        Returns:
+            Liste triée des résultats
+        """
+        # Récupération de tous les résultats
+        results = await self.get_results(job_id)
+
+        # Tri selon le critère spécifié
+        if sort_by == "score" and results:
+            # Vérifier que le score est présent dans les métadonnées
+            results = sorted(
+                results,
+                key=lambda x: float(x.metadata.get('score', 0)),
+                reverse=desc
+            )
+        elif sort_by == "date" and results:
+            # Tri par timestamp dans les métadonnées
+            results = sorted(
+                results,
+                key=lambda x: x.metadata.get('timestamp', ''),
+                reverse=desc
+            )
+
+        # Application de la pagination après le tri
+        if end == -1:
+            end = len(results)
+        return results[start:end+1]
+
     async def get_frame(self, job_id: str, frame_uuid: str) -> Optional[bytes]:
         redis = await self._get_redis()
         frame_key = f"task:{job_id}:frame:{frame_uuid}"
@@ -299,6 +337,23 @@ def execute_job(self, job_type: str, job_params: Dict[str, Any]):
 
 class TaskManager:
     """Gestionnaire de tâches façade pour les opérations Celery/Redis"""
+
+    @staticmethod
+    async def get_sorted_results(job_id: str, sort_by: str = "date", desc: bool = True, start: int = 0, end: int = -1) -> List[JobResult]:
+        """
+        Récupère les résultats d'une tâche triés par date ou score.
+
+        Args:
+            job_id: Identifiant du job
+            sort_by: Critère de tri ('date' ou 'score')
+            desc: Ordre décroissant si True, croissant si False
+            start: Index de début
+            end: Index de fin
+
+        Returns:
+            Liste des résultats triés
+        """
+        return await results_store.get_sorted_results(job_id, sort_by, desc, start, end)
     
     @staticmethod
     def submit_job(job_type: str, job_params: Dict[str, Any]) -> str:

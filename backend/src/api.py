@@ -18,6 +18,7 @@ import logging
 import numpy as np
 import io
 from pydantic import Field, create_model
+from dotenv import load_dotenv
 
 from sqlalchemy import func, JSON, text
 from sqlalchemy.inspection import inspect
@@ -64,6 +65,8 @@ class ModelName(str, Enum):
     year = "1 year"
     lifetime = "100 years"
 
+load_dotenv()
+FORENSIC_PAGINATION_ITEMS = int(os.getenv("FORENSIC_PAGINATION_ITEMS", "12"))
 
 
 # Please follow: https://www.belgif.be/specification/rest/api-guide/#resource-uri
@@ -564,6 +567,76 @@ class FastAPIServer:
                 logger.error(f"Erreur lors de la récupération des résultats de la tâche {guid}: {e}")
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
+
+        @self.app.get("/forensics/{guid}/by-score", tags=["forensics"])
+        async def get_results_sorted_by_score(guid: str, page: int = 1, desc: bool = True):
+            try:
+                # Calcul des indices de début et de fin pour la pagination
+                start = (page - 1) * FORENSIC_PAGINATION_ITEMS
+                end = page * FORENSIC_PAGINATION_ITEMS - 1
+
+                # Récupérer les résultats triés par score
+                results = await TaskManager.get_sorted_results(guid, sort_by="score", desc=desc, start=start, end=end)
+
+                # Calculer le nombre total de pages
+                total_pages = (TaskManager.get_job_count(guid) + FORENSIC_PAGINATION_ITEMS - 1) // FORENSIC_PAGINATION_ITEMS
+
+                total = TaskManager.get_job_count(guid)
+
+                # Inclure le frame_uuid avec les métadonnées pour chaque résultat non final
+                formatted_results = [
+                    {**result.metadata, "frame_uuid": result.frame_uuid}
+                    for result in results if not result.final
+                ]
+
+                return {
+                    "results": formatted_results,
+                    "pagination": {
+                        "currentPage": page,
+                        "totalPages": total_pages,
+                        "pageSize": FORENSIC_PAGINATION_ITEMS,
+                        "total": total,
+                    }
+                }
+            except Exception as e:
+                logger.error(f"Erreur lors de la récupération des résultats triés par score: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.get("/forensics/{guid}/by-date", tags=["forensics"])
+        async def get_results_sorted_by_date(guid: str, page: int = 1, desc: bool = True):
+            try:
+                # Calcul des indices de début et de fin pour la pagination
+                start = (page - 1) * FORENSIC_PAGINATION_ITEMS
+                end = page * FORENSIC_PAGINATION_ITEMS - 1
+
+                # Récupérer les résultats triés par date
+                results = await TaskManager.get_sorted_results(guid, sort_by="date", desc=desc, start=start, end=end)
+
+                # Calculer le nombre total de pages
+                total_pages = (TaskManager.get_job_count(guid) + FORENSIC_PAGINATION_ITEMS - 1) // FORENSIC_PAGINATION_ITEMS
+
+                total = TaskManager.get_job_count(guid)
+
+                # Inclure le frame_uuid avec les métadonnées pour chaque résultat non final
+                formatted_results = [
+                    {**result.metadata, "frame_uuid": result.frame_uuid}
+                    for result in results if not result.final
+                ]
+
+                return {
+                    "results": formatted_results,
+                    "pagination": {
+                        "currentPage": page,
+                        "totalPages": total_pages,
+                        "pageSize": FORENSIC_PAGINATION_ITEMS,
+                        "total": total,
+                    }
+                }
+            except Exception as e:
+                logger.error(f"Erreur lors de la récupération des résultats triés par date: {e}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.get("/forensics/{guid}/pages/{number}", tags=["forensics"])
         async def get_page(guid: str, number: int):
