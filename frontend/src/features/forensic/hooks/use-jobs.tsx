@@ -214,7 +214,7 @@ export default function useJobs() {
   const { mutateAsync: deleteAllTasks } = useMutation({
     mutationFn: async () => {
       const response = await fetch(
-        `${process.env.MAIN_API_URL}/forensics/tasks/delete-all`,
+        `${process.env.MAIN_API_URL}/forensics/tasks/delete_all`,
         {
           method: 'DELETE',
           headers: {
@@ -252,7 +252,7 @@ export default function useJobs() {
   const { mutateAsync: deleteTab } = useMutation({
     mutationFn: async (tabIndex: string) => {
       const response = await fetch(
-        `${process.env.MAIN_API_URL}/forensics/delete/${tabIndex}`,
+        `${process.env.MAIN_API_URL}/forensics/tasks/${tabIndex}`,
         {
           method: 'DELETE',
           headers: {

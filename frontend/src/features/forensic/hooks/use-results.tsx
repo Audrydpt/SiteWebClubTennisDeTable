@@ -289,7 +289,7 @@ export default function useForensicResults(
         // Utilisation des nouveaux endpoints avec paramètres de tri
         const endpoint = sortType === 'date' ? 'by-date' : 'by-score';
         const paginatedResponse = await fetch(
-          `${process.env.MAIN_API_URL}/forensics/${jobId}/results/${endpoint}?page=${page}&page_size=${paginationInfo.pageSize}&order=${sortOrder}`
+          `${process.env.MAIN_API_URL}/forensics/${jobId}/${endpoint}?page=${page}&page_size=${paginationInfo.pageSize}&desc=${sortOrder === 'desc'}`
         );
 
         if (!paginatedResponse.ok) {

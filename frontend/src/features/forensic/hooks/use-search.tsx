@@ -1,9 +1,9 @@
-/* eslint-disable no-console */
+/* eslint-disable no-console,@typescript-eslint/no-shadow */
 // useSearch.tsx - Hook de recherche indépendant
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/providers/auth-context';
 import { FormData as CustomFormData, formatQuery } from '../lib/format-query';
-import { SourceProgress } from '../lib/types';
+import { ForensicResult, SourceProgress } from '../lib/types';
 
 // Types pour les callbacks
 interface UseSearchOptions {
@@ -11,6 +11,7 @@ interface UseSearchOptions {
   onStatusChange?: (isSearching: boolean) => void;
   onJobIdChange?: (jobId: string | null) => void;
   onProgressUpdate?: (progress: number | null) => void;
+  onResultReceived?: (result: ForensicResult) => void;
 }
 
 export default function useSearch(options: UseSearchOptions = {}) {
@@ -75,6 +76,14 @@ export default function useSearch(options: UseSearchOptions = {}) {
     if (onSourceProgressUpdate) onSourceProgressUpdate(sourceProgress);
   }, [sourceProgress, onSourceProgressUpdate]);
 
+  const metadataQueue = useRef<{
+    timestamp?: string;
+    score?: number;
+    camera?: string;
+    progress?: number;
+    attributes?: Record<string, unknown>;
+  }>({});
+
   const initializeSourceProgress = useCallback((selectedSources: string[]) => {
     setSourceProgress(
       selectedSources.map((guid) => ({
@@ -121,7 +130,6 @@ export default function useSearch(options: UseSearchOptions = {}) {
     }
   };
 
-  // Initialisation du WebSocket
   const initWebSocket = useCallback(
     (id: string, page1 = false) => {
       const shouldInit = page1 || currentPageRef.current === 1;
@@ -153,17 +161,27 @@ export default function useSearch(options: UseSearchOptions = {}) {
       const closeExistingConnection = () =>
         new Promise<void>((resolve) => {
           if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
-            wsRef.current.onclose = () => {
+            console.log('🔄 Fermeture de la connexion WebSocket existante...');
+
+            // Gérer l'événement de fermeture pour résoudre la promesse
+            const onCloseHandler = () => {
               wsRef.current = null;
               resolve();
             };
-            wsRef.current.close(1000, 'Fermeture avant nouvelle connexion');
+
+            wsRef.current.addEventListener('close', onCloseHandler, {
+              once: true,
+            });
+            wsRef.current.close(1000, 'Nouvelle connexion demandée');
 
             // Timeout de sécurité si la fermeture ne se produit pas
             setTimeout(() => {
-              wsRef.current = null;
-              resolve();
-            }, 300);
+              if (wsRef.current) {
+                console.log('⚠️ Timeout sur la fermeture WebSocket');
+                wsRef.current = null;
+                resolve();
+              }
+            }, 500);
           } else {
             resolve();
           }
@@ -199,43 +217,68 @@ export default function useSearch(options: UseSearchOptions = {}) {
           };
 
           ws.onmessage = (event) => {
-            // On délègue le traitement des messages à l'extérieur du hook
+            // Skip processing if cancelling
+            if (isCancelling) {
+              return;
+            }
+
             if (typeof event.data === 'string') {
               try {
                 const data = JSON.parse(event.data);
 
-                // Traitement des mises à jour de progression
-                if (data.type === 'source_progress') {
-                  setSourceProgress((prevProgress) => {
-                    const updatedProgress = [...prevProgress];
-                    const sourceIndex = updatedProgress.findIndex(
-                      (source) => source.sourceId === data.source_id
+                // Store metadata for next image
+                if (data.timestamp)
+                  metadataQueue.current.timestamp = data.timestamp;
+                if (data.score !== undefined)
+                  metadataQueue.current.score = data.score;
+                if (data.camera) metadataQueue.current.camera = data.camera;
+                if (data.attributes)
+                  metadataQueue.current.attributes = data.attributes;
+
+                if (data.type === 'progress' && data.progress !== undefined) {
+                  // Ajouter ici la logique de mise à jour de la progression
+                  metadataQueue.current.progress = data.progress;
+
+                  // Mettre à jour l'état de progression global
+                  setProgress(data.progress);
+
+                  // Si les informations de source sont disponibles, mettre à jour la progression de cette source
+                  if (data.source_id) {
+                    setSourceProgress((prevSourcesProgress) =>
+                      prevSourcesProgress.map((source) =>
+                        source.sourceId === data.source_id
+                          ? { ...source, progress: data.progress }
+                          : source
+                      )
                     );
-
-                    if (sourceIndex !== -1) {
-                      updatedProgress[sourceIndex] = {
-                        ...updatedProgress[sourceIndex],
-                        progress: data.progress || 0,
-                      };
-                    }
-
-                    // Calculer la progression globale comme la moyenne des progressions
-                    const totalProgress =
-                      updatedProgress.reduce(
-                        (sum, source) => sum + (source.progress || 0),
-                        0
-                      ) / updatedProgress.length;
-
-                    setProgress(Math.floor(totalProgress));
-
-                    return updatedProgress;
-                  });
+                  }
+                } else if (data.error) {
+                  // Logique de gestion d'erreur existante
                 }
-              } catch (e) {
-                console.error(
-                  'Erreur lors du traitement du message WebSocket:',
-                  e
-                );
+              } catch (error) {
+                console.error('❌ WebSocket data parsing error:', error);
+              }
+            } else if (event.data instanceof Blob) {
+              const blob = event.data;
+              const imageUrl = URL.createObjectURL(blob);
+
+              // Use current metadata for this image
+              const newResult: ForensicResult = {
+                id: crypto.randomUUID(),
+                imageData: imageUrl,
+                timestamp: metadataQueue.current.timestamp
+                  ? new Date(metadataQueue.current.timestamp).toISOString()
+                  : new Date().toISOString(),
+                score: metadataQueue.current.score ?? 0,
+                progress: metadataQueue.current.progress,
+                attributes: metadataQueue.current.attributes,
+                cameraId: metadataQueue.current.camera ?? 'unknown',
+                type: latestType.current === 'person' ? 'person' : 'vehicle',
+              };
+
+              // Utiliser le callback pour traiter le nouveau résultat
+              if (options.onResultReceived) {
+                options.onResultReceived(newResult);
               }
             }
           };
@@ -246,17 +289,43 @@ export default function useSearch(options: UseSearchOptions = {}) {
 
           ws.onclose = (event) => {
             console.log(
-              `🔌 WebSocket fermé pour le job ${id} avec le code ${event.code}`
+              `🔴 WebSocket fermé – Code: ${event.code}, Raison: ${event.reason || 'Non spécifiée'}`
             );
-            wsRef.current = null;
+
+            // force reconnexion
+            if (event.code === 1006) {
+              setTimeout(() => initWebSocket(id), 1000);
+            }
+
+            // On reconnecte le WS seulement en cas de fermeture anormale
+            if (
+              latestJobId.current === id &&
+              !latestIsCancelling.current &&
+              latestIsSearching.current &&
+              event.code !== 1000 &&
+              event.code !== 1001
+            ) {
+              setTimeout(() => initWebSocket(id), 1000);
+            } else {
+              setIsSearching(false);
+            }
           };
         } catch (error) {
           console.error('❌ Erreur lors de la création du WebSocket:', error);
           setIsSearching(false);
         }
       });
+
+      console.log('🔄 Initialisation WebSocket - FIN');
     },
-    [setSourceProgress, setProgress]
+    [
+      latestIsCancelling,
+      latestIsSearching,
+      latestJobId,
+      latestType,
+      isCancelling,
+      currentPageRef,
+    ]
   );
 
   // Nettoyage du WebSocket
