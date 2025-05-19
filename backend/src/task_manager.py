@@ -212,7 +212,7 @@ class ResultsStore:
                     logger.error(f"Erreur lors de la désérialisation du message: {ex}")
                     continue
 
-                job_result = await JobResult.from_redis_message(update_data, redis_client=redis)
+                job_result = await JobResult.from_redis_message(update_data, redis_client=None)
                 yield job_result
         
         except Exception as e:
@@ -724,8 +724,8 @@ class TaskManager:
                     
                     if result.metadata:
                         await websocket.send_json(result.metadata)
-                    if result.frame:
-                        await websocket.send_bytes(result.frame)
+                    #if result.frame:
+                    #    await websocket.send_bytes(result.frame)
 
             # S'abonner aux nouvelles mises à jour
             async for update in results_store.subscribe_to_results(job_id):
@@ -733,9 +733,10 @@ class TaskManager:
                     break
  
                 if update.metadata:
+                    update.metadata["frame_uuid"] = update.frame_uuid
                     await websocket.send_json(update.metadata)
-                if update.frame:
-                    await websocket.send_bytes(update.frame)
+                #if update.frame:
+                #    await websocket.send_bytes(update.frame)
                 
                 if update.final:
                     break
@@ -1155,6 +1156,7 @@ class VehicleReplayJob:
                     if self.cancel_event.is_set():
                         return
                     
+                    next_progress_to_send = datetime.datetime.now()
                     async for img, time in client.start_replay(
                         source_guid, 
                         self.time_from, 
@@ -1163,10 +1165,13 @@ class VehicleReplayJob:
                         if self.cancel_event.is_set():
                             return
                         
-                        progress = self._calculate_progress(time, self.time_from, self.time_to)
                         frame_count += 1
-                        
-                        yield {"type": "progress", "progress": progress, "guid": source_guid, "timestamp": time.isoformat()}, None
+
+                        now_time = datetime.datetime.now()
+                        if now_time > next_progress_to_send:
+                            progress = self._calculate_progress(time, self.time_from, self.time_to)                        
+                            yield {"type": "progress", "progress": progress, "guid": source_guid, "timestamp": time.isoformat()}, None
+                            next_progress_to_send = now_time + datetime.timedelta(seconds=2)
                         
                         async for metadata, frame_bytes, current_boxes in self.__process_image(forensic, img, time, previous_boxes, progress,source_guid):
                             previous_boxes = current_boxes

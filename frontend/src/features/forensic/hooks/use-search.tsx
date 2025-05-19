@@ -183,7 +183,11 @@ export default function useSearch() {
               if (data.attributes)
                 metadataQueue.current.attributes = data.attributes;
 
-              if (data.type === 'progress' && data.progress !== undefined) {
+              if (
+                data.type === 'progress' &&
+                data.progress !== undefined &&
+                data.frame_uuid
+              ) {
                 // Handle source-specific progress by guid
                 if (data.guid) {
                   setSourceProgress((prev) => {
@@ -270,36 +274,35 @@ export default function useSearch() {
                     return updatedSources;
                   });
                 }
+              } else if (data.type === 'detection') {
+                const imageUrl = `${process.env.MAIN_API_URL}/forensics/${id}/frames/${data.frame_uuid}`;
+
+                // Use current metadata for this image
+                const newResult: ForensicResult = {
+                  id: crypto.randomUUID(),
+                  imageData: imageUrl,
+                  timestamp: data.timestamp
+                    ? new Date(data.timestamp).toISOString()
+                    : new Date().toISOString(),
+                  score: data.score ?? 0,
+                  progress: data.progress,
+                  attributes: data.attributes,
+                  cameraId: data.camera ?? 'unknown',
+                  type: latestType.current === 'person' ? 'person' : 'vehicle',
+                };
+
+                const wasRelevantAndAdded =
+                  updateFirstPageWithRelevantResults(newResult);
+                // Mettre à jour la liste complète des résultats uniquement si nécessaire
+                if (wasRelevantAndAdded) {
+                  setResults(forensicResultsHeap.getBestResults());
+                }
               } else if (data.error) {
                 console.error('⚠️ WebSocket error:', data.error);
                 setIsSearching(false);
               }
             } catch (error) {
               console.error('❌ WebSocket data parsing error:', error);
-            }
-          } else if (event.data instanceof Blob) {
-            const blob = event.data;
-            const imageUrl = URL.createObjectURL(blob);
-
-            // Use current metadata for this image
-            const newResult: ForensicResult = {
-              id: crypto.randomUUID(),
-              imageData: imageUrl,
-              timestamp: metadataQueue.current.timestamp
-                ? new Date(metadataQueue.current.timestamp).toISOString()
-                : new Date().toISOString(),
-              score: metadataQueue.current.score ?? 0,
-              progress: metadataQueue.current.progress,
-              attributes: metadataQueue.current.attributes,
-              cameraId: metadataQueue.current.camera ?? 'unknown',
-              type: latestType.current === 'person' ? 'person' : 'vehicle',
-            };
-
-            const wasRelevantAndAdded =
-              updateFirstPageWithRelevantResults(newResult);
-            // Mettre à jour la liste complète des résultats uniquement si nécessaire
-            if (wasRelevantAndAdded) {
-              setResults(forensicResultsHeap.getBestResults());
             }
           }
         };
