@@ -1,28 +1,24 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,prettier/prettier,@typescript-eslint/no-explicit-any,no-console,no-else-return,consistent-return,react-hooks/exhaustive-deps,import/no-named-as-default */
-import { ChevronDown, ChevronUp } from 'lucide-react';
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
 
 import useJobs from '../hooks/use-jobs';
-import useSearch from '../hooks/use-search.tsx';
-import forensicResultsHeap from '../lib/data-structure/heap';
-import { calculateTimeRemaining } from '../lib/estimation/estimation';
 import { ForensicResult, SourceProgress } from '../lib/types';
 import { SortType } from './ui/buttons';
-import Display from './ui/display.tsx';
+import Display from './ui/display';
 import ForensicHeader from './ui/header';
 import MultiProgress from './ui/multi-progress';
+import { calculateTimeRemaining } from '../lib/estimation/estimation';
 
 interface ResultsProps {
   results: ForensicResult[];
   isSearching: boolean;
   progress: number | null;
   sourceProgress: SourceProgress[];
-  onTabChange?: (tabIndex: string) => void;
-  isTabLoading?: boolean;
+  onTabChange: (tabIndex: string) => void;
+  isTabLoading: boolean;
   currentPage: number;
   onPageChange: (page: number) => void;
   paginationInfo: {
@@ -38,7 +34,7 @@ interface ResultsProps {
 }
 
 export default function Results({
-  results: propsResults,
+  results,
   isSearching,
   progress,
   sourceProgress,
@@ -52,226 +48,147 @@ export default function Results({
   sortOrder,
   toggleSortOrder,
 }: ResultsProps) {
-  const [showSourceDetails, setShowSourceDetails] = useState(false);
-  const {
-    tasks: tabJobs,
-    handleTabChange: defaultHandleTabChange,
-    activeTabIndex,
-  } = useJobs();
-  const isLoadingRef = useRef(false);
-  const requestTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const loadedJobsRef = useRef<Set<string>>(new Set());
-  const handleTabChange = onTabChange || defaultHandleTabChange;
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState<
+    string | null
+  >(null);
+  const { tasks, activeTabIndex, deleteTab } = useJobs();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [showSourceDetails, setShowSourceDetails] = useState<boolean>(false);
 
-  // Fonction modifiée pour éviter les logs excessifs
-  const resultsToDisplay = useMemo(() => {
-    const activeTab = tabJobs.find((tab) => tab.id === activeTabIndex);
-    if (activeTabIndex && !activeTab) {
-      return [];
-    }
-    return propsResults && propsResults.length > 0
-      ? propsResults
-      : displayResults;
-  }, [displayResults, propsResults, activeTabIndex, tabJobs]);
-
-  const hasActiveJob = useMemo(
-    () => !!activeTabIndex || (resultsToDisplay && resultsToDisplay.length > 0),
-    [activeTabIndex, resultsToDisplay, tabJobs, activeTabIndex]
-  );
-
-  // Effet pour désactiver l'état de chargement initial
+  // Calcul du temps restant estimé lorsque la progression change
   useEffect(() => {
-    // Cas 1: Si nous avons des résultats
-    if (
-      (propsResults && propsResults.length > 0) ||
-      (displayResults && displayResults.length > 0)
-    ) {
-      const timer = setTimeout(() => {
-        setIsInitialLoading(false);
-      }, 300);
-      return () => clearTimeout(timer);
+    if (!isSearching || !sourceProgress.length) {
+      setEstimatedTimeRemaining(null);
+      return;
     }
 
-    // Cas 2: Si la recherche est terminée
-    if (progress === 100 && !isSearching) {
-      const timer = setTimeout(() => {
-        setIsInitialLoading(false);
-      }, 300);
-      return () => clearTimeout(timer);
+    const timeRemaining = calculateTimeRemaining(sourceProgress);
+    setEstimatedTimeRemaining(timeRemaining.combined);
+  }, [sourceProgress, isSearching]);
+
+  // Détermination de la hauteur disponible pour le défilement
+  const availableHeight = useMemo(() => {
+    // Hauteur de base pour le contenu
+    let height = 'calc(100vh - 300px)';
+
+    // Ajuster la hauteur en fonction des éléments visibles
+    if (isSearching && progress !== null) {
+      height = 'calc(100vh - 430px)';
+    } else if (tasks.length > 0) {
+      height = 'calc(100vh - 370px)';
     }
 
-    // Délai de sécurité pour éviter un chargement infini
-    const fallbackTimer = setTimeout(() => {
-      setIsInitialLoading(false);
-    }, 3000);
+    return height;
+  }, [isSearching, progress, tasks.length]);
 
-    return () => clearTimeout(fallbackTimer);
-  }, [propsResults, displayResults, progress, isSearching]);
-
-  const timeEstimates = useMemo(
-    () => calculateTimeRemaining(sourceProgress),
-    [sourceProgress]
-  );
-
-  const clearResults = () => {
-    forensicResultsHeap.clear();
-    setDisplayResults([]);
+  // Gestion des onglets
+  const handleTabClick = (tabId: string) => {
+    if (tabId === activeTabIndex) return;
+    onTabChange(tabId);
   };
 
-  const renderProgressSection = () => {
-    if (!activeTabIndex && !hasActiveJob && !isSearching) {
-      return null;
-    }
+  // Rendu de l'en-tête avec les onglets
+  const renderHeader = () => (
+    <ForensicHeader
+      sortType={sortType}
+      setSortType={setSortType}
+      sortOrder={sortOrder}
+      toggleSortOrder={toggleSortOrder}
+      clearResults={() => {}} // Fonction requise
+      onTabChange={handleTabClick}
+      loading={isTabLoading}
+      setIsLoading={() => {}}
+    />
+  );
 
-    if (!hasActiveJob || progress === null || isTabLoading) {
+  // Rendu des barres de progression pendant la recherche
+  const renderProgress = () => {
+    if (!isSearching || progress === null) return null;
+
+    return (
+      <div className="mb-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Progression globale : {progress.toFixed(1)}%
+          </div>
+          {estimatedTimeRemaining && (
+            <div className="text-sm text-muted-foreground">
+              Temps restant estimé : {estimatedTimeRemaining}
+            </div>
+          )}
+        </div>
+        <Progress value={progress} />
+        {sourceProgress.length > 0 && (
+          <MultiProgress
+            sourceProgress={sourceProgress}
+            showSourceDetails={showSourceDetails}
+            setShowSourceDetails={setShowSourceDetails}
+          />
+        )}
+      </div>
+    );
+  };
+
+  // Rendu du contenu principal (résultats ou message d'état)
+  const renderContent = () => {
+    if (isTabLoading) {
       return (
-        <div className="space-y-2 mb-6">
-          <div className="flex justify-between items-center">
-            <div className="h-4 bg-muted/80 rounded w-32 animate-pulse" />
-            <div className="h-3 bg-muted/60 rounded w-24 animate-pulse" />
-          </div>
-          <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted/40">
-            <div
-              className="absolute inset-y-0 left-0 w-1/3 bg-primary/50 rounded-full"
-              style={{
-                animation: 'pulse 1.5s infinite ease-in-out',
-                opacity: 0.7,
-              }}
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-2 mt-3">
-            {[1, 2, 3].map((n) => (
-              <div key={`source-${n}`} className="flex flex-col space-y-1">
-                <div className="h-3 bg-muted/60 rounded w-3/4 animate-pulse" />
-                <div className="h-2 bg-muted/40 rounded w-full animate-pulse" />
-              </div>
-            ))}
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="text-lg font-medium mb-2">Chargement...</div>
+            <div className="text-sm text-muted-foreground">
+              Les résultats sont en cours de chargement, veuillez patienter.
+            </div>
           </div>
         </div>
       );
     }
 
-    let statusText: string;
-    if (progress === 100) {
-      statusText = '';
-    } else if (timeEstimates.combined) {
-      statusText = `• Temps restant : ${timeEstimates.combined}`;
-    } else {
-      statusText = '• Calcul du temps restant...';
+    if (results.length === 0 && !isSearching) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="text-lg font-medium mb-2">Aucun résultat</div>
+            <div className="text-sm text-muted-foreground">
+              Lancez une recherche pour obtenir des résultats.
+            </div>
+          </div>
+        </div>
+      );
     }
 
     return (
-      <div className="mt-2 mb-6 space-y-3">
-        <div className="flex justify-between items-center">
-          <div className="flex flex-col">
-            <p className="text-sm font-medium text-foreground">
-              Progression :{' '}
-              <span className="text-primary font-semibold">
-                {progress !== null ? progress.toFixed(0) : 0}%
-              </span>
-              <span className="text-muted-foreground ml-2 text-xs font-medium">
-                {statusText}
-              </span>
-            </p>
-          </div>
-          {sourceProgress.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 hover:bg-muted/80"
-              onClick={() => setShowSourceDetails(!showSourceDetails)}
-            >
-              {showSourceDetails
-                ? 'Masquer les détails'
-                : 'Afficher les détails'}
-              {showSourceDetails ? (
-                <ChevronUp className="ml-1 h-4 w-4" />
-              ) : (
-                <ChevronDown className="ml-1 h-4 w-4" />
-              )}
-            </Button>
-          )}
+      <ScrollArea ref={scrollAreaRef} className="h-full pr-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {results.map((result) => (
+            <Display
+              key={result.id}
+              results={[result]}
+              isSearching={isSearching}
+              progress={progress}
+              sortType={sortType}
+              sortOrder={sortOrder}
+              isTabLoading={isTabLoading}
+              currentPage={currentPage}
+              onPageChange={onPageChange}
+              paginationInfo={paginationInfo}
+            />
+          ))}
         </div>
-
-        <Progress value={progress} className="w-full" />
-
-        <MultiProgress
-          sourceProgress={sourceProgress}
-          showSourceDetails={showSourceDetails}
-          setShowSourceDetails={setShowSourceDetails}
-        />
-      </div>
+      </ScrollArea>
     );
   };
 
   return (
-    <>
-      <ForensicHeader
-        onTabChange={handleTabChange}
-        sortType={sortType}
-        setSortType={setSortType}
-        sortOrder={sortOrder}
-        toggleSortOrder={toggleSortOrder}
-        clearResults={clearResults}
-        loading={isInitialLoading}
-        setIsLoading={setIsInitialLoading}
-      />
-      <ScrollArea className="h-[calc(100%-3rem)] pb-6">
-        <div className="space-y-4 pb-6">
-          {/* Progress section inside ScrollArea */}
-          {renderProgressSection()}
-
-          {/* Results display */}
-
-          {(() => {
-            const activeTab = tabJobs.find((tab) => tab.id === activeTabIndex);
-
-            if (!activeTabIndex) {
-              return (
-                <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
-                  Sélectionnez une caméra et lancez une recherche
-                </div>
-              );
-            } else if (
-              hasActiveJob &&
-              !isSearching &&
-              progress === 100 &&
-              (!resultsToDisplay || resultsToDisplay.length === 0)
-            ) {
-              return (
-                <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
-                  Aucun résultat trouvé
-                </div>
-              );
-            } else if (
-              hasActiveJob ||
-              isSearching ||
-              resultsToDisplay?.length > 0
-            ) {
-              return (
-                <Display
-                  results={resultsToDisplay}
-                  isSearching={isSearching}
-                  progress={progress}
-                  sortType={sortType}
-                  sortOrder={sortOrder}
-                  isTabLoading={isTabLoading || isInitialLoading}
-                  currentPage={currentPage}
-                  onPageChange={onPageChange}
-                  paginationInfo={paginationInfo}
-                />
-              );
-            } else {
-              return (
-                <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
-                  Sélectionnez une caméra et lancez une recherche
-                </div>
-              );
-            }
-          })()}
-        </div>
-      </ScrollArea>
-    </>
+    <div className="flex flex-col h-full">
+      {renderHeader()}
+      {renderProgress()}
+      <div
+        className="flex-1 overflow-hidden"
+        style={{ height: availableHeight }}
+      >
+        {renderContent()}
+      </div>
+    </div>
   );
 }

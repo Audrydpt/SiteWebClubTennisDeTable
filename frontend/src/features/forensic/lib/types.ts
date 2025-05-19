@@ -15,6 +15,7 @@ export interface ForensicResult {
     type?: Record<string, number>;
     [key: string]: unknown;
   };
+  metadata?: Record<string, any>;
 }
 
 export interface SourceProgress {

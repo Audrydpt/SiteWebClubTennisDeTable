@@ -8,11 +8,10 @@ import Results from './components/results';
 import useJobs from './hooks/use-jobs';
 // eslint-disable-next-line import/no-named-as-default
 import useSearch from './hooks/use-search';
-import forensicResultsHeap from './lib/data-structure/heap.tsx';
+import useForensicResults from './hooks/use-results';
 import { createSearchFormData } from './lib/format-query';
 import ForensicFormProvider from './lib/provider/forensic-form-provider';
 import { ForensicFormValues } from './lib/types';
-import { SortType } from './components/ui/buttons';
 
 export default function Forensic() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -20,21 +19,42 @@ export default function Forensic() {
   const expandedWidth = 350;
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Hook de recherche pour la gestion des résultats, pagination et tri
+  const {
+    results,
+    displayResults,
+    isLoading,
+    isTabLoading,
+    setIsTabLoading,
+    currentPage,
+    setCurrentPage,
+    sortType,
+    setSortType,
+    sortOrder,
+    toggleSortOrder,
+    paginationInfo,
+    handlePageChange,
+    loadJobResults,
+    resetResults,
+    setResults,
+    setDisplayResults,
+  } = useForensicResults();
+
+  // Hook pour la recherche (démarrage/arrêt)
   const {
     startSearch,
     stopSearch,
     progress,
-    results,
     isSearching,
     sourceProgress,
     resetSearch,
   } = useSearch();
 
+  // Hook pour la gestion des onglets/tâches
   const {
     tasks: tabJobs,
     handleTabChange: jobsHandleTabChange,
     activeTabIndex,
-    getActivePaginationInfo,
     addNewTab,
   } = useJobs();
 
@@ -49,43 +69,13 @@ export default function Forensic() {
     const selectedTab = tabJobs.find((tab) => tab.id === tabIndex);
 
     resetSearch();
-    forensicResultsHeap.clear();
-    setDisplayResults([]);
-    setResults([]);
+    resetResults();
 
     jobsHandleTabChange(tabIndex);
 
     if (selectedTab?.id) {
-      try {
-        console.log(
-          `Chargement des résultats pour l'onglet ${tabIndex} avec jobId ${selectedTab.id}`
-        );
-
-        // Utiliser les variables de tri actuelles
-        const response = await testResumeJob(
-          selectedTab.id,
-          1,
-          false,
-          true,
-          sortType,
-          'desc'
-        );
-
-        if (response) {
-          const { results: jobResults, pagination } = response;
-          console.log(
-            `Pagination reçue pour l'onglet ${tabIndex}:`,
-            pagination
-          );
-        } else {
-          console.log(`Aucune donnée reçue pour l'onglet ${tabIndex}`);
-        }
-      } catch (error) {
-        console.error(
-          `Erreur lors du chargement de l'onglet ${tabIndex}:`,
-          error
-        );
-      }
+      // Utiliser loadJobResults depuis useForensicResults au lieu de getActivePaginationInfo
+      await loadJobResults(selectedTab.id, true);
     }
 
     setIsTabLoading(false);
@@ -109,51 +99,14 @@ export default function Forensic() {
 
   const currentWidth = isCollapsed ? collapsedWidth : expandedWidth;
 
-  const activeTabsCount = tabJobs.filter((tab) => tab.id).length;
-
+  // Synchroniser la pagination avec les informations du job actif
   useEffect(() => {
-    // Ne pas effectuer la mise à jour durant le chargement d'un onglet
-    if (isTabLoading) return;
+    // Ne pas effectuer la mise à jour durant le chargement d'un onglet ou une recherche
+    if (isTabLoading || isSearching) return;
 
-    const dynamicPaginationInfo = getActivePaginationInfo();
-
-    // Vérifier si une mise à jour est réellement nécessaire
-    if (
-      activeTabIndex &&
-      dynamicPaginationInfo?.totalPages > 0 &&
-      (paginationInfo.totalPages !== dynamicPaginationInfo.totalPages ||
-        paginationInfo.total !== dynamicPaginationInfo.total ||
-        paginationInfo.pageSize !== dynamicPaginationInfo.pageSize)
-    ) {
-      // Mettre à jour uniquement si les valeurs ont réellement changé
-      const updatedPaginationInfo = {
-        ...dynamicPaginationInfo,
-        currentPage,
-      };
-
-      setPaginationInfo(updatedPaginationInfo);
-
-      // Mettre à jour la page courante UNIQUEMENT si nécessaire
-      // et avec une condition stricte pour éviter les boucles
-      if (
-        currentPage > dynamicPaginationInfo.totalPages &&
-        dynamicPaginationInfo.totalPages > 0 &&
-        !isSearching // Important: ne pas modifier pendant une recherche
-      ) {
-        // Utiliser setTimeout pour briser la boucle de rendu
-        setTimeout(() => {
-          setCurrentPage(dynamicPaginationInfo.totalPages);
-          handlePageChange(dynamicPaginationInfo.totalPages);
-        }, 0);
-      }
-    }
-  }, [
-    activeTabIndex,
-    getActivePaginationInfo,
-    activeTabIndex,
-    isTabLoading,
-    isSearching,
-  ]);
+    // Nous n'avons plus besoin de cette logique car useForensicResults gère déjà la pagination
+    // La pagination est maintenant entièrement gérée par useForensicResults
+  }, [activeTabIndex, isTabLoading, isSearching]);
 
   return (
     <div ref={containerRef} className="flex h-full">
@@ -218,7 +171,7 @@ export default function Forensic() {
             onTabChange={handleTabChange}
             isTabLoading={isTabLoading || isLoading}
             currentPage={currentPage}
-            onPageChange={handlePaginationChange}
+            onPageChange={handlePageChange}
             paginationInfo={paginationInfo}
             sortType={sortType}
             setSortType={setSortType}

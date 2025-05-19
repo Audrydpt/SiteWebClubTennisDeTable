@@ -3,12 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-// Number of maximum results to keep
-const FORENSIC_PAGINATION_ITEMS = parseInt(
-  process.env.FORENSIC_PAGINATION_ITEMS || '12',
-  10
-);
-
 export enum ForensicTaskStatus {
   PENDING = 'PENDING', // Tâche créée, pas encore préparée pour l'exécution
   RECEIVED = 'RECEIVED', // Tâche reçue, prête à être exécutée
@@ -18,6 +12,7 @@ export enum ForensicTaskStatus {
   REVOKED = 'REVOKED', // Tâche annulée
   RETRY = 'RETRY', // Tâche en cours de nouvelle tentative après échec
 }
+
 export function isForensicTaskCompleted(status: ForensicTaskStatus): boolean {
   return (
     status === ForensicTaskStatus.SUCCESS ||
@@ -33,7 +28,7 @@ export interface ForensicTask {
   created: string;
   count: number;
   size: number;
-  total_pages: number;
+  total_pages: number; // Nous gardons ces informations pour référence seulement
 }
 
 export interface ForensicTaskResponse {
@@ -219,7 +214,7 @@ export default function useJobs() {
   const { mutateAsync: deleteAllTasks } = useMutation({
     mutationFn: async () => {
       const response = await fetch(
-        `${process.env.MAIN_API_URL}/forensics/tasks/delete_all`,
+        `${process.env.MAIN_API_URL}/forensics/tasks/delete-all`,
         {
           method: 'DELETE',
           headers: {
@@ -233,27 +228,16 @@ export default function useJobs() {
       }
     },
     onMutate: async () => {
-      // Cancel any outgoing refetches so they don't overwrite our optimistic update
       await queryClient.cancelQueries({ queryKey: ['forensicTasks'] });
-
-      // Snapshot the previous value
       const previousTasks = queryClient.getQueryData<ForensicTask[]>([
         'forensicTasks',
       ]);
-
-      // Optimistically update to the new value
       queryClient.setQueryData<ForensicTask[]>(['forensicTasks'], []);
-
-      // Set tasks and tabJobs to empty
       setTasks([]);
-
       console.log('Tâches supprimées optimistiquement');
-
-      // Return a context with the previous value
       return { previousTasks };
     },
     onError: (_err, _variables, context) => {
-      // If the mutation fails, use the context we returned above
       if (context?.previousTasks) {
         queryClient.setQueryData(['forensicTasks'], context.previousTasks);
         setTasks(context.previousTasks);
@@ -261,16 +245,14 @@ export default function useJobs() {
       setError('Impossible de supprimer les tâches forensiques');
     },
     onSettled: () => {
-      // Always refetch after error or success to ensure we have the correct server state
       queryClient.invalidateQueries({ queryKey: ['forensicTasks'] });
     },
   });
 
-  // Fonction pour supprimer un onglet
   const { mutateAsync: deleteTab } = useMutation({
     mutationFn: async (tabIndex: string) => {
       const response = await fetch(
-        `${process.env.MAIN_API_URL}/forensics/tasks/${tabIndex}`,
+        `${process.env.MAIN_API_URL}/forensics/delete/${tabIndex}`,
         {
           method: 'DELETE',
           headers: {
@@ -288,22 +270,16 @@ export default function useJobs() {
       return tabIndex;
     },
     onMutate: async (tabIndex: string) => {
-      // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['forensicTasks'] });
-
-      // Get current state
       const previousTasks = queryClient.getQueryData<ForensicTask[]>([
         'forensicTasks',
       ]);
       const previousTabJobs = [...tasks];
       const tabToDelete = tasks.find((tab) => tab.id === tabIndex);
 
-      // Optimistically update UI
-      // 1. Remove tab from tabJobs
       const updatedTabJobs = tasks.filter((tab) => tab.id !== tabIndex);
       setTasks(updatedTabJobs);
 
-      // 2. If this was the active tab, select another tab
       const isActiveTab = tabIndex === activeTabIndex;
       if (isActiveTab && updatedTabJobs.length > 0) {
         const newActiveTab = [...updatedTabJobs].sort(
@@ -314,26 +290,19 @@ export default function useJobs() {
         setActiveJobId('');
       }
 
-      // 3. Also update tasks list if we have a jobId
       if (tabToDelete?.id && previousTasks) {
-        console.log(previousTasks);
         const updatedTasks = previousTasks.filter(
           (task) => task.id !== tabToDelete.id
         );
         queryClient.setQueryData(['forensicTasks'], updatedTasks);
-        setTasks(updatedTasks);
       }
 
       return { previousTasks, previousTabJobs, tabIndex, isActiveTab };
     },
     onError: (_err, _variables, context) => {
-      // Restore previous state
       if (context?.previousTasks) {
         queryClient.setQueryData(['forensicTasks'], context.previousTasks);
-        setTasks(context.previousTasks);
-      }
-      if (context?.previousTabJobs) {
-        setTasks(context.previousTabJobs);
+        setTasks(context.previousTabJobs || []);
       }
       if (context?.isActiveTab && context.tabIndex) {
         setActiveJobId(context.tabIndex);
@@ -341,7 +310,6 @@ export default function useJobs() {
       setError(`Impossible de supprimer la tâche ${context?.tabIndex}`);
     },
     onSettled: () => {
-      // Always refetch to ensure we have the correct server state
       queryClient.invalidateQueries({ queryKey: ['forensicTasks'] });
     },
   });
@@ -356,31 +324,6 @@ export default function useJobs() {
   const getActiveTask = (): ForensicTask | undefined =>
     tasks.find((tab) => tab.id === activeTabIndex);
 
-  const resumeActiveJob = async (
-    resumeCallback: (id: string) => Promise<any>
-  ) => {
-    if (!activeTabIndex) {
-      console.log('Aucun job associé à cet onglet');
-      return null;
-    }
-
-    console.log(`Reprise du job ${activeTabIndex}`);
-
-    // Appeler resumeJob avec le jobId de l'onglet actif
-    return resumeCallback(activeTabIndex);
-  };
-
-  const getActivePaginationInfo = () => {
-    const activeTask = getActiveTask();
-
-    return {
-      currentPage: 1, // À gérer ailleurs
-      pageSize: FORENSIC_PAGINATION_ITEMS, // Ajustez selon votre configuration
-      totalPages: activeTask?.total_pages || 0,
-      total: activeTask?.count || 0,
-    };
-  };
-
   return {
     tasks,
     activeTabIndex,
@@ -389,9 +332,7 @@ export default function useJobs() {
     fetchTasks,
     getTaskById,
     getActiveTask,
-    getActivePaginationInfo,
     handleTabChange,
-    resumeActiveJob,
     addNewTab,
     deleteTab,
     deleteAllTasks,
