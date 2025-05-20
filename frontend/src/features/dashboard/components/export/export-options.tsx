@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import * as z from 'zod';
 
 import MultiSelect from '@/components/multi-select';
@@ -45,6 +46,7 @@ export default function ExportStepSource({
   updateStoredWidget,
   setStepValidity,
 }: ExportStep) {
+  const { t } = useTranslation();
   const form = useForm<ExportStepSourceFormValues>({
     resolver: zodResolver(exportStepSourceSchema),
     defaultValues: {
@@ -140,7 +142,9 @@ export default function ExportStepSource({
             name="aggregation"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Aggregation:</FormLabel>
+                <FormLabel>
+                  {t('dashboard:export:options.aggregation')}
+                </FormLabel>
                 <FormControl>
                   <Select
                     onValueChange={(value) => {
@@ -150,7 +154,11 @@ export default function ExportStepSource({
                     value={field.value}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select an aggregation" />
+                      <SelectValue
+                        placeholder={t(
+                          'dashboard:export:options.selectAggregation'
+                        )}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {Object.values(AcicAggregation).map((item) => (
@@ -170,7 +178,7 @@ export default function ExportStepSource({
             name="groupBy"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Group by</FormLabel>
+                <FormLabel>{t('dashboard:export:options.groupBy')}</FormLabel>
                 <FormControl>
                   <MultiSelect
                     options={columnKeys || []}
@@ -183,6 +191,7 @@ export default function ExportStepSource({
                       field.onChange(selected.join(','));
                       handleFormChange();
                     }}
+                    placeholder={t('dashboard:export:options.groupBySelect')}
                   />
                 </FormControl>
               </FormItem>
@@ -193,11 +202,11 @@ export default function ExportStepSource({
             name="where"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Where</FormLabel>
+                <FormLabel>{t('dashboard:export:options.filters')}</FormLabel>
                 {isLoading ? (
                   <div className="flex items-center justify-center space-x-2">
                     <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                    <span>Fetching filters...</span>
+                    <span>{t('dashboard:export:options.fetchingFilters')}</span>
                   </div>
                 ) : (
                   <WhereClausesWithSearch

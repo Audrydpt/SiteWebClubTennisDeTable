@@ -5,7 +5,6 @@ import LoadingSpinner from '@/components/loading';
 import { useAuth } from '@/providers/auth-context';
 
 import { StoredWidget } from './components/form-widget';
-
 import GlobalTrend from './components/trend/global-trend';
 import WidgetActions from './components/widget-actions/widget-actions';
 import WidgetRangeNavigation from './components/widget-actions/widget-range-navigation';

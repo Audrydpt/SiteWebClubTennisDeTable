@@ -1,5 +1,6 @@
 {
   "dashboard": {
+    "header": "Tableau de bord",
     "add": "Ajouter un onglet",
     "edit": "Modifier l'onglet",
     "title": "Titre de l'onglet",
@@ -33,7 +34,8 @@
     },
     "filters": {
       "label": "Filtres",
-      "placeholder": "Sélectionner un champ pour filtrer"
+      "placeholder": "Sélectionner un champ pour filtrer",
+      "add": "Ajouter un filtre"
     },
     "aggregation": {
       "label": "Agrégation",
@@ -124,5 +126,50 @@
     "value": "Valeur",
     "value_other": "Valeur: {{count}}",
     "no_value": "Pas de données"
+  },
+  "export": {
+    "title": "Export du tableau de bord",
+    "source": {
+      "table": "Table",
+      "selectTable": "Sélectionner une table à exporter",
+      "range": "Période",
+      "selectRange": "Sélectionner une période à exporter",
+      "from": "Du",
+      "to": "Au",
+      "fetchData": "Chargement des données...",
+      "fetchDataError": "Aucune donnée disponible pour cette période"
+    },
+    "options": {
+      "aggregation": "Agrégation",
+      "aggregationSelect": "Sélectionner une agrégation",
+      "groupBy": "Grouper par",
+      "groupBySelect": "Sélectionner un groupement",
+      "filters": "Filtres",
+      "fetchingFilters": "Chargement des filtres..."
+    },
+    "format": {
+      "label": "Format de fichier",
+      "Excel": "Excel",
+      "PDF": "PDF",
+      "fetchingMessage": "Téléchargement des données pour l'export...",
+      "generatingMessage": "Génération du fichier d'export...",
+      "summary": "Résumé",
+      "table": "Table",
+      "range": "Période",
+      "aggregation": "Agrégation",
+      "groupBy": "Grouper par",
+      "filters": "Filtres"
+    },
+    "previous": "Précédent",
+    "next": "Suivant",
+    "reset": "Réinitialiser"
+  },
+  "whereClauseSearch": {
+    "placeholder": "Rechercher dans les valeurs...",
+    "add": "Ajouter un filtre",
+    "search": "Recherche...",
+    "all": "Tout",
+    "clear": "Effacer",
+    "noResults": "Aucun élément trouvé."
   }
 }

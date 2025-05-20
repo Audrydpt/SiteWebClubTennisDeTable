@@ -1,6 +1,7 @@
 /* eslint-disable react/no-unstable-nested-components */
 import { Database, FileDown, Settings2 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import Header from '@/components/header';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ export default function ExportDashboard() {
   const [storedWidget, setStoredWidget] = useState<StepperFormData>({
     table: AcicEvent.AcicCounting,
   } as StepperFormData);
+  const { t } = useTranslation();
   const [isStepValid, setIsStepValid] = useState(false);
 
   const updateStoredWidget = (newData: Partial<StepperFormData>) => {
@@ -47,7 +49,7 @@ export default function ExportDashboard() {
 
   return (
     <>
-      <Header title="Export Dashboard" />
+      <Header title={t('dashboard:export.title')} />
       <StepperProvider>
         {({ methods }) => (
           <>
@@ -99,7 +101,7 @@ export default function ExportDashboard() {
                 }}
                 disabled={methods.isFirst}
               >
-                Previous
+                {t('dashboard:export.previous')}
               </Button>
               <Button
                 onClick={() => {
@@ -113,7 +115,9 @@ export default function ExportDashboard() {
                 }}
                 disabled={!isStepValid}
               >
-                {methods.isLast ? 'Reset' : 'Next'}
+                {methods.isLast
+                  ? t('dashboard:export.reset')
+                  : t('dashboard:export.next')}
               </Button>
             </StepperControls>
           </>

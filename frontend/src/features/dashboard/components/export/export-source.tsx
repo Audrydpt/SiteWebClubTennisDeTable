@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import * as z from 'zod';
 
 import {
@@ -48,6 +49,7 @@ export default function ExportStepSource({
   updateStoredWidget,
   setStepValidity,
 }: ExportStep) {
+  const { t } = useTranslation();
   const form = useForm<ExportStepSourceFormValues>({
     resolver: zodResolver(exportStepSourceSchema),
     defaultValues: {
@@ -110,7 +112,7 @@ export default function ExportStepSource({
             name="table"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Table:</FormLabel>
+                <FormLabel>{t('dashboard:export:source.table')}</FormLabel>
                 <FormControl>
                   <Select
                     onValueChange={(value) => {
@@ -120,7 +122,9 @@ export default function ExportStepSource({
                     value={field.value}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a table" />
+                      <SelectValue
+                        placeholder={t('dashboard:export:source.selectTable')}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {Object.values(AcicEvent).map((item) => (
@@ -140,7 +144,7 @@ export default function ExportStepSource({
             name="range"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Range:</FormLabel>
+                <FormLabel>{t('dashboard:export:source.range')}</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -152,16 +156,22 @@ export default function ExportStepSource({
                         )}
                       >
                         {!field.value.from && !field.value.to && (
-                          <span>Select date range</span>
+                          <span>
+                            {t('dashboard:export:source.selectRange')}
+                          </span>
                         )}
 
                         {field.value.from && (
                           <span>
-                            From {field.value.from.toLocaleDateString()}
+                            {t('dashboard:export:source.from')}{' '}
+                            {field.value.from.toLocaleDateString()}
                           </span>
                         )}
                         {field.value.to && (
-                          <span>to {field.value.to.toLocaleDateString()}</span>
+                          <span>
+                            {t('dashboard:export:source.to')}{' '}
+                            {field.value.to.toLocaleDateString()}
+                          </span>
                         )}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
@@ -189,13 +199,13 @@ export default function ExportStepSource({
         {isFetching && (
           <div className="flex items-center justify-center space-x-2">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <span>Fetching data...</span>
+            <span>{t('dashboard:export:source.fetchData')}</span>
           </div>
         )}
 
         {isSuccess && data.length === 0 ? (
           <div className="flex items-center justify-center space-x-2">
-            <span>No data available for this selection</span>
+            <span>{t('dashboard:export:source.fetchDataError')}</span>
           </div>
         ) : (
           ''

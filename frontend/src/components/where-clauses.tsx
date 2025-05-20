@@ -1,5 +1,6 @@
 import { PlusCircle, X } from 'lucide-react';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +30,7 @@ export interface WhereClausesProps
 
 const WhereClauses = React.forwardRef<HTMLDivElement, WhereClausesProps>(
   ({ columns, value, onValueChange, className, disabled, ...props }, ref) => {
+    const { t } = useTranslation();
     const getAvailableColumns = React.useCallback(
       (currentIndex?: number) => {
         const selectedColumns = value
@@ -125,7 +127,7 @@ const WhereClauses = React.forwardRef<HTMLDivElement, WhereClausesProps>(
           disabled={disabled || value.length >= columns.length}
         >
           <PlusCircle className="mr-2 h-4 w-4" />
-          Add filter
+          {t('dashboard:widget.filters.add')}
         </Button>
       </div>
     );
