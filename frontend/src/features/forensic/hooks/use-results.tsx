@@ -49,7 +49,6 @@ export default function useForensicResults(
       string,
       {
         count: number;
-
         total_pages: number;
       }
     >
@@ -390,7 +389,7 @@ export default function useForensicResults(
         // Utilisation des nouveaux endpoints avec paramètres de tri
         const endpoint = sortType === 'date' ? 'by-date' : 'by-score';
         const paginatedResponse = await fetch(
-          `${process.env.MAIN_API_URL}/forensics/${jobId}/${endpoint}?page=${page}&page_size=${paginationInfo.pageSize}&desc=${sortOrder === 'desc'}`
+          `${process.env.MAIN_API_URL}/forensics/${jobId}/${endpoint}?page=${page}&desc=${sortOrder === 'desc'}`
         );
 
         if (!paginatedResponse.ok) {
@@ -398,7 +397,6 @@ export default function useForensicResults(
         }
 
         const pageData = await paginatedResponse.json();
-        console.log('📄 Données de pagination reçues:', pageData);
 
         const {
           results: apiResults,
@@ -417,7 +415,6 @@ export default function useForensicResults(
         };
 
         setPaginationInfo(paginationData);
-        console.log('Pagination mise à jour:', paginationData);
 
         // Traitement des résultats
         const detectionFiltered = apiResults.filter(

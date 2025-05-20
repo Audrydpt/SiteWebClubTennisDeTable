@@ -57,6 +57,7 @@ export default function Forensic() {
     initWebSocket,
     getJobStatus,
   } = useSearch({
+    // Dans le callback onResultReceived de useSearch
     onResultReceived: (result) => {
       // Ajoute le résultat au heap et met à jour l'affichage si nécessaire
       if (updateFirstPageWithRelevantResults(result)) {
@@ -80,8 +81,8 @@ export default function Forensic() {
           setResults(topResults);
           setDisplayResults(topResults);
 
-          // Mettre à jour les informations de pagination
-          // Dans la fonction onResultReceived du useSearch (dans Forensic.tsx)
+          // Ne pas mettre à jour totalPages et total ici, laisser l'API le faire
+          // La pagination doit se baser uniquement sur les données de l'API
           setPaginationInfo((prev) => {
             // Toujours utiliser tasksMetadata pour le job actif quand disponible
             if (activeTabIndex && tasksMetadata[activeTabIndex]) {
@@ -89,18 +90,10 @@ export default function Forensic() {
               return {
                 ...prev,
                 currentPage,
-                total: taskInfo.count || 0,
-                totalPages:
-                  taskInfo.total_pages ||
-                  Math.ceil((taskInfo.count || 0) / prev.pageSize),
+                // Ne pas modifier les valeurs total et totalPages
               };
             }
-            // Fallback uniquement si les métadonnées ne sont pas disponibles
-            return {
-              ...prev,
-              total: forensicResultsHeap.size(),
-              totalPages: Math.ceil(forensicResultsHeap.size() / prev.pageSize),
-            };
+            return prev;
           });
         }
       }
@@ -158,11 +151,66 @@ export default function Forensic() {
     setIsCollapsed(!isCollapsed);
   };
 
-  const handleTabChange = async (tabIndex: string) => {
-    setIsTabLoading(true);
+  const handlePageTransition = useCallback(
+    async (newPage: number) => {
+      if (!activeTabIndex) return;
 
-    // Réinitialiser à la première page
-    setCurrentPage(1);
+      console.log(
+        `📄 Changement de page: ${currentPage} → ${newPage} (job: ${activeTabIndex})`
+      );
+
+      // Garde la trace si on quitte la page 1 pour éviter la réinitialisation
+      const leavingFirstPage = currentPage === 1 && newPage > 1;
+
+      // Appeler d'abord la fonction originale pour effectuer le changement de page
+      await handlePageChange(newPage);
+
+      // Maintenant gérer la logique WebSocket après le changement de page
+      if (leavingFirstPage) {
+        console.log(
+          `🔌 Fermeture du WebSocket car départ de la page 1 (job: ${activeTabIndex})`
+        );
+        resetSearch(); // Nettoie le WebSocket existant
+      } else if (currentPage > 1 && newPage === 1) {
+        console.log(
+          `🔍 Vérification pour réinitialisation du WebSocket (job: ${activeTabIndex})`
+        );
+
+        try {
+          const jobStatus = await getJobStatus(activeTabIndex);
+          if (!isForensicTaskCompleted(jobStatus as ForensicTaskStatus)) {
+            console.log(
+              `🔄 Réinitialisation du WebSocket pour le job ${activeTabIndex} (${jobStatus})`
+            );
+            initWebSocket(activeTabIndex);
+          } else {
+            console.log(
+              `ℹ️ Pas de WebSocket réinitialisé - job ${activeTabIndex} terminé (${jobStatus})`
+            );
+          }
+        } catch (error) {
+          console.error(
+            'Erreur lors de la vérification du statut du job:',
+            error
+          );
+        }
+      }
+    },
+    [
+      currentPage,
+      activeTabIndex,
+      resetSearch,
+      getJobStatus,
+      initWebSocket,
+      handlePageChange,
+    ]
+  );
+
+  const handleTabChange = async (tabIndex: string) => {
+    console.log(`📑 Changement d'onglet vers: ${tabIndex}`, {
+      currentPage,
+    });
+    setIsTabLoading(true);
 
     const selectedTab = tabJobs.find((tab) => tab.id === tabIndex);
 
@@ -189,6 +237,20 @@ export default function Forensic() {
         }
 
         await loadJobResults(selectedTab.id, true);
+
+        // Ajout: Vérifier si le job est toujours actif et réinitialiser le WebSocket
+        // Ajout: Vérifier si le job est toujours actif et réinitialiser le WebSocket
+        const jobStatus = await getJobStatus(selectedTab.id);
+        if (!isForensicTaskCompleted(jobStatus as ForensicTaskStatus)) {
+          console.log(
+            `🔄 Initialisation du WebSocket pour le job ${selectedTab.id} (${jobStatus})`
+          );
+          initWebSocket(selectedTab.id);
+        } else {
+          console.log(
+            `ℹ️ Pas de WebSocket initialisé - job ${selectedTab.id} terminé (${jobStatus})`
+          );
+        }
       } catch (error) {
         console.error('Erreur lors du chargement des résultats:', error);
       }
@@ -278,7 +340,7 @@ export default function Forensic() {
             onTabChange={handleTabChange}
             isTabLoading={isTabLoading || isLoading}
             currentPage={currentPage}
-            onPageChange={handlePageChange}
+            onPageChange={handlePageTransition}
             paginationInfo={paginationInfo}
             sortType={sortType}
             setSortType={setSortType}

@@ -27,7 +27,6 @@ export default function useSearch(options: UseSearchOptions = {}) {
   // Références pour WebSocket et AbortController
   const wsRef = useRef<WebSocket | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const currentPageRef = useRef<number>(1);
 
   // Références pour suivre les états les plus récents
   const latestJobId = useRef<string | null>(null);
@@ -132,18 +131,7 @@ export default function useSearch(options: UseSearchOptions = {}) {
   };
 
   const initWebSocket = useCallback(
-    (id: string, page1 = false) => {
-      const shouldInit = page1 || currentPageRef.current === 1;
-
-      console.log(
-        `🔍 Tentative d'initialisation WebSocket pour job ${id}, page ${currentPageRef.current}`
-      );
-
-      if (!shouldInit) {
-        console.log('🚫 WebSocket non initialisé - page différente de 1');
-        return;
-      }
-
+    (id: string) => {
       if (!id) {
         console.error(
           '⚠️ Aucun jobId disponible pour initialiser le WebSocket'
@@ -190,14 +178,6 @@ export default function useSearch(options: UseSearchOptions = {}) {
 
       // AMÉLIORATION : Fermer proprement la connexion existante avant d'en créer une nouvelle
       closeExistingConnection().then(() => {
-        // Ne pas créer de nouvelle connexion si l'état a changé pendant la fermeture
-        if (latestIsCancelling.current || currentPageRef.current !== 1) {
-          console.log(
-            '🛑 Création de WebSocket annulée - conditions ont changé'
-          );
-          return;
-        }
-
         // Déterminer le hostname en privilégiant la variable d'environnement si possible
         let { hostname } = window.location;
         try {
@@ -338,7 +318,6 @@ export default function useSearch(options: UseSearchOptions = {}) {
       latestJobId,
       latestType,
       isCancelling,
-      currentPageRef,
     ]
   );
 
@@ -397,7 +376,6 @@ export default function useSearch(options: UseSearchOptions = {}) {
         initializeSourceProgress(selectedSources);
 
         setJobId(guid);
-        currentPageRef.current = 1;
 
         // Initialiser automatiquement le WebSocket après avoir obtenu le guid
         initWebSocket(guid);
@@ -470,11 +448,6 @@ export default function useSearch(options: UseSearchOptions = {}) {
     [cleanupResources]
   );
 
-  // Mise à jour de la page courante
-  const setCurrentPage = useCallback((page: number) => {
-    currentPageRef.current = page;
-  }, []);
-
   return {
     startSearch,
     stopSearch,
@@ -488,6 +461,5 @@ export default function useSearch(options: UseSearchOptions = {}) {
     initWebSocket,
     cleanupWebSocket,
     getJobStatus,
-    setCurrentPage,
   };
 }
