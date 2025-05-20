@@ -1,4 +1,5 @@
 import React, { JSX, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -28,6 +29,7 @@ export default function TrendInfos({
   children,
   chart,
 }: TrendInfoProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const { globalTrend, trendInfo } = useTrendAPI(
     dashboardKey,
@@ -48,9 +50,9 @@ export default function TrendInfos({
       <DialogTrigger>{children}</DialogTrigger>
       <DialogContent className="max-w-3xl w-[80vw] h-auto overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Trend Information</DialogTitle>
+          <DialogTitle>{t('dashboard:trend.title')}</DialogTitle>
           <DialogDescription>
-            This is the trend information for the selected widget.
+            {t('dashboard:trend.description')}
           </DialogDescription>
         </DialogHeader>
         {React.cloneElement(chart, { trendData: trendInfoData })}
@@ -60,7 +62,7 @@ export default function TrendInfos({
             <CardContent className="flex h-full">
               <div className="flex justify-center items-center h-full w-full">
                 <Label className="text-center whitespace-normal break-words">
-                  Moyenne: {trendMetrics?.avg.toFixed(2)}
+                  {t('dashboard:trend.avg')}: {trendMetrics?.avg.toFixed(2)}
                 </Label>
               </div>
             </CardContent>
@@ -70,7 +72,7 @@ export default function TrendInfos({
             <CardContent className="flex h-full">
               <div className="flex justify-center items-center h-full w-full">
                 <Label className="text-center whitespace-normal break-words">
-                  Médiane: {trendMetrics?.med.toFixed(2)}
+                  {t('dashboard:trend.med')}: {trendMetrics?.med.toFixed(2)}
                 </Label>
               </div>
             </CardContent>
@@ -80,7 +82,7 @@ export default function TrendInfos({
             <CardContent className="flex h-full">
               <div className="flex justify-center items-center h-full w-full">
                 <Label className="text-center whitespace-normal break-words">
-                  Variance: {trendMetrics?.std.toFixed(2)}
+                  {t('dashboard:trend.std')}: {trendMetrics?.std.toFixed(2)}
                 </Label>
               </div>
             </CardContent>
@@ -90,7 +92,7 @@ export default function TrendInfos({
             <CardContent className="flex h-full">
               <div className="flex justify-center items-center h-full w-full">
                 <Label className="text-center whitespace-normal break-words">
-                  Percentile 5%: {trendMetrics?.pc5.toFixed(2)}
+                  {t('dashboard:trend.pc5')}: {trendMetrics?.pc5.toFixed(2)}
                 </Label>
               </div>
             </CardContent>
@@ -100,7 +102,7 @@ export default function TrendInfos({
             <CardContent className="flex h-full">
               <div className="flex justify-center items-center h-full w-full">
                 <Label className="text-center whitespace-normal break-words">
-                  Percentile 95%: {trendMetrics?.pc95.toFixed(2)}
+                  {t('dashboard:trend.pc95')}: {trendMetrics?.pc95.toFixed(2)}
                 </Label>
               </div>
             </CardContent>
@@ -110,7 +112,7 @@ export default function TrendInfos({
             <CardContent className="flex h-full">
               <div className="flex justify-center items-center h-full w-full">
                 <Label className="text-center whitespace-normal break-words">
-                  Minimum: {trendMetrics?.min}
+                  {t('dashboard:trend.min')}: {trendMetrics?.min}
                 </Label>
               </div>
             </CardContent>
@@ -120,7 +122,7 @@ export default function TrendInfos({
             <CardContent className="flex h-full">
               <div className="flex justify-center items-center h-full w-full">
                 <Label className="text-center whitespace-normal break-words">
-                  Maximum: {trendMetrics?.max}
+                  {t('dashboard:trend.max')}: {trendMetrics?.max}
                 </Label>
               </div>
             </CardContent>

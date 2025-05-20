@@ -171,5 +171,16 @@
     "all": "Tout",
     "clear": "Effacer",
     "noResults": "Aucun élément trouvé."
+  },
+  "trend": {
+    "title": "Tendances",
+    "description": "Analyse des tendances au fil du temps",
+    "avg": "Moyenne",
+    "med": "Médiane",
+    "std": "Variance",
+    "pc5": "Percentile 5%",
+    "pc95": "Percentile 95%",
+    "min": "Minimum",
+    "max": "Maximum"
   }
 }

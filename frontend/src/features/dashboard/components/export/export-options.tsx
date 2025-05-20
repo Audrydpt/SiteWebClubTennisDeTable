@@ -161,9 +161,9 @@ export default function ExportStepSource({
                       />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.values(AcicAggregation).map((item) => (
+                      {Object.entries(AcicAggregation).map(([key, item]) => (
                         <SelectItem key={item} value={item}>
-                          {item}
+                          {t(`dashboard:time.${key}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>

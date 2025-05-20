@@ -171,5 +171,16 @@
     "all": "All",
     "clear": "Clear",
     "noResults": "No item found."
+  },
+  "trend": {
+    "title": "Trends",
+    "description": "Analysis of trends over time",
+    "avg": "Average",
+    "med": "Median",
+    "std": "Variance",
+    "pc5": "Percentile 5%",
+    "pc95": "Percentile 95%",
+    "min": "Minimum",
+    "max": "Maximum"
   }
 }
