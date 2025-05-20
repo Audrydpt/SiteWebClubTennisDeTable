@@ -250,20 +250,10 @@ class ResultsStore:
 
         try:
             while True:
-                message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
-
+                message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=20.0)
                 if message is None:
-                    task_status = TaskManager.get_job_status(job_id)
-                    if task_status in [JobStatus.SUCCESS, JobStatus.FAILURE, JobStatus.REVOKED]:
-                        for _ in range(5):
-                            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
-                            if message:
-                                break
+                    break
 
-                        if message is None:
-                            break
-                    continue
-                
                 try:
                     update_data = json.loads(message["data"])
                 except Exception as ex:

@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 import useJobs from '../hooks/use-jobs';
-import useSearch from '../hooks/use-search.tsx';
+import useForensicResults from '@/features/forensic/hooks/use-results.tsx';
 import forensicResultsHeap from '../lib/data-structure/heap';
 import { calculateTimeRemaining } from '../lib/estimation/estimation';
 import { ForensicResult, SourceProgress } from '../lib/types';
@@ -53,8 +53,8 @@ export default function Results({
   toggleSortOrder,
 }: ResultsProps) {
   const [showSourceDetails, setShowSourceDetails] = useState(false);
-  const { /* resumeJob, */ displayResults, setDisplayResults, testResumeJob } =
-    useSearch();
+  const { setDisplayResults, loadJobResults, displayResults } =
+    useForensicResults();
   const {
     tasks: tabJobs,
     handleTabChange: defaultHandleTabChange,
@@ -133,7 +133,7 @@ export default function Results({
       try {
         loadedJobsRef.current.add(jobId);
         // await resumeJob(jobId, false);
-        await testResumeJob(jobId, 1, false, false, sortType, 'desc');
+        await loadJobResults(jobId, false);
       } catch (error) {
         console.error('Erreur lors du chargement des résultats:', error);
       } finally {
@@ -152,7 +152,7 @@ export default function Results({
         clearTimeout(requestTimeoutRef.current);
       }
     };
-  }, [activeTabIndex, tabJobs, /* resumeJob, */ testResumeJob]);
+  }, [activeTabIndex, tabJobs, /* resumeJob, */ loadJobResults]);
 
   const timeEstimates = useMemo(
     () => calculateTimeRemaining(sourceProgress),

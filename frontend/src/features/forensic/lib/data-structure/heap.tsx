@@ -78,6 +78,35 @@ class ForensicResultsHeap {
     });
   }
 
+  getTopByScore(
+    limit: number = FORENSIC_PAGINATION_ITEMS,
+    descending: boolean = true
+  ): ForensicResult[] {
+    const allResults = this.getBestResults();
+    const sortedResults = descending ? allResults : [...allResults].reverse();
+
+    return sortedResults.slice(0, limit);
+  }
+
+  getTopByDate(
+    limit: number = FORENSIC_PAGINATION_ITEMS,
+    descending: boolean = true
+  ): ForensicResult[] {
+    const allResults = this.getAllResults();
+
+    // Tri par date
+    const sortedByDate = allResults.sort((a, b) => {
+      const dateA =
+        typeof a.timestamp === 'string' ? new Date(a.timestamp).getTime() : 0;
+      const dateB =
+        typeof b.timestamp === 'string' ? new Date(b.timestamp).getTime() : 0;
+
+      return descending ? dateB - dateA : dateA - dateB;
+    });
+
+    return sortedByDate.slice(0, limit);
+  }
+
   clear(): void {
     this.minHeap.clear();
     this.resultMap.clear();
@@ -117,7 +146,7 @@ class ForensicResultsHeap {
     return wouldBeBetterThan >= 0 && wouldBeBetterThan < currentPage * pageSize;
   }
 
-  getCount(): number {
+  size(): number {
     return this.minHeap.size();
   }
 
