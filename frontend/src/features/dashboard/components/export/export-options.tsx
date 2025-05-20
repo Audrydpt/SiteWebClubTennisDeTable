@@ -109,6 +109,9 @@ export default function ExportStepSource({
     );
   }, [data]);
 
+  console.log('Data', data);
+  console.log('whereClausesAutocompletion', whereClausesAutocompletion);
+
   const { isValid } = form.formState;
 
   useEffect(() => {

@@ -10,6 +10,7 @@
     "add": "Add a widget",
     "edit": "Edit widget",
     "title": "Title of the widget",
+    "description": "Create a widget according to your needs",
     "deleteConfirmation": "This action is irreversible. The widget will be permanently deleted.",
 
     "type": {

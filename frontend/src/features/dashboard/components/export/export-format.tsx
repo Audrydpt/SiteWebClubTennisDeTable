@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ExportStep } from '../../lib/export';
 import exportData from '../../lib/exportData';
 import { AcicAggregation } from '../../lib/props';
-import { getWidgetDataForExport } from '../../lib/utils';
+import { getWidgetData } from '../../lib/utils';
 
 export default function ExportStepFormat({
   storedWidget,
@@ -31,7 +31,7 @@ export default function ExportStepFormat({
       groupByColumn,
     ],
     queryFn: async () =>
-      getWidgetDataForExport(
+      getWidgetData(
         {
           table: storedWidget.table,
           aggregation: storedWidget.aggregation || AcicAggregation.OneHour,

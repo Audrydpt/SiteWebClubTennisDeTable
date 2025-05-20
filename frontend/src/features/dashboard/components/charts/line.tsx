@@ -267,7 +267,7 @@ export default function LineComponent({
                 unit={table === 'AcicOccupancy' ? '%' : ''}
               />
             ))}
-            {console.log('chartData', chartData)}
+
             {trendStats &&
               Array.isArray(trendStats) &&
               trendStats.length > 0 && [

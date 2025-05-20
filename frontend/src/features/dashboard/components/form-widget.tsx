@@ -2,7 +2,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { TriangleAlert } from 'lucide-react';
 import { Duration } from 'luxon';
-import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -13,6 +19,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -36,7 +43,7 @@ import {
 } from '@/components/ui/select';
 
 import ClearableSelect from '@/components/clearable-select';
-import { WhereClauses } from '@/components/where-clauses';
+import { WhereClausesWithSearch } from '@/components/where-clauses-with-search';
 import {
   ChartTypeComponents,
   ExperimentalChartType,
@@ -51,7 +58,7 @@ import {
   ChartSize,
   ChartType,
 } from '../lib/props';
-import { getWidgetDescription } from '../lib/utils';
+import { getWidgetData, getWidgetDescription } from '../lib/utils';
 
 const getLayoutOptions = (chartType: ChartType): readonly string[] =>
   LayoutOptions[chartType] ?? [];
@@ -229,17 +236,67 @@ export function FormWidget({
     [form, onSubmit]
   );
 
+  let groupByColumn = '';
+  if (data && data[formValues.table] && data[formValues.table].length > 0) {
+    groupByColumn = data[formValues.table].join(',');
+  }
+  const whereClauseData = useQuery({
+    queryKey: [
+      'dashboard',
+      'where_clause',
+      formValues.table,
+      formValues.aggregation,
+      formValues.duration,
+      groupByColumn,
+    ],
+    queryFn: () =>
+      getWidgetData(
+        {
+          table: formValues.table || AcicEvent.AcicCounting,
+          aggregation: formValues.aggregation,
+          duration: formValues.duration,
+        },
+        groupByColumn
+      ),
+    enabled: groupByColumn.length > 0,
+  });
+
+  const whereClausesAutocompletion = React.useMemo(() => {
+    if (!whereClauseData.data) return {};
+
+    return whereClauseData.data.reduce(
+      (
+        acc: Record<string, Set<string>>,
+        item: Record<string, string | number | boolean | null>
+      ) => {
+        Object.entries(item).forEach(([key, value]) => {
+          if (!acc[key]) {
+            acc[key] = new Set();
+          }
+          if (value !== null && value !== undefined) {
+            acc[key].add(String(value));
+          }
+        });
+        return acc;
+      },
+      {}
+    );
+  }, [whereClauseData.data]);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-5xl">
+      <DialogContent className="max-w-5xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
             {edition ? t('dashboard:widget.edit') : t('dashboard:widget.add')}
           </DialogTitle>
+          <DialogDescription>
+            {t('dashboard:widget.description')}
+          </DialogDescription>
         </DialogHeader>
         <div className="flex flex-row gap-6">
-          <div className="flex-1">
+          <div className="flex-1 overflow-y-auto max-h-[72vh]">
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(handleSubmit)}
@@ -459,10 +516,11 @@ export function FormWidget({
                       <FormLabel>
                         {t('dashboard:widget.filters.label')}
                       </FormLabel>
-                      <WhereClauses
+                      <WhereClausesWithSearch
                         columns={getGroupByOptions(data, formValues.table)}
                         value={Array.isArray(field.value) ? field.value : []}
                         onValueChange={field.onChange}
+                        whereClauseAutocompletion={whereClausesAutocompletion}
                       />
                       <FormMessage />
                     </FormItem>

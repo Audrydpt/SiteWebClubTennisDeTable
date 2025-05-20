@@ -10,6 +10,7 @@
     "add": "Ajouter une tuile",
     "edit": "Modifier la tuile",
     "title": "Titre de la tuile",
+    "description": "Créer une tuile selon vos besoins",
     "deleteConfirmation": "Cette action est irréversible. La tuile sera supprimée définitivement.",
 
     "type": {
