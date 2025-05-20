@@ -78,7 +78,6 @@ class ForensicResultsHeap {
     });
   }
 
-  // Nouvelle méthode pour obtenir les meilleurs résultats triés par score
   getTopByScore(
     limit: number = FORENSIC_PAGINATION_ITEMS,
     descending: boolean = true
@@ -89,7 +88,6 @@ class ForensicResultsHeap {
     return sortedResults.slice(0, limit);
   }
 
-  // Nouvelle méthode pour obtenir les meilleurs résultats triés par date
   getTopByDate(
     limit: number = FORENSIC_PAGINATION_ITEMS,
     descending: boolean = true

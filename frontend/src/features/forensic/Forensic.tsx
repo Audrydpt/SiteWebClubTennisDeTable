@@ -1,11 +1,14 @@
-/* eslint-disable no-console,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
+/* eslint-disable no-console,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps,@typescript-eslint/no-use-before-define */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Card, CardContent } from '@/components/ui/card';
 
 import ForensicForm from './components/form';
 import Results from './components/results';
-import useJobs from './hooks/use-jobs';
+import useJobs, {
+  ForensicTaskStatus,
+  isForensicTaskCompleted,
+} from './hooks/use-jobs';
 import forensicResultsHeap from './lib/data-structure/heap';
 // eslint-disable-next-line import/no-named-as-default
 import useSearch from './hooks/use-search';
@@ -34,6 +37,7 @@ export default function Forensic() {
     sortOrder,
     toggleSortOrder,
     paginationInfo,
+    tasksMetadata,
     handlePageChange,
     loadJobResults,
     resetResults,
@@ -43,9 +47,6 @@ export default function Forensic() {
     updateFirstPageWithRelevantResults,
   } = useForensicResults();
 
-  // Hook pour la recherche (démarrage/arrêt)
-  // Dans Forensic.tsx, modifiez l'appel à useSearch pour passer un callback onResultReceived:
-
   const {
     startSearch,
     stopSearch,
@@ -53,6 +54,8 @@ export default function Forensic() {
     isSearching,
     sourceProgress,
     resetSearch,
+    initWebSocket,
+    getJobStatus,
   } = useSearch({
     onResultReceived: (result) => {
       // Ajoute le résultat au heap et met à jour l'affichage si nécessaire
@@ -77,14 +80,49 @@ export default function Forensic() {
           setResults(topResults);
           setDisplayResults(topResults);
 
-          // Mise à jour des informations de pagination
-          // Dans la fonction onResultReceived du hook useSearch, corrigez la mise à jour de paginationInfo
-          setPaginationInfo((prev) => ({
-            ...prev, // Garde toutes les propriétés existantes y compris currentPage
-            total: forensicResultsHeap.size(),
-            totalPages: Math.ceil(forensicResultsHeap.size() / prev.pageSize),
-          }));
+          // Mettre à jour les informations de pagination
+          // Dans la fonction onResultReceived du useSearch (dans Forensic.tsx)
+          setPaginationInfo((prev) => {
+            // Toujours utiliser tasksMetadata pour le job actif quand disponible
+            if (activeTabIndex && tasksMetadata[activeTabIndex]) {
+              const taskInfo = tasksMetadata[activeTabIndex];
+              return {
+                ...prev,
+                currentPage,
+                total: taskInfo.count || 0,
+                totalPages:
+                  taskInfo.total_pages ||
+                  Math.ceil((taskInfo.count || 0) / prev.pageSize),
+              };
+            }
+            // Fallback uniquement si les métadonnées ne sont pas disponibles
+            return {
+              ...prev,
+              total: forensicResultsHeap.size(),
+              totalPages: Math.ceil(forensicResultsHeap.size() / prev.pageSize),
+            };
+          });
         }
+      }
+    },
+    onReturnToFirstPage: (jobId: string) => {
+      // Vérifier si une recherche est encore en cours pour ce job
+      if (jobId && !isSearching) {
+        console.log('Reconnexion au WebSocket car retour à la page 1');
+
+        // Récupérer le statut du job pour s'assurer qu'il est toujours actif
+        getJobStatus(jobId)
+          .then((status) => {
+            if (!isForensicTaskCompleted(status as ForensicTaskStatus)) {
+              initWebSocket(jobId);
+            }
+          })
+          .catch((error) => {
+            console.error(
+              'Erreur lors de la vérification du statut du job:',
+              error
+            );
+          });
       }
     },
   });
@@ -97,24 +135,63 @@ export default function Forensic() {
     addNewTab,
   } = useJobs();
 
+  useEffect(() => {
+    // Ne recharger que si un onglet est actif et qu'on n'est pas déjà en train de charger
+    if (activeTabIndex && !isLoading && !isTabLoading) {
+      console.log(
+        `🔄 Rechargement suite au changement de tri: ${sortType} (${sortOrder})`
+      );
+
+      // Réinitialiser à la première page
+      setCurrentPage(1);
+
+      // Recharger les données avec le nouveau tri
+      loadJobResults(
+        activeTabIndex,
+        true,
+        1 // Toujours revenir à la première page
+      );
+    }
+  }, [sortType, sortOrder]);
+
   const handleToggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
   };
 
   const handleTabChange = async (tabIndex: string) => {
     setIsTabLoading(true);
+
+    // Réinitialiser à la première page
     setCurrentPage(1);
 
     const selectedTab = tabJobs.find((tab) => tab.id === tabIndex);
 
+    // Réinitialisation complète
     resetSearch();
     resetResults();
 
+    // Mettre à jour l'onglet actif
     jobsHandleTabChange(tabIndex);
 
     if (selectedTab?.id) {
-      // Utiliser loadJobResults depuis useForensicResults au lieu de getActivePaginationInfo
-      await loadJobResults(selectedTab.id, true);
+      try {
+        // Mettre à jour la pagination immédiatement avec les métadonnées
+        if (tasksMetadata[selectedTab.id]) {
+          const taskInfo = tasksMetadata[selectedTab.id];
+          setPaginationInfo((prev) => ({
+            ...prev,
+            currentPage: 1,
+            total: taskInfo.count || 0,
+            totalPages:
+              taskInfo.total_pages ||
+              Math.ceil((taskInfo.count || 0) / prev.pageSize),
+          }));
+        }
+
+        await loadJobResults(selectedTab.id, true);
+      } catch (error) {
+        console.error('Erreur lors du chargement des résultats:', error);
+      }
     }
 
     setIsTabLoading(false);

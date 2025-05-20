@@ -15,6 +15,7 @@ const FORENSIC_PAGINATION_ITEMS = parseInt(
 interface UseForensicResultsOptions {
   onPageChange?: (page: number, jobId: string | null) => void;
   onMessageReceived?: (message: any) => void;
+  onReturnToFirstPage?: (jobId: string) => void;
 }
 
 export default function useForensicResults(
@@ -42,8 +43,69 @@ export default function useForensicResults(
     total: 0,
   });
 
+  // Nouvel état pour les métadonnées de pagination de toutes les tâches
+  const [tasksMetadata, setTasksMetadata] = useState<
+    Record<
+      string,
+      {
+        count: number;
+
+        total_pages: number;
+      }
+    >
+  >({});
+
   // Pour garder trace de l'ID de job actif
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
+
+  const fetchTasksMetadata = useCallback(async () => {
+    try {
+      const response = await fetch(`${process.env.MAIN_API_URL}/forensics`);
+
+      if (!response.ok) {
+        throw new Error(`Erreur API: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.tasks) {
+        setTasksMetadata(data.tasks);
+
+        // Si un jobId actif est défini, mettre à jour les infos de pagination
+        if (activeJobId && data.tasks[activeJobId]) {
+          const taskInfo = data.tasks[activeJobId];
+          setPaginationInfo((prev) => ({
+            ...prev,
+            total: taskInfo.count || 0,
+            totalPages:
+              taskInfo.total_pages ||
+              Math.ceil((taskInfo.count || 0) / prev.pageSize),
+          }));
+        }
+
+        return data.tasks;
+      }
+
+      return {};
+    } catch (error) {
+      console.error('Erreur lors de la récupération des métadonnées:', error);
+      return {};
+    }
+  }, [activeJobId]);
+
+  // Actualisation périodique des métadonnées toutes les 4 secondes
+  useEffect(() => {
+    // Appel initial
+    fetchTasksMetadata();
+
+    // Configuration de l'intervalle pour les actualisations suivantes
+    const intervalId = setInterval(fetchTasksMetadata, 4000);
+
+    // Nettoyage à la destruction du composant
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [fetchTasksMetadata]);
 
   // Fonction pour réinitialiser les résultats
   const resetResults = useCallback(() => {
@@ -192,7 +254,7 @@ export default function useForensicResults(
         }
 
         // Traiter les résultats de détection
-        if (data.type === 'detection_result') {
+        if (data.type === 'detection') {
           const result: ForensicResult = {
             id: data.frame_uuid,
             timestamp: data.timestamp,
@@ -222,7 +284,7 @@ export default function useForensicResults(
   );
 
   // Fonction pour récupérer le statut d'un job
-  const getJobStatus = async (jobId: string): Promise<string> => {
+  const getJobStatus = async (jobId: string): Promise<ForensicTaskStatus> => {
     try {
       const response = await fetch(
         `${process.env.MAIN_API_URL}/forensics/${jobId}`
@@ -233,28 +295,60 @@ export default function useForensicResults(
       }
 
       const data = await response.json();
-      return data.status;
+      return data.status as ForensicTaskStatus; // Conversion explicite du statut
     } catch (error) {
       console.error(
         `Erreur lors de la vérification du statut du job ${jobId}:`,
         error
       );
-      return 'UNKNOWN';
+      return 'UNKNOWN' as ForensicTaskStatus; // Valeur par défaut avec conversion
     }
   };
 
-  // Gestion des changements de page
   const handlePageChange = useCallback(
     async (page: number) => {
       if (page === currentPage || !activeJobId) return;
 
+      const isReturningToFirstPage = page === 1 && currentPage > 1;
+
       setIsLoading(true);
-      currentPageRef.current = page;
       setCurrentPage(page);
+      currentPageRef.current = page;
+
+      // Utiliser les métadonnées de tâche si disponibles, sinon conserver les valeurs actuelles
+      const previousTotal =
+        tasksMetadata[activeJobId]?.count !== undefined
+          ? tasksMetadata[activeJobId].count
+          : paginationInfo.total;
+
+      const previousTotalPages =
+        tasksMetadata[activeJobId]?.total_pages !== undefined
+          ? tasksMetadata[activeJobId].total_pages
+          : paginationInfo.totalPages;
+
+      // Mettre à jour la pagination avec des valeurs stables
+      setPaginationInfo((prev) => ({
+        ...prev,
+        currentPage: page,
+        total: previousTotal || prev.total,
+        totalPages: previousTotalPages || prev.totalPages,
+      }));
 
       try {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
         await loadJobResults(activeJobId, false, page);
+
+        // Si on revient à la page 1, vérifier si la recherche est toujours active
+        if (isReturningToFirstPage) {
+          // Vérifier si le job est toujours en cours
+          const jobStatus = await getJobStatus(activeJobId);
+          const isSearchActive = !isForensicTaskCompleted(jobStatus);
+
+          // Si le job est actif et qu'on a une callback, l'appeler pour réactiver le WebSocket
+          if (isSearchActive && options.onReturnToFirstPage) {
+            options.onReturnToFirstPage(activeJobId);
+          }
+        }
 
         if (options.onPageChange) {
           options.onPageChange(page, activeJobId);
@@ -265,7 +359,14 @@ export default function useForensicResults(
         setIsLoading(false);
       }
     },
-    [currentPage, activeJobId, options.onPageChange]
+    [
+      currentPage,
+      activeJobId,
+      paginationInfo,
+      tasksMetadata,
+      options.onPageChange,
+      options.onReturnToFirstPage,
+    ]
   );
 
   // Fonction pour charger les résultats d'un job
@@ -410,6 +511,7 @@ export default function useForensicResults(
     sortOrder,
     paginationInfo,
     activeJobId,
+    tasksMetadata,
 
     // Méthodes de modification des états
     setResults,

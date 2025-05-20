@@ -358,7 +358,9 @@ export default function Display({
           </PaginationContent>
         </Pagination>
         <div className="text-sm text-muted-foreground">
-          {paginationInfo.total} résultats
+          {paginationInfo.total !== undefined && paginationInfo.total !== null
+            ? `${paginationInfo.total} résultats`
+            : 'Chargement...'}
         </div>
       </div>
     );

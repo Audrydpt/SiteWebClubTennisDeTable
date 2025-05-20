@@ -12,6 +12,7 @@ interface UseSearchOptions {
   onJobIdChange?: (jobId: string | null) => void;
   onProgressUpdate?: (progress: number | null) => void;
   onResultReceived?: (result: ForensicResult) => void;
+  onReturnToFirstPage?: (jobId: string) => void;
 }
 
 export default function useSearch(options: UseSearchOptions = {}) {
@@ -217,8 +218,8 @@ export default function useSearch(options: UseSearchOptions = {}) {
           };
 
           ws.onmessage = (event) => {
-            // Skip processing if cancelling
-            if (isCancelling) {
+            // Ne pas traiter si annulation en cours
+            if (latestIsCancelling.current) {
               return;
             }
 
@@ -226,7 +227,7 @@ export default function useSearch(options: UseSearchOptions = {}) {
               try {
                 const data = JSON.parse(event.data);
 
-                // Store metadata for next image
+                // Stocker les métadonnées pour la prochaine image
                 if (data.timestamp)
                   metadataQueue.current.timestamp = data.timestamp;
                 if (data.score !== undefined)
@@ -235,50 +236,63 @@ export default function useSearch(options: UseSearchOptions = {}) {
                 if (data.attributes)
                   metadataQueue.current.attributes = data.attributes;
 
-                if (data.type === 'progress' && data.progress !== undefined) {
-                  // Ajouter ici la logique de mise à jour de la progression
-                  metadataQueue.current.progress = data.progress;
+                // Amélioration: traitement explicite des messages de progression
+                if (data.type === 'progress') {
+                  console.log('🔄 Progression reçue:', data.progress);
 
-                  // Mettre à jour l'état de progression global
-                  setProgress(data.progress);
+                  // Vérifier que la valeur de progression est utilisable
+                  if (data.progress !== undefined) {
+                    const progressValue = Number(data.progress);
 
-                  // Si les informations de source sont disponibles, mettre à jour la progression de cette source
-                  if (data.source_id) {
-                    setSourceProgress((prevSourcesProgress) =>
-                      prevSourcesProgress.map((source) =>
-                        source.sourceId === data.source_id
-                          ? { ...source, progress: data.progress }
-                          : source
-                      )
-                    );
+                    if (!Number.isNaN(progressValue)) {
+                      // Mettre à jour le métadataQueue
+                      metadataQueue.current.progress = progressValue;
+
+                      // Mise à jour forcée de l'état global de progression
+                      setProgress((prev) =>
+                        // Ne mettre à jour que si la nouvelle valeur est différente
+                        prev !== progressValue ? progressValue : prev
+                      );
+
+                      // Mise à jour de la progression par source
+                      if (data.source_id) {
+                        setSourceProgress((prevSourcesProgress) =>
+                          prevSourcesProgress.map((source) =>
+                            source.sourceId === data.source_id
+                              ? { ...source, progress: progressValue }
+                              : source
+                          )
+                        );
+                      }
+                    }
+                  }
+                } else if (data.type === 'detection') {
+                  const imageUrl = `${process.env.MAIN_API_URL}/forensics/${id}/frames/${data.frame_uuid}`;
+
+                  // Utiliser les métadonnées actuelles pour cette image
+                  const newResult: ForensicResult = {
+                    id: crypto.randomUUID(),
+                    imageData: imageUrl,
+                    timestamp: data.timestamp
+                      ? new Date(data.timestamp).toISOString()
+                      : new Date().toISOString(),
+                    score: data.score ?? 0,
+                    progress: data.progress,
+                    attributes: data.attributes,
+                    cameraId: data.camera ?? 'unknown',
+                    type:
+                      latestType.current === 'person' ? 'person' : 'vehicle',
+                  };
+
+                  // Utiliser le callback pour traiter le nouveau résultat
+                  if (options.onResultReceived) {
+                    options.onResultReceived(newResult);
                   }
                 } else if (data.error) {
                   // Logique de gestion d'erreur existante
                 }
               } catch (error) {
                 console.error('❌ WebSocket data parsing error:', error);
-              }
-            } else if (event.data instanceof Blob) {
-              const blob = event.data;
-              const imageUrl = URL.createObjectURL(blob);
-
-              // Use current metadata for this image
-              const newResult: ForensicResult = {
-                id: crypto.randomUUID(),
-                imageData: imageUrl,
-                timestamp: metadataQueue.current.timestamp
-                  ? new Date(metadataQueue.current.timestamp).toISOString()
-                  : new Date().toISOString(),
-                score: metadataQueue.current.score ?? 0,
-                progress: metadataQueue.current.progress,
-                attributes: metadataQueue.current.attributes,
-                cameraId: metadataQueue.current.camera ?? 'unknown',
-                type: latestType.current === 'person' ? 'person' : 'vehicle',
-              };
-
-              // Utiliser le callback pour traiter le nouveau résultat
-              if (options.onResultReceived) {
-                options.onResultReceived(newResult);
               }
             }
           };
