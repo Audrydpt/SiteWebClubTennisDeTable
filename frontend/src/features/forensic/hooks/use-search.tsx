@@ -264,7 +264,7 @@ export default function useSearch() {
               try {
                 const data = JSON.parse(event.data);
 
-                // Store metadata for next image
+                // Stocker les métadonnées pour une utilisation ultérieure
                 if (data.timestamp)
                   metadataQueue.current.timestamp = data.timestamp;
                 if (data.score !== undefined)
@@ -274,54 +274,75 @@ export default function useSearch() {
                   metadataQueue.current.attributes = data.attributes;
 
                 if (data.type === 'progress' && data.progress !== undefined) {
-                  // Ajouter ici la logique de mise à jour de la progression
+                  // Mettre à jour la progression
+                  setProgress(data.progress);
                   metadataQueue.current.progress = data.progress;
 
-                  // Mettre à jour l'état de progression global
-                  setProgress(data.progress);
-
-                  // Si les informations de source sont disponibles, mettre à jour la progression de cette source
-                  if (data.source_id) {
-                    setSourceProgress((prevSourcesProgress) =>
-                      prevSourcesProgress.map((source) =>
-                        source.sourceId === data.source_id
+                  // Mise à jour de la progression par source
+                  if (data.guid) {
+                    setSourceProgress((prev) =>
+                      prev.map((source) =>
+                        source.sourceId === data.guid
                           ? { ...source, progress: data.progress }
                           : source
                       )
                     );
                   }
+                } else if (data.type === 'detection') {
+                  // Vérification explicite que nous avons un frame_uuid
+                  if (!data.frame_uuid) {
+                    console.warn('⚠️ Detection reçue sans frame_uuid', data);
+                    return;
+                  }
+
+                  console.log('🔍 Detection reçue:', data);
+
+                  // Créer l'URL pour récupérer l'image via API
+                  const imageUrl = `${process.env.MAIN_API_URL}/forensics/${id}/frames/${data.frame_uuid}`;
+
+                  // Créer un nouveau résultat avec toutes les métadonnées
+                  const newResult: ForensicResult = {
+                    id: data.frame_uuid,
+                    imageData: imageUrl,
+                    timestamp: data.timestamp
+                      ? new Date(data.timestamp).toISOString()
+                      : new Date().toISOString(),
+                    score: data.score ?? 0,
+                    progress: data.progress ?? metadataQueue.current.progress,
+                    attributes: data.attributes ?? {},
+                    cameraId: data.camera ?? 'unknown',
+                    type:
+                      latestType.current === 'person' ? 'person' : 'vehicle',
+                  };
+
+                  console.log('📊 Ajout du résultat:', newResult);
+
+                  // Assurer que nous sommes sur la première page pour l'affichage
+                  if (currentPageRef.current === 1) {
+                    // Forcer l'ajout au heap et la mise à jour de l'affichage
+                    forensicResultsHeap.addResult(newResult);
+
+                    // Récupérer les meilleurs résultats selon les critères de tri
+                    const topResults = forensicResultsHeap.getPageResults(
+                      1,
+                      paginationInfo.pageSize
+                    );
+
+                    // Mettre à jour les deux états pour assurer l'affichage
+                    setDisplayResults([...topResults]);
+                    setResults([...topResults]);
+
+                    console.log('🖼️ Résultats mis à jour:', topResults.length);
+                  } else {
+                    // Ajouter au heap sans mettre à jour l'affichage
+                    forensicResultsHeap.addResult(newResult);
+                  }
                 } else if (data.error) {
-                  // Logique de gestion d'erreur existante
+                  console.error('⚠️ WebSocket error:', data.error);
+                  setIsSearching(false);
                 }
               } catch (error) {
                 console.error('❌ WebSocket data parsing error:', error);
-              }
-            } else if (event.data instanceof Blob) {
-              const blob = event.data;
-              const imageUrl = URL.createObjectURL(blob);
-
-              // Use current metadata for this image
-              const newResult: ForensicResult = {
-                id: crypto.randomUUID(),
-                imageData: imageUrl,
-                timestamp: metadataQueue.current.timestamp
-                  ? new Date(metadataQueue.current.timestamp).toISOString()
-                  : new Date().toISOString(),
-                score: metadataQueue.current.score ?? 0,
-                progress: metadataQueue.current.progress,
-                attributes: metadataQueue.current.attributes,
-                cameraId: metadataQueue.current.camera ?? 'unknown',
-                type: latestType.current === 'person' ? 'person' : 'vehicle',
-              };
-
-              const wasRelevantAndAdded = updateFirstPageWithRelevantResults(
-                newResult,
-                sortType,
-                sortOrder
-              );
-              // Mettre à jour la liste complète des résultats uniquement si nécessaire
-              if (wasRelevantAndAdded) {
-                setResults(forensicResultsHeap.getBestResults());
               }
             }
           };

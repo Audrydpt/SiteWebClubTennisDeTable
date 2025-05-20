@@ -3,12 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-// Number of maximum results to keep
-const FORENSIC_PAGINATION_ITEMS = parseInt(
-  process.env.FORENSIC_PAGINATION_ITEMS || '12',
-  10
-);
-
 export enum ForensicTaskStatus {
   PENDING = 'PENDING', // Tâche créée, pas encore préparée pour l'exécution
   RECEIVED = 'RECEIVED', // Tâche reçue, prête à être exécutée
@@ -219,7 +213,7 @@ export default function useJobs() {
   const { mutateAsync: deleteAllTasks } = useMutation({
     mutationFn: async () => {
       const response = await fetch(
-        `${process.env.MAIN_API_URL}/forensics/tasks/delete_all`,
+        `${process.env.MAIN_API_URL}/forensics/tasks/delete-all`,
         {
           method: 'DELETE',
           headers: {
@@ -270,7 +264,7 @@ export default function useJobs() {
   const { mutateAsync: deleteTab } = useMutation({
     mutationFn: async (tabIndex: string) => {
       const response = await fetch(
-        `${process.env.MAIN_API_URL}/forensics/tasks/${tabIndex}`,
+        `${process.env.MAIN_API_URL}/forensics/delete/${tabIndex}`,
         {
           method: 'DELETE',
           headers: {
@@ -370,17 +364,6 @@ export default function useJobs() {
     return resumeCallback(activeTabIndex);
   };
 
-  const getActivePaginationInfo = () => {
-    const activeTask = getActiveTask();
-
-    return {
-      currentPage: 1, // À gérer ailleurs
-      pageSize: FORENSIC_PAGINATION_ITEMS, // Ajustez selon votre configuration
-      totalPages: activeTask?.total_pages || 0,
-      total: activeTask?.count || 0,
-    };
-  };
-
   return {
     tasks,
     activeTabIndex,
@@ -389,7 +372,6 @@ export default function useJobs() {
     fetchTasks,
     getTaskById,
     getActiveTask,
-    getActivePaginationInfo,
     handleTabChange,
     resumeActiveJob,
     addNewTab,

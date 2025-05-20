@@ -50,8 +50,8 @@ export default function Forensic() {
     tasks: tabJobs,
     handleTabChange: jobsHandleTabChange,
     activeTabIndex,
-    getActivePaginationInfo,
     addNewTab,
+    getActiveTask,
   } = useJobs();
 
   const handlePaginationChange = useCallback(
@@ -181,7 +181,15 @@ export default function Forensic() {
     // Ne pas effectuer la mise à jour durant le chargement d'un onglet
     if (isTabLoading) return;
 
-    const dynamicPaginationInfo = getActivePaginationInfo();
+    const activeTask = getActiveTask();
+
+    // Créer l'objet de pagination à partir de la tâche active
+    const dynamicPaginationInfo = {
+      currentPage: 1,
+      pageSize: paginationInfo.pageSize,
+      totalPages: activeTask?.total_pages || 0,
+      total: activeTask?.count || 0,
+    };
 
     // Vérifier si une mise à jour est réellement nécessaire
     if (
@@ -215,10 +223,15 @@ export default function Forensic() {
     }
   }, [
     activeTabIndex,
-    getActivePaginationInfo,
-    activeTabIndex,
+    getActiveTask,
+    paginationInfo.pageSize,
+    paginationInfo.total,
+    paginationInfo.totalPages,
+    currentPage,
     isTabLoading,
     isSearching,
+    setPaginationInfo,
+    handlePageChange,
   ]);
 
   return (
