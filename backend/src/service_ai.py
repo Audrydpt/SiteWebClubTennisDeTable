@@ -23,7 +23,7 @@ class ServiceAI:
         
         self.analytic = f"{host}:{port}"
         self.object = object if object else "/object"
-        self.vehicle = vehicle if vehicle else "/vehicule"
+        self.vehicle = vehicle if vehicle else "/vehicle"
         self.person = person if person else "/person"
         self.describe = None
         self.ws = {}
@@ -88,12 +88,20 @@ class ServiceAI:
         models = await self.get_models()
         models_list = list(models.keys())
         
-        obj_model = [model for model in models_list if "/object" in model.lower()][0]
+        try:
+            obj_model = [model for model in models_list if self.object in model][0]
+        except Exception as e:
+            logger.error(f"No object detection model found")
+            obj_model = None
+            raise Exception(f"No object detection model found: {models_list}")
 
-        """ color_model = [model for model in models_list if "/color" in model.lower()][0]
-        type_model = [model for model in models_list if "/type" in model.lower()][0]
-        classif_models = [color_model, type_model] """
-        vehicule_model = [model for model in models_list if "/vehicule" in model.lower()][0]
+        try:
+            vehicule_model = [model for model in models_list if self.vehicle in model][0]
+        except Exception as e:
+            logger.error(f"No vehicule detection model found")
+            vehicule_model = None
+            raise Exception(f"No vehicule detection model found: {models_list}")
+        
         classif_models = [vehicule_model]
 
         obj_modelWidth = models[obj_model]["networkWidth"]
@@ -136,7 +144,7 @@ class ServiceAI:
             i=0
             for res in filtered_obj_response:
                 
-                image_class = self.get_thumbnail(image,res,0.)
+                image_class = self.get_thumbnail(image,res, 1.0)
                 image_class = cv2.resize(image_class, (class_modelWidth, class_modelHeight))
                 #image_raw_class = cv2.cvtColor(image_class, cv2.COLOR_BGR2YUV_I420) .astype("uint8")
                 image_raw_class = bgr_to_yuv420p(image_class)
@@ -308,7 +316,7 @@ class ServiceAI:
             "bbox": True if object_detection else False,
             "classifier": True if classification else False
         }
-        logger.info(f"Sending context: {ctx} to {model}")
+        logger.debug(f"Sending context: {ctx} to {model}")
         await self.ws[model].send_json(ctx)
         
         if raw is not None:
@@ -329,7 +337,7 @@ class ServiceAI:
                   "id": self.seq,
               }
           }
-          logger.info(f"Sending request: {req}")
+          logger.debug(f"Sending request: {req}")
           self.seq += 1
           await self.ws[model].send_json(req)
           await self.ws[model].send_bytes(raw.tobytes())
@@ -342,7 +350,7 @@ class ServiceAI:
                   "id": self.seq,
               }
           }
-          logger.info(f"Sending request: {req}")
+          logger.debug(f"Sending request: {req}")
           self.seq += 1
           await self.ws[model].send_json(req)
           await self.ws[model].send_bytes(jpeg.tobytes())
@@ -357,13 +365,12 @@ class ServiceAI:
                 if msg.type == aiohttp.WSMsgType.TEXT:
                     data = json.loads(msg.data)
                     if data["msg"] == "response":
-                        
                         if object_detection:
-                            logger.info(f"Detection response {data['detections']}")
+                            logger.debug(f"Detection response {data['detections']}")
                             return data["detections"]
 
                         if classification:
-                            logger.info(f"Classifier response {data['classifiers']}")
+                            logger.debug(f"Classifier response {data['classifiers']}")
                             return data["classifiers"]
                         
                         return data
@@ -383,16 +390,16 @@ class ServiceAI:
                            
 
 async def main():
-    async with ServiceAI() as forensic:
+    async with ServiceAI(host="192.168.20.160", port=53211, object="/Activity_4.3.0") as forensic:
         print("Starting")
         await forensic.get_version()
 
         #params
         test = cv2.imread("test.jpg")
-        selected_classes = ["car","truck","bus","motorcycle","bicycle"]
+        selected_classes = ["car", "truck" ,"bus", "motorcycle", "bicycle"]
         short_print = True
         nbr_classif_values = 3
-        detections,classifs = await forensic.process(test,selected_classes)
+        detections, classifs = await forensic.process(test, selected_classes)
 
         if len(detections) == 0:
             print("No objects detected")
