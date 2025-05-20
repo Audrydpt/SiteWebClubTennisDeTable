@@ -36,7 +36,6 @@ export default function Forensic() {
     results,
     isSearching,
     sourceProgress,
-    // resumeJob,
     setDisplayResults,
     resetSearch,
     setResults,

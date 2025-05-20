@@ -7,7 +7,6 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 import useJobs from '../hooks/use-jobs';
-import useForensicResults from '@/features/forensic/hooks/use-results.tsx';
 import forensicResultsHeap from '../lib/data-structure/heap';
 import { calculateTimeRemaining } from '../lib/estimation/estimation';
 import { ForensicResult, SourceProgress } from '../lib/types';
@@ -15,6 +14,7 @@ import { SortType } from './ui/buttons';
 import Display from './ui/display.tsx';
 import ForensicHeader from './ui/header';
 import MultiProgress from './ui/multi-progress';
+import useSearch from '../hooks/use-search.tsx';
 
 interface ResultsProps {
   results: ForensicResult[];
@@ -53,8 +53,7 @@ export default function Results({
   toggleSortOrder,
 }: ResultsProps) {
   const [showSourceDetails, setShowSourceDetails] = useState(false);
-  const { setDisplayResults, loadJobResults, displayResults } =
-    useForensicResults();
+  const { setDisplayResults, testResumeJob, displayResults } = useSearch();
   const {
     tasks: tabJobs,
     handleTabChange: defaultHandleTabChange,
@@ -133,7 +132,7 @@ export default function Results({
       try {
         loadedJobsRef.current.add(jobId);
         // await resumeJob(jobId, false);
-        await loadJobResults(jobId, false);
+        await testResumeJob(jobId, 1, false);
       } catch (error) {
         console.error('Erreur lors du chargement des résultats:', error);
       } finally {
@@ -152,7 +151,7 @@ export default function Results({
         clearTimeout(requestTimeoutRef.current);
       }
     };
-  }, [activeTabIndex, tabJobs, /* resumeJob, */ loadJobResults]);
+  }, [activeTabIndex, tabJobs, testResumeJob]);
 
   const timeEstimates = useMemo(
     () => calculateTimeRemaining(sourceProgress),
@@ -270,8 +269,6 @@ export default function Results({
           {/* Results display */}
 
           {(() => {
-            const activeTab = tabJobs.find((tab) => tab.id === activeTabIndex);
-
             if (!activeTabIndex) {
               return (
                 <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
