@@ -52,7 +52,6 @@ export default function useJobs() {
     }
   };
 
-  // Fetch tasks using Tanstack Query
   const {
     data: tasksArray,
     isLoading: loading,

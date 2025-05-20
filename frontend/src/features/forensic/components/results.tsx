@@ -168,7 +168,7 @@ export default function Results({
       return null;
     }
 
-    if (!hasActiveJob || progress === null || isTabLoading) {
+    if ((!hasActiveJob && !isSearching) || (progress === null && !isSearching) || (isTabLoading && !isSearching)) {
       return (
         <div className="space-y-2 mb-6">
           <div className="flex justify-between items-center">
@@ -196,14 +196,7 @@ export default function Results({
       );
     }
 
-    let statusText: string;
-    if (progress === 100) {
-      statusText = '';
-    } else if (timeEstimates.combined) {
-      statusText = `• Temps restant : ${timeEstimates.combined}`;
-    } else {
-      statusText = '• Calcul du temps restant...';
-    }
+    const statusText = '';
 
     return (
       <div className="mt-2 mb-6 space-y-3">

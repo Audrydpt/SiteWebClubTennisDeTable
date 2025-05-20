@@ -31,11 +31,11 @@ export default function Forensic() {
 
   const {
     startSearch,
-    stopSearch,
     progress,
+    sourceProgress,
+    stopSearch,
     results,
     isSearching,
-    sourceProgress,
     setDisplayResults,
     resetSearch,
     setResults,
@@ -43,6 +43,9 @@ export default function Forensic() {
     paginationInfo,
     handlePageChange,
     setPaginationInfo,
+    progressByJobId,
+    sourceProgressByJobId,
+    cleanupWebSocket,
   } = useSearch();
 
   const {
@@ -52,6 +55,34 @@ export default function Forensic() {
     addNewTab,
     getActiveTask,
   } = useJobs();
+
+  const getActiveProgress = () => {
+    if (!activeTabIndex) return null;
+    return progressByJobId[activeTabIndex] !== undefined
+      ? progressByJobId[activeTabIndex]
+      : progress;
+  };
+
+  const getActiveSourceProgress = () => {
+    if (!activeTabIndex) return [];
+    return sourceProgressByJobId[activeTabIndex]?.length > 0
+      ? sourceProgressByJobId[activeTabIndex]
+      : sourceProgress;
+  };
+
+  const activeProgress = getActiveProgress();
+  const activeSourceProgress = getActiveSourceProgress();
+
+  useEffect(() => {
+    console.log('🔄 État de progressByJobId a changé:', progressByJobId);
+  }, [progressByJobId]);
+
+  useEffect(() => {
+    console.log(
+      '🔄 État de sourceProgressByJobId a changé:',
+      sourceProgressByJobId
+    );
+  }, [sourceProgressByJobId]);
 
   const handlePaginationChange = useCallback(
     async (page: number) => {
@@ -65,7 +96,6 @@ export default function Forensic() {
 
       try {
         setIsLoading(true);
-        // Utiliser les variables de tri actuelles
         await testResumeJob(
           activeTabIndex,
           page,
@@ -88,10 +118,37 @@ export default function Forensic() {
   };
 
   const handleTabChange = async (tabIndex: string) => {
+    console.log("🔄 Début du changement vers l'onglet:", tabIndex);
+    console.log(
+      '📊 État de progressByJobId avant changement:',
+      progressByJobId
+    );
+
     setIsTabLoading(true);
     setCurrentPage(1);
 
     const selectedTab = tabJobs.find((tab) => tab.id === tabIndex);
+
+    // Fermer le WebSocket actif avant de changer d'onglet
+    console.log(
+      "🔄 Fermeture du WebSocket lors du changement vers l'onglet",
+      tabIndex
+    );
+    cleanupWebSocket();
+
+    // Bloquer brièvement toute initialisation de WebSocket
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
+
+    // Sauvegarde de la progression actuelle avant reset
+    const currentJobId = activeTabIndex;
+    if (currentJobId) {
+      console.log(
+        `📝 Sauvegarde de progression avant changement d'onglet pour ${currentJobId}:`,
+        progress
+      );
+    }
 
     resetSearch();
     forensicResultsHeap.clear();
@@ -103,10 +160,11 @@ export default function Forensic() {
     if (selectedTab?.id) {
       try {
         console.log(
-          `Chargement des résultats pour l'onglet ${tabIndex} avec jobId ${selectedTab.id}`
+          `📥 Chargement des résultats pour l'onglet ${tabIndex} avec jobId ${selectedTab.id}`
         );
+        console.log('📊 progressByJobId avant chargement:', progressByJobId);
 
-        // Utiliser les variables de tri actuelles
+        // Assurer que l'initialisation d'un nouveau WebSocket sera différée
         const response = await testResumeJob(
           selectedTab.id,
           1,
@@ -119,20 +177,25 @@ export default function Forensic() {
         if (response) {
           const { results: jobResults, pagination } = response;
           console.log(
-            `Pagination reçue pour l'onglet ${tabIndex}:`,
+            `📥 Pagination reçue pour l'onglet ${tabIndex}:`,
             pagination
           );
         } else {
-          console.log(`Aucune donnée reçue pour l'onglet ${tabIndex}`);
+          console.log(`⚠️ Aucune donnée reçue pour l'onglet ${tabIndex}`);
         }
       } catch (error) {
         console.error(
-          `Erreur lors du chargement de l'onglet ${tabIndex}:`,
+          `❌ Erreur lors du chargement de l'onglet ${tabIndex}:`,
           error
         );
       }
     }
 
+    console.log("🔄 Fin du changement vers l'onglet:", tabIndex);
+    console.log(
+      '📊 État de progressByJobId après changement:',
+      progressByJobId
+    );
     setIsTabLoading(false);
   };
 
@@ -291,8 +354,8 @@ export default function Forensic() {
           <Results
             results={results}
             isSearching={isSearching}
-            progress={progress}
-            sourceProgress={sourceProgress}
+            progress={activeProgress}
+            sourceProgress={activeSourceProgress}
             onTabChange={handleTabChange}
             isTabLoading={isTabLoading || isLoading}
             currentPage={currentPage}
