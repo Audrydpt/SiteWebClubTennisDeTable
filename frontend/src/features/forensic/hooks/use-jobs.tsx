@@ -256,6 +256,10 @@ export default function useJobs() {
     onSettled: () => {
       // Always refetch after error or success to ensure we have the correct server state
       queryClient.invalidateQueries({ queryKey: ['forensicTasks'] });
+
+      if (activeTabIndex) {
+        navigate('/forensic');
+      }
     },
   });
 

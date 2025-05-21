@@ -1,4 +1,4 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-shadow,consistent-return,no-promise-executor-return,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps,@typescript-eslint/naming-convention,@stylistic/indent */
+/* eslint-disable no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-shadow,consistent-return,no-promise-executor-return,@typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps,@typescript-eslint/naming-convention,@stylistic/indent,no-plusplus */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import useLatest from '@/hooks/use-latest';
@@ -10,7 +10,6 @@ import { ForensicResult, SourceProgress } from '../lib/types';
 import { isForensicTaskCompleted, ForensicTaskStatus } from './use-jobs.tsx';
 import { SortType } from '../components/ui/buttons.tsx';
 
-// Number of maximum results to keep
 const FORENSIC_PAGINATION_ITEMS = parseInt(
   process.env.FORENSIC_PAGINATION_ITEMS || '12',
   10
@@ -34,15 +33,12 @@ export default function useSearch() {
   const [type, setType] = useState<string | null>(null);
   const latestType = useLatest(type);
 
-  // Références pour WebSocket et AbortController
   const wsRef = useRef<WebSocket | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const [displayResults, setDisplayResults] = useState<ForensicResult[]>([]);
 
   const currentPageRef = useRef<number>(1);
-
-  // Ajoutez ces variables d'état et références dans useSearch
   const [wsState, setWsState] = useState<
     'closed' | 'connecting' | 'open' | 'closing'
   >('closed');
@@ -541,6 +537,13 @@ export default function useSearch() {
     setJobId(null);
     setResults([]);
     setDisplayResults([]);
+    setProgress(null);
+    setSourceProgress([]);
+    setType(null);
+    setIsCancelling(false);
+    setProgressByJobId({});
+    setSourceProgressByJobId({});
+    setWsState('closed');
     resetPagination();
   }, [resetPagination]);
 
@@ -726,15 +729,15 @@ export default function useSearch() {
         });
 
         // Calculer la progression uniquement si on a de nouvelles données
-        const currentProgress = isForensicTaskCompleted(status)
-          ? 100
-          : Math.max(
-              ...sourcesProgressData.map(
-                (s: { progress: any }) => s.progress || 0
-              ),
-              0
-            );
-
+        const currentProgress =
+          isForensicTaskCompleted(status) && !isSearching
+            ? 100
+            : Math.max(
+                ...sourcesProgressData.map(
+                  (s: { progress: any }) => s.progress || 0
+                ),
+                0
+              );
         // Ne mettre à jour la progression que si elle a changé ou s'il n'y en a pas d'existante
         if (currentProgress > 0 || progressByJobId[jobId] === undefined) {
           setProgress(currentProgress);
@@ -851,7 +854,6 @@ export default function useSearch() {
   const startSearch = useCallback(
     async (formData: CustomFormData) => {
       try {
-        // Reset states
         setResults([]);
         setDisplayResults([]);
         setIsSearching(true);
@@ -867,7 +869,6 @@ export default function useSearch() {
         // Créer un nouvel AbortController pour cette requête
         abortControllerRef.current = new AbortController();
 
-        // Format query and make API call
         const queryData = formatQuery(formData);
         const response = await fetch(`${process.env.MAIN_API_URL}/forensics`, {
           method: 'POST',

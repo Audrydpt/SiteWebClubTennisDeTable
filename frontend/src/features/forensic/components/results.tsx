@@ -6,9 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-import useJobs from '../hooks/use-jobs';
 import forensicResultsHeap from '../lib/data-structure/heap';
-import { calculateTimeRemaining } from '../lib/estimation/estimation';
+// import { calculateTimeRemaining } from '../lib/estimation/estimation';
 import { ForensicResult, SourceProgress } from '../lib/types';
 import { SortType } from './ui/buttons';
 import Display from './ui/display.tsx';
@@ -35,6 +34,8 @@ interface ResultsProps {
   setSortType: (type: SortType) => void;
   sortOrder: 'asc' | 'desc';
   toggleSortOrder: () => void;
+  tabJobs: any[];
+  activeTabIndex?: string | null;
 }
 
 export default function Results({
@@ -51,21 +52,17 @@ export default function Results({
   setSortType,
   sortOrder,
   toggleSortOrder,
+  tabJobs,
+  activeTabIndex,
 }: ResultsProps) {
   const [showSourceDetails, setShowSourceDetails] = useState(false);
   const { setDisplayResults, testResumeJob, displayResults } = useSearch();
-  const {
-    tasks: tabJobs,
-    handleTabChange: defaultHandleTabChange,
-    activeTabIndex,
-  } = useJobs();
   const isLoadingRef = useRef(false);
   const requestTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const loadedJobsRef = useRef<Set<string>>(new Set());
-  const handleTabChange = onTabChange || defaultHandleTabChange;
+  const handleTabChange = onTabChange || (() => {});
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  // Fonction modifiée pour éviter les logs excessifs
   const resultsToDisplay = useMemo(() => {
     const activeTab = tabJobs.find((tab) => tab.id === activeTabIndex);
     if (activeTabIndex && !activeTab) {
@@ -131,7 +128,6 @@ export default function Results({
 
       try {
         loadedJobsRef.current.add(jobId);
-        // await resumeJob(jobId, false);
         await testResumeJob(jobId, 1, false);
       } catch (error) {
         console.error('Erreur lors du chargement des résultats:', error);
@@ -153,10 +149,10 @@ export default function Results({
     };
   }, [activeTabIndex, tabJobs, testResumeJob]);
 
-  const timeEstimates = useMemo(
+  /* const timeEstimates = useMemo(
     () => calculateTimeRemaining(sourceProgress),
     [sourceProgress]
-  );
+  ); */
 
   const clearResults = () => {
     forensicResultsHeap.clear();

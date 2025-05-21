@@ -33,7 +33,7 @@ export default function Forensic() {
     startSearch,
     progress,
     sourceProgress,
-    stopSearch,
+    // stopSearch,
     results,
     isSearching,
     setDisplayResults,
@@ -100,7 +100,7 @@ export default function Forensic() {
           activeTabIndex,
           page,
           true,
-          false,
+          isSearching,
           sortType,
           'desc'
         );
@@ -110,7 +110,7 @@ export default function Forensic() {
         setIsLoading(false);
       }
     },
-    [testResumeJob, activeTabIndex, sortType, sortOrder]
+    [testResumeJob, activeTabIndex, sortType, sortOrder, isSearching]
   );
 
   const handleToggleCollapse = () => {
@@ -175,7 +175,7 @@ export default function Forensic() {
         );
 
         if (response) {
-          const { results: jobResults, pagination } = response;
+          const { results: pagination } = response;
           console.log(
             `📥 Pagination reçue pour l'onglet ${tabIndex}:`,
             pagination
@@ -208,8 +208,8 @@ export default function Forensic() {
       const searchFormData = createSearchFormData(data);
       const jobId = await startSearch(searchFormData);
 
-      addNewTab(jobId);
-      handleTabChange(jobId);
+      await addNewTab(jobId);
+      await handleTabChange(jobId);
     } catch (error) {
       console.error('Failed to start search:', error);
     }
@@ -217,7 +217,7 @@ export default function Forensic() {
 
   const currentWidth = isCollapsed ? collapsedWidth : expandedWidth;
 
-  const activeTabsCount = tabJobs.filter((tab) => tab.id).length;
+  // const activeTabsCount = tabJobs.filter((tab) => tab.id).length;
 
   useEffect(() => {
     // Ne recharger que si un onglet est actif et qu'on n'est pas en train de charger
@@ -365,6 +365,8 @@ export default function Forensic() {
             setSortType={setSortType}
             sortOrder={sortOrder}
             toggleSortOrder={toggleSortOrder}
+            tabJobs={tabJobs}
+            activeTabIndex={activeTabIndex}
           />
         </CardContent>
       </Card>
