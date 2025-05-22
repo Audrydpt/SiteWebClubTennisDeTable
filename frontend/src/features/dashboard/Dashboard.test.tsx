@@ -104,7 +104,9 @@ describe('Dashboard', () => {
       );
 
       // Test for actual Header content
-      expect(screen.getByText('Dashboard')).toBeInTheDocument();
+      expect(
+        screen.getByText('dashboard:dashboard.header')
+      ).toBeInTheDocument();
       expect(
         screen.getByRole('button', { name: 'dashboard:dashboard.add' })
       ).toBeInTheDocument();

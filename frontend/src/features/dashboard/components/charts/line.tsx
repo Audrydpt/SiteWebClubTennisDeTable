@@ -1,8 +1,16 @@
+/* eslint-disable @stylistic/indent */
 import { useQuery } from '@tanstack/react-query';
 import { DateTime, Duration } from 'luxon';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
+import {
+  Area,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { CurveType } from 'recharts/types/shape/Curve';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,6 +93,95 @@ export default function LineComponent({
     );
   }, [translatedCount, data, groupBy]);
 
+  const { format, interval } = getTimeFormattingConfig(
+    duration,
+    Object.keys(dataMerged).length,
+    data?.size
+  );
+
+  const trendStats = props.trendData;
+
+  // Enhanced chartData with stats integrated into each point
+  const chartData = useMemo(() => {
+    const baseData = Object.values(dataMerged);
+
+    // If no trend stats, just return the original data
+    if (!trendStats || !Array.isArray(trendStats)) {
+      return baseData;
+    }
+
+    // Add stat properties to each data point
+    return baseData.map((dataPoint) => {
+      let bucket;
+      switch (aggregation) {
+        case '1 minute':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).minute;
+          break;
+        case '15 minutes':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).minute;
+          break;
+        case '30 minutes':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).minute;
+          break;
+        case '1 hour':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).hour;
+          break;
+        case '1 day':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).weekday;
+          break;
+        case '1 month':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).month;
+          break;
+        case '1 week':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).weekNumber;
+          break;
+        case '3 months':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).month;
+          break;
+        case '6 months':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).month;
+          break;
+        case '1 year':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).year;
+          break;
+        case '100 years':
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).year;
+          break;
+        default:
+          bucket = DateTime.fromISO(dataPoint.timestamp as string).weekday;
+          break;
+      }
+
+      const stat = trendStats.find((s) => s.bucket === bucket);
+      const valeurAsNumber = Number(stat?.avg || 0);
+
+      return {
+        ...dataPoint,
+        avg: stat?.avg,
+        min: stat?.min,
+        max: stat?.max,
+        std: [
+          valeurAsNumber - (stat?.std || 0),
+          valeurAsNumber + (stat?.std || 0),
+        ],
+      };
+    });
+  }, [dataMerged, trendStats, aggregation]);
+
+  // Enhanced chart config with stat lines
+  const enhancedChartConfig = useMemo(() => {
+    const config = { ...chartConfig };
+
+    if (trendStats && Array.isArray(trendStats)) {
+      config.avg = { label: 'Moyenne' };
+      config.min = { label: 'Min' };
+      config.max = { label: 'Max' };
+      config.std = { label: 'Écart-type' };
+    }
+
+    return config;
+  }, [chartConfig, trendStats]);
+
   if (isLoading || isError) {
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
@@ -104,23 +201,17 @@ export default function LineComponent({
     );
   }
 
-  const { format, interval } = getTimeFormattingConfig(
-    duration,
-    Object.keys(dataMerged).length,
-    data.size
-  );
-
   return (
     <Card className="w-full h-full flex flex-col justify-center">
       <CardHeader>
-        <CardTitle className="text-left">
+        <CardTitle className="text-center">
           {title ?? `Line ${layout.toString()}`}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-grow w-full">
-        <ChartContainer config={chartConfig} className="h-full w-full">
-          <LineChart
-            data={Object.values(dataMerged)}
+        <ChartContainer config={enhancedChartConfig} className="h-full w-full">
+          <ComposedChart
+            data={chartData}
             margin={{
               left: 12,
               right: 12,
@@ -150,7 +241,9 @@ export default function LineComponent({
               content={
                 <ChartTooltipContent
                   cursor={false}
-                  formatter={(...d) => CustomChartTooltip(...d, chartConfig)}
+                  formatter={(...d) =>
+                    CustomChartTooltip(...d, enhancedChartConfig)
+                  }
                   labelFormatter={(value, payload) =>
                     DateTime.fromISO(
                       payload[0]?.payload?.timestamp
@@ -163,7 +256,6 @@ export default function LineComponent({
               content={<ChartLegendContent />}
               className="flex-wrap"
             />
-
             {Object.keys(chartConfig).map((group, index) => (
               <Line
                 key={group}
@@ -175,7 +267,50 @@ export default function LineComponent({
                 unit={table === 'AcicOccupancy' ? '%' : ''}
               />
             ))}
-          </LineChart>
+
+            {trendStats &&
+              Array.isArray(trendStats) &&
+              trendStats.length > 0 && [
+                <Line
+                  key="avg"
+                  dataKey="avg"
+                  type="linear"
+                  stroke="blue"
+                  strokeDasharray="5 5"
+                  dot={false}
+                  isAnimationActive={false}
+                />,
+                <Line
+                  key="min"
+                  dataKey="min"
+                  type="linear"
+                  stroke="green"
+                  strokeDasharray="2 2"
+                  dot={false}
+                  isAnimationActive={false}
+                />,
+                <Line
+                  key="max"
+                  dataKey="max"
+                  type="linear"
+                  stroke="red"
+                  strokeDasharray="2 2"
+                  dot={false}
+                  isAnimationActive={false}
+                />,
+                <Area
+                  key="std"
+                  type="monotone"
+                  dataKey="std"
+                  stroke="orange"
+                  fill="orange"
+                  strokeDasharray="1 1"
+                  dot={false}
+                  isAnimationActive={false}
+                  fillOpacity={0.2}
+                />,
+              ]}
+          </ComposedChart>
         </ChartContainer>
       </CardContent>
     </Card>

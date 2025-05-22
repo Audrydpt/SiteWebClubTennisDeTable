@@ -72,7 +72,7 @@ function DashboardContent() {
 
   return (
     <>
-      <Header title="Dashboard">
+      <Header title={t('dashboard:dashboard.header')}>
         {!isOperator && (
           <FormDashboard onSubmit={handleAdd}>
             <Button variant="outline">

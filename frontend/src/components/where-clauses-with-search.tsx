@@ -26,6 +26,8 @@ export interface WhereClausesWithSearchProps
   onValueChange: (value: WhereClausesWithSearchValue) => void;
   disabled?: boolean;
   whereClauseAutocompletion: Record<string, Set<string>>;
+  addButtonLabel?: string;
+  placeholder?: string;
 }
 
 const DELIMITER = '|||';
@@ -42,6 +44,8 @@ const WhereClausesWithSearch = React.forwardRef<
       className,
       disabled,
       whereClauseAutocompletion,
+      addButtonLabel = 'Add filter',
+      placeholder,
       ...props
     },
     ref
@@ -127,6 +131,7 @@ const WhereClausesWithSearch = React.forwardRef<
                   onChange={(selected) =>
                     handleChangeClause(index, 'value', selected.join(DELIMITER))
                   }
+                  placeholder={placeholder}
                 />
               </div>
 
@@ -152,9 +157,10 @@ const WhereClausesWithSearch = React.forwardRef<
           className="h-8"
           onClick={handleAddClause}
           disabled={disabled || value.length >= columns.length}
+          aria-label={addButtonLabel}
         >
           <PlusCircle className="mr-2 h-4 w-4" />
-          Add filter
+          {addButtonLabel}
         </Button>
       </div>
     );

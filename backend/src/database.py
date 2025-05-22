@@ -549,7 +549,7 @@ class GenericDAL:
                 logger.error(f"Query was: {stmt}")
                 raise
 
-    async def async_get_trend(self, view_name, _group=None, **filters) -> JSON:
+    async def async_get_trend(self, view_name, _between=None, _group=None, **filters) -> JSON:
         async with GenericDAL.AsyncSession() as session:
             #def des fonctions de calcul
             avg_func = func.avg(column('counts'))
@@ -573,6 +573,9 @@ class GenericDAL:
 
             if _group is None:
                 stmt = select(stats_obj).select_from(text(f'"{view_name}"'))
+                if _between is not None and _between[0] is not None and _between[1] is not None:
+                    stmt = stmt.where(column('bucket') >= _between[0], column('bucket') < _between[1])
+                
                 try:
                     result = await session.execute(stmt)
                     global_stats = { 'global': result.scalar_one_or_none()}
@@ -594,6 +597,11 @@ class GenericDAL:
 
                 stmt = stmt.select_from(text(f'"{view_name}"'))
                 stmt2 = select(stats_obj).select_from(text(f'"{view_name}"'))
+
+                if _between is not None and _between[0] is not None and _between[1] is not None:
+                    stmt = stmt.where(column('bucket') >= _between[0], column('bucket') < _between[1])
+                    stmt2 = stmt2.where(column('bucket') >= _between[0], column('bucket') < _between[1])
+
                 try:
                     result = await session.execute(stmt)
                     result2 = await session.execute(stmt2)
@@ -643,7 +651,6 @@ class GenericDAL:
                 case '1 hour':
                     extract_func = func.extract('hour',column('bucket')).label('time_bucket')
                 case '1 day':
-                    #extract_func = func.extract('day',column('bucket')).label('time_bucket')
                     extract_func = func.extract('isodow',column('bucket')).label('time_bucket')
                 case '1 week':
                     extract_func = func.extract('week',column('bucket')).label('time_bucket')
@@ -657,12 +664,6 @@ class GenericDAL:
                     extract_func = func.extract('year',column('bucket')).label('time_bucket')
                 case '100 years':
                     extract_func = func.extract('year',column('bucket')).label('time_bucket')
-            
-            """
-            if _between is not None and _between[0] is not None and _between[1] is not None:
-                if _between[1] - _between[0] == timedelta(weeks=1) and _aggregate == '1 day':
-                    extract_func = func.extract('isodow',column('bucket')).label('time_bucket')
-            """
 
             date_trunc_expr = text("date_trunc('day', now() - interval '1 day')")
 

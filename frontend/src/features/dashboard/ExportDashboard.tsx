@@ -1,14 +1,15 @@
 /* eslint-disable react/no-unstable-nested-components */
 import { Database, FileDown, Settings2 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import Header from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { defineStepper } from '@/components/ui/stepper';
 
-import ExportStepFormat from './components/export-format';
-import ExportStepOptions from './components/export-options';
-import ExportStepSource from './components/export-source';
+import ExportStepFormat from './components/export/export-format';
+import ExportStepOptions from './components/export/export-options';
+import ExportStepSource from './components/export/export-source';
 import { StepperFormData } from './lib/export';
 import { AcicAggregation, AcicEvent } from './lib/props';
 
@@ -29,6 +30,7 @@ export default function ExportDashboard() {
   const [storedWidget, setStoredWidget] = useState<StepperFormData>({
     table: AcicEvent.AcicCounting,
   } as StepperFormData);
+  const { t } = useTranslation();
   const [isStepValid, setIsStepValid] = useState(false);
 
   const updateStoredWidget = (newData: Partial<StepperFormData>) => {
@@ -47,7 +49,7 @@ export default function ExportDashboard() {
 
   return (
     <>
-      <Header title="Export Dashboard" />
+      <Header title={t('dashboard:export.title')} />
       <StepperProvider>
         {({ methods }) => (
           <>
@@ -99,7 +101,7 @@ export default function ExportDashboard() {
                 }}
                 disabled={methods.isFirst}
               >
-                Previous
+                {t('dashboard:export.previous')}
               </Button>
               <Button
                 onClick={() => {
@@ -113,7 +115,9 @@ export default function ExportDashboard() {
                 }}
                 disabled={!isStepValid}
               >
-                {methods.isLast ? 'Reset' : 'Next'}
+                {methods.isLast
+                  ? t('dashboard:export.reset')
+                  : t('dashboard:export.next')}
               </Button>
             </StepperControls>
           </>

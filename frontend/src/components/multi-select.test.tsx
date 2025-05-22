@@ -48,7 +48,9 @@ describe('MultiSelect', () => {
     it('opens popover when clicking the trigger', () => {
       renderComponent();
       fireEvent.click(screen.getByRole('combobox'));
-      expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText('Select options...')
+      ).toBeInTheDocument();
     });
 
     it('calls onChange with selected item when clicking an option', () => {
@@ -90,7 +92,7 @@ describe('MultiSelect', () => {
       renderComponent({ onChange });
 
       fireEvent.click(screen.getByRole('combobox'));
-      fireEvent.click(screen.getByText('All'));
+      fireEvent.click(screen.getByText('whereClauseSearch.all'));
 
       expect(onChange).toHaveBeenCalledWith([
         'Option 1',
@@ -107,7 +109,7 @@ describe('MultiSelect', () => {
       });
 
       fireEvent.click(screen.getByRole('combobox'));
-      fireEvent.click(screen.getByText('Clear'));
+      fireEvent.click(screen.getByText('whereClauseSearch.clear'));
 
       expect(onChange).toHaveBeenCalledWith([]);
     });
@@ -117,14 +119,16 @@ describe('MultiSelect', () => {
     it('handles empty options array', () => {
       renderComponent({ options: [] });
       fireEvent.click(screen.getByRole('combobox'));
-      expect(screen.getByText('No item found.')).toBeInTheDocument();
+      expect(
+        screen.getByText('whereClauseSearch.noResults')
+      ).toBeInTheDocument();
     });
 
     it('handles search functionality', () => {
       renderComponent();
       fireEvent.click(screen.getByRole('combobox'));
 
-      const searchInput = screen.getByPlaceholderText('Search...');
+      const searchInput = screen.getByPlaceholderText('Select options...');
       fireEvent.change(searchInput, { target: { value: 'Option 1' } });
 
       expect(screen.getByText('Option 1')).toBeInTheDocument();
@@ -136,7 +140,7 @@ describe('MultiSelect', () => {
       renderComponent();
       fireEvent.click(screen.getByRole('combobox'));
 
-      const searchInput = screen.getByPlaceholderText('Search...');
+      const searchInput = screen.getByPlaceholderText('Select options...');
       fireEvent.change(searchInput, { target: { value: 'option 1' } });
 
       expect(screen.getByText('Option 1')).toBeInTheDocument();

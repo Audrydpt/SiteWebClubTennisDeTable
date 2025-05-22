@@ -3,8 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { JSX } from 'react';
 import { vi } from 'vitest';
 
-import { AcicAggregation, AcicEvent, ChartSize, ChartType } from '../lib/props';
-import type { StoredWidget } from './form-widget';
+import {
+  AcicAggregation,
+  AcicEvent,
+  ChartSize,
+  ChartType,
+} from '../../lib/props';
+import type { StoredWidget } from '../form-widget';
 import WidgetActions from './widget-actions';
 
 // Mock dependencies
@@ -32,7 +37,7 @@ vi.mock('@/components/confirm-delete', () => ({
   ),
 }));
 
-vi.mock('./form-widget', () => ({
+vi.mock('../form-widget', () => ({
   FormWidget: ({
     children,
     onSubmit,

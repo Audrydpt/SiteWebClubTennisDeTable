@@ -11,6 +11,15 @@
     "description": "Cette action est irréversible et ne peut pas être annulée."
   },
 
+  "whereClauseSearch": {
+    "placeholder": "Rechercher dans les valeurs...",
+    "add": "Ajouter un filtre",
+    "search": "Recherche...",
+    "all": "Tout",
+    "clear": "Effacer",
+    "noResults": "Aucun élément trouvé."
+  },
+
   "selectWorkspace": "Sélectionner un espace de travail",
 
   "login": {

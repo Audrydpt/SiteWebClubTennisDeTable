@@ -301,7 +301,7 @@ export default function HeatmapComponent({
   return (
     <Card className="w-full h-full flex flex-col justify-center">
       <CardHeader>
-        <CardTitle className="text-left">
+        <CardTitle className="text-center">
           {title ?? `Heatmap ${layout.toString()}`}
         </CardTitle>
       </CardHeader>

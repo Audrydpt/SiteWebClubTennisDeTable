@@ -1,5 +1,6 @@
 {
   "dashboard": {
+    "header": "Tableau de bord",
     "add": "Ajouter un onglet",
     "edit": "Modifier l'onglet",
     "title": "Titre de l'onglet",
@@ -9,6 +10,7 @@
     "add": "Ajouter une tuile",
     "edit": "Modifier la tuile",
     "title": "Titre de la tuile",
+    "description": "Créer une tuile selon vos besoins",
     "deleteConfirmation": "Cette action est irréversible. La tuile sera supprimée définitivement.",
 
     "type": {
@@ -33,7 +35,8 @@
     },
     "filters": {
       "label": "Filtres",
-      "placeholder": "Sélectionner un champ pour filtrer"
+      "placeholder": "Sélectionner un champ pour filtrer",
+      "add": "Ajouter un filtre"
     },
     "aggregation": {
       "label": "Agrégation",
@@ -80,6 +83,7 @@
     "OneDay": "1 jour",
     "OneWeek": "1 semaine",
     "OneMonth": "1 mois",
+    "ThreeMonths": "3 mois",
     "SixMonths": "6 mois",
     "OneYear": "1 an",
     "LifeTime": "100 ans"
@@ -124,5 +128,61 @@
     "value": "Valeur",
     "value_other": "Valeur: {{count}}",
     "no_value": "Pas de données"
+  },
+  "export": {
+    "title": "Export du tableau de bord",
+    "source": {
+      "table": "Table",
+      "selectTable": "Sélectionner une table à exporter",
+      "range": "Période",
+      "selectRange": "Sélectionner une période à exporter",
+      "from": "Du",
+      "to": "Au",
+      "fetchData": "Chargement des données...",
+      "fetchDataError": "Aucune donnée disponible pour cette période"
+    },
+    "options": {
+      "aggregation": "Agrégation",
+      "aggregationSelect": "Sélectionner une agrégation",
+      "groupBy": "Grouper par",
+      "groupBySelect": "Sélectionner un groupement",
+      "filters": "Filtres",
+      "fetchingFilters": "Chargement des filtres..."
+    },
+    "format": {
+      "label": "Format de fichier",
+      "Excel": "Excel",
+      "PDF": "PDF",
+      "fetchingMessage": "Téléchargement des données pour l'export...",
+      "generatingMessage": "Génération du fichier d'export...",
+      "summary": "Résumé",
+      "table": "Table",
+      "range": "Période",
+      "aggregation": "Agrégation",
+      "groupBy": "Grouper par",
+      "filters": "Filtres"
+    },
+    "previous": "Précédent",
+    "next": "Suivant",
+    "reset": "Réinitialiser"
+  },
+  "whereClauseSearch": {
+    "placeholder": "Rechercher dans les valeurs...",
+    "add": "Ajouter un filtre",
+    "search": "Recherche...",
+    "all": "Tout",
+    "clear": "Effacer",
+    "noResults": "Aucun élément trouvé."
+  },
+  "trend": {
+    "title": "Tendances",
+    "description": "Analyse des tendances au fil du temps",
+    "avg": "Moyenne",
+    "med": "Médiane",
+    "std": "Variance",
+    "pc5": "Percentile 5%",
+    "pc95": "Percentile 95%",
+    "min": "Minimum",
+    "max": "Maximum"
   }
 }

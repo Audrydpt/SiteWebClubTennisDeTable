@@ -1,5 +1,6 @@
 {
   "dashboard": {
+    "header": "Dashboard",
     "add": "Add a dashboard",
     "edit": "Edit dashboard",
     "title": "Title of the dashboard",
@@ -9,6 +10,7 @@
     "add": "Add a widget",
     "edit": "Edit widget",
     "title": "Title of the widget",
+    "description": "Create a widget according to your needs",
     "deleteConfirmation": "This action is irreversible. The widget will be permanently deleted.",
 
     "type": {
@@ -33,7 +35,8 @@
     },
     "filters": {
       "label": "Filters",
-      "placeholder": "Select a field to filter by"
+      "placeholder": "Select a field to filter by",
+      "add": "Add filter"
     },
     "aggregation": {
       "label": "Aggregation",
@@ -80,6 +83,7 @@
     "OneDay": "1 day",
     "OneWeek": "1 week",
     "OneMonth": "1 month",
+    "ThreeMonths": "3 months",
     "SixMonths": "6 months",
     "OneYear": "1 year",
     "LifeTime": "100 years"
@@ -124,5 +128,61 @@
     "value": "Count",
     "value_other": "Count: {{count}}",
     "no_value": "No data"
+  },
+  "export": {
+    "title": "Export dashboard",
+    "source": {
+      "table": "Table",
+      "selectTable": "Select a table to export",
+      "range": "Range",
+      "selectRange": "Select a range to export",
+      "from": "From",
+      "to": "To",
+      "fetchData": "Fetching data...",
+      "fetchDataError": "No data available for this range"
+    },
+    "options": {
+      "aggregation": "Aggregation",
+      "aggregationSelect": "Select an aggregation",
+      "groupBy": "Group by",
+      "groupBySelect": "Select a field to group by",
+      "filters": "Filters",
+      "fetchingFilters": "Fetching filters..."
+    },
+    "format": {
+      "label": "File format",
+      "Excel": "Excel",
+      "PDF": "PDF",
+      "fetchingMessage": "Fetching data for export...",
+      "generatingMessage": "Generating export file...",
+      "summary": "Summary",
+      "table": "Table",
+      "range": "Range",
+      "aggregation": "Aggregation",
+      "groupBy": "Group by",
+      "filters": "Filters"
+    },
+    "previous": "Previous",
+    "next": "Next",
+    "reset": "Reset"
+  },
+  "whereClauseSearch": {
+    "placeholder": "Search in the values...",
+    "add": "Add filter",
+    "search": "Search...",
+    "all": "All",
+    "clear": "Clear",
+    "noResults": "No item found."
+  },
+  "trend": {
+    "title": "Trends",
+    "description": "Analysis of trends over time",
+    "avg": "Average",
+    "med": "Median",
+    "std": "Variance",
+    "pc5": "Percentile 5%",
+    "pc95": "Percentile 95%",
+    "min": "Minimum",
+    "max": "Maximum"
   }
 }

@@ -25,10 +25,22 @@ export interface WhereClausesProps
   value: WhereClausesValue;
   onValueChange: (value: WhereClausesValue) => void;
   disabled?: boolean;
+  addButtonLabel?: string;
 }
 
 const WhereClauses = React.forwardRef<HTMLDivElement, WhereClausesProps>(
-  ({ columns, value, onValueChange, className, disabled, ...props }, ref) => {
+  (
+    {
+      columns,
+      value,
+      onValueChange,
+      className,
+      disabled,
+      addButtonLabel = 'Add filter',
+      ...props
+    },
+    ref
+  ) => {
     const getAvailableColumns = React.useCallback(
       (currentIndex?: number) => {
         const selectedColumns = value
@@ -123,9 +135,10 @@ const WhereClauses = React.forwardRef<HTMLDivElement, WhereClausesProps>(
           className="h-8"
           onClick={handleAddClause}
           disabled={disabled || value.length >= columns.length}
+          aria-label={addButtonLabel}
         >
           <PlusCircle className="mr-2 h-4 w-4" />
-          Add filter
+          {addButtonLabel}
         </Button>
       </div>
     );
