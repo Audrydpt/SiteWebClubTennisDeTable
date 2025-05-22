@@ -37,7 +37,7 @@ vi.mock('@/components/confirm-delete', () => ({
   ),
 }));
 
-vi.mock('./form-widget', () => ({
+vi.mock('../form-widget', () => ({
   FormWidget: ({
     children,
     onSubmit,

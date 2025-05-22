@@ -19,12 +19,12 @@ vi.mock('@tanstack/react-query', () => ({
   })),
 }));
 
-vi.mock('../lib/exportData', () => ({
+vi.mock('../../lib/exportData', () => ({
   __esModule: true,
   default: vi.fn(),
 }));
 
-vi.mock('../lib/utils', () => ({
+vi.mock('../../lib/utils', () => ({
   getWidgetDataForExport: vi.fn().mockResolvedValue([{ test: 'data' }]),
 }));
 

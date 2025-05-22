@@ -8,7 +8,7 @@ import { getWidgetData } from '../../lib/utils';
 import ExportStepSource from './export-options';
 
 // Mock the modules
-vi.mock('../lib/utils', () => ({
+vi.mock('../../lib/utils', () => ({
   getWidgetDescription: vi.fn().mockResolvedValue({
     [AcicEvent.AcicCounting]: ['id', 'name', 'count'],
   }),
@@ -146,9 +146,15 @@ describe('ExportStepSource', () => {
       renderComponent();
 
       // Check for basic form elements
-      expect(screen.getByText('Table:')).toBeInTheDocument();
-      expect(screen.getByText('Group by')).toBeInTheDocument();
-      expect(screen.getByText('Where')).toBeInTheDocument();
+      expect(
+        screen.getByText('dashboard:export:options.aggregation')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText('dashboard:export:options.groupBy')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText('dashboard:export:options.filters')
+      ).toBeInTheDocument();
     });
 
     it('should handle loading state', () => {
@@ -169,7 +175,7 @@ describe('ExportStepSource', () => {
 
       // Select a different aggregation
       await userEvent.click(
-        screen.getByRole('option', { name: AcicAggregation.OneDay })
+        screen.getByRole('option', { name: 'dashboard:time.OneDay' })
       );
 
       // Check if updateStoredWidget was called with updated values

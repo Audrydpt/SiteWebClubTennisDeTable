@@ -26,7 +26,7 @@ export interface WhereClausesWithSearchProps
   onValueChange: (value: WhereClausesWithSearchValue) => void;
   disabled?: boolean;
   whereClauseAutocompletion: Record<string, Set<string>>;
-  addButtonLabel?: string | React.ReactNode;
+  addButtonLabel?: string;
   placeholder?: string;
 }
 
@@ -44,7 +44,7 @@ const WhereClausesWithSearch = React.forwardRef<
       className,
       disabled,
       whereClauseAutocompletion,
-      addButtonLabel,
+      addButtonLabel = 'Add filter',
       placeholder,
       ...props
     },
@@ -157,6 +157,7 @@ const WhereClausesWithSearch = React.forwardRef<
           className="h-8"
           onClick={handleAddClause}
           disabled={disabled || value.length >= columns.length}
+          aria-label={addButtonLabel}
         >
           <PlusCircle className="mr-2 h-4 w-4" />
           {addButtonLabel}

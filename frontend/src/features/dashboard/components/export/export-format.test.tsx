@@ -5,11 +5,11 @@ import { AcicAggregation, AcicEvent } from '../../lib/props';
 import ExportStepFormat from './export-format';
 
 // Mock the modules
-vi.mock('../lib/exportData', () => ({
+vi.mock('../../lib/exportData', () => ({
   default: vi.fn(),
 }));
 
-vi.mock('../lib/utils', () => ({
+vi.mock('../../lib/utils', () => ({
   getWidgetDataForExport: vi.fn().mockResolvedValue([{ id: 1, name: 'Test' }]),
 }));
 
@@ -57,8 +57,12 @@ describe('ExportStepFormat', () => {
       renderComponent();
 
       // Check for basic elements
-      expect(screen.getByText('Export Format')).toBeInTheDocument();
-      expect(screen.getByText('Export Summary')).toBeInTheDocument();
+      expect(
+        screen.getByText('dashboard:export:format.label')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText('dashboard:export:format.summary')
+      ).toBeInTheDocument();
     });
   });
 
@@ -74,8 +78,12 @@ describe('ExportStepFormat', () => {
 
       // Since we can't reliably click on the radio buttons due to styling and disabled states,
       // we'll just test that the component renders properly
-      expect(screen.getByText('Excel')).toBeInTheDocument();
-      expect(screen.getByText('PDF')).toBeInTheDocument();
+      expect(
+        screen.getByText('dashboard:export:format.Excel')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText('dashboard:export:format.PDF')
+      ).toBeInTheDocument();
     });
   });
 });

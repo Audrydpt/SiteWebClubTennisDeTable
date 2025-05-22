@@ -6,7 +6,7 @@ import { AcicEvent } from '../../lib/props';
 import ExportStepSource from './export-source';
 
 // Mock the getWidgetData function
-vi.mock('../lib/utils', () => ({
+vi.mock('../../lib/utils', () => ({
   getWidgetData: vi.fn(),
 }));
 
@@ -70,8 +70,12 @@ describe('ExportStepSource', () => {
     it('renders with default props', () => {
       renderComponent();
 
-      expect(screen.getByText('Table:')).toBeInTheDocument();
-      expect(screen.getByText('Range:')).toBeInTheDocument();
+      expect(
+        screen.getByText('dashboard:export:source.table')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText('dashboard:export:source.range')
+      ).toBeInTheDocument();
     });
 
     it('shows loading state when fetching stream data', () => {
@@ -84,7 +88,9 @@ describe('ExportStepSource', () => {
 
       renderComponent();
 
-      expect(screen.getByText('Fetching data...')).toBeInTheDocument();
+      expect(
+        screen.getByText('dashboard:export:source.fetchData')
+      ).toBeInTheDocument();
     });
 
     it('shows no data message when no streams are available', () => {
@@ -98,7 +104,7 @@ describe('ExportStepSource', () => {
       renderComponent();
 
       expect(
-        screen.getByText('No data available for this selection')
+        screen.getByText('dashboard:export:source.fetchDataError')
       ).toBeInTheDocument();
     });
   });

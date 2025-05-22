@@ -25,7 +25,7 @@ export interface WhereClausesProps
   value: WhereClausesValue;
   onValueChange: (value: WhereClausesValue) => void;
   disabled?: boolean;
-  addButtonLabel?: string | React.ReactNode;
+  addButtonLabel?: string;
 }
 
 const WhereClauses = React.forwardRef<HTMLDivElement, WhereClausesProps>(
@@ -36,7 +36,7 @@ const WhereClauses = React.forwardRef<HTMLDivElement, WhereClausesProps>(
       onValueChange,
       className,
       disabled,
-      addButtonLabel,
+      addButtonLabel = 'Add filter',
       ...props
     },
     ref
@@ -135,6 +135,7 @@ const WhereClauses = React.forwardRef<HTMLDivElement, WhereClausesProps>(
           className="h-8"
           onClick={handleAddClause}
           disabled={disabled || value.length >= columns.length}
+          aria-label={addButtonLabel}
         >
           <PlusCircle className="mr-2 h-4 w-4" />
           {addButtonLabel}
