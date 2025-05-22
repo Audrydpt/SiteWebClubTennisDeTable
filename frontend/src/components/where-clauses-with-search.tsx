@@ -1,6 +1,5 @@
 import { PlusCircle, X } from 'lucide-react';
 import * as React from 'react';
-import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +26,8 @@ export interface WhereClausesWithSearchProps
   onValueChange: (value: WhereClausesWithSearchValue) => void;
   disabled?: boolean;
   whereClauseAutocompletion: Record<string, Set<string>>;
+  addButtonLabel?: string | React.ReactNode;
+  placeholder?: string;
 }
 
 const DELIMITER = '|||';
@@ -43,11 +44,12 @@ const WhereClausesWithSearch = React.forwardRef<
       className,
       disabled,
       whereClauseAutocompletion,
+      addButtonLabel,
+      placeholder,
       ...props
     },
     ref
   ) => {
-    const { t } = useTranslation();
     const getAvailableColumns = React.useCallback(
       (currentIndex?: number) => {
         const selectedColumns = value
@@ -129,7 +131,7 @@ const WhereClausesWithSearch = React.forwardRef<
                   onChange={(selected) =>
                     handleChangeClause(index, 'value', selected.join(DELIMITER))
                   }
-                  placeholder={t('dashboard:whereClauseSearch.placeholder')}
+                  placeholder={placeholder}
                 />
               </div>
 
@@ -157,7 +159,7 @@ const WhereClausesWithSearch = React.forwardRef<
           disabled={disabled || value.length >= columns.length}
         >
           <PlusCircle className="mr-2 h-4 w-4" />
-          {t('dashboard:whereClauseSearch.add')}
+          {addButtonLabel}
         </Button>
       </div>
     );

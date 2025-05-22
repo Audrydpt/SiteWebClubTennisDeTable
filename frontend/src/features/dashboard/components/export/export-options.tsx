@@ -217,6 +217,8 @@ export default function ExportStepSource({
                       handleFormChange();
                     }}
                     whereClauseAutocompletion={whereClausesAutocompletion}
+                    addButtonLabel={t('dashboard:whereClauseSearch.search')}
+                    placeholder={t('dashboard:whereClauseSearch.placeholder')}
                   />
                 )}
               </FormItem>

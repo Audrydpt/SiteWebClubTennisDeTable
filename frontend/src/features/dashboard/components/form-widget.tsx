@@ -521,6 +521,10 @@ export function FormWidget({
                         value={Array.isArray(field.value) ? field.value : []}
                         onValueChange={field.onChange}
                         whereClauseAutocompletion={whereClausesAutocompletion}
+                        addButtonLabel={t('dashboard:whereClauseSearch.search')}
+                        placeholder={t(
+                          'dashboard:whereClauseSearch.placeholder'
+                        )}
                       />
                       <FormMessage />
                     </FormItem>

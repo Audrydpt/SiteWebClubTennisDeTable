@@ -78,18 +78,16 @@ export default function MultiSelect({
         <Command>
           <div className="flex items-center justify-between p-2">
             <CommandInput
-              placeholder={t('dashboard:whereClauseSearch.search')}
+              placeholder={placeholder ?? t('whereClauseSearch.search')}
             />
             <Button variant="ghost" onClick={handleSelectAll}>
               {selected.length === options.length
-                ? t('dashboard:whereClauseSearch.clear')
-                : t('dashboard:whereClauseSearch.all')}
+                ? t('whereClauseSearch.clear')
+                : t('whereClauseSearch.all')}
             </Button>
           </div>
           <CommandList>
-            <CommandEmpty>
-              {t('dashboard:whereClauseSearch.noResults')}
-            </CommandEmpty>
+            <CommandEmpty>{t('whereClauseSearch.noResults')}</CommandEmpty>
             <CommandGroup>
               {Array.isArray(options) &&
                 options.map((item) => (
