@@ -214,7 +214,6 @@ class ResultsStore:
         for result_json in results_json:
             try:
                 message = json.loads(result_json)
-                logger.info("Parsed JSON message successfully.")
             except Exception as e:
                 logger.error("Error parsing JSON message", exc_info=True)
                 continue
@@ -253,8 +252,11 @@ class ResultsStore:
                 for _stream, messages in response:
                     for message_id, fields in messages:
                         last_id = message_id.decode() if isinstance(message_id, bytes) else message_id
-                        raw_data = fields.get("data")
+                        raw_data = fields.get(b"data")
+                        
                         if raw_data is None:
+                            logger.info("No 'data' field in message, skipping")
+                            logger.info(f"Message id: {message_id}, fields keys: {list(fields.keys())}")
                             continue
                         if isinstance(raw_data, bytes):
                             raw_data = raw_data.decode()
