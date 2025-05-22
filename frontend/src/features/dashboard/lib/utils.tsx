@@ -116,6 +116,17 @@ export function roundDateTime(
       return dt.startOf('week');
     case '1 month':
       return dt.startOf('month');
+    case '3 months':
+      return dt
+        .set({
+          month: Math.floor((dt.month - 1) / 3) * 3 + 1,
+          day: 15,
+          hour: 0,
+          minute: 0,
+          second: 0,
+          millisecond: 0,
+        })
+        .startOf('month');
     case '6 months':
       return dt
         .set({
