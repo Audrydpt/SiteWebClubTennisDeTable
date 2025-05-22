@@ -16,7 +16,7 @@ from starlette.responses import StreamingResponse
 
 class Settings:
     environment: str = 'development'
-    host: str = "192.168.20.145"
+    host: str = "127.0.0.1"
     port: int = 8444
     username: str = "administrator"
     password: str = "ACIC"

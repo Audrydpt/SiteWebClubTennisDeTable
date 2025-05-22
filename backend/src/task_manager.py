@@ -180,24 +180,28 @@ class ResultsStore:
         # Stocker les métadonnées du résultat (sans la frame)
         result_data = result.to_redis_message()
 
-        # Publier le résultat sur le canal Redis
-        await redis.publish(channel_name, json.dumps(result_data))
+        # ------------------------------------------------------------
+        # Remplacement de publish/subscribe par un Redis Stream.
+        # On ajoute le résultat dans un stream avec une taille maximale
+        # pour éviter de conserver les données indéfiniment.
+        # ------------------------------------------------------------
+        await redis.xadd(
+            channel_name,
+            {"data": json.dumps(result_data)},
+            maxlen=self.max_results,
+            approximate=True,
+        )
+        # Définir une TTL pour que les données expirent après 5 minutes
+        await redis.expire(channel_name, 5 * 60)
 
+        # Conserver les métadonnées dans la liste existante pour l'historique
         if result.frame_uuid:
             await redis.lpush(result_list_key, json.dumps(result_data))
             await redis.ltrim(result_list_key, 0, self.max_results - 1)
 
         if result.frame and result.frame_uuid:
-            # Stocker la frame séparément
             frame_key = f"task:{result.job_id}:frame:{result.frame_uuid}"
-            await redis.set(frame_key, result.frame, ex=3600)  # Expire après 1h
-
-            # Notifier que la frame a été stockée
-            frame_notification = {
-                "job_id": result.job_id,
-                "frame_uuid": result.frame_uuid
-            }
-            await redis.publish(f"{channel_name}:frames", json.dumps(frame_notification))
+            await redis.set(frame_key, result.frame)
 
     async def get_results(self, job_id: str, start: int = 0, end: int = -1) -> List[JobResult]:
         redis = await self._get_redis()
@@ -210,7 +214,6 @@ class ResultsStore:
         for result_json in results_json:
             try:
                 message = json.loads(result_json)
-                logger.info("Parsed JSON message successfully.")
             except Exception as e:
                 logger.error("Error parsing JSON message", exc_info=True)
                 continue
@@ -222,42 +225,52 @@ class ResultsStore:
     
     async def subscribe_to_results(self, job_id: str):
         redis = await self._get_redis()
-        pubsub = redis.pubsub()
-        
+
         channel_name = f"task:{job_id}:updates"
-        await pubsub.subscribe(channel_name)
-        logger.info("Souscription aux mises à jour de résultats")
+        last_id = "$"  # Commence à la fin pour ne recevoir que les nouveaux messages
+        logger.info("Souscription au stream de résultats")
 
         try:
             while True:
-                message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+                # Bloque jusqu'à 1 s pour recevoir de nouveaux messages
+                response = await redis.xread({channel_name: last_id}, block=1000, count=10)
 
-                if message is None:
+                if not response:
+                    # Aucune donnée, vérifier si la tâche est terminée
                     task_status = TaskManager.get_job_status(job_id)
                     if task_status in [JobStatus.SUCCESS, JobStatus.FAILURE, JobStatus.REVOKED]:
+                        # Attendre quelques instants d'éventuels derniers messages
                         for _ in range(5):
-                            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
-                            if message:
+                            response = await redis.xread({channel_name: last_id}, block=1000, count=10)
+                            if response:
                                 break
-
-                        if message is None:
+                        if not response:
                             break
                     continue
-                
-                try:
-                    update_data = json.loads(message["data"])
-                except Exception as ex:
-                    logger.error(f"Erreur lors de la désérialisation du message: {ex}")
-                    continue
 
-                job_result = await JobResult.from_redis_message(update_data, redis_client=None)
-                yield job_result
-        
+                # Traiter les messages reçus
+                for _stream, messages in response:
+                    for message_id, fields in messages:
+                        last_id = message_id.decode() if isinstance(message_id, bytes) else message_id
+                        raw_data = fields.get(b"data")
+                        
+                        if raw_data is None:
+                            logger.info("No 'data' field in message, skipping")
+                            logger.info(f"Message id: {message_id}, fields keys: {list(fields.keys())}")
+                            continue
+                        if isinstance(raw_data, bytes):
+                            raw_data = raw_data.decode()
+                        try:
+                            update_data = json.loads(raw_data)
+                        except Exception as ex:
+                            logger.error(f"Erreur lors de la désérialisation du message du stream: {ex}")
+                            continue
+
+                        job_result = await JobResult.from_redis_message(update_data, redis_client=None)
+                        yield job_result
         except Exception as e:
-            logger.error(f"Erreur lors de la souscription aux mises à jour de résultats: {e}")
+            logger.error(f"Erreur lors de la lecture du stream de résultats: {e}")
             logger.error(traceback.format_exc())
-        finally:
-            await pubsub.unsubscribe(channel_name)
 
 results_store = ResultsStore()
 
@@ -761,7 +774,7 @@ class TaskManager:
         return await results_store.get_frame(job_id, frame_uuid)
     
     @staticmethod
-    async def stream_job_results(websocket: WebSocket, job_id: str, send_old_results: bool = True):
+    async def stream_job_results(websocket: WebSocket, job_id: str):
         """
         Diffuse les résultats d'une tâche vers un WebSocket.
         Envoie l'historique des résultats puis s'abonne aux mises à jour.
@@ -769,18 +782,6 @@ class TaskManager:
         try:
 
             logger.info(f"Client WebSocket connecté pour le job {job_id}")
-
-            # Envoyer les résultats précédents
-            if send_old_results:
-                previous_results = await results_store.get_results(job_id)
-                for result in previous_results:
-                    if websocket.client_state == WebSocketState.DISCONNECTED:
-                        break
-                    
-                    if result.metadata:
-                        await websocket.send_json(result.metadata)
-                    #if result.frame:
-                    #    await websocket.send_bytes(result.frame)
 
             # S'abonner aux nouvelles mises à jour
             async for update in results_store.subscribe_to_results(job_id):
