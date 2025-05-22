@@ -2,13 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { TriangleAlert } from 'lucide-react';
 import { Duration } from 'luxon';
-import React, {
-  ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -261,7 +255,7 @@ export function FormWidget({
     enabled: groupByColumn.length > 0,
   });
 
-  const whereClausesAutocompletion = React.useMemo(() => {
+  const whereClausesAutocompletion = useMemo(() => {
     if (!whereClauseData.data) return {};
 
     return whereClauseData.data.reduce(
