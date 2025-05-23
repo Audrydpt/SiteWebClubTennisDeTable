@@ -73,7 +73,7 @@ install:
 	make nvm CMD="npm install"
 
 lint:
-	make nvm CMD="npm run lint"
+	make nvm CMD="npm run lint:fix"
 
 test:
 	make nvm CMD="npm run test"

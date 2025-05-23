@@ -1,13 +1,15 @@
 import {
-  ImageIcon,
-  Video,
-  X,
   BarChart2,
   CheckCircle2,
   Clock,
+  ImageIcon,
+  Video,
+  X,
 } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+
 import type { UploadedFile } from '../../../lib/data';
 
 type FilePreviewProps = {
@@ -26,7 +28,7 @@ export default function FilePreview({ file, onRemove }: FilePreviewProps) {
   const getStatusBadge = () => {
     switch (file.status) {
       case 'completed':
-        return <Badge className="bg-green-500">Terminé</Badge>;
+        return <Badge className="bg-primary">Terminé</Badge>;
       case 'analyzing':
         return <Badge variant="secondary">En cours</Badge>;
       case 'error':

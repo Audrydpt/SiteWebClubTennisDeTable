@@ -3,7 +3,10 @@ import { MinHeap } from '@datastructures-js/heap';
 import { ForensicResult } from '../types';
 
 // Number of maximum results to keep
-const MAX_RESULTS = 5000;
+const FORENSIC_PAGINATION_ITEMS = parseInt(
+  process.env.FORENSIC_PAGINATION_ITEMS || '12',
+  10
+);
 
 class ForensicResultsHeap {
   private minHeap: MinHeap<ForensicResult>;
@@ -23,7 +26,7 @@ class ForensicResultsHeap {
     }
 
     // If we haven't reached capacity yet, simply add the new result
-    if (this.minHeap.size() < MAX_RESULTS) {
+    if (this.minHeap.size() < FORENSIC_PAGINATION_ITEMS) {
       this.minHeap.insert(result);
       this.resultMap.set(result.id, true);
       return true;
@@ -75,12 +78,41 @@ class ForensicResultsHeap {
     });
   }
 
+  getTopByScore(
+    limit: number = FORENSIC_PAGINATION_ITEMS,
+    descending: boolean = true
+  ): ForensicResult[] {
+    const allResults = this.getBestResults();
+    const sortedResults = descending ? allResults : [...allResults].reverse();
+
+    return sortedResults.slice(0, limit);
+  }
+
+  getTopByDate(
+    limit: number = FORENSIC_PAGINATION_ITEMS,
+    descending: boolean = true
+  ): ForensicResult[] {
+    const allResults = this.getAllResults();
+
+    // Tri par date
+    const sortedByDate = allResults.sort((a, b) => {
+      const dateA =
+        typeof a.timestamp === 'string' ? new Date(a.timestamp).getTime() : 0;
+      const dateB =
+        typeof b.timestamp === 'string' ? new Date(b.timestamp).getTime() : 0;
+
+      return descending ? dateB - dateA : dateA - dateB;
+    });
+
+    return sortedByDate.slice(0, limit);
+  }
+
   clear(): void {
     this.minHeap.clear();
     this.resultMap.clear();
   }
 
-  getPageResults(page: number, pageSize: number = 12) {
+  getPageResults(page: number, pageSize: number = FORENSIC_PAGINATION_ITEMS) {
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     return this.getBestResults().slice(startIndex, endIndex);
@@ -89,7 +121,7 @@ class ForensicResultsHeap {
   shouldAddResult(
     newResult: ForensicResult,
     currentPage: number,
-    pageSize: number = 12
+    pageSize: number = FORENSIC_PAGINATION_ITEMS
   ) {
     if (currentPage === 1) {
       // En première page, on vérifie si le résultat est meilleur que le moins bon affiché
@@ -112,6 +144,24 @@ class ForensicResultsHeap {
       (r) => newResult.score > r.score
     );
     return wouldBeBetterThan >= 0 && wouldBeBetterThan < currentPage * pageSize;
+  }
+
+  size(): number {
+    return this.minHeap.size();
+  }
+
+  getAllResults(): ForensicResult[] {
+    const results: ForensicResult[] = [];
+    const tempHeap = this.minHeap.clone();
+
+    while (!tempHeap.isEmpty()) {
+      const item = tempHeap.extractRoot();
+      if (item) {
+        results.push(item);
+      }
+    }
+
+    return results;
   }
 }
 

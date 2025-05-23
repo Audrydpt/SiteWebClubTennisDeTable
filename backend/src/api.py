@@ -68,7 +68,6 @@ class ModelName(str, Enum):
 load_dotenv()
 FORENSIC_PAGINATION_ITEMS = int(os.getenv("FORENSIC_PAGINATION_ITEMS", "12"))
 
-
 # Please follow: https://www.belgif.be/specification/rest/api-guide/#resource-uri
 class FastAPIServer:
     def __init__(self, event_grabber:EventGrabber):
@@ -649,7 +648,7 @@ class FastAPIServer:
                     result.frame = None
 
                 # Pagination
-                page_size = 12
+                page_size = FORENSIC_PAGINATION_ITEMS
                 start = (number - 1) * page_size
                 end = start + page_size
                 paginated_results = results[start:end]
@@ -681,7 +680,7 @@ class FastAPIServer:
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
 
-        @self.app.delete("/forensics/tasks/delete-all", tags=["forensics"])
+        @self.app.delete("/forensics/tasks/delete_all", tags=["forensics"])
         async def delete_all_forensic_task():
             """
             Supprime toutes les tâches forensiques et leurs résultats associés.
@@ -714,7 +713,7 @@ class FastAPIServer:
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.delete("/forensics/delete/{guid}", tags=["forensics"])
+        @self.app.delete("/forensics/tasks/{guid}", tags=["forensics"])
         async def delete_forensic_task(guid: str):
             """
             Supprime une tâche forensique et ses résultats associés.

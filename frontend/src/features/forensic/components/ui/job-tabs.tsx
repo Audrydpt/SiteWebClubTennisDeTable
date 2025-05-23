@@ -1,38 +1,33 @@
-/* eslint-disable no-console */
 import { Loader2, Trash2 } from 'lucide-react';
-import React, { useEffect, useRef } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button.tsx';
-import DeleteConfirmation from '@/components/confirm-delete';
+import { useEffect, useRef } from 'react';
 
-export interface TabJob {
-  tabIndex: number;
-  jobId?: string;
-  status?: 'idle' | 'running' | 'completed' | 'error';
-  isNew?: boolean;
-}
+import DeleteConfirmation from '@/components/confirm-delete';
+import Loading from '@/components/loading';
+import { Button } from '@/components/ui/button.tsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+import useJobs, {
+  ForensicTaskStatus,
+  isForensicTaskCompleted,
+} from '../../hooks/use-jobs';
 
 interface JobTabsProps {
-  tabJobs: TabJob[];
-  activeTabIndex: number;
-  onTabChange: (tabIndex: number) => void;
-  onDeleteTab: (tabIndex: number) => void;
+  onTabChange: (tabIndex: string) => void;
   hideTitle?: boolean;
   isLoading?: boolean;
   setIsLoading?: (isLoading: boolean) => void;
 }
 
 export default function JobTabs({
-  tabJobs = [],
-  activeTabIndex = 1,
   onTabChange,
-  onDeleteTab,
   hideTitle = false,
   isLoading = false,
   setIsLoading,
 }: JobTabsProps) {
   const MAX_TABS = 5;
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { tasks: tabJobs, activeTabIndex, deleteTab } = useJobs();
+
   useEffect(() => {
     if (isLoading && tabJobs.length === 0) {
       if (loadingTimeoutRef.current) {
@@ -58,47 +53,20 @@ export default function JobTabs({
 
   let displayTabs = [...tabJobs];
 
-  if (displayTabs.length === 0) {
-    displayTabs = [{ tabIndex: 1, status: 'idle' }];
-  }
-
-  if (!displayTabs.some((tab) => tab.tabIndex === activeTabIndex)) {
-    displayTabs.push({ tabIndex: activeTabIndex, status: 'idle' });
-  }
+  // if (displayTabs.length === 0) {
+  //  displayTabs = [{ jobId: '', status: ForensicTaskStatus.PENDING }];
+  // }
 
   displayTabs = displayTabs.slice(0, MAX_TABS);
 
-  const getGridClass = (count: number) => {
-    switch (count) {
-      case 1:
-        return 'grid-cols-1';
-      case 2:
-        return 'grid-cols-2';
-      case 3:
-        return 'grid-cols-3';
-      case 4:
-        return 'grid-cols-4';
-      case 5:
-        return 'grid-cols-5';
-      default:
-        return 'grid-cols-1';
-    }
-  };
-
   if (isLoading && tabJobs.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8 space-y-4">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="text-lg">Chargement des tâches...</p>
-      </div>
-    );
+    return <Loading />;
   }
 
   return (
     <div className="flex flex-col">
       {!hideTitle && (
         <div className="flex items-center gap-2 mb-2">
-          <h2 className="text-lg font-semibold">Résultats de recherche</h2>
           {isLoading && (
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
           )}
@@ -106,40 +74,45 @@ export default function JobTabs({
       )}
 
       <Tabs
-        value={activeTabIndex.toString()}
+        value={activeTabIndex}
         className="w-full"
-        onValueChange={(value) => onTabChange(parseInt(value, 10))}
+        onValueChange={(value) => onTabChange(value)}
       >
-        <TabsList className={`grid w-full ${getGridClass(displayTabs.length)}`}>
-          {displayTabs.map((tab) => {
-            const hasJob = !!tab.jobId;
+        <TabsList className="grid w-full grid-cols-5">
+          {displayTabs.map((tab, index) => {
+            const hasJob = !!tab.id;
             let tabDisplay = 'Nouvel onglet';
             let statusIndicator = null;
 
             if (hasJob) {
-              tabDisplay = `R${tab.tabIndex}`;
-              if (tab.status === 'running') {
+              tabDisplay = `R${index + 1}`;
+              if (!isForensicTaskCompleted(tab.status)) {
                 statusIndicator = (
                   <Loader2 className="ml-1 h-3 w-3 animate-spin" />
                 );
-              } else if (tab.status === 'completed') {
+              } else if (tab.status === ForensicTaskStatus.SUCCESS) {
                 statusIndicator = <span className="ml-1 text-primary">✓</span>;
-              } else if (tab.status === 'error') {
+              } else if (tab.status === ForensicTaskStatus.REVOKED) {
+                statusIndicator = (
+                  <span className="ml-1 text-destructive">✗</span>
+                );
+              } else if (tab.status === ForensicTaskStatus.FAILURE) {
                 statusIndicator = (
                   <span className="ml-1 text-destructive">⚠️</span>
                 );
               }
             }
             const activeTabClass =
-              activeTabIndex === tab.tabIndex ? 'ring-1 ring-primary' : '';
+              activeTabIndex === tab.id ? 'ring-1 ring-primary' : '';
 
-            const runningClass =
-              tab.status === 'running' ? 'bg-muted/50 animate-pulse' : '';
+            const runningClass = !isForensicTaskCompleted(tab.status)
+              ? 'bg-muted/50 animate-pulse'
+              : '';
 
             return (
               <TabsTrigger
-                key={tab.tabIndex}
-                value={tab.tabIndex.toString()}
+                key={tab.id}
+                value={tab.id || ''}
                 className={`${hasJob ? 'font-medium' : ''} ${activeTabClass} ${runningClass} transition-all relative group`}
                 disabled={isLoading}
               >
@@ -149,7 +122,7 @@ export default function JobTabs({
                   {hasJob && (
                     <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       <DeleteConfirmation
-                        onDelete={() => onDeleteTab(tab.tabIndex)}
+                        onDelete={() => deleteTab(tab.id || '')}
                         title="Supprimer cette recherche"
                         description="Êtes-vous sûr de vouloir supprimer cet onglet de recherche ?"
                         confirmText="Supprimer"
@@ -157,7 +130,6 @@ export default function JobTabs({
                         <Button
                           variant="destructive"
                           className="h-4 w-4 p-0"
-                          disabled={isLoading || tab.status === 'running'}
                           title="Supprimer cette recherche"
                           aria-label="Supprimer cette recherche"
                         >
@@ -172,7 +144,7 @@ export default function JobTabs({
           })}
         </TabsList>
         {displayTabs.map((tab) => (
-          <TabsContent key={tab.tabIndex} value={tab.tabIndex.toString()} />
+          <TabsContent key={tab.id} value={tab.id || ''} />
         ))}
       </Tabs>
     </div>

@@ -1,6 +1,10 @@
-import { SortAsc, SortDesc, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+/* eslint-disable @typescript-eslint/no-unused-vars,react/no-unused-prop-types */
+import { Trash2 } from 'lucide-react';
+
 import DeleteConfirmation from '@/components/confirm-delete';
+import { Button } from '@/components/ui/button';
+
+import useJobs from '../../hooks/use-jobs';
 
 export type SortType = 'score' | 'date';
 
@@ -10,20 +14,21 @@ interface SortButtonsProps {
   sortOrder: 'asc' | 'desc';
   toggleSortOrder: () => void;
   clearResults: () => void;
-  onDeleteAllTabs: () => void;
 }
 
 export function SortButtons({
   sortType,
   setSortType,
-  sortOrder,
-  toggleSortOrder,
+  /* sortOrder,
+  toggleSortOrder, */
   clearResults,
-  onDeleteAllTabs,
 }: SortButtonsProps) {
   // Fonction pour gérer le reset complet
+
+  const { deleteAllTasks } = useJobs();
+
   const handleReset = () => {
-    onDeleteAllTabs();
+    deleteAllTasks();
     clearResults();
   };
 
@@ -47,7 +52,7 @@ export function SortButtons({
         </Button>
       </div>
 
-      {/* Bouton pour basculer l'ordre */}
+      {/* Bouton pour basculer l'ordre 
       <Button
         variant="outline"
         size="icon"
@@ -61,6 +66,7 @@ export function SortButtons({
           <SortAsc className="h-4 w-4" />
         )}
       </Button>
+      */}
 
       {/* Bouton pour vider les résultats avec confirmation */}
       <DeleteConfirmation

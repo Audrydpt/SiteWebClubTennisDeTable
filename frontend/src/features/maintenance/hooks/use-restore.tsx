@@ -164,8 +164,6 @@ export function useRestore() {
       if (!file.name.endsWith('.mvb')) {
         throw new Error('The file must be in .mvb format');
       }
-
-      // Convert file to base64
       const base64Data = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { z } from 'zod';
 
 export interface ForensicResult {
@@ -15,6 +16,7 @@ export interface ForensicResult {
     type?: Record<string, number>;
     [key: string]: unknown;
   };
+  metadata?: Record<string, any>;
 }
 
 export interface SourceProgress {

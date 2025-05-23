@@ -6,6 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import ForensicForm from './components/form';
 import Results from './components/results';
 import useJobs from './hooks/use-jobs';
+// eslint-disable-next-line import/no-named-as-default
+import { SortType } from './components/ui/buttons';
 import useSearch from './hooks/use-search';
 import forensicResultsHeap from './lib/data-structure/heap.tsx';
 import { createSearchFormData } from './lib/format-query';
@@ -20,165 +22,180 @@ export default function Forensic() {
   const [isTabLoading, setIsTabLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [sortType, setSortType] = useState<SortType>('score');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  const toggleSortOrder = useCallback(() => {
+    setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+  }, []);
 
   const {
     startSearch,
-    stopSearch,
     progress,
+    sourceProgress,
+    // stopSearch,
     results,
     isSearching,
-    sourceProgress,
-    // resumeJob,
     setDisplayResults,
     resetSearch,
     setResults,
     testResumeJob,
     paginationInfo,
     handlePageChange,
-    currentPageTracked,
+    setPaginationInfo,
+    progressByJobId,
+    sourceProgressByJobId,
+    cleanupWebSocket,
   } = useSearch();
 
   const {
-    tabJobs,
+    tasks: tabJobs,
     handleTabChange: jobsHandleTabChange,
     activeTabIndex,
     addNewTab,
-    selectLeftmostTab,
-    deleteTab,
-    fetchTasks,
-    deleteAllTasks,
-    getActiveJobId,
+    getActiveTask,
   } = useJobs();
+
+  const getActiveProgress = () => {
+    if (!activeTabIndex) return null;
+    return progressByJobId[activeTabIndex] !== undefined
+      ? progressByJobId[activeTabIndex]
+      : progress;
+  };
+
+  const getActiveSourceProgress = () => {
+    if (!activeTabIndex) return [];
+    return sourceProgressByJobId[activeTabIndex]?.length > 0
+      ? sourceProgressByJobId[activeTabIndex]
+      : sourceProgress;
+  };
+
+  const activeProgress = getActiveProgress();
+  const activeSourceProgress = getActiveSourceProgress();
+
+  useEffect(() => {
+    console.log('🔄 État de progressByJobId a changé:', progressByJobId);
+  }, [progressByJobId]);
+
+  useEffect(() => {
+    console.log(
+      '🔄 État de sourceProgressByJobId a changé:',
+      sourceProgressByJobId
+    );
+  }, [sourceProgressByJobId]);
 
   const handlePaginationChange = useCallback(
     async (page: number) => {
       console.log(`Changement vers page ${page}`);
       setCurrentPage(page);
 
-      // Utiliser la fonction handlePageChange du hook useSearch
-      handlePageChange(page);
-
-      // Récupérer le job actif depuis l'onglet actif
-      const activeTab = tabJobs.find((tab) => tab.tabIndex === activeTabIndex);
-      const activeJobId = activeTab?.jobId;
-
-      if (!activeJobId) {
-        console.error(
-          `Impossible de charger la page ${page} : aucun job actif`
-        );
+      if (!activeTabIndex) {
+        console.error('Impossible de charger la page : aucun job actif');
         return;
       }
 
       try {
         setIsLoading(true);
-        await testResumeJob(activeJobId, page, true, true);
+        await testResumeJob(
+          activeTabIndex,
+          page,
+          true,
+          isSearching,
+          sortType,
+          'desc'
+        );
       } catch (error) {
         console.error(`Erreur lors du chargement de la page ${page}:`, error);
       } finally {
         setIsLoading(false);
       }
     },
-    [tabJobs, activeTabIndex, testResumeJob, setIsLoading, handlePageChange]
+    [testResumeJob, activeTabIndex, sortType, sortOrder, isSearching]
   );
-
-  const handleDeleteAllTabs = () => {
-    deleteAllTasks();
-    forensicResultsHeap.clear();
-    setDisplayResults([]);
-    setIsTabLoading(false);
-  };
-
-  const handleStopSearch = async () => {
-    const activeJob = getActiveJobId();
-    if (activeJob) {
-      stopSearch(activeJob);
-    }
-  };
-
-  const handleDeleteTab = (tabIndex: number) => {
-    if (activeTabIndex === tabIndex) {
-      const newActiveTabIndex = tabJobs[0]?.tabIndex || 1;
-      jobsHandleTabChange(newActiveTabIndex);
-    }
-    deleteTab(tabIndex);
-    resetSearch();
-    forensicResultsHeap.clear();
-    setDisplayResults([]);
-  };
-
-  const handleAddNewTab = () => {
-    forensicResultsHeap.clear();
-    setDisplayResults([]);
-    setCurrentPage(1);
-
-    setIsTabLoading(false);
-
-    addNewTab(() => {
-      resetSearch();
-      forensicResultsHeap.clear();
-      setDisplayResults([]);
-
-      setTimeout(() => {
-        setDisplayResults([]);
-      }, 100);
-    });
-  };
 
   const handleToggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
   };
 
-  const handleTabChange = async (tabIndex: number) => {
+  const handleTabChange = async (tabIndex: string) => {
+    console.log("🔄 Début du changement vers l'onglet:", tabIndex);
+    console.log(
+      '📊 État de progressByJobId avant changement:',
+      progressByJobId
+    );
+
     setIsTabLoading(true);
     setCurrentPage(1);
 
-    const selectedTab = tabJobs.find((tab) => tab.tabIndex === tabIndex);
-    const isNewTab = selectedTab?.isNew === true;
+    const selectedTab = tabJobs.find((tab) => tab.id === tabIndex);
 
-    resetSearch(); // Cette fonction doit maintenant réinitialiser également la pagination
+    // Fermer le WebSocket actif avant de changer d'onglet
+    console.log(
+      "🔄 Fermeture du WebSocket lors du changement vers l'onglet",
+      tabIndex
+    );
+    cleanupWebSocket();
+
+    // Bloquer brièvement toute initialisation de WebSocket
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
+
+    // Sauvegarde de la progression actuelle avant reset
+    const currentJobId = activeTabIndex;
+    if (currentJobId) {
+      console.log(
+        `📝 Sauvegarde de progression avant changement d'onglet pour ${currentJobId}:`,
+        progress
+      );
+    }
+
+    resetSearch();
     forensicResultsHeap.clear();
     setDisplayResults([]);
     setResults([]);
 
     jobsHandleTabChange(tabIndex);
 
-    if (isNewTab) {
-      setIsTabLoading(false);
-      return;
-    }
-
-    if (selectedTab?.jobId) {
+    if (selectedTab?.id) {
       try {
         console.log(
-          `Chargement des résultats pour l'onglet ${tabIndex} avec jobId ${selectedTab.jobId}`
+          `📥 Chargement des résultats pour l'onglet ${tabIndex} avec jobId ${selectedTab.id}`
         );
+        console.log('📊 progressByJobId avant chargement:', progressByJobId);
 
-        // Utiliser testResumeJob pour charger à la fois les résultats et les infos de pagination
+        // Assurer que l'initialisation d'un nouveau WebSocket sera différée
         const response = await testResumeJob(
-          selectedTab.jobId,
-          1, // Toujours commencer à la page 1 lors d'un changement d'onglet
+          selectedTab.id,
+          1,
           false,
-          true // skipLoadingState pour éviter des états de chargement en double
+          true,
+          sortType,
+          'desc'
         );
 
         if (response) {
-          const { results: jobResults, pagination } = response;
+          const { results: pagination } = response;
           console.log(
-            `Pagination reçue pour l'onglet ${tabIndex}:`,
+            `📥 Pagination reçue pour l'onglet ${tabIndex}:`,
             pagination
           );
+        } else {
+          console.log(`⚠️ Aucune donnée reçue pour l'onglet ${tabIndex}`);
         }
-
-        // Maintenant les infos de pagination sont bien mises à jour via testResumeJob
-        // qui met à jour le state paginationInfo dans useSearch
       } catch (error) {
         console.error(
-          `Erreur lors du chargement de l'onglet ${tabIndex}:`,
+          `❌ Erreur lors du chargement de l'onglet ${tabIndex}:`,
           error
         );
       }
     }
 
+    console.log("🔄 Fin du changement vers l'onglet:", tabIndex);
+    console.log(
+      '📊 État de progressByJobId après changement:',
+      progressByJobId
+    );
     setIsTabLoading(false);
   };
 
@@ -191,10 +208,8 @@ export default function Forensic() {
       const searchFormData = createSearchFormData(data);
       const jobId = await startSearch(searchFormData);
 
-      if (jobId) {
-        const selectedTabIndex = await selectLeftmostTab();
-        jobsHandleTabChange(selectedTabIndex);
-      }
+      await addNewTab(jobId);
+      await handleTabChange(jobId);
     } catch (error) {
       console.error('Failed to start search:', error);
     }
@@ -202,42 +217,84 @@ export default function Forensic() {
 
   const currentWidth = isCollapsed ? collapsedWidth : expandedWidth;
 
-  const activeTabsCount = tabJobs.filter((tab) => tab.jobId).length;
+  // const activeTabsCount = tabJobs.filter((tab) => tab.id).length;
 
   useEffect(() => {
-    const loadExistingJobs = async () => {
-      try {
-        setIsTabLoading(true);
-        const updatedTabJobs = await fetchTasks();
+    // Ne recharger que si un onglet est actif et qu'on n'est pas en train de charger
+    if (activeTabIndex && !isLoading && !isTabLoading) {
+      console.log(
+        `🔄 Rechargement complet suite au changement de tri: ${sortType} (${sortOrder})`
+      );
 
-        const tabWithJob =
-          updatedTabJobs?.find((tab) => tab.jobId) ||
-          tabJobs.find((tab) => tab.jobId);
+      // Réinitialiser à la première page
+      setCurrentPage(1);
 
-        if (tabWithJob) {
-          console.log('✅ Onglet avec jobId trouvé:', tabWithJob);
+      // Réinitialiser complètement le heap et les résultats affichés
+      forensicResultsHeap.clear();
+      setDisplayResults([]);
+      setResults([]);
 
-          handleTabChange(tabWithJob.tabIndex);
-          await new Promise((resolve) => {
-            setTimeout(resolve, 50);
-          });
-          if (tabWithJob.jobId) {
-            // await resumeJob(tabWithJob.jobId, false);
-            await testResumeJob(tabWithJob.jobId, currentPage, false);
-          }
-        } else if (updatedTabJobs?.length > 0) {
-          handleTabChange(updatedTabJobs[0].tabIndex);
-        }
-      } catch (error) {
-        console.error('❌ Erreur lors du chargement des jobs:', error);
-      } finally {
-        setTimeout(() => {
-          setIsTabLoading(false);
-        }, 300);
-      }
+      // Forcer un rechargement complet avec les nouveaux paramètres de tri
+      testResumeJob(activeTabIndex, 1, false, false, sortType, sortOrder);
+    }
+  }, [sortType, sortOrder]);
+
+  useEffect(() => {
+    // Ne pas effectuer la mise à jour durant le chargement d'un onglet
+    if (isTabLoading) return;
+
+    const activeTask = getActiveTask();
+
+    // Créer l'objet de pagination à partir de la tâche active
+    const dynamicPaginationInfo = {
+      currentPage: 1,
+      pageSize: paginationInfo.pageSize,
+      totalPages: activeTask?.total_pages || 0,
+      total: activeTask?.count || 0,
     };
-    loadExistingJobs();
-  }, []);
+
+    // Vérifier si une mise à jour est réellement nécessaire
+    if (
+      activeTabIndex &&
+      dynamicPaginationInfo?.totalPages > 0 &&
+      (paginationInfo.totalPages !== dynamicPaginationInfo.totalPages ||
+        paginationInfo.total !== dynamicPaginationInfo.total ||
+        paginationInfo.pageSize !== dynamicPaginationInfo.pageSize)
+    ) {
+      // Mettre à jour uniquement si les valeurs ont réellement changé
+      const updatedPaginationInfo = {
+        ...dynamicPaginationInfo,
+        currentPage,
+      };
+
+      setPaginationInfo(updatedPaginationInfo);
+
+      // Mettre à jour la page courante UNIQUEMENT si nécessaire
+      // et avec une condition stricte pour éviter les boucles
+      if (
+        currentPage > dynamicPaginationInfo.totalPages &&
+        dynamicPaginationInfo.totalPages > 0 &&
+        !isSearching // Important: ne pas modifier pendant une recherche
+      ) {
+        // Utiliser setTimeout pour briser la boucle de rendu
+        setTimeout(() => {
+          setCurrentPage(dynamicPaginationInfo.totalPages);
+          handlePageChange(dynamicPaginationInfo.totalPages);
+        }, 0);
+      }
+    }
+  }, [
+    activeTabIndex,
+    getActiveTask,
+    paginationInfo.pageSize,
+    paginationInfo.total,
+    paginationInfo.totalPages,
+    currentPage,
+    isTabLoading,
+    isSearching,
+    setPaginationInfo,
+    handlePageChange,
+  ]);
 
   return (
     <div ref={containerRef} className="flex h-full">
@@ -262,19 +319,12 @@ export default function Forensic() {
                   isCollapsed ? 'scale-0 w-0' : 'scale-100 w-auto'
                 } transition-all text-xl font-bold tracking-tight`}
               >
-                {isCollapsed ? '' : 'Recherche vidéo'}
+                Recherche vidéo
               </h1>
             </div>
 
             <ForensicFormProvider>
-              <ForensicForm
-                onSubmit={handleSearch}
-                isSearching={isSearching}
-                stopSearch={handleStopSearch}
-                isCollapsed={isCollapsed}
-                addNewTab={handleAddNewTab}
-                tabLength={activeTabsCount}
-              />
+              <ForensicForm onSubmit={handleSearch} />
             </ForensicFormProvider>
           </CardContent>
         </Card>
@@ -304,16 +354,19 @@ export default function Forensic() {
           <Results
             results={results}
             isSearching={isSearching}
-            progress={progress}
-            sourceProgress={sourceProgress}
+            progress={activeProgress}
+            sourceProgress={activeSourceProgress}
             onTabChange={handleTabChange}
-            activeTabIndex={activeTabIndex}
-            isTabLoading={isTabLoading}
-            onDeleteTab={handleDeleteTab}
-            onDeleteAllTabs={handleDeleteAllTabs}
+            isTabLoading={isTabLoading || isLoading}
             currentPage={currentPage}
             onPageChange={handlePaginationChange}
             paginationInfo={paginationInfo}
+            sortType={sortType}
+            setSortType={setSortType}
+            sortOrder={sortOrder}
+            toggleSortOrder={toggleSortOrder}
+            tabJobs={tabJobs}
+            activeTabIndex={activeTabIndex}
           />
         </CardContent>
       </Card>

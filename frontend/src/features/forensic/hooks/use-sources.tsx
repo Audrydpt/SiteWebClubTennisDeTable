@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,@typescript-eslint/no-explicit-any */
+/* eslint-disable no-unreachable */
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
@@ -37,12 +37,12 @@ export default function useSources(initialSelectedCameras: string[] = []) {
       const data = await response.json();
 
       const cameras: Camera[] = Object.entries(data).map(
-        ([id, details]: [string, any]) => ({
-          id,
-          name: details.name,
-          hostName: details.hostName,
-          webServerUri: details.webServerUri,
-        })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ([id, details]: [string, any]) =>
+          ({
+            id,
+            ...details,
+          }) as Camera
       );
 
       return cameras;
@@ -72,6 +72,7 @@ export default function useSources(initialSelectedCameras: string[] = []) {
       await Promise.all(
         cameras.map(async (camera) => {
           try {
+            throw new Error('test');
             const response = await fetch(
               `${BASE_URL}/vms/cameras/${camera.id}/live`,
               { headers: { Authorization: sessionId } }
@@ -83,7 +84,7 @@ export default function useSources(initialSelectedCameras: string[] = []) {
             } else {
               snapshots[camera.id] = null;
             }
-          } catch (_error) {
+          } catch {
             snapshots[camera.id] = null;
           } finally {
             setSnapshotLoadingStates((current) => ({
@@ -97,6 +98,7 @@ export default function useSources(initialSelectedCameras: string[] = []) {
       return snapshots;
     },
     enabled: cameras.length > 0 && !camerasQuery.isLoading,
+    staleTime: Infinity,
   });
 
   // Clean up object URLs when component unmounts or when snapshots change
