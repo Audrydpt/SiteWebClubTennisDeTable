@@ -8,13 +8,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 import forensicResultsHeap from '../lib/data-structure/heap';
 // import { calculateTimeRemaining } from '../lib/estimation/estimation';
+import useSearch from '../hooks/use-search.tsx';
 import { ForensicResult, SourceProgress } from '../lib/types';
 import { SortType } from './ui/buttons';
 import Display from './ui/display.tsx';
 import ForensicHeader from './ui/header';
 import MultiProgress from './ui/multi-progress';
-import useSearch from '../hooks/use-search.tsx';
-
 
 interface ResultsProps {
   results: ForensicResult[];
@@ -39,14 +38,6 @@ interface ResultsProps {
   activeTabIndex?: string | null;
 }
 
-/* function VideoPlayer() {
-  return (
-    <video src={replayVideo} controls autoPlay className="w-full">
-      Votre navigateur ne supporte pas la balise vidéo.
-    </video>
-  );
-} */
-
 export default function Results({
   results: propsResults,
   isSearching,
@@ -63,7 +54,6 @@ export default function Results({
   toggleSortOrder,
   tabJobs,
   activeTabIndex,
-
 }: ResultsProps) {
   const [showSourceDetails, setShowSourceDetails] = useState(false);
   const { setDisplayResults, testResumeJob, displayResults } = useSearch();
@@ -158,6 +148,7 @@ export default function Results({
       }
     };
   }, [activeTabIndex, tabJobs, testResumeJob]);
+
   /* const timeEstimates = useMemo(
     () => calculateTimeRemaining(sourceProgress),
     [sourceProgress]
@@ -173,7 +164,11 @@ export default function Results({
       return null;
     }
 
-    if ((!hasActiveJob && !isSearching) || (progress === null && !isSearching) || (isTabLoading && !isSearching)) {
+    if (
+      (!hasActiveJob && !isSearching) ||
+      (progress === null && !isSearching) ||
+      (isTabLoading && !isSearching)
+    ) {
       return (
         <div className="space-y-2 mb-6">
           <div className="flex justify-between items-center">
@@ -263,6 +258,8 @@ export default function Results({
         <div className="space-y-4 pb-6">
           {/* Progress section inside ScrollArea */}
           {renderProgressSection()}
+
+          {/* Results display */}
 
           {(() => {
             if (!activeTabIndex) {
