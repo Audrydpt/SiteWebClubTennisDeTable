@@ -506,23 +506,15 @@ class FastAPIServer:
             logger.info(f"end of task_updates")
 
         @self.app.get("/forensics/{guid}", tags=["forensics"])
-        async def get_task(guid: str):
+        async def get_task_status(guid: str):
             try:
                 status = TaskManager.get_job_status(guid)
                 if not status:
                     raise HTTPException(status_code=404, detail="Tâche introuvable")
-
-                # Récupérer les résultats de la tâche
-                results = await TaskManager.get_job_results(guid)
-
-                # Ne pas inclure les données binaires dans la réponse
-                for result in results:
-                    result.frame = None
                         
                 return {
                     "guid": guid,
                     "status": status,
-                    "results": results,
                 }
             
             except Exception as e:
@@ -600,35 +592,6 @@ class FastAPIServer:
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.get("/forensics/{guid}/pages/{number}", tags=["forensics"])
-        async def get_page(guid: str, number: int):
-            try:
-                # Récupérer les résultats de la tâche
-                results = await TaskManager.get_job_results(guid)
-
-                # Ne pas inclure les données binaires dans la réponse
-                for result in results:
-                    result.frame = None
-
-                # Pagination
-                page_size = FORENSIC_PAGINATION_ITEMS
-                start = (number - 1) * page_size
-                end = start + page_size
-                paginated_results = results[start:end]
-
-                return {
-                    "guid": guid,
-                    "results": paginated_results,
-                    "total": len(results),
-                    "total_pages": (len(results) + page_size - 1) // page_size,
-                    "page": number,
-                    "page_size": page_size,
-                }
-            except Exception as e:
-                logger.error(f"Erreur lors de la récupération de la page {number} pour la tâche {guid}: {e}")
-                logger.error(traceback.format_exc())
-                raise HTTPException(status_code=500, detail=traceback.format_exc())
-        
         @self.app.get("/forensics/{guid}/frames/{frameId}", tags=["forensics"])
         async def get_frame(guid: str, frameId: str):
             try:
