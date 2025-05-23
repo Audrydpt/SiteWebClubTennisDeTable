@@ -211,15 +211,12 @@ export default function useJobs() {
 
   const { mutateAsync: deleteAllTasks } = useMutation({
     mutationFn: async () => {
-      const response = await fetch(
-        `${process.env.MAIN_API_URL}/forensics/tasks/delete-all`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const response = await fetch(`${process.env.MAIN_API_URL}/forensics`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
       if (!response.ok) {
         throw new Error('Erreur lors de la suppression de toutes les tâches');
@@ -267,7 +264,7 @@ export default function useJobs() {
   const { mutateAsync: deleteTab } = useMutation({
     mutationFn: async (tabIndex: string) => {
       const response = await fetch(
-        `${process.env.MAIN_API_URL}/forensics/delete/${tabIndex}`,
+        `${process.env.MAIN_API_URL}/forensics/${tabIndex}`,
         {
           method: 'DELETE',
           headers: {

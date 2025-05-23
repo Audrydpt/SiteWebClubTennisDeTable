@@ -505,43 +505,6 @@ class FastAPIServer:
             
             logger.info(f"end of task_updates")
 
-        @self.app.delete("/forensics", tags=["forensics"])
-        async def stop_all_task():
-            try:
-                cancelled = []
-                for job_id in await TaskManager.get_jobs():
-                    if TaskManager.get_job_status(job_id) in [JobStatus.PENDING, JobStatus.RECEIVED, JobStatus.STARTED, JobStatus.RETRY]:
-                        await TaskManager.cancel_job(job_id)
-                        cancelled.append(job_id)
-                        
-                return {"status": "ok", "cancelled_tasks": cancelled}
-            
-            except Exception as e:
-                logger.error(f"Erreur lors de l'arrêt de toutes les tâches: {e}")
-                logger.error(traceback.format_exc())
-                raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
-        
-        @self.app.delete("/forensics/{guid}", tags=["forensics"])
-        async def stop_task(guid: str):
-            try:
-                status = TaskManager.get_job_status(guid)
-                if not status:
-                    raise HTTPException(status_code=404, detail="Tâche introuvable")
-                    
-                if status in [JobStatus.PENDING, JobStatus.RECEIVED, JobStatus.STARTED, JobStatus.RETRY]:
-                    success = await TaskManager.cancel_job(guid)
-                    if success:
-                        return {"guid": guid, "status": "cancelled"}
-                    else:
-                        raise HTTPException(status_code=500, detail="Échec de l'annulation")
-                else:
-                    return {"guid": guid, "status": status}
-            
-            except Exception as e:
-                logger.error(f"Erreur lors de l'arrêt de la tâche {guid}: {e}")
-                logger.error(traceback.format_exc())
-                raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
-        
         @self.app.get("/forensics/{guid}", tags=["forensics"])
         async def get_task(guid: str):
             try:
@@ -680,7 +643,7 @@ class FastAPIServer:
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
 
-        @self.app.delete("/forensics/tasks/delete_all", tags=["forensics"])
+        @self.app.delete("/forensics", tags=["forensics"])
         async def delete_all_forensic_task():
             """
             Supprime toutes les tâches forensiques et leurs résultats associés.
@@ -713,7 +676,7 @@ class FastAPIServer:
                 logger.error(traceback.format_exc())
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.delete("/forensics/tasks/{guid}", tags=["forensics"])
+        @self.app.delete("/forensics/{guid}", tags=["forensics"])
         async def delete_forensic_task(guid: str):
             """
             Supprime une tâche forensique et ses résultats associés.
