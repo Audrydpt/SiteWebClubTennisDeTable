@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import * as z from 'zod';
 
 import MultiSelect from '@/components/multi-select';
@@ -21,9 +22,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { WhereClausesWithSearch } from '@/components/where-clauses-with-search';
-import { ExportStep } from '../lib/export';
-import { AcicAggregation } from '../lib/props';
-import { getWidgetData, getWidgetDescription } from '../lib/utils';
+import { ExportStep } from '../../lib/export';
+import { AcicAggregation } from '../../lib/props';
+import { getWidgetData, getWidgetDescription } from '../../lib/utils';
 
 const exportStepSourceSchema = z.object({
   aggregation: z.nativeEnum(AcicAggregation),
@@ -45,6 +46,7 @@ export default function ExportStepSource({
   updateStoredWidget,
   setStepValidity,
 }: ExportStep) {
+  const { t } = useTranslation();
   const form = useForm<ExportStepSourceFormValues>({
     resolver: zodResolver(exportStepSourceSchema),
     defaultValues: {
@@ -140,7 +142,9 @@ export default function ExportStepSource({
             name="aggregation"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Table:</FormLabel>
+                <FormLabel>
+                  {t('dashboard:export:options.aggregation')}
+                </FormLabel>
                 <FormControl>
                   <Select
                     onValueChange={(value) => {
@@ -150,12 +154,16 @@ export default function ExportStepSource({
                     value={field.value}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a table" />
+                      <SelectValue
+                        placeholder={t(
+                          'dashboard:export:options.selectAggregation'
+                        )}
+                      />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.values(AcicAggregation).map((item) => (
+                      {Object.entries(AcicAggregation).map(([key, item]) => (
                         <SelectItem key={item} value={item}>
-                          {item}
+                          {t(`dashboard:time.${key}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -170,7 +178,7 @@ export default function ExportStepSource({
             name="groupBy"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Group by</FormLabel>
+                <FormLabel>{t('dashboard:export:options.groupBy')}</FormLabel>
                 <FormControl>
                   <MultiSelect
                     options={columnKeys || []}
@@ -183,6 +191,7 @@ export default function ExportStepSource({
                       field.onChange(selected.join(','));
                       handleFormChange();
                     }}
+                    placeholder={t('dashboard:export:options.groupBySelect')}
                   />
                 </FormControl>
               </FormItem>
@@ -193,11 +202,11 @@ export default function ExportStepSource({
             name="where"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Where</FormLabel>
+                <FormLabel>{t('dashboard:export:options.filters')}</FormLabel>
                 {isLoading ? (
                   <div className="flex items-center justify-center space-x-2">
                     <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                    <span>Fetching filters...</span>
+                    <span>{t('dashboard:export:options.fetchingFilters')}</span>
                   </div>
                 ) : (
                   <WhereClausesWithSearch
@@ -208,6 +217,8 @@ export default function ExportStepSource({
                       handleFormChange();
                     }}
                     whereClauseAutocompletion={whereClausesAutocompletion}
+                    addButtonLabel={t('dashboard:whereClauseSearch.search')}
+                    placeholder={t('dashboard:whereClauseSearch.placeholder')}
                   />
                 )}
               </FormItem>

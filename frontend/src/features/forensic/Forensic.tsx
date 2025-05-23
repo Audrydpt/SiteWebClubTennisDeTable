@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import ForensicForm from './components/form';
 import Results from './components/results';
 import useJobs from './hooks/use-jobs';
-// eslint-disable-next-line import/no-named-as-default
 import useSearch from './hooks/use-search';
 import forensicResultsHeap from './lib/data-structure/heap.tsx';
 import { createSearchFormData } from './lib/format-query';
@@ -36,6 +35,8 @@ export default function Forensic() {
     // stopSearch,
     results,
     isSearching,
+    sourceProgress,
+    // resumeJob,
     setDisplayResults,
     resetSearch,
     setResults,

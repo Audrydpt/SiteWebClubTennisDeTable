@@ -289,7 +289,7 @@ describe('API calls', () => {
 
       await getWidgetData({
         ...baseProps,
-        where: [{ column: 'status', value: 'active,pending' }],
+        where: [{ column: 'status', value: 'active|||pending' }],
       });
 
       const lastCall = mockFetch.mock.calls[

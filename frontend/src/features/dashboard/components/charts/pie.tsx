@@ -131,7 +131,7 @@ export default function PieComponent({
   return (
     <Card className="w-full h-full flex flex-col justify-center">
       <CardHeader>
-        <CardTitle className="text-left">
+        <CardTitle className="text-center">
           {title ?? `Pie ${layout.toString()}`}
         </CardTitle>
       </CardHeader>

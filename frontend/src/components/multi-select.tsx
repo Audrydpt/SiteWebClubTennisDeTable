@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,8 +28,9 @@ export default function MultiSelect({
   options = [],
   selected = [],
   onChange,
-  placeholder = 'Select...',
+  placeholder,
 }: MultiSelectProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
 
   const handleSelect = (item: string) => {
@@ -75,13 +77,17 @@ export default function MultiSelect({
       <PopoverContent className="w-full p-0">
         <Command>
           <div className="flex items-center justify-between p-2">
-            <CommandInput placeholder="Search..." />
+            <CommandInput
+              placeholder={placeholder ?? t('whereClauseSearch.search')}
+            />
             <Button variant="ghost" onClick={handleSelectAll}>
-              {selected.length === options.length ? 'Clear' : 'All'}
+              {selected.length === options.length
+                ? t('whereClauseSearch.clear')
+                : t('whereClauseSearch.all')}
             </Button>
           </div>
           <CommandList>
-            <CommandEmpty>No item found.</CommandEmpty>
+            <CommandEmpty>{t('whereClauseSearch.noResults')}</CommandEmpty>
             <CommandGroup>
               {Array.isArray(options) &&
                 options.map((item) => (

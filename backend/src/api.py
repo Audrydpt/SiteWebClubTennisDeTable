@@ -1,5 +1,6 @@
 import os
 import traceback
+import av
 import cv2
 import json
 import uuid
@@ -14,7 +15,8 @@ import aiohttp
 import threading
 import asyncio
 import logging
-
+import numpy as np
+import io
 from pydantic import Field, create_model
 from dotenv import load_dotenv
 
@@ -459,7 +461,7 @@ class FastAPIServer:
                 # Utiliser la fonction de streaming du TaskManager
                 logger.info(f"Démarrage du streaming pour la tâche {guid}")
                 try:
-                    await TaskManager.stream_job_results(websocket, guid, False)
+                    await TaskManager.stream_job_results(websocket, guid)
                     logger.info(f"Streaming terminé pour la tâche {guid}")
                 except WebSocketDisconnect:
                     logger.info(f"Client déconnecté pour la tâche {guid} (WebSocketDisconnect)")
@@ -808,13 +810,26 @@ class FastAPIServer:
                     raise HTTPException(status_code=400, detail="VMS IP or port not configured. Please configure VMS settings before trying to access cameras.")
                 
                 VMS = CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type)
-                async with VMS() as client:
-                    from_time = from_time.astimezone(datetime.timezone.utc)
-                    to_time = to_time.astimezone(datetime.timezone.utc)
-                    streams = client.start_replay(guuid, from_time, to_time, gap)
-                    img, _ = await anext(streams)
-                    _, bytes = cv2.imencode('.jpg', img)
-                    return Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})
+                async with VMS() as client:                    
+                    streams = client.start_replay(guuid, from_time.astimezone(datetime.timezone.utc), to_time.astimezone(datetime.timezone.utc), gap, True)
+                    
+                    container, codec = "webm", "vp8"
+                    buffer = io.BytesIO()
+                    output = av.open(buffer, mode='w', format=container)
+                    stream = output.add_stream(codec, rate=1)
+                    stream.pix_fmt = 'yuv420p'
+                    #stream.width = 640
+                    #stream.height = 480
+
+                    async for img, time_frame in streams:
+                        frame = av.VideoFrame.from_ndarray(img, format='bgr24')
+                        packet = stream.encode(frame)
+                        output.mux(packet)
+
+                    output.close()
+                    buffer.seek(0)
+
+                    return Response(content=buffer.getvalue(), status_code=200, headers={"Content-Type": f"video/{container}"})
             except Exception as e:
                 raise HTTPException(status_code=500, detail=traceback.format_exc())
 
@@ -916,20 +931,28 @@ class FastAPIServer:
             # Construct the SQL query including WHERE and GROUP BY clauses
             sql = f"""
             CREATE MATERIALIZED VIEW "widget_{widget_id}" WITH (timescaledb.continuous, timescaledb.materialized_only=false)  AS
-            SELECT time_bucket('{aggregation}', timestamp) AS bucket,
+            SELECT time_bucket('{aggregation}', timestamp, 'UTC') AS bucket,
                    count(timestamp) as counts
                    {group_select}
             FROM {table.lower()}
             {where_clause}
             {group_by_clause};
             """
+            if aggregation == "1 minute" or aggregation == "15 minutes" or aggregation == "30 minutes" or aggregation == "1 hour":
+                sql2 = f"""
+                SELECT add_continuous_aggregate_policy('"widget_{widget_id}"'::regclass,
+                start_offset => '1 day'::interval,
+                end_offset => NULL,
+                schedule_interval => '{aggregation}'::interval);
+                """
+            else:
+                sql2 = f"""
+                SELECT add_continuous_aggregate_policy('"widget_{widget_id}"'::regclass,
+                start_offset => '1 day'::interval,
+                end_offset => NULL
+                schedule_interval => '1 hour'::interval);
+                """
 
-            sql2 = f"""
-            SELECT add_continuous_aggregate_policy('widget_{widget_id}'::regclass,
-              start_offset => NULL, 
-              end_offset => '{aggregation}'::interval,
-              schedule_interval => '{aggregation}'::interval);
-            """
             # Execute the statement using SQLAlchemy
             dal = GenericDAL()
             await dal.async_raw(sql, without_transaction=True)
@@ -1207,7 +1230,7 @@ class FastAPIServer:
                 aggregation = agg_func if agg_func is not None else func.count('*')
                 
                 cursor = await dal.async_get_bucket(model_class, _func=aggregation, _time=time, _group=group_by, _between=between, **where)
-                
+
                 ret = []
                 for row in cursor:
                     data = {
@@ -1217,10 +1240,8 @@ class FastAPIServer:
                     if group_by is not None:
                         for idx, group in enumerate(group_by):
                             data[group] = row[idx + 2]
-                            logger.info(f"  Adding group_by value: {group}={row[idx + 2]}")
 
                     ret.append(data)
-
                 return ret
             except ValueError as e:
                 raise HTTPException(status_code=500, detail=str(e))
@@ -1228,14 +1249,15 @@ class FastAPIServer:
     def __create_endpoint2(self, agg_func=None):
         query = {}
 
-        aggregate = (ModelName, Field(default=ModelName.hour, description="The time interval to aggregate the data"))
+        aggregateMandatory = (ModelName, Field(description="The time interval to aggregate the data"))
         group = (str, Field(default=None, description="The column to group by"))
         date = (datetime.datetime, Field(default=None, description="The timestamp to filter by"))
 
-        AggregateParam = create_model(f"Aggregate", aggregate=aggregate, group_by=group, time_from=date, time_to=date, **query)    
+        AggregateMandatoryParam = create_model(f"AggregateMandatory", aggregate=aggregateMandatory, group_by=group, time_from=date, time_to=date, **query)  
+        AggregateParam = create_model(f"Aggregate", group_by=group, time_from=date, time_to=date, **query)    
         
-        @self.app.get("/dashboard/widgets/{guid}", tags=["dashboard"])
-        async def get_bucket(guid: str, kwargs: Annotated[AggregateParam, Query()]):
+        @self.app.get("/dashboard/tabs/{id}/widgets/{guid}", tags=["dashboard/tabs/widgets", "materialized"])
+        async def get_bucket(id: str, guid: str, kwargs: Annotated[AggregateMandatoryParam, Query()]):
             try:
                 if guid == "undefined":
                     return []
@@ -1269,7 +1291,6 @@ class FastAPIServer:
                         **where
                     )
 
-                
                 ret = []
                 for row in cursor:
                     data = {
@@ -1284,6 +1305,76 @@ class FastAPIServer:
                 
                 return ret
             except ValueError as e:
+                raise HTTPException(status_code=500, detail=str(e))
+    
+        @self.app.get("/dashboard/tabs/{id}/widgets/{guid}/trends", tags=["dashboard/tabs/widgets/trends", "materialized"])
+        async def get_trend(id: str, guid: str, kwargs: Annotated[AggregateParam, Query()]):
+            try:
+                if guid == "undefined":
+                    return []
+                
+                between = kwargs.time_from, kwargs.time_to
+                group_by = kwargs.group_by.split(",") if kwargs.group_by is not None else None
+                matView = f"widget_{guid}"
+                
+                dal = GenericDAL()
+
+                try:
+                    trend_data = await dal.async_get_trend(view_name=matView, _between=between, _group=group_by)
+                    
+                    return trend_data
+                except Exception as e:
+                    raise HTTPException(status_code=500, detail=str(e))
+                
+            except Exception as e:
+                logger.error(f"Error retrieving trend data for widget {guid}: {str(e)}")
+                raise HTTPException(status_code=500, detail=str(e))
+            
+        @self.app.get("/dashboard/tabs/{id}/widgets/{guid}/trends/{aggregate}", tags=["dashboard/tabs/widgets/trends", "materialized"])
+        async def get_trend_aggregation(id: str, guid: str, aggregate: ModelName, kwargs: Annotated[AggregateParam, Query()]):
+            try:
+                if guid == "undefined":
+                    return []
+                
+                between = kwargs.time_from, kwargs.time_to
+                group_by = kwargs.group_by.split(",") if kwargs.group_by is not None else None
+                matView = f"widget_{guid}"
+                
+                dal = GenericDAL()
+
+                try:
+                    trend_data_aggregate = await dal.async_get_trend_aggregate(
+                        view_name=matView, 
+                        _aggregate=aggregate, 
+                        _group=group_by,
+                        _between=between
+                    )
+                    
+                    formatted_data = []
+                    for row in trend_data_aggregate:
+                        item = {
+                            "bucket": row[0],
+                            "avg": row[1],
+                            "std": row[2],
+                            "min": row[3],
+                            "max": row[4]
+                        }
+                        
+                        if group_by:
+                            if isinstance(group_by, list):
+                                for i, group_name in enumerate(group_by):
+                                    item[group_name] = row[i + 5]
+                            else:
+                                item[group_by] = row[5]
+                                
+                        formatted_data.append(item)
+                        
+                    return formatted_data
+                except Exception as e:
+                    raise HTTPException(status_code=500, detail=str(e))
+                
+            except Exception as e:
+                logger.error(f"Error retrieving trend data for widget {guid}: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
             
     def __create_proxy(self):

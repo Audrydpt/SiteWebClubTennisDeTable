@@ -1,22 +1,23 @@
-/* eslint-disable no-console */
 import { useQuery } from '@tanstack/react-query';
 import { FileSpreadsheet, FileType, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
-import { ExportStep } from '../lib/export';
-import exportData from '../lib/exportData';
-import { AcicAggregation } from '../lib/props';
-import { getWidgetDataForExport } from '../lib/utils';
+import { ExportStep } from '../../lib/export';
+import exportData from '../../lib/exportData';
+import { AcicAggregation } from '../../lib/props';
+import { getWidgetData } from '../../lib/utils';
 
 export default function ExportStepFormat({
   storedWidget,
   updateStoredWidget,
   setStepValidity,
 }: ExportStep) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const groupByColumn = storedWidget.groupBy ? storedWidget.groupBy : '';
 
@@ -30,7 +31,7 @@ export default function ExportStepFormat({
       groupByColumn,
     ],
     queryFn: async () =>
-      getWidgetDataForExport(
+      getWidgetData(
         {
           table: storedWidget.table,
           aggregation: storedWidget.aggregation || AcicAggregation.OneHour,
@@ -53,7 +54,7 @@ export default function ExportStepFormat({
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <Label>Export Format</Label>
+        <Label>{t('dashboard:export:format.label')}</Label>
         <RadioGroup
           value={storedWidget.format}
           onValueChange={(value: 'PDF' | 'Excel') => {
@@ -71,7 +72,7 @@ export default function ExportStepFormat({
               className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
             >
               <FileSpreadsheet className="mb-3 h-6 w-6" />
-              Excel
+              {t('dashboard:export:format.Excel')}
             </Label>
           </div>
           <div>
@@ -81,7 +82,7 @@ export default function ExportStepFormat({
               className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
             >
               <FileType className="mb-3 h-6 w-6" />
-              PDF
+              {t('dashboard:export:format.PDF')}
             </Label>
           </div>
         </RadioGroup>
@@ -89,26 +90,29 @@ export default function ExportStepFormat({
         {isLoading && (
           <div className="flex items-center justify-center space-x-2">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <span>Fetching date for exporting file...</span>
+            <span>{t('dashboard:export:format.fetchingMessage')}</span>
           </div>
         )}
 
         {loading && (
           <div className="flex items-center justify-center space-x-2">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <span>Generating file...</span>
+            <span>{t('dashboard:export:format.generatingMessage')}</span>
           </div>
         )}
 
         <Card className="p-4">
-          <CardHeader>Export Summary</CardHeader>
+          <CardHeader>{t('dashboard:export:format.summary')}</CardHeader>
           <CardContent>
-            Table : {storedWidget.table} <br />
-            Range : {storedWidget.range?.from?.toLocaleDateString()} -
+            {t('dashboard:export:format.table')} : {storedWidget.table} <br />
+            {t('dashboard:export:format.range')} :{' '}
+            {storedWidget.range?.from?.toLocaleDateString()} -
             {storedWidget.range?.to?.toLocaleDateString()} <br />
-            Aggregation : {storedWidget.aggregation} <br />
-            Group By : {storedWidget.groupBy} <br />
-            Where <br />
+            {t('dashboard:export:format.aggregation')} :{' '}
+            {storedWidget.aggregation} <br />
+            {t('dashboard:export:format.groupBy')} : {storedWidget.groupBy}{' '}
+            <br />
+            {t('dashboard:export:format.filters')} <br />
             {storedWidget.where?.map((filter) => (
               <div key={filter.column}>
                 {filter.column.charAt(0).toUpperCase() + filter.column.slice(1)}{' '}

@@ -42,23 +42,8 @@ export default function PublicDashboard({
 
   const { data, isLoading, isError } = query;
 
-  if (isError) {
-    return (
-      <div className="text-destructive text-center">
-        ❌ An error occurred while fetching data.
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  if (!data || data.length === 0) {
-    return (
-      <div className="text-center col-span-full">Aucun widget disponible.</div>
-    );
-  }
+  if (isError) return <div>Something went wrong</div>;
+  if (isLoading || !data) return <LoadingSpinner />;
 
   const widgets: ChartTiles[] = data
     .map((widget: StoredWidget) => {
@@ -70,13 +55,16 @@ export default function PublicDashboard({
       return {
         id,
         widget,
-        content: <Component {...chart} />,
-      };
+        content: <Component widgetId={id} {...chart} />,
+      } as ChartTiles;
     })
     .filter((item): item is ChartTiles => item !== null);
 
   return (
-    <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6 gap-2">
+    <div
+      role="grid"
+      className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6 gap-2"
+    >
       {widgets.map(({ id, widget, content }) => (
         <div
           key={id}

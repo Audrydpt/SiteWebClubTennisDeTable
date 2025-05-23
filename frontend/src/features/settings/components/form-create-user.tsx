@@ -113,7 +113,7 @@ export default function FormCreateUser({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('settings:createUser.title')}</DialogTitle>
           <DialogDescription>

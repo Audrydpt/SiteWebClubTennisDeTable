@@ -28,12 +28,6 @@ vi.mock('./TestDashboard', () => ({
   default: () => <div data-testid="test-dashboard">Test Dashboard Mock</div>,
 }));
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
-
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>();
@@ -110,7 +104,9 @@ describe('Dashboard', () => {
       );
 
       // Test for actual Header content
-      expect(screen.getByText('Dashboard')).toBeInTheDocument();
+      expect(
+        screen.getByText('dashboard:dashboard.header')
+      ).toBeInTheDocument();
       expect(
         screen.getByRole('button', { name: 'dashboard:dashboard.add' })
       ).toBeInTheDocument();

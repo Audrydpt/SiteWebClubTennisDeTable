@@ -73,6 +73,22 @@ export default function useSearch() {
     attributes?: Record<string, unknown>;
   }>({});
 
+  const handlePageChange = useCallback((page: number) => {
+    // Mettre à jour la page courante
+    setCurrentPageTracked(page);
+
+    // Si on quitte la page 1, fermer le WebSocket
+    if (
+      page !== 1 &&
+      wsRef.current &&
+      wsRef.current.readyState === WebSocket.OPEN
+    ) {
+      console.log('🚫 Fermeture du WebSocket - navigation hors de la page 1');
+      wsRef.current.close(1000, 'Navigation vers une autre page');
+      wsRef.current = null;
+    }
+  }, []);
+
   const initializeSourceProgress = useCallback((selectedSources: string[]) => {
     setSourceProgress(
       selectedSources.map((guid) => ({
@@ -848,6 +864,242 @@ export default function useSearch() {
         setIsSearching(false);
         setProgress(100);
       }
+    }
+  };
+ */
+  const testResumeJob = async (
+    jobId: string,
+    page: number = 1,
+    skipHistory: boolean = false,
+    skipLoadingState: boolean = false
+  ) => {
+    try {
+      console.log('📌 testResumeJob démarré avec params:', {
+        jobId,
+        page,
+        skipHistory,
+        skipLoadingState,
+      });
+
+      setCurrentPageTracked(page);
+
+      if (page !== 1) {
+        cleanupWebSocket();
+      }
+
+      setJobId(jobId);
+      if (!skipHistory && page === 1) {
+        forensicResultsHeap.clear();
+      }
+      if (!skipLoadingState) setIsSearching(true);
+
+      // Infos globales sur la tâche
+      const resultsResponse = await fetch(
+        `${process.env.MAIN_API_URL}/forensics/${jobId}`
+      );
+      if (!resultsResponse.ok)
+        throw new Error(`Erreur API: ${resultsResponse.status}`);
+
+      const resultsData = await resultsResponse.json();
+      console.log('📋 Données globales récupérées:', resultsData);
+
+      if (!resultsData?.results) {
+        console.log('⚠️ Aucun résultat trouvé dans resultsData');
+        return {
+          results: [],
+          pagination: {
+            currentPage: page,
+            pageSize: 0,
+            totalPages: 0,
+            total: 0,
+          },
+        };
+      }
+
+      const taskStatus = resultsData.status || 'PENDING';
+      const isCompleted = ['SUCCESS', 'FAILURE', 'REVOKED'].includes(
+        taskStatus
+      );
+
+      console.log(
+        `🔍 État de la tâche ${jobId}: ${taskStatus}, isCompleted:`,
+        isCompleted
+      );
+
+      // Traitement de la progression des sources
+      const sourcesProgress = resultsData.results
+        .filter((r: { type: string }) => r.type === 'progress')
+        .reduce((acc: any, curr: any) => {
+          if (!acc[curr.guid]) {
+            acc[curr.guid] = {
+              sourceId: curr.guid,
+              sourceName:
+                curr.source_name || `Source ${curr.guid.slice(0, 8)}...`,
+              progress: curr.progress,
+              timestamp: curr.timestamp || new Date().toISOString(),
+              startTime: curr.start_time || new Date().toISOString(),
+            };
+          } else if (curr.progress > acc[curr.guid].progress) {
+            acc[curr.guid].progress = curr.progress;
+            acc[curr.guid].timestamp = curr.timestamp;
+          }
+          return acc;
+        }, {});
+
+      console.log('📊 Sources avec progression:', sourcesProgress);
+
+      if (isCompleted) {
+        Object.keys(sourcesProgress).forEach((key) => {
+          sourcesProgress[key].progress = 100;
+        });
+        console.log('✅ Toutes les sources mises à 100% car tâche terminée');
+      }
+
+      setSourceProgress(Object.values(sourcesProgress));
+      console.log(
+        '🔄 SourceProgress mis à jour avec:',
+        Object.values(sourcesProgress).length,
+        'sources'
+      );
+
+      let validDetectionResults: ForensicResult[] = [];
+      let paginationData = {
+        currentPage: page,
+        pageSize: 0,
+        totalPages: 0,
+        total: 0,
+      };
+
+      if (!skipHistory || isCompleted) {
+        console.log('🔍 Chargement des données paginées pour la page:', page);
+        // Appel de l'API paginée
+
+        // Vider le heap si on n'est pas sur la page 1
+        if (page > 1) {
+          forensicResultsHeap.clear();
+        }
+
+        const paginatedResponse = await fetch(
+          `${process.env.MAIN_API_URL}/forensics/${jobId}/pages/${page}`
+        );
+        if (!paginatedResponse.ok)
+          throw new Error(`Erreur API pagination: ${paginatedResponse.status}`);
+
+        const pageData = await paginatedResponse.json();
+        console.log('📄 Données de pagination reçues:', pageData);
+
+        const {
+          results = [],
+          total = 0,
+          total_pages = 0,
+          page: currentPage = page,
+          page_size = 0,
+        } = pageData;
+
+        console.log(
+          `📊 Pagination: ${results.length} résultats sur ${total} total (page ${currentPage}/${total_pages})`
+        );
+
+        // Mise à jour des données de pagination
+        paginationData = {
+          currentPage,
+          pageSize: page_size,
+          totalPages: total_pages,
+          total,
+        };
+
+        setPaginationInfo(paginationData);
+        console.log('Pagination mise à jour:', paginationData);
+
+        if (skipHistory) {
+          forensicResultsHeap.clear();
+        }
+
+        const detectionFiltered = results.filter(
+          (r: any) => r.metadata?.type === 'detection'
+        );
+        console.log(
+          `🔍 Filtrage: ${detectionFiltered.length} détections trouvées sur ${results.length} résultats`
+        );
+
+        const detectionResults = await Promise.all(
+          detectionFiltered.map(async (result: any) => {
+            const frameId = result.frame_uuid;
+            if (!frameId) {
+              console.log('⚠️ Detection sans frameId trouvée');
+              return null;
+            }
+
+            const imageResponse = await fetch(
+              `${process.env.MAIN_API_URL}/forensics/${jobId}/frames/${frameId}`
+            );
+            if (!imageResponse.ok) {
+              console.log(
+                `❌ Échec chargement image pour frame ${frameId}: ${imageResponse.status}`
+              );
+              return null;
+            }
+
+            const imageBlob = await imageResponse.blob();
+            const imageUrl = URL.createObjectURL(imageBlob);
+
+            return {
+              id: frameId,
+              imageData: imageUrl,
+              timestamp: result.metadata?.timestamp || new Date().toISOString(),
+              score: result.metadata?.score || 0,
+              cameraId:
+                result.metadata?.camera || result.metadata?.source || 'unknown',
+              type: 'detection',
+              attributes: result.metadata?.attributes || {},
+              progress: result.metadata?.progress || 0,
+            };
+          })
+        );
+
+        validDetectionResults = detectionResults.filter(
+          (r) => r !== null
+        ) as ForensicResult[];
+
+        setPaginationInfo(paginationData);
+        if (page === 1 && isSearching) {
+          // Pour la page 1 en recherche active: ajouter au heap
+          validDetectionResults.forEach((res: ForensicResult) =>
+            forensicResultsHeap.addResult(res)
+          );
+
+          // Utiliser les meilleurs résultats du heap pour la page 1
+          const bestResults = forensicResultsHeap.getBestResults();
+          setResults(bestResults);
+          setDisplayResults(bestResults.slice(0, paginationData.pageSize)); // Limiter à 12
+        } else {
+          // Pour les autres pages: utiliser directement les résultats sans heap
+          setResults(validDetectionResults);
+          setDisplayResults(validDetectionResults);
+        }
+      } else {
+        const returnObj = {
+          results: validDetectionResults,
+          pagination: paginationData,
+        };
+        console.log('🏁 Fin de testResumeJob - retourne:', {
+          resultCount: returnObj.results.length,
+          pagination: returnObj.pagination,
+        });
+
+        return returnObj;
+      }
+    } catch (error) {
+      console.error('❌ Erreur dans resumeJobWithPagination:', error);
+      setResults([]);
+      setDisplayResults([]);
+      setProgress(null);
+      setSourceProgress([]);
+      setIsSearching(false);
+      return {
+        results: [],
+        pagination: { currentPage: page, pageSize: 0, totalPages: 0, total: 0 },
+      };
     }
   };
 

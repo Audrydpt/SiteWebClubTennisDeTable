@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,13 +8,8 @@ import { ExportStep } from './lib/export';
 import { AcicAggregation, AcicEvent } from './lib/props';
 
 // Mock the step components
-vi.mock('./components/export-source', () => ({
-  default: ({
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    storedWidget,
-    updateStoredWidget,
-    setStepValidity,
-  }: ExportStep) => (
+vi.mock('./components/export/export-source', () => ({
+  default: ({ updateStoredWidget, setStepValidity }: ExportStep) => (
     <div data-testid="export-step-source">
       <h2>Source Step</h2>
       <button
@@ -33,9 +29,8 @@ vi.mock('./components/export-source', () => ({
   ),
 }));
 
-vi.mock('./components/export-options', () => ({
+vi.mock('./components/export/export-options', () => ({
   default: ({
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     storedWidget,
     updateStoredWidget,
     setStepValidity,
@@ -59,9 +54,8 @@ vi.mock('./components/export-options', () => ({
   ),
 }));
 
-vi.mock('./components/export-format', () => ({
+vi.mock('./components/export/export-format', () => ({
   default: ({
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     storedWidget,
     updateStoredWidget,
     setStepValidity,
@@ -94,7 +88,7 @@ describe('ExportDashboard', () => {
   describe('Initial Render', () => {
     it('should render header with correct title', () => {
       render(<ExportDashboard />);
-      expect(screen.getByText('Export Dashboard')).toBeInTheDocument();
+      expect(screen.getByText('dashboard:export.title')).toBeInTheDocument();
     });
 
     it('should render stepper with all three steps', () => {
@@ -111,13 +105,17 @@ describe('ExportDashboard', () => {
 
     it('should have Next button disabled initially', () => {
       render(<ExportDashboard />);
-      const nextButton = screen.getByRole('button', { name: 'Next' });
+      const nextButton = screen.getByRole('button', {
+        name: 'dashboard:export.next',
+      });
       expect(nextButton).toBeDisabled();
     });
 
     it('should have Previous button disabled on first step', () => {
       render(<ExportDashboard />);
-      const prevButton = screen.getByRole('button', { name: 'Previous' });
+      const prevButton = screen.getByRole('button', {
+        name: 'dashboard:export.previous',
+      });
       expect(prevButton).toBeDisabled();
     });
   });
@@ -130,7 +128,9 @@ describe('ExportDashboard', () => {
       });
       await userEvent.click(validateButton);
 
-      const nextButton = screen.getByRole('button', { name: 'Next' });
+      const nextButton = screen.getByRole('button', {
+        name: 'dashboard:export.next',
+      });
       expect(nextButton).not.toBeDisabled();
     });
 
@@ -144,13 +144,17 @@ describe('ExportDashboard', () => {
       await userEvent.click(validateSourceButton);
 
       // Click Next to go to the second step
-      const nextButton = screen.getByRole('button', { name: 'Next' });
+      const nextButton = screen.getByRole('button', {
+        name: 'dashboard:export.next',
+      });
       await userEvent.click(nextButton);
 
       // Should show the second step component
       expect(screen.getByTestId('export-step-options')).toBeInTheDocument();
       // Previous button should be enabled
-      const prevButton = screen.getByRole('button', { name: 'Previous' });
+      const prevButton = screen.getByRole('button', {
+        name: 'dashboard:export.previous',
+      });
       expect(prevButton).not.toBeDisabled();
     });
 
@@ -162,7 +166,9 @@ describe('ExportDashboard', () => {
         name: 'Validate Source',
       });
       await userEvent.click(validateSourceButton);
-      const nextButton = screen.getByRole('button', { name: 'Next' });
+      const nextButton = screen.getByRole('button', {
+        name: 'dashboard:export.next',
+      });
       await userEvent.click(nextButton);
 
       // Validate second step
@@ -172,7 +178,9 @@ describe('ExportDashboard', () => {
       await userEvent.click(validateOptionsButton);
 
       // Next button should be enabled
-      const updatedNextButton = screen.getByRole('button', { name: 'Next' });
+      const updatedNextButton = screen.getByRole('button', {
+        name: 'dashboard:export.next',
+      });
       expect(updatedNextButton).not.toBeDisabled();
     });
 
@@ -184,7 +192,9 @@ describe('ExportDashboard', () => {
         name: 'Validate Source',
       });
       await userEvent.click(validateSourceButton);
-      const nextButton = screen.getByRole('button', { name: 'Next' });
+      const nextButton = screen.getByRole('button', {
+        name: 'dashboard:export.next',
+      });
       await userEvent.click(nextButton);
 
       // Step 2: Validate and navigate to step 3
@@ -192,7 +202,9 @@ describe('ExportDashboard', () => {
         name: 'Validate Options',
       });
       await userEvent.click(validateOptionsButton);
-      const nextButtonStep2 = screen.getByRole('button', { name: 'Next' });
+      const nextButtonStep2 = screen.getByRole('button', {
+        name: 'dashboard:export.next',
+      });
       await userEvent.click(nextButtonStep2);
 
       // Should show the third step component
@@ -207,16 +219,22 @@ describe('ExportDashboard', () => {
         name: 'Validate Source',
       });
       await userEvent.click(validateSourceButton);
-      await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: 'dashboard:export.next' })
+      );
 
       const validateOptionsButton = screen.getByRole('button', {
         name: 'Validate Options',
       });
       await userEvent.click(validateOptionsButton);
-      await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: 'dashboard:export.next' })
+      );
 
       // On last step, the Next button should now say Reset
-      expect(screen.getByRole('button', { name: 'Reset' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'dashboard:export.reset' })
+      ).toBeInTheDocument();
     });
 
     it('should go back to previous step when Previous is clicked', async () => {
@@ -227,10 +245,14 @@ describe('ExportDashboard', () => {
         name: 'Validate Source',
       });
       await userEvent.click(validateSourceButton);
-      await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: 'dashboard:export.next' })
+      );
 
       // Go back to step 1
-      await userEvent.click(screen.getByRole('button', { name: 'Previous' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: 'dashboard:export.previous' })
+      );
 
       // Should show the first step again
       expect(screen.getByTestId('export-step-source')).toBeInTheDocument();
@@ -246,14 +268,18 @@ describe('ExportDashboard', () => {
         name: 'Validate Source',
       });
       await userEvent.click(validateSourceButton);
-      await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: 'dashboard:export.next' })
+      );
 
       // Step 2: Set data and navigate to step 3
       const validateOptionsButton = screen.getByRole('button', {
         name: 'Validate Options',
       });
       await userEvent.click(validateOptionsButton);
-      await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: 'dashboard:export.next' })
+      );
 
       // Step 3: Set data
       const validateFormatButton = screen.getByRole('button', {
@@ -262,16 +288,24 @@ describe('ExportDashboard', () => {
       await userEvent.click(validateFormatButton);
 
       // Go back to step 2
-      await userEvent.click(screen.getByRole('button', { name: 'Previous' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: 'dashboard:export.previous' })
+      );
 
       // Go back to step 1
-      await userEvent.click(screen.getByRole('button', { name: 'Previous' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: 'dashboard:export.previous' })
+      );
 
       // Go forward to step 2 again
-      await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: 'dashboard:export.next' })
+      );
 
       // Next button should still be enabled because form data is preserved
-      expect(screen.getByRole('button', { name: 'Next' })).not.toBeDisabled();
+      expect(
+        screen.getByRole('button', { name: 'dashboard:export.next' })
+      ).not.toBeDisabled();
     });
 
     it('should reset form and return to first step when Reset button is clicked', async () => {
@@ -282,13 +316,17 @@ describe('ExportDashboard', () => {
         name: 'Validate Source',
       });
       await userEvent.click(validateSourceButton);
-      await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: 'dashboard:export.next' })
+      );
 
       const validateOptionsButton = screen.getByRole('button', {
         name: 'Validate Options',
       });
       await userEvent.click(validateOptionsButton);
-      await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: 'dashboard:export.next' })
+      );
 
       const validateFormatButton = screen.getByRole('button', {
         name: 'Validate Format',
@@ -296,7 +334,9 @@ describe('ExportDashboard', () => {
       await userEvent.click(validateFormatButton);
 
       // Click Reset
-      await userEvent.click(screen.getByRole('button', { name: 'Reset' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: 'dashboard:export.reset' })
+      );
 
       // Should go back to step 1
       expect(screen.getByTestId('export-step-source')).toBeInTheDocument();

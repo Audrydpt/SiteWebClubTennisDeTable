@@ -3,6 +3,7 @@ import { SortAsc, SortDesc, Trash2 } from 'lucide-react';
 
 import DeleteConfirmation from '@/components/confirm-delete';
 import { Button } from '@/components/ui/button';
+import DeleteConfirmation from '@/components/confirm-delete';
 
 import useJobs from '../../hooks/use-jobs';
 

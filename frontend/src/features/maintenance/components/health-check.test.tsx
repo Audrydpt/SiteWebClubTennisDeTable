@@ -165,6 +165,125 @@ describe('HealthCheck', () => {
       expect(screen.getByTestId('alert-triangle-icon')).toBeInTheDocument(); // WARNING
       expect(screen.getByTestId('x-circle-icon')).toBeInTheDocument(); // ERROR
     });
+
+    it('displays default status color for unknown status', () => {
+      const mockStatuses = {
+        [ServiceType.AI_SERVICE]: {
+          // @ts-expect-error Testing invalid status
+          status: 'UNKNOWN_STATUS',
+          details: [],
+        },
+      };
+
+      (
+        useHealthCheck as unknown as ReturnType<typeof vi.fn>
+      ).mockImplementation(() => ({
+        progress: 100,
+        running: false,
+        statuses: mockStatuses,
+        startHealthCheck: mockStartHealthCheck,
+      }));
+
+      const { rerender } = render(<HealthCheck />);
+      fireEvent.click(screen.getByRole('button'));
+      rerender(<HealthCheck />);
+
+      // The component should display the service name with default styling
+      expect(screen.getByText(/AI Service/i)).toBeInTheDocument();
+      // No status icons should be present
+      expect(screen.queryByTestId('check-circle-icon')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('alert-triangle-icon')
+      ).not.toBeInTheDocument();
+      expect(screen.queryByTestId('x-circle-icon')).not.toBeInTheDocument();
+    });
+
+    it('displays detail items for different service types correctly', () => {
+      const mockStatuses = {
+        [ServiceType.CAMERA_ACTIVITY]: {
+          status: HealthStatus.WARNING,
+          details: [{ id: 'cam1', name: 'Camera 1', message: 'low fps' }],
+        },
+        [ServiceType.CAMERA_ANOMALY]: {
+          status: HealthStatus.WARNING,
+          details: [
+            { id: 'cam2', name: 'Camera 2', message: 'detection issue' },
+          ],
+        },
+        [ServiceType.IMAGE_IN_STREAMS]: {
+          status: HealthStatus.WARNING,
+          details: [{ id: 'stream1', name: 'Stream 1', message: 'buffering' }],
+        },
+        [ServiceType.AVERAGE_FPS]: {
+          status: HealthStatus.WARNING,
+          details: [
+            { id: 'fps1', name: 'FPS Monitor', message: 'below threshold' },
+          ],
+        },
+        [ServiceType.AI_SERVICE]: {
+          status: HealthStatus.WARNING,
+          details: [{ message: 'AI service issue' }],
+        },
+      };
+
+      (
+        useHealthCheck as unknown as ReturnType<typeof vi.fn>
+      ).mockImplementation(() => ({
+        progress: 100,
+        running: false,
+        statuses: mockStatuses,
+        startHealthCheck: mockStartHealthCheck,
+      }));
+
+      const { rerender } = render(<HealthCheck />);
+      fireEvent.click(screen.getByRole('button'));
+      rerender(<HealthCheck />);
+
+      // Test the details rendering for each service type
+      expect(screen.getByText('Camera 1 low fps')).toBeInTheDocument();
+      expect(screen.getByText('Camera 2 detection issue')).toBeInTheDocument();
+      expect(screen.getByText('Stream 1 buffering')).toBeInTheDocument();
+      expect(
+        screen.getByText('FPS Monitor below threshold')
+      ).toBeInTheDocument();
+      expect(screen.getByText('AI service issue')).toBeInTheDocument();
+    });
+
+    it('handles fallbacks for missing detail properties', () => {
+      const mockStatuses = {
+        [ServiceType.CAMERA_ACTIVITY]: {
+          status: HealthStatus.WARNING,
+          details: [
+            { id: 'cam1', message: 'no name provided' }, // missing name
+            { name: 'Camera X', message: 'no id provided' }, // missing id
+          ],
+        },
+        [ServiceType.AI_SERVICE]: {
+          status: HealthStatus.WARNING,
+          details: [
+            { id: 'ai1' }, // missing message
+          ],
+        },
+      };
+
+      (
+        useHealthCheck as unknown as ReturnType<typeof vi.fn>
+      ).mockImplementation(() => ({
+        progress: 100,
+        running: false,
+        statuses: mockStatuses,
+        startHealthCheck: mockStartHealthCheck,
+      }));
+
+      const { rerender } = render(<HealthCheck />);
+      fireEvent.click(screen.getByRole('button'));
+      rerender(<HealthCheck />);
+
+      // Test fallbacks
+      expect(screen.getByText('cam1 no name provided')).toBeInTheDocument();
+      expect(screen.getByText('Camera X no id provided')).toBeInTheDocument();
+      // Empty string or undefined should render nothing meaningful to test
+    });
   });
 
   describe('Edge Cases', () => {

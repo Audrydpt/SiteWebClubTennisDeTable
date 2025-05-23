@@ -5,8 +5,9 @@ import LoadingSpinner from '@/components/loading';
 import { useAuth } from '@/providers/auth-context';
 
 import { StoredWidget } from './components/form-widget';
-import WidgetActions from './components/widget-actions';
-import WidgetRangeNavigation from './components/widget-range-navigation';
+import GlobalTrend from './components/trend/global-trend';
+import WidgetActions from './components/widget-actions/widget-actions';
+import WidgetRangeNavigation from './components/widget-actions/widget-range-navigation';
 import useWidgetAPI from './hooks/use-widget';
 import { ChartTypeComponents } from './lib/const';
 import { ChartSize } from './lib/props';
@@ -87,10 +88,13 @@ export default function DashboardTab({
   if (isError) return <div>Something went wrong</div>;
   if (isLoading || !data) return <LoadingSpinner />;
 
-  const widgets =
-    data.map((widget: StoredWidget) => {
+  const widgets: ChartTiles[] = data
+    .map((widget: StoredWidget) => {
       const { id, size, type, ...chart } = widget;
       const Component = ChartTypeComponents[type];
+
+      if (!Component) return null;
+
       return {
         id,
         widget,
@@ -102,7 +106,9 @@ export default function DashboardTab({
           />
         ),
       } as ChartTiles;
-    }) ?? [];
+    })
+    .filter((item): item is ChartTiles => item !== null);
+
   return (
     <ReactSortable
       list={widgets}
@@ -123,6 +129,12 @@ export default function DashboardTab({
           }}
         >
           {item.content}
+          <GlobalTrend
+            dashboardKey={dashboardKey}
+            widgetId={item.id}
+            widget={item.widget}
+            chart={item.content}
+          />
           <WidgetActions
             isOperator={isOperator}
             item={item}

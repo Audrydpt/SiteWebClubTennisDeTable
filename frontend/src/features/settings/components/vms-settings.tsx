@@ -77,6 +77,14 @@ export default function VMSSettings() {
     }
   }, [query.data, form]);
 
+  // Clear credentials if type changes to Genetec
+  useEffect(() => {
+    if (vmsType === 'Genetec') {
+      form.setValue('username', '', { shouldValidate: true });
+      form.setValue('password', '', { shouldValidate: true });
+    }
+  }, [vmsType, form]);
+
   const onSubmit = (data: VMSFormValues) => {
     edit(data, {
       onSuccess: () => {

@@ -468,7 +468,7 @@ class GenericDAL:
         async with GenericDAL.AsyncSession() as session:
             # Remplacement de session.query(…)
             # Somehow, text(f"'{_time}'") get converted into ModelName.hour, instead of '1 hour'
-            stmt = select(func.time_bucket_gapfill(text("'" + _time + "'"), cls.timestamp).label('_timestamp'))
+            stmt = select(func.time_bucket_gapfill(text("'" + _time + "'"), cls.timestamp, 'UTC').label('_timestamp'))
     
             if _func is not None:
                 stmt = stmt.add_columns(_func)
@@ -481,7 +481,7 @@ class GenericDAL:
                 stmt = stmt.where(*conditions)
     
             if _between is not None and len(_between) == 2 and _between[0] is not None and _between[1] is not None:
-                stmt = stmt.where(cls.timestamp >= _between[0], cls.timestamp <= _between[1])
+                stmt = stmt.where(cls.timestamp >= _between[0], cls.timestamp < _between[1])
             
             # Pour group_by et order_by, on utilise column('_timestamp')
             stmt = stmt.group_by(column('_timestamp'))
@@ -497,7 +497,13 @@ class GenericDAL:
             if _having is not None:
                 stmt = stmt.having(_having)
             
-            stmt = stmt.order_by(column('_timestamp'))            
+            stmt = stmt.order_by(column('_timestamp'))        
+            if _group is not None:
+                if isinstance(_group, list):
+                    for group in _group:
+                        stmt = stmt.order_by(column(group))
+                else:
+                    stmt = stmt.order_by(column(_group))    
           
             result = await session.execute(stmt)
             result = result.all()
@@ -507,23 +513,16 @@ class GenericDAL:
         async with GenericDAL.AsyncSession() as session:
             # Start with a base select statement using time_bucket_gapfill
             bucket_column = column('bucket')
-            stmt = select(func.time_bucket_gapfill(text("'" + _time + "'"), bucket_column).label('_timestamp'))
+            stmt = select(func.time_bucket_gapfill(text("'" + _time + "'"), bucket_column, 'UTC').label('_timestamp'))
             stmt = stmt.add_columns(column('counts').label('count'))
                         
             # FROM clause
             # Need to use from_statement since we're working with a view
             stmt = stmt.select_from(text(f'"{view_name}"'))
             
-            # Apply WHERE conditions
-            where_clauses = []
             if _between is not None and len(_between) == 2 and _between[0] is not None and _between[1] is not None:
-                where_clauses.append(bucket_column >= _between[0])
-                where_clauses.append(bucket_column <= _between[1])
-            
-            if where_clauses:
-                for clause in where_clauses:
-                    stmt = stmt.where(clause)
-            
+                stmt = stmt.where(bucket_column >= _between[0], bucket_column < _between[1])
+
             # GROUP BY clause is handled in the view, so we only add the columns
             if _group is not None:
                 if isinstance(_group, list):
@@ -535,6 +534,12 @@ class GenericDAL:
             
             # Order by timestamp
             stmt = stmt.order_by(column('_timestamp'))
+            if _group is not None:
+                if isinstance(_group, list):
+                    for group in _group:
+                        stmt = stmt.order_by(column(group))
+                else:
+                    stmt = stmt.order_by(column(_group))
             
             try:
                 result = await session.execute(stmt)
@@ -543,7 +548,150 @@ class GenericDAL:
                 logger.error(f"Error executing view query: {e}")
                 logger.error(f"Query was: {stmt}")
                 raise
-        
+
+    async def async_get_trend(self, view_name, _between=None, _group=None, **filters) -> JSON:
+        async with GenericDAL.AsyncSession() as session:
+            #def des fonctions de calcul
+            avg_func = func.avg(column('counts'))
+            med_func = func.percentile_cont(0.5).within_group(column('counts'))
+            std_func = func.stddev(column('counts'))
+            pc5_func = func.percentile_cont(0.05).within_group(column('counts'))
+            pc95_func = func.percentile_cont(0.95).within_group(column('counts'))
+            min_func = func.min(column('counts'))
+            max_func = func.max(column('counts'))
+
+            #construction du json à renvoyer
+            stats_obj = func.jsonb_build_object(
+                'avg', avg_func,
+                'med', med_func,
+                'std', std_func,
+                'pc5', pc5_func,
+                'pc95', pc95_func,
+                'min', min_func,
+                'max', max_func
+            ).label('stats')
+
+            if _group is None:
+                stmt = select(stats_obj).select_from(text(f'"{view_name}"'))
+                if _between is not None and _between[0] is not None and _between[1] is not None:
+                    stmt = stmt.where(column('bucket') >= _between[0], column('bucket') < _between[1])
+                
+                try:
+                    result = await session.execute(stmt)
+                    global_stats = { 'global': result.scalar_one_or_none()}
+                    return global_stats
+                except Exception as e:
+                    logger.error(f"Error executing trend query: {e}")
+                    logger.error(f"Query was: {stmt}")
+                    raise
+            else:
+                if isinstance(_group, list):
+                    group_cols = [column(g) for g in _group]
+                    stmt = select(*group_cols, stats_obj)
+                    for g in group_cols:
+                        stmt = stmt.group_by(g)
+                else:
+                    group_col = column(_group)
+                    stmt = select(group_col, stats_obj)
+                    stmt = stmt.group_by(group_col)
+
+                stmt = stmt.select_from(text(f'"{view_name}"'))
+                stmt2 = select(stats_obj).select_from(text(f'"{view_name}"'))
+
+                if _between is not None and _between[0] is not None and _between[1] is not None:
+                    stmt = stmt.where(column('bucket') >= _between[0], column('bucket') < _between[1])
+                    stmt2 = stmt2.where(column('bucket') >= _between[0], column('bucket') < _between[1])
+
+                try:
+                    result = await session.execute(stmt)
+                    result2 = await session.execute(stmt2)
+                    global_stats = result2.scalar_one_or_none()
+                    
+                    group_by_data = []
+                    for row in result.all():
+                        if isinstance(_group, list):
+                            # Créer un dictionnaire pour chaque groupe
+                            group_item = {}
+                            for i, group_name in enumerate(_group):
+                                group_item[group_name] = row[i]
+                            group_item['stats'] = row[-1]  # Dernière colonne = stats
+                        else:
+                            # Un seul groupe
+                            group_item = {
+                                _group: row[0],
+                                'stats': row[1]
+                            }
+                        group_by_data.append(group_item)
+
+                    combined_result = {
+                        'global': global_stats,
+                        'group': group_by_data
+                    }
+                    return combined_result
+                except Exception as e:
+                    logger.error(f"Error executing trend query: {e}")
+                    logger.error(f"Query was: {stmt}")
+                    raise
+
+    async def async_get_trend_aggregate(self, view_name,_aggregate, _group=None, _between=None) -> List[Any]:
+        async with GenericDAL.AsyncSession() as session:
+            #def des fonctions de calcul
+            avg_func = func.avg(column('counts'))
+            std_func = func.stddev(column('counts'))
+            min_func = func.min(column('counts'))
+            max_func = func.max(column('counts'))
+
+            match _aggregate:
+                case '1 minute':
+                    extract_func = func.extract('minute',column('bucket')).label('time_bucket')
+                case '15 minutes':
+                    extract_func = func.extract('minute',column('bucket')).label('time_bucket')
+                case '30 minutes':
+                    extract_func = func.extract('minute',column('bucket')).label('time_bucket')
+                case '1 hour':
+                    extract_func = func.extract('hour',column('bucket')).label('time_bucket')
+                case '1 day':
+                    extract_func = func.extract('isodow',column('bucket')).label('time_bucket')
+                case '1 week':
+                    extract_func = func.extract('week',column('bucket')).label('time_bucket')
+                case '1 month':
+                    extract_func = func.extract('month',column('bucket')).label('time_bucket')
+                case '3 months':
+                    extract_func = func.extract('month',column('bucket')).label('time_bucket')
+                case '6 months':
+                    extract_func = func.extract('month',column('bucket')).label('time_bucket')
+                case '1 year':
+                    extract_func = func.extract('year',column('bucket')).label('time_bucket')
+                case '100 years':
+                    extract_func = func.extract('year',column('bucket')).label('time_bucket')
+
+            date_trunc_expr = text("date_trunc('day', now() - interval '1 day')")
+
+            stmt = select(extract_func, avg_func, std_func, min_func, max_func)
+            stmt = stmt.select_from(text(f'"{view_name}"'))
+            stmt = stmt.where(column('bucket') < date_trunc_expr)
+
+            if _group is not None:
+                if isinstance(_group, list):
+                    for g in _group:
+                        stmt = stmt.add_columns(column(g))
+                        stmt = stmt.group_by(extract_func, column(g))
+                else:
+                    stmt = stmt.add_columns(column(_group))
+                    stmt = stmt.group_by(extract_func, column(_group))
+            else:
+                stmt = stmt.group_by(column('time_bucket'))
+            
+            stmt = stmt.order_by(column('time_bucket'))
+            
+            try:
+                result = await session.execute(stmt)
+                return result.all()
+            except Exception as e:
+                logger.error(f"Error executing trend query: {e}")
+                logger.error(f"Query was: {stmt}")
+                raise
+
     async def async_update(self, obj) -> Any:
         async with GenericDAL.AsyncSession() as session:
             result = await session.merge(obj)

@@ -63,10 +63,10 @@ describe('PublicDashboard', () => {
 
       render(<PublicDashboard dashboardKey="test-dashboard" />);
 
-      expect(screen.getByText(/An error occurred/i)).toBeInTheDocument();
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
     });
 
-    it('should show no widgets message when data is empty', () => {
+    it('should render empty grid when data is empty', () => {
       const mockHook = {
         query: { isLoading: false, isError: false, data: [] },
       };
@@ -74,7 +74,9 @@ describe('PublicDashboard', () => {
 
       render(<PublicDashboard dashboardKey="test-dashboard" />);
 
-      expect(screen.getByText(/Aucun widget disponible/i)).toBeInTheDocument();
+      const grid = screen.getByRole('grid');
+      expect(grid).toBeInTheDocument();
+      expect(grid.children).toHaveLength(0);
     });
   });
 

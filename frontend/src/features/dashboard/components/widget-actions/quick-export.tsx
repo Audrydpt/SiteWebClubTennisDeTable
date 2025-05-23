@@ -13,10 +13,10 @@ import {
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
-import { ExportStep } from '../lib/export';
-import exportData, { ExportFormat } from '../lib/exportData';
-import { AcicAggregation } from '../lib/props';
-import { getWidgetData } from '../lib/utils';
+import { ExportStep } from '../../lib/export';
+import exportData, { ExportFormat } from '../../lib/exportData';
+import { AcicAggregation } from '../../lib/props';
+import { getWidgetData } from '../../lib/utils';
 
 export default function QuickExport({
   widgetId,

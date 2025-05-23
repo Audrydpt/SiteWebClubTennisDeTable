@@ -11,6 +11,15 @@
     "description": "This action is irreversible and cannot be undone."
   },
 
+  "whereClauseSearch": {
+    "placeholder": "Search in values...",
+    "add": "Add a filter",
+    "search": "Search...",
+    "all": "All",
+    "clear": "Clear",
+    "noResults": "No results found."
+  },
+
   "selectWorkspace": "Select a workspace",
 
   "login": {

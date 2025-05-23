@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AcicEvent } from '../lib/props';
+import { AcicEvent } from '../../lib/props';
 import { exportSchema, ExportSchema } from './form-export';
 
 describe('exportSchema', () => {

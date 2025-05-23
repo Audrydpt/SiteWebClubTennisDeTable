@@ -1,17 +1,12 @@
+/* eslint-disable @stylistic/indent */
 import { useQuery } from '@tanstack/react-query';
 import { DateTime, Duration } from 'luxon';
-import { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 
 import {
   AcicAggregation,
@@ -23,15 +18,6 @@ import { getWidgetData } from '../../lib/utils';
 interface DataItem {
   timestamp: string;
   count: number;
-}
-
-interface ProcessedData {
-  dataMerged: {
-    [key: string]: DataItem[];
-  };
-  chartConfig: {
-    maxCount: number;
-  };
 }
 
 type HeatmapProps = ChartProps & {
@@ -207,25 +193,26 @@ const getAggregationLabel = (
 interface HeatmapCellProps {
   cellData: DataItem | undefined;
   maxCount: number;
+  legend: string;
+  onMouseEnter?: (e: React.MouseEvent<HTMLTableCellElement>) => void;
+  onMouseLeave?: () => void;
 }
 
-function HeatmapCell({ cellData, maxCount }: HeatmapCellProps) {
-  const { t } = useTranslation();
+function HeatmapCell({
+  cellData,
+  maxCount,
+  legend,
+  onMouseEnter,
+  onMouseLeave,
+}: HeatmapCellProps) {
   const opacityClass = getOpacityClass(cellData?.count, maxCount);
-  const legend =
-    cellData && cellData.count !== null
-      ? t('dashboard:legend.value', { count: cellData.count })
-      : t('dashboard:legend.no_value');
-
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <td className={`border ${opacityClass}`} aria-label={legend} />
-      </TooltipTrigger>
-      <TooltipContent>
-        <p className="font-medium">{legend}</p>
-      </TooltipContent>
-    </Tooltip>
+    <td
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      className={`border ${opacityClass}`}
+      aria-label={legend}
+    />
   );
 }
 
@@ -248,46 +235,49 @@ export default function HeatmapComponent({
     ).as('milliseconds'),
   });
 
-  const { dataMerged, chartConfig, sortedRows } = useMemo(() => {
+  const { cellMatrix, chartConfig, sortedRowKeys, rowLabels } = useMemo(() => {
     if (!data)
       return {
-        dataMerged: {},
+        cellMatrix: {},
         chartConfig: { maxCount: 0 },
-        sortedRows: [],
+        sortedRowKeys: [],
+        rowLabels: {},
       };
 
-    const reduced = (data as DataItem[]).reduce<ProcessedData>(
-      (acc, item) => {
-        const { rowKey } = formatTimestamp(
-          i18n.language,
-          item.timestamp,
-          aggregation
-        );
+    const matrix: Record<string, Record<string, DataItem>> = {};
+    const labels: Record<string, string> = {};
+    let maxCount = 0;
 
-        if (!acc.dataMerged[rowKey]) acc.dataMerged[rowKey] = [];
+    (data as DataItem[]).forEach((item) => {
+      const { rowKey, rowLabel, columnKey } = formatTimestamp(
+        i18n.language,
+        item.timestamp,
+        aggregation
+      );
 
-        acc.dataMerged[rowKey].push(item);
-        acc.chartConfig.maxCount = Math.max(
-          acc.chartConfig.maxCount,
-          item.count
-        );
-
-        return acc;
-      },
-      {
-        dataMerged: {},
-        chartConfig: { maxCount: 0 },
+      if (!matrix[rowKey]) {
+        matrix[rowKey] = {};
+        labels[rowKey] = rowLabel;
       }
-    );
+
+      matrix[rowKey][columnKey] = item;
+      maxCount = Math.max(maxCount, item.count);
+    });
 
     return {
-      dataMerged: reduced.dataMerged,
-      chartConfig: reduced.chartConfig,
-      sortedRows: Object.keys(reduced.dataMerged).sort(),
+      cellMatrix: matrix,
+      chartConfig: { maxCount },
+      sortedRowKeys: Object.keys(matrix).sort(),
+      rowLabels: labels,
     };
   }, [i18n.language, data, aggregation]);
 
   const columns = useMemo(() => generateColumns(aggregation), [aggregation]);
+  const [tooltipInfo, setTooltipInfo] = useState<{
+    legend: string;
+    x: number;
+    y: number;
+  } | null>(null);
 
   if (isLoading || isError) {
     return (
@@ -311,111 +301,131 @@ export default function HeatmapComponent({
   return (
     <Card className="w-full h-full flex flex-col justify-center">
       <CardHeader>
-        <CardTitle className="text-left">
+        <CardTitle className="text-center">
           {title ?? `Heatmap ${layout.toString()}`}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-grow w-full">
-        <TooltipProvider delayDuration={1}>
-          {layout === 'horizontal' ? (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-center">
-                  <th className="p-1 font-medium">
-                    {getAggregationLabel(t, aggregation)}
-                  </th>
-                  {columns.map((col) => (
-                    <th key={col.key} className="p-1 font-medium">
-                      {col.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {sortedRows.map((row) => {
-                  const firstItem = dataMerged[row][0];
-                  const { rowLabel } = formatTimestamp(
-                    i18n.language,
-                    firstItem.timestamp,
-                    aggregation
-                  );
-
-                  return (
-                    <tr key={row}>
-                      <td className="p-2 font-medium">{rowLabel}</td>
-                      {columns.map((col) => {
-                        const cellData = dataMerged[row].find(
-                          (item) =>
-                            formatTimestamp(
-                              i18n.language,
-                              item.timestamp,
-                              aggregation
-                            ).columnKey === col.key
-                        );
-
-                        return (
-                          <HeatmapCell
-                            key={col.key}
-                            cellData={cellData}
-                            maxCount={chartConfig.maxCount}
-                          />
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-center">
-                  <th className="p-2 font-medium">
-                    {getAggregationLabel(t, aggregation)}
-                  </th>
-                  {sortedRows.map((row) => {
-                    const firstItem = dataMerged[row][0];
-                    const { rowLabel } = formatTimestamp(
-                      i18n.language,
-                      firstItem.timestamp,
-                      aggregation
-                    );
-                    return (
-                      <th key={row} className="p-1 font-medium">
-                        {rowLabel}
-                      </th>
-                    );
-                  })}
-                </tr>
-              </thead>
-              <tbody>
+        {layout === 'horizontal' ? (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-center">
+                <th className="p-1 font-medium">
+                  {getAggregationLabel(t, aggregation)}
+                </th>
                 {columns.map((col) => (
-                  <tr key={col.key}>
-                    <td className="p-1 font-medium">{col.label}</td>
-                    {sortedRows.map((row) => {
-                      const cellData = dataMerged[row].find(
-                        (item) =>
-                          formatTimestamp(
-                            i18n.language,
-                            item.timestamp,
-                            aggregation
-                          ).columnKey === col.key
-                      );
+                  <th key={col.key} className="p-1 font-medium">
+                    {col.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sortedRowKeys.map((rowKey) => {
+                const rowLabel = rowLabels[rowKey];
+
+                return (
+                  <tr key={rowKey}>
+                    <td className="p-2 font-medium">{rowLabel}</td>
+                    {columns.map((col) => {
+                      const cellData = cellMatrix[rowKey]?.[col.key];
+                      const legend =
+                        cellData != null
+                          ? t('dashboard:legend.value', {
+                              count: cellData.count,
+                            })
+                          : t('dashboard:legend.no_value');
 
                       return (
                         <HeatmapCell
-                          key={row}
+                          key={col.key}
                           cellData={cellData}
                           maxCount={chartConfig.maxCount}
+                          legend={legend}
+                          onMouseEnter={(e) => {
+                            const rect = (
+                              e.currentTarget as HTMLTableCellElement
+                            ).getBoundingClientRect();
+                            setTooltipInfo({
+                              legend,
+                              x: rect.left + rect.width / 2,
+                              y: rect.top,
+                            });
+                          }}
+                          onMouseLeave={() => setTooltipInfo(null)}
                         />
                       );
                     })}
                   </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-center">
+                <th className="p-2 font-medium">
+                  {getAggregationLabel(t, aggregation)}
+                </th>
+                {sortedRowKeys.map((rowKey) => (
+                  <th key={rowKey} className="p-1 font-medium">
+                    {rowLabels[rowKey]}
+                  </th>
                 ))}
-              </tbody>
-            </table>
-          )}
-        </TooltipProvider>
+              </tr>
+            </thead>
+            <tbody>
+              {columns.map((col) => (
+                <tr key={col.key}>
+                  <td className="p-1 font-medium">{col.label}</td>
+                  {sortedRowKeys.map((rowKey) => {
+                    const cellData = cellMatrix[rowKey]?.[col.key];
+                    const legend =
+                      cellData != null
+                        ? t('dashboard:legend.value', {
+                            count: cellData.count,
+                          })
+                        : t('dashboard:legend.no_value');
+
+                    return (
+                      <HeatmapCell
+                        key={rowKey}
+                        cellData={cellData}
+                        maxCount={chartConfig.maxCount}
+                        legend={legend}
+                        onMouseEnter={(e) => {
+                          const rect = (
+                            e.currentTarget as HTMLTableCellElement
+                          ).getBoundingClientRect();
+                          setTooltipInfo({
+                            legend,
+                            x: rect.left + rect.width / 2,
+                            y: rect.top,
+                          });
+                        }}
+                        onMouseLeave={() => setTooltipInfo(null)}
+                      />
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {tooltipInfo && (
+          <div
+            style={{
+              position: 'fixed',
+              top: tooltipInfo.y - 8,
+              left: tooltipInfo.x,
+              transform: 'translate(-50%, -100%)',
+            }}
+            className="z-50 overflow-hidden rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground animate-in fade-in-0 zoom-in-95"
+          >
+            {tooltipInfo.legend}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

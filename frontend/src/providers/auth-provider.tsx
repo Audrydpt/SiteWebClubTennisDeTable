@@ -1,11 +1,10 @@
-/* eslint-disable */
 import { useQuery } from '@tanstack/react-query';
 import React, {
   useCallback,
   useEffect,
   useMemo,
-  useState,
   useRef,
+  useState,
 } from 'react';
 
 import {
@@ -37,7 +36,6 @@ const pingSession = async (sessionId: string) => {
     });
 
     if (!response.ok) {
-      console.warn('Failed to ping session', response.status);
       if (response.status === 401) {
         removeSessionId();
         window.location.href = '/front-react/login';
@@ -45,8 +43,7 @@ const pingSession = async (sessionId: string) => {
       }
     }
     return undefined;
-  } catch (error) {
-    console.error('Error pinging session:', error);
+  } catch {
     return undefined;
   }
 };
@@ -73,7 +70,7 @@ export default function AuthProvider({
   // Handle mouse movement to ping the session
   useEffect(() => {
     if (!sessionId || user.privileges === UserPrivileges.Anonymous) {
-      return;
+      return undefined;
     }
 
     const handleMouseMove = () => {
@@ -81,13 +78,15 @@ export default function AuthProvider({
       // Only ping if more than a minute has passed since the last ping
       if (currentTime - lastPingTime.current > 60000) {
         lastPingTime.current = currentTime;
-        pingSession(sessionId)
-          .then(updatedUser => {
-            // Optionally update user information if it changed
-            if (updatedUser && JSON.stringify(updatedUser) !== JSON.stringify(user)) {
-              refetch();
-            }
-          });
+        pingSession(sessionId).then((updatedUser) => {
+          // Optionally update user information if it changed
+          if (
+            updatedUser &&
+            JSON.stringify(updatedUser) !== JSON.stringify(user)
+          ) {
+            refetch();
+          }
+        });
       }
     };
 
@@ -95,6 +94,7 @@ export default function AuthProvider({
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
+      return undefined;
     };
   }, [sessionId, user, refetch]);
 

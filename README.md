@@ -56,7 +56,7 @@ src/
 - dbaeumer.vscode-eslint
 - esbenp.prettier-vscode
 - ms-python.vscode-pylance
-- donjayamanne.python-environment-manager
+- ms-python.vscode-python-envs
 
 ## readme plz:
 

@@ -15,6 +15,7 @@ import ForensicHeader from './ui/header';
 import MultiProgress from './ui/multi-progress';
 import useSearch from '../hooks/use-search.tsx';
 
+
 interface ResultsProps {
   results: ForensicResult[];
   isSearching: boolean;
@@ -38,6 +39,14 @@ interface ResultsProps {
   activeTabIndex?: string | null;
 }
 
+/* function VideoPlayer() {
+  return (
+    <video src={replayVideo} controls autoPlay className="w-full">
+      Votre navigateur ne supporte pas la balise vidéo.
+    </video>
+  );
+} */
+
 export default function Results({
   results: propsResults,
   isSearching,
@@ -54,6 +63,7 @@ export default function Results({
   toggleSortOrder,
   tabJobs,
   activeTabIndex,
+
 }: ResultsProps) {
   const [showSourceDetails, setShowSourceDetails] = useState(false);
   const { setDisplayResults, testResumeJob, displayResults } = useSearch();
@@ -148,7 +158,6 @@ export default function Results({
       }
     };
   }, [activeTabIndex, tabJobs, testResumeJob]);
-
   /* const timeEstimates = useMemo(
     () => calculateTimeRemaining(sourceProgress),
     [sourceProgress]
@@ -254,8 +263,6 @@ export default function Results({
         <div className="space-y-4 pb-6">
           {/* Progress section inside ScrollArea */}
           {renderProgressSection()}
-
-          {/* Results display */}
 
           {(() => {
             if (!activeTabIndex) {

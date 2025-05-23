@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AcicEvent } from '../lib/props';
+import { AcicEvent } from '../../lib/props';
 
 export const exportSchema = z
   .object({

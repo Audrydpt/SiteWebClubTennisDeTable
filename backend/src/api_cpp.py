@@ -356,7 +356,7 @@ class AIService(AcicBackendGeneral):
         type: Enum("CudaType", {"CUDA": "CUDA", "Model Server": "Model Server"}) = "CUDA"
         address: str = "192.168.20.45"
         port: int = 53211
-        configuration: str = "http://192.168.20.45:53211/config"
+        configuration: Optional[str] = "http://192.168.20.45:53211/config"
 
     router = APIRouter(
         prefix="/aiService",
@@ -365,6 +365,23 @@ class AIService(AcicBackendGeneral):
     )
     model = Model
     version = [0, 4]
+    enable_get_all = False
+    enable_post = False
+
+
+class LPRService(AcicBackendGeneral):
+    class Model(BaseModel):
+        address: str = "192.168.20.45"
+        port: int = 53211
+        configuration: Optional[str] = "http://192.168.20.45:53211/config"
+
+    router = APIRouter(
+        prefix="/lprService",
+        tags=["settings"],
+        dependencies=[Depends(AcicAuthenticate)],
+    )
+    model = Model
+    version = [0, 15]
     enable_get_all = False
     enable_post = False
 
@@ -444,7 +461,7 @@ class Backup(AcicBackendGeneral):
     def create_routes(cls):
         @cls.router.post("")
         async def download(request: Request, data: cls.model):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}"
             data = await request.json()
             content = cls.post(uri, data)
             return StreamingResponse(content, media_type='application/octet-stream', headers={"Content-Disposition": "attachment; filename=backup.mvb"})
@@ -485,19 +502,19 @@ class Restore(AcicBackendGeneral):
         # TODO: The apply method return a "<html><head><script type="text/javascript">function redirect() { window.top.location.href='Reboot.cgi'}</script></head><body onload="redirect()"> </body></html>" instead of JSON
         @cls.router.post("")
         async def apply(request: Request, data: cls.model):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}"
             data = await request.json()
             return cls.post(uri, data)
 
         @cls.router.post("Point")
         async def upload(request: Request, data: cls.BackupFile):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}Point"
             data = await request.json()
             return cls.post(uri, data)
 
         @cls.router.get("Point/{guid}", response_model=cls.RestorePoint)
         def get(request: Request, guid: str):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}Point/{guid}"
             return cls.get(uri)
 
 class Calendar(AcicBackendGeneralGuid):
@@ -552,7 +569,7 @@ class CameraFeatures(AcicBackendGeneral):
     def create_routes(cls):
         @cls.router.post("")
         async def scan(request: Request, data: cls.model):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}"
             data = await request.json()
             return cls.post(uri, data)
 
@@ -580,29 +597,29 @@ class CameraAnomaly(AcicBackendGeneral):
     def create_routes(cls):
         @cls.router.get("/{streamid}", response_model=cls.ModelStream)
         async def get_all(request: Request, streamid: int):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{streamid}"
             return cls.get(uri)
 
         @cls.router.get("/{streamid}/{feature}", response_model=Dict)
         async def get_one(request: Request, streamid: int, feature: str):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{streamid}/{feature}"
             return cls.get(uri)
 
         @cls.router.put("/{streamid}")
         async def get_all(request: Request, streamid: int, data: cls.ModelStream):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{streamid}"
             data = await request.json()
             return cls.put(uri, data)
 
         @cls.router.put("/{streamid}/{feature}")
         async def get_one(request: Request, streamid: int, feature: str, data: Dict):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{streamid}/{feature}"
             data = await request.json()
             return cls.put(uri, data)
 
         @cls.router.get("Description")
         async def get_description(request: Request):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/Description"
             return cls.get(uri)
 
 class DefaultGateway(AcicBackendGeneral):
@@ -662,7 +679,7 @@ class DiagnosticDump(AcicBackendGeneral):
     def create_routes(cls):
         @cls.router.get("")
         async def download(request: Request):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}"
             content = cls.get_raw(uri)
             return StreamingResponse(content, media_type='application/octet-stream', headers={"Content-Disposition": "attachment; filename=diagdump.tar.gz"})
 
@@ -684,7 +701,7 @@ class Doc(AcicBackendGeneralGuid):
     def create_routes(cls):
         @cls.router.get("/{appname}")
         async def download(request: Request, appname: str):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{appname}"
             content = cls.get_raw(uri)
             return StreamingResponse(content, media_type='application/octet-stream', headers={"Content-Disposition": "attachment; filename="+appname+".pdf"})
 
@@ -763,13 +780,13 @@ class License(AcicBackendGeneral):
     def create_routes(cls):
         @cls.router.post("")
         async def upload_license(request: Request, data: cls.ModelUpload):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}"
             data = await request.json()
             return cls.post(uri, data)
 
         @cls.router.post("Request")
         async def ask_license(request: Request, data: cls.ModelRequest):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}Request"
             data = await request.json()
             content = cls.post(uri, data)
             return StreamingResponse(content, media_type='application/octet-stream',
@@ -777,12 +794,12 @@ class License(AcicBackendGeneral):
 
         @cls.router.get("Status/{streamid}", response_model=List[cls.Model])
         def get_stream_license(request: Request, streamid: int):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}Status/{streamid}"
             return cls.get(uri)
 
         @cls.router.get("ServerStatus", response_model=List[cls.ModelServer])
         def get_server_license(request: Request):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}ServerStatus"
             return cls.get(uri)
 
 class LocalDns(AcicBackendGeneralGuid):
@@ -863,17 +880,17 @@ class Ntp(AcicBackendGeneral):
     def create_routes(cls):
         @cls.router.get("", response_model=List[str])
         async def get_all(request: Request):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}"
             return cls.get(uri)
 
         @cls.router.post("/{ip}")
         async def add(request: Request, ip: str):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{ip}"
             return cls.post(uri, None)
 
         @cls.router.delete("/{ip}")
         async def delete(request: Request, ip: str):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{ip}"
             return cls.delete(uri)
 
 class Output(AcicBackendGeneral):
@@ -894,89 +911,89 @@ class Output(AcicBackendGeneral):
     def create_routes(cls):
         @cls.router.get("Descriptions")
         async def get_descriptions(request: Request):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}Descriptions"
             return cls.get(uri)
 
         @cls.router.get("Features")
         async def get_features(request: Request):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}Features"
             return cls.get(uri)
 
         @cls.router.get("/{module_id}")
         async def get_config(request: Request, module_id: str):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{module_id}"
             return cls.get(uri)
 
         @cls.router.put("/{module_id}")
         async def update_config(request: Request, module_id: str):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{module_id}"
             data = await request.json()
             return cls.put(uri, data)
 
         @cls.router.get("/{module_id}/rules")
         async def get_all(request: Request, module_id: str):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{module_id}/rules"
             return cls.get(uri)
 
         @cls.router.post("/{module_id}/rules")
         async def add_rule(request: Request, module_id: str):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{module_id}/rules"
             data = await request.json()
             return cls.post(uri, data)
 
         @cls.router.get("/{module_id}/{rule_id}")
         async def get_one(request: Request, module_id: str, rule_id: int):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{module_id}/{rule_id}"
             return cls.get(uri)
 
         @cls.router.put("/{module_id}/{rule_id}")
         async def update_one(request: Request, module_id: str, rule_id: int):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{module_id}/{rule_id}"
             data = await request.json()
             return cls.put(uri, data)
 
         @cls.router.delete("/{module_id}/{rule_id}")
         async def delete_one(request: Request, module_id: str, rule_id: int):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{module_id}/{rule_id}"
             return cls.delete(uri)
 
         # stream related
         @cls.router.get("/{stream_id}/{appname}/{module_id}")
         async def stream_get_config(request: Request, stream_id: int, appname: str, module_id: str):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{stream_id}/{appname}/{module_id}"
             return cls.get(uri)
 
         @cls.router.put("/{stream_id}/{appname}/{module_id}")
         async def stream_update_config(request: Request, stream_id: int, appname: str, module_id: str):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{stream_id}/{appname}/{module_id}"
             data = await request.json()
             return cls.put(uri, data)
 
         @cls.router.get("/{stream_id}/{appname}/{module_id}/rules")
         async def stream_get_all(request: Request, stream_id: int, appname: str, module_id: str):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{stream_id}/{appname}/{module_id}/rules"
             return cls.get(uri)
 
         @cls.router.post("/{stream_id}/{appname}/{module_id}/rules")
         async def stream_add_rule(request: Request, stream_id: int, appname: str, module_id: str):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{stream_id}/{appname}/{module_id}/rules"
             data = await request.json()
             return cls.post(uri, data)
 
         @cls.router.get("/{stream_id}/{appname}/{module_id}/{rule_id}")
         async def stream_get_one(request: Request, stream_id: int, appname: str, module_id: str, rule_id: int):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{stream_id}/{appname}/{module_id}/{rule_id}"
             return cls.get(uri)
 
         @cls.router.put("/{stream_id}/{appname}/{module_id}/{rule_id}")
         async def stream_update_one(request: Request, stream_id: int, appname: str, module_id: str, rule_id: int):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{stream_id}/{appname}/{module_id}/{rule_id}"
             data = await request.json()
             return cls.put(uri, data)
 
         @cls.router.delete("/{stream_id}/{appname}/{module_id}/{rule_id}")
         async def stream_delete_one(request: Request, stream_id: int, appname: str, module_id: str, rule_id: int):
-            uri = request.url.path.removeprefix("/")
+            uri = f"{cls.router.prefix}/{stream_id}/{appname}/{module_id}/{rule_id}"
             return cls.delete(uri)
 
 class Ping(AcicBackendGeneralGuid):
@@ -1101,9 +1118,75 @@ class Snapshot(AcicBackendStreamGuid):
     def create_routes(cls):
         @cls.router.get("/{streamid}")
         async def get(request: Request, streamid: int, width: int = 640, height: int = 480):
-            uri = request.url.path.removeprefix("/") + f"?width={width}&height={height}"
+            uri = f"{cls.router.prefix}/{streamid}?width={width}&height={height}"
             content = cls.get_raw(uri)
             return StreamingResponse(content, media_type='image/jpeg', headers={"Content-Disposition": "attachment; filename=snapshot.jpg"})
+
+class Sources(AcicBackendGeneral):
+    class ModelStream(BaseModel):
+        external_id: str
+
+        class Config:
+            extra = Extra.allow
+
+    router = APIRouter(
+        prefix="/source",
+        tags=["streams"],
+        dependencies=[Depends(AcicAuthenticate)],
+    )
+    model = ModelStream
+    version = [0, 1]
+
+    @classmethod
+    def create_routes(cls):
+        @cls.router.get("s/{streamid}", response_model=cls.ModelStream)
+        async def get(request: Request, streamid: int):
+            uri = f"{cls.router.prefix}s/{streamid}"
+            return cls.get(uri)
+
+        @cls.router.put("s/{streamid}")
+        async def put(request: Request, streamid: int, data: cls.ModelStream):
+            uri = f"{cls.router.prefix}s/{streamid}"
+            data = await request.json()
+            return cls.put(uri, data)
+
+        @cls.router.delete("s/{streamid}")
+        async def delete(request: Request, streamid: int):
+            uri = f"{cls.router.prefix}s/{streamid}"
+            return cls.delete(uri)
+
+        @cls.router.get("sDescription")
+        async def get_description(request: Request):
+            uri = f"{cls.router.prefix}sDescription"
+            return cls.get(uri)
+
+        @cls.router.get("Log/{streamid}")
+        async def get_log(request: Request, streamid: int):
+            uri = f"{cls.router.prefix}Log/{streamid}"
+            res = cls.get_raw(uri)
+            return StreamingResponse(res, media_type='text/plain')
+
+class Streams(AcicBackendGeneralGuid):
+    class Model(BaseModel):
+        id: str = "1"
+        source: str = "1"
+        application: str = "MvActivityDetection"
+        configuration: Optional[str] = "https://192.168.20.1:8080/ConfigTool.html?streamId=1&application=MvActivityDetection"
+
+    router = APIRouter(
+        prefix="/streams",
+        tags=["streams"],
+        dependencies=[Depends(AcicAuthenticate)],
+    )
+    model = Model
+    version = [0, 2]
+
+    enable_get_all = False
+    enable_get_all_list = True
+    enable_post = True
+    enable_delete = True
+    enable_get_one = False
+    enable_put = True
 
 class Users(AcicBackendGeneralGuid):
     class Model(BaseModel):
@@ -1189,7 +1272,8 @@ class Version(AcicBackendGeneral):
 def get_routes():
     return [
         AdamServer.get_router(),
-        AIService.get_router(),                 # il manque /lprService
+        AIService.get_router(),                 # erreur sur POST
+        LPRService.get_router(),                # inexistant LPR
         AnalyticsRules.get_router(),
         Applications.get_router(),
         Authenticate.get_router(),
@@ -1221,8 +1305,8 @@ def get_routes():
         Route.get_router(),                     # missing default route
         SmtpServer.get_router(),
         Snapshot.get_router(),
-        # Sources.get_router(), SourcesDescription, SourceLog (sans s)
-        # Streams.get_router(),
+        Sources.get_router(),                   # SourcesDescription, SourceLog (sans s). Erreur du JSON, les string sont quoté 2x
+        Streams.get_router(),
         TcpServer.get_router(),
         TestEvent.get_router(),
         Time.get_router(),
