@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars,react/no-unused-prop-types */
-import { SortAsc, SortDesc, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 
 import DeleteConfirmation from '@/components/confirm-delete';
 import { Button } from '@/components/ui/button';
-import DeleteConfirmation from '@/components/confirm-delete';
 
 import useJobs from '../../hooks/use-jobs';
 

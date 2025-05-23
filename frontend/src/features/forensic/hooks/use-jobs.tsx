@@ -128,8 +128,6 @@ export default function useJobs() {
       const newTaskTabs = newTasks.slice(0, freeSlots).map((task) => ({
         ...task,
         isNew: false,
-        count: task.count,
-        total_pages: task.total_pages,
       }));
 
       // 5. Merge and limit to 5 tabs
@@ -367,16 +365,6 @@ export default function useJobs() {
 
     // Appeler resumeJob avec le jobId de l'onglet actif
     return resumeCallback(activeTabIndex);
-  };
-
-  const getActivePaginationInfo = () => {
-    const activeTask = getActiveTask();
-    return {
-      currentPage: 1, // À gérer ailleurs dans l'application
-      pageSize: 12, // Nombre de résultats par page (à ajuster selon votre configuration)
-      totalPages: activeTask?.total_pages || 0,
-      total: activeTask?.count || 0,
-    };
   };
 
   return {
