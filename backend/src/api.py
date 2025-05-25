@@ -388,21 +388,15 @@ class FastAPIServer:
                 tasks = {}
                 for job_id in await TaskManager.get_jobs():
                     status = TaskManager.get_job_status(job_id)
-                    created = TaskManager.get_job_created(job_id)
-                    updated = TaskManager.get_job_updated(job_id)
-                    job_type = TaskManager.get_job_type(job_id)
-                    size = TaskManager.get_job_size(job_id)
-                    count = TaskManager.get_job_count(job_id)
-                    total_pages = TaskManager.get_job_total_pages(job_id)
 
                     task_info = {
                         "status": status,
-                        "type": job_type,
-                        "created": created,
-                        "updated": updated,
-                        "count": count,
-                        "size": size,
-                        "total_pages": total_pages,
+                        "created": await TaskManager.get_job_created(job_id),
+                        "type": await TaskManager.get_job_type(job_id),
+                        "updated": await TaskManager.get_job_updated(job_id),
+                        "count": await TaskManager.get_job_count(job_id),
+                        "size": await TaskManager.get_job_size(job_id),
+                        "total_pages": await TaskManager.get_job_total_pages(job_id),
                     }
                     
                     if status == JobStatus.FAILURE:
@@ -533,9 +527,9 @@ class FastAPIServer:
                 results = await TaskManager.get_sorted_results(guid, sort_by="score", desc=desc, start=start, end=end)
 
                 # Calculer le nombre total de pages
-                total_pages = (TaskManager.get_job_count(guid) + FORENSIC_PAGINATION_ITEMS - 1) // FORENSIC_PAGINATION_ITEMS
+                total = await TaskManager.get_job_count(guid)
+                total_pages = (total + FORENSIC_PAGINATION_ITEMS - 1) // FORENSIC_PAGINATION_ITEMS
 
-                total = TaskManager.get_job_count(guid)
 
                 # Inclure le frame_uuid avec les métadonnées pour chaque résultat non final
                 formatted_results = [
@@ -568,9 +562,8 @@ class FastAPIServer:
                 results = await TaskManager.get_sorted_results(guid, sort_by="date", desc=desc, start=start, end=end)
 
                 # Calculer le nombre total de pages
-                total_pages = (TaskManager.get_job_count(guid) + FORENSIC_PAGINATION_ITEMS - 1) // FORENSIC_PAGINATION_ITEMS
-
-                total = TaskManager.get_job_count(guid)
+                total = await TaskManager.get_job_count(guid)
+                total_pages = (total + FORENSIC_PAGINATION_ITEMS - 1) // FORENSIC_PAGINATION_ITEMS
 
                 # Inclure le frame_uuid avec les métadonnées pour chaque résultat non final
                 formatted_results = [

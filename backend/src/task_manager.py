@@ -99,7 +99,7 @@ class JobResult:
         # Récupérer la frame si un UUID est présent et un client Redis fourni
         frame = None
         if frame_uuid and redis_client:
-            frame_key = f"task:{job_id}:frame:{frame_uuid}"
+            frame_key = f"task:{job_id}:frames:{frame_uuid}"
             frame = await redis_client.get(frame_key)
             
         return cls(
@@ -134,7 +134,22 @@ class Redis:
 
 
 class ResultsStore:
-    def __init__(self, max_results: int = 5000):
+    """
+    Gestionnaire des résultats de tâches avec encapsulation des clés Redis privées.
+    
+    Cette classe encapsule toutes les opérations liées aux résultats des tâches,
+    incluant le stockage, la récupération, et la suppression des données.
+    
+    Clés Redis privées gérées:
+    - task:{job_id} - Métadonnées du job
+    - task:{job_id}:results:date - Liste des résultats trié par date ASC
+    - task:{job_id}:results:score - Liste des résultats trié par score DESC
+    - task:{job_id}:results:updates - Stream des mises à jour
+    - task:{job_id}:frames:{frame_uuid} - Frames individuelles
+    
+    Ces clés ne doivent être accessibles que via les méthodes publiques de cette classe.
+    """
+    def __init__(self, max_results: int = 100000):
         self.max_results = max_results
         self.__host = os.getenv("DB_HOST", "localhost")
         self.__redis = None
@@ -147,20 +162,19 @@ class ResultsStore:
             self.__redis = aioredis.Redis(connection_pool=self.__pool)
         return self.__redis
 
+    def __get_result_list_key(self, job_id: str) -> str:
+        return f"task:{job_id}:results:date"
+    
+    def __get_result_sort_key(self, job_id: str) -> str:
+        return f"task:{job_id}:results:score"
+
+    def __get_frame_key(self, job_id: str, frame_uuid: str) -> str:
+        return f"task:{job_id}:frames:{frame_uuid}"
+
+    def __get_channel_name(self, job_id: str) -> str:
+        return f"task:{job_id}:results:updates"
+
     async def get_sorted_results(self, job_id: str, sort_by: str = "date", desc: bool = True, start: int = 0, end: int = -1) -> List[JobResult]:
-        """
-        Récupère tous les résultats d'un job et les trie selon le critère spécifié.
-
-        Args:
-            job_id: Identifiant du job
-            sort_by: Critère de tri ('date' ou 'score')
-            desc: Ordre décroissant si True, croissant si False
-            start: Index de début
-            end: Index de fin
-
-        Returns:
-            Liste triée des résultats
-        """
         # Récupération de tous les résultats
         results = await self.get_results(job_id)
 
@@ -187,24 +201,18 @@ class ResultsStore:
 
     async def get_frame(self, job_id: str, frame_uuid: str) -> Optional[bytes]:
         redis = await self.__get_redis()
-        frame_key = f"task:{job_id}:frame:{frame_uuid}"
+        frame_key = self.__get_frame_key(job_id, frame_uuid)
         return await redis.get(frame_key)
 
     async def add_result(self, result: JobResult) -> None:
         redis = await self.__get_redis()
 
         # Clés Redis pour cette tâche
-        result_list_key = f"task:{result.job_id}:results"
-        channel_name = f"task:{result.job_id}:updates"
+        result_list_key = self.__get_result_list_key(result.job_id)
+        channel_name = self.__get_channel_name(result.job_id)
 
         # Stocker les métadonnées du résultat (sans la frame)
         result_data = result.to_redis_message()
-
-        # ------------------------------------------------------------
-        # Remplacement de publish/subscribe par un Redis Stream.
-        # On ajoute le résultat dans un stream avec une taille maximale
-        # pour éviter de conserver les données indéfiniment.
-        # ------------------------------------------------------------
         await redis.xadd(
             channel_name,
             {"data": json.dumps(result_data)},
@@ -220,13 +228,13 @@ class ResultsStore:
             await redis.ltrim(result_list_key, 0, self.max_results - 1)
 
         if result.frame and result.frame_uuid:
-            frame_key = f"task:{result.job_id}:frame:{result.frame_uuid}"
+            frame_key = self.__get_frame_key(result.job_id, result.frame_uuid)
             await redis.set(frame_key, result.frame)
 
     async def get_results(self, job_id: str, start: int = 0, end: int = -1) -> List[JobResult]:
         redis = await self.__get_redis()
 
-        result_list_key = f"task:{job_id}:results"
+        result_list_key = self.__get_result_list_key(job_id)
 
         results_json = await redis.lrange(result_list_key, start, end)
         results = []
@@ -242,11 +250,92 @@ class ResultsStore:
             results.append(result)
             
         return results
+
+    async def get_results_count(self, job_id: str) -> int:
+        redis = await self.__get_redis()
+        result_list_key = self.__get_result_list_key(job_id)
+        return await redis.llen(result_list_key)
+
+    async def get_last_result(self, job_id: str) -> Optional[JobResult]:
+        redis = await self.__get_redis()
+        result_list_key = self.__get_result_list_key(job_id)
+        
+        last_result_json = await redis.lindex(result_list_key, 0)
+        if not last_result_json:
+            return None
+            
+        try:
+            message = json.loads(last_result_json)
+            return await JobResult.from_redis_message(message, redis)
+        except Exception as e:
+            logger.error(f"Error parsing last result JSON: {e}")
+            return None
+
+    async def estimate_job_size(self, job_id: str) -> int:
+        redis = await self.__get_redis()
+        result_list_key = self.__get_result_list_key(job_id)
+
+        # Récupérer le nombre de résultats
+        nb_results = await redis.llen(result_list_key)
+
+        # Estimer la taille des métadonnées (approximation)
+        metadata_size = 0
+        results_json = await redis.lrange(result_list_key, 0, min(5, nb_results-1))
+        if results_json:
+            # Calculer la taille moyenne des métadonnées sur les premiers résultats
+            avg_size = sum(len(r) for r in results_json) / len(results_json)
+            metadata_size = int(avg_size * nb_results)
+
+        # Estimer la taille des frames (en supposant une taille moyenne de 50Ko par frame)
+        frame_pattern = f"task:{job_id}:frames:*"
+        frame_keys = await redis.keys(frame_pattern)
+        frame_size = 0
+
+        if frame_keys:
+            # Échantillonner quelques frames pour obtenir une taille moyenne
+            sample_size = min(5, len(frame_keys))
+            sample_keys = frame_keys[:sample_size]
+            sample_frames = [await redis.get(key) for key in sample_keys]
+            avg_frame_size = sum(len(frame) if frame else 0 for frame in sample_frames) / sample_size
+            frame_size = int(avg_frame_size * len(frame_keys))
+
+        # Taille totale estimée en kilooctets
+        total_size_kb = (metadata_size + frame_size) // 1024
+
+        return total_size_kb if total_size_kb > 0 else 1  # Retourner au moins 1Ko
+
+    async def delete_job(self, job_id: str) -> int:
+        redis = await self.__get_redis()
+        deleted_keys = 0
+
+        # Supprimer la liste des résultats
+        result_list_key = self.__get_result_list_key(job_id)
+        deleted = await redis.delete(result_list_key)
+        deleted_keys += deleted
+
+        # Supprimer toutes les frames associées
+        frame_pattern = f"task:{job_id}:frames:*"
+        frame_keys = await redis.keys(frame_pattern)
+        if frame_keys:
+            deleted = await redis.delete(*frame_keys)
+            deleted_keys += deleted
+        
+        # Supprimer le stream des mises à jour
+        channel_name = self.__get_channel_name(job_id)
+        deleted = await redis.delete(channel_name)
+        deleted_keys += deleted
+
+        # Supprimer les métadonnées du job
+        job_key = f"task:{job_id}"
+        deleted = await redis.delete(job_key)
+        deleted_keys += deleted
+
+        return deleted_keys
     
     async def subscribe_to_results(self, job_id: str):
         redis = await self.__get_redis()
 
-        channel_name = f"task:{job_id}:updates"
+        channel_name = self.__get_channel_name(job_id)
         last_id = "$"  # Commence à la fin pour ne recevoir que les nouveaux messages
         logger.info("Souscription au stream de résultats")
 
@@ -373,19 +462,6 @@ class TaskManager:
 
     @staticmethod
     async def get_sorted_results(job_id: str, sort_by: str = "date", desc: bool = True, start: int = 0, end: int = -1) -> List[JobResult]:
-        """
-        Récupère les résultats d'une tâche triés par date ou score.
-
-        Args:
-            job_id: Identifiant du job
-            sort_by: Critère de tri ('date' ou 'score')
-            desc: Ordre décroissant si True, croissant si False
-            start: Index de début
-            end: Index de fin
-
-        Returns:
-            Liste des résultats triés
-        """
         return await results_store.get_sorted_results(job_id, sort_by, desc, start, end)
     
     @staticmethod
@@ -430,11 +506,11 @@ class TaskManager:
             return False
 
     @staticmethod
-    def get_job_created(job_id: str) -> Optional[datetime.datetime]:
+    async def get_job_created(job_id: str) -> Optional[datetime.datetime]:
         try:
-            with Redis(db=1) as redis_client:
+            async with Redis(db=1) as redis_client:
                 job_key = f"task:{job_id}"
-                created_at = redis_client.hget(job_key, "created_at")
+                created_at = await redis_client.hget(job_key, "created_at")
                 if created_at:
                     return datetime.datetime.fromisoformat(created_at.decode('utf-8'))
             return None
@@ -443,21 +519,19 @@ class TaskManager:
             return None
         
     @staticmethod
-    def get_job_total_pages(job_id: str) -> Optional[int]:
+    async def get_job_total_pages(job_id: str) -> Optional[int]:
         try:
-            with Redis(db=1) as redis_client:
-                result_list_key = f"task:{job_id}:results"
-                count = redis_client.llen(result_list_key)
-                
-                page_size = FORENSIC_PAGINATION_ITEMS
-                total = (count + page_size - 1) // page_size if count > 0 else 0
-                return total
+            count = await results_store.get_results_count(job_id)
+            
+            page_size = FORENSIC_PAGINATION_ITEMS
+            total = (count + page_size - 1) // page_size if count > 0 else 0
+            return total
         except Exception as e:
             logger.error(f"Erreur lors de la récupération du nombre total de pages pour le job {job_id}: {e}")
             return None
 
     @staticmethod
-    def get_job_type(job_id: str) -> Optional[str]:
+    async def get_job_type(job_id: str) -> Optional[str]:
         try:
             with Redis(db=1) as redis_client:
                 job_key = f"task:{job_id}"
@@ -466,7 +540,7 @@ class TaskManager:
                 if job_type:
                     return job_type.decode('utf-8')
 
-            results = run_async(results_store.get_results)(job_id)
+            results = await results_store.get_results(job_id)
             if results:
                 for result in results:
                     if "type" in result.metadata:
@@ -481,24 +555,10 @@ class TaskManager:
             return None
 
     @staticmethod
-    def get_job_count(job_id: str) -> Optional[int]:
+    async def get_job_count(job_id: str) -> Optional[int]:
         try:
-            # Connexion à Redis pour récupérer les données
-            with Redis(db=1) as redis_client:
-                result_list_key = f"task:{job_id}:results"
-
-                # Compter le nombre de résultats dans la liste
-                count = redis_client.llen(result_list_key)
-
-                # Si un compte existe déjà dans les métadonnées du job, le retourner
-                job_key = f"task:{job_id}"
-                stored_count = redis_client.hget(job_key, "job_count")
-
-                if stored_count:
-                    return int(stored_count.decode('utf-8'))
-
-                # Sinon retourner le nombre de résultats dans la liste
-                return int(count) if count > 0 else 0
+            count = await results_store.get_results_count(job_id)
+            return int(count) if count > 0 else 0
 
         except Exception as e:
             logger.error(f"Erreur lors de la récupération du nombre de résultats du job {job_id}: {e}")
@@ -506,48 +566,16 @@ class TaskManager:
             return None
 
     @staticmethod
-    def get_job_size(job_id: str) -> Optional[int]:
+    async def get_job_size(job_id: str) -> Optional[int]:
         try:
-            # Connexion à Redis pour récupérer les données
-            with Redis(db=1) as redis_client:
-                result_list_key = f"task:{job_id}:results"
-
-                # Récupérer le nombre de résultats
-                nb_results = redis_client.llen(result_list_key)
-
-                # Estimer la taille des métadonnées (approximation)
-                metadata_size = 0
-                results_json = redis_client.lrange(result_list_key, 0, min(5, nb_results-1))
-                if results_json:
-                    # Calculer la taille moyenne des métadonnées sur les premiers résultats
-                    avg_size = sum(len(r) for r in results_json) / len(results_json)
-                    metadata_size = int(avg_size * nb_results)
-
-                # Estimer la taille des frames (en supposant une taille moyenne de 50Ko par frame)
-                frame_pattern = f"task:{job_id}:frame:*"
-                frame_keys = redis_client.keys(frame_pattern)
-                frame_size = 0
-
-                if frame_keys:
-                    # Échantillonner quelques frames pour obtenir une taille moyenne
-                    sample_size = min(5, len(frame_keys))
-                    sample_keys = frame_keys[:sample_size]
-                    sample_frames = [redis_client.get(key) for key in sample_keys]
-                    avg_frame_size = sum(len(frame) if frame else 0 for frame in sample_frames) / sample_size
-                    frame_size = int(avg_frame_size * len(frame_keys))
-
-                # Taille totale estimée en kilooctets
-                total_size_kb = (metadata_size + frame_size) // 1024
-
-                return total_size_kb if total_size_kb > 0 else 1  # Retourner au moins 1Ko
-
+            return await results_store.estimate_job_size(job_id)
         except Exception as e:
             logger.error(f"Erreur lors de la récupération de la taille du job {job_id}: {e}")
             logger.error(traceback.format_exc())
             return None
 
     @staticmethod
-    def get_job_updated(job_id: str) -> Optional[datetime.datetime]:
+    async def get_job_updated(job_id: str) -> Optional[datetime.datetime]:
         try:
             # Essayer d'abord de récupérer via Celery qui a l'information la plus précise
             task_result = AsyncResult(job_id)
@@ -555,26 +583,19 @@ class TaskManager:
                 return task_result.date_done
 
             # Si pas trouvé dans Celery, vérifier Redis pour les derniers résultats
-            with Redis(db=1) as redis_client:
-                result_list_key = f"task:{job_id}:results"
+            last_result = await results_store.get_last_result(job_id)
+            if last_result and "timestamp" in last_result.metadata:
+                try:
+                    return datetime.datetime.fromisoformat(last_result.metadata["timestamp"])
+                except ValueError:
+                    pass
 
-                # Récupérer le dernier résultat de la liste (le plus récent)
-                last_result = redis_client.lindex(result_list_key, 0)
+            # Sinon, utiliser la date de création comme fallback
+            created_at = await TaskManager.get_job_created(job_id)
+            if created_at:
+                return created_at
 
-                if last_result:
-                    try:
-                        result_data = json.loads(last_result)
-                        if "metadata" in result_data and "timestamp" in result_data["metadata"]:
-                            return datetime.datetime.fromisoformat(result_data["metadata"]["timestamp"])
-                    except (json.JSONDecodeError, ValueError):
-                        pass
-
-                # Sinon, utiliser la date de création comme fallback
-                created_at = TaskManager.get_job_created(job_id)
-                if created_at:
-                    return created_at
-
-                return datetime.datetime.now(datetime.timezone.utc)
+            return datetime.datetime.now(datetime.timezone.utc)
 
         except Exception as e:
             logger.error(f"Erreur lors de la récupération de la date de mise à jour du job {job_id}: {e}")
@@ -610,112 +631,28 @@ class TaskManager:
 
     @staticmethod
     async def delete_task_data(job_id: str) -> dict:
-        """
-        Supprime toutes les données Redis associées à une tâche dans les bases 0 et 1.
-        Retourne un dictionnaire avec le statut de l'opération.
-        Lève une ValueError si aucune tâche n'est trouvée avec cet ID.
-        """
-
         try:
-            # Clés à supprimer dans DB1
-            async with Redis(db=1) as redis_db1:
-                job_key = f"task:{job_id}"
-                result_list_key = f"task:{job_id}:results"
+            # Supprimer les résultats et frames via ResultsStore
+            await results_store.delete_job(job_id)
 
-                # Vérifier si au moins une des clés existe dans DB1
-                exists = await redis_db1.exists(job_key)
-                results_exist = await redis_db1.exists(result_list_key)
+            # Supprimer directement les clés Celery dans DB0
+            async with Redis(db=0) as redis_db0:
+                celery_meta_key = f"celery-task-meta-{job_id}"
+                await redis_db0.delete(celery_meta_key)
 
-                if not exists and not results_exist:
-                    raise ValueError(f"Aucune tâche trouvée avec l'ID {job_id}")
-
-                # Supprimer les métadonnées et résultats dans DB1
-                await redis_db1.delete(job_key)
-                await redis_db1.delete(result_list_key)
-
-                # Supprimer toutes les frames associées dans DB1
-                frame_pattern = f"task:{job_id}:frame:*"
-                frame_keys = await redis_db1.keys(frame_pattern)
-                if frame_keys:
-                    await redis_db1.delete(*frame_keys)
-
-                # Supprimer directement les clés Celery dans DB0
-                async with Redis(db=0) as redis_db0:
-                    celery_meta_key = f"celery-task-meta-{job_id}"
-                    await redis_db0.delete(celery_meta_key)
-
-                return {"success": True, "message": f"Tâche {job_id} supprimée avec succès"}
+            return {"success": True, "message": f"Tâche {job_id} supprimée avec succès"}
         except Exception as e:
             logger.error(f"Erreur lors de la suppression des données de la tâche {job_id}: {e}")
             return {"success": False, "message": str(e)}
 
     @staticmethod
     async def delete_all_task_data() -> dict:
-        """
-        Supprime toutes les données Redis associées à toutes les tâches dans les bases 0 et 1.
-        Retourne un dictionnaire avec le statut de l'opération.
-        """
-        deleted_keys = 0
-        deleted_tasks = 0
-
         try:
-            async with Redis(db=1) as redis_db1:
-                # Utiliser scan au lieu de keys pour éviter de bloquer Redis
-                cursor = "0"
-                task_ids = set()
+            task_ids = await TaskManager.get_jobs()
+            for task_id in task_ids:
+                await TaskManager.delete_task_data(task_id)
 
-                # Étape 1: Identifier toutes les tâches
-                while cursor != 0:
-                    cursor, keys = await redis_db1.scan(cursor=cursor, match="task:*:results", count=1000)
-                    cursor = int(cursor)
-
-                    for key in keys:
-                        key_str = key.decode('utf-8') if isinstance(key, bytes) else key
-                        parts = key_str.split(':')
-                        if len(parts) >= 3 and parts[0] == 'task' and len(parts[1]) > 0:
-                            task_ids.add(parts[1])
-
-                logger.info(f"Suppression de {len(task_ids)} tâches identifiées")
-
-                # Étape 2: Supprimer toutes les données associées aux tâches
-                for task_id in task_ids:
-                    # Supprimer les résultats de la tâche
-                    deleted = await redis_db1.delete(f"task:{task_id}:results")
-                    if deleted > 0:
-                        deleted_keys += deleted
-
-                    # Supprimer les frames associées
-                    cursor_frames = "0"
-                    while cursor_frames != 0:
-                        cursor_frames, frame_keys = await redis_db1.scan(
-                            cursor=cursor_frames,
-                            match=f"task:{task_id}:frame:*",
-                            count=1000
-                        )
-                        cursor_frames = int(cursor_frames)
-
-                        if frame_keys:
-                            deleted = await redis_db1.delete(*frame_keys)
-                            deleted_keys += deleted
-
-                    # Supprimer les autres métadonnées
-                    deleted = await redis_db1.delete(f"task:{task_id}")
-                    if deleted > 0:
-                        deleted_keys += deleted
-
-                    # Supprimer directement les métadonnées Celery dans DB0
-                    async with Redis(db=0) as redis_db0:
-                        celery_meta_key = f"celery-task-meta-{task_id}"
-                        deleted = await redis_db0.delete(celery_meta_key)
-                        if deleted > 0:
-                            deleted_keys += deleted
-
-                    deleted_tasks += 1
-
-                return {
-                    "success": True,
-                    "message": f"Toutes les tâches supprimées avec succès ({deleted_tasks} tâches, {deleted_keys} clés)"
-                }
+            return { "success": True }
         except Exception as e:
             logger.error(f"Erreur lors de la suppression des données de toutes les tâches: {e}")
             logger.error(traceback.format_exc())
@@ -764,13 +701,9 @@ class TaskManager:
             logger.error("Erreur lors de la récupération des tâches actives: %s", e)
 
         try:
-            async with Redis(db=1) as redis_client:
-                keys = await redis_client.keys("task:*:results")
-                for key in keys:
-                    key_str = key.decode('utf-8') if isinstance(key, bytes) else str(key)
-                    parts = key_str.split(':')
-                    if len(parts) >= 2:
-                        all_tasks.add(parts[1])
+            # Utiliser ResultsStore pour récupérer les job IDs
+            job_ids = await results_store.get_all_job_ids()
+            all_tasks.update(job_ids)
         except Exception as e:
             logger.error("Erreur lors de la récupération des tâches depuis Redis: %s", e)
 
