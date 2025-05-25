@@ -1,17 +1,13 @@
 /* eslint-disable @stylistic/indent */
-import { useMemo } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
+import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Progress } from '@/components/ui/progress';
 
 import { calculateTimeRemaining } from '@/features/forensic/lib/estimation/estimation';
-import { SourceProgress } from '@/features/forensic/lib/types';
-
-interface MultiProgressProps {
-  sourceProgress?: SourceProgress[];
-  showSourceDetails?: boolean;
-  setShowSourceDetails?: (show: boolean) => void;
-}
+import { useSearchContext } from '../../providers/search-context';
 
 // Helper to extract camera name and IP from camera ID
 const extractCameraInfo = (cameraId: string) => {
@@ -31,11 +27,9 @@ const extractCameraInfo = (cameraId: string) => {
   };
 };
 
-export default function MultiProgress({
-  sourceProgress = [],
-  showSourceDetails = false,
-  setShowSourceDetails = () => {},
-}: MultiProgressProps) {
+export default function MultiProgress() {
+  const [showSourceDetails, setShowSourceDetails] = useState(false);
+  const { progress: sourceProgress } = useSearchContext();
   const timeEstimates = useMemo(
     () => calculateTimeRemaining(sourceProgress),
     [sourceProgress]
@@ -45,12 +39,44 @@ export default function MultiProgress({
     return null;
   }
 
+  const progress =
+    sourceProgress.reduce((acc, source) => acc + source.progress, 0) /
+    sourceProgress.length;
+
   return (
     <Collapsible
       open={showSourceDetails}
       onOpenChange={setShowSourceDetails}
       className="space-y-3 mt-3"
     >
+      <div className="flex justify-between items-center">
+        <div className="flex flex-col">
+          <p className="text-sm font-medium text-foreground">
+            Progression :{' '}
+            <span className="text-primary font-semibold">
+              {progress !== null ? progress.toFixed(0) : 0}%
+            </span>
+          </p>
+        </div>
+        {sourceProgress.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 hover:bg-muted/80"
+            onClick={() => setShowSourceDetails(!showSourceDetails)}
+          >
+            {showSourceDetails ? 'Masquer les détails' : 'Afficher les détails'}
+            {showSourceDetails ? (
+              <ChevronUp className="ml-1 h-4 w-4" />
+            ) : (
+              <ChevronDown className="ml-1 h-4 w-4" />
+            )}
+          </Button>
+        )}
+      </div>
+
+      <Progress value={progress} className="w-full" />
+
       <CollapsibleContent className="bg-muted rounded-lg p-3 transition-all">
         <div className="grid gap-3">
           {sourceProgress.map((source) => {

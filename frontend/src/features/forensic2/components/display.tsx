@@ -269,7 +269,7 @@ function RenderImage(result: ForensicResult) {
 
 export default function Display() {
   const { taskId } = useParams();
-  const { results, isLoading, isError, error } = useSearchContext();
+  const { results, isLoading, error } = useSearchContext();
 
   if (!taskId) {
     return (
@@ -280,7 +280,7 @@ export default function Display() {
     );
   }
 
-  if (isError) {
+  if (error) {
     return (
       <div className="flex flex-col h-[50vh] items-center justify-center">
         <Alert variant="destructive" className="max-w-md">

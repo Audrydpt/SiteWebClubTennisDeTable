@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { ForensicResult } from '@/features/forensic/lib/types';
+import { ForensicResult, SourceProgress } from '@/features/forensic/lib/types';
 import { useJobsContext } from '../providers/job-context';
 import { isForensicTaskCompleted } from './use-jobs';
 
@@ -19,7 +19,7 @@ interface PaginatedResponse {
 
 export default function useSearch() {
   const { taskId } = useParams();
-  const { getTaskById } = useJobsContext();
+  const { getTaskById, loading: tasksLoading } = useJobsContext();
 
   const [order, setOrder] = useState<{
     by: 'score' | 'date';
@@ -28,12 +28,13 @@ export default function useSearch() {
     by: 'score',
     direction: 'desc',
   });
+  const [progress, setProgress] = useState<SourceProgress[]>([]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const wsRef = useRef<WebSocket | null>(null);
 
   // page data
-  const { data, isLoading, error, isError } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['forensic-results', taskId, currentPage, order],
     enabled: !!taskId,
     refetchInterval: () => {
@@ -78,6 +79,7 @@ export default function useSearch() {
   // on task changed, close the websocket and open a new one
   useEffect(() => {
     setCurrentPage(1);
+    setProgress([]);
     setOrder({ by: 'score', direction: 'desc' });
     if (wsRef.current) {
       wsRef.current.close();
@@ -98,7 +100,17 @@ export default function useSearch() {
       if (typeof event.data === 'string') {
         const json = JSON.parse(event.data);
         if (json.type === 'progress') {
-          console.error('on message', json);
+          const cur = progress.find((p) => p.sourceId === json.guid);
+          const tmp = progress.filter((p) => p.sourceId !== json.guid);
+
+          const newProgress: SourceProgress = {
+            sourceId: json.guid,
+            progress: json.progress,
+            timestamp: json.timestamp,
+            startTime: cur ? cur.startTime : json.timestamp,
+          };
+
+          setProgress([...tmp, newProgress]);
         } else if (json.type === 'detection') {
           const imageUrl = `${process.env.MAIN_API_URL}/forensics/${taskId}/frames/${json.frame_uuid}`;
 
@@ -124,7 +136,7 @@ export default function useSearch() {
 
     wsRef.current = ws;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [taskId]);
+  }, [tasksLoading, taskId]);
 
   return {
     results: data?.results || [],
@@ -133,7 +145,7 @@ export default function useSearch() {
     setCurrentPage,
     isLoading,
     error,
-    isError,
+    progress,
     order,
     setOrder,
   };
