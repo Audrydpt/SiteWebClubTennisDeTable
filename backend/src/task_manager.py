@@ -175,29 +175,51 @@ class ResultsStore:
         return f"task:{job_id}:results:updates"
 
     async def get_sorted_results(self, job_id: str, sort_by: str = "date", desc: bool = True, start: int = 0, end: int = -1) -> List[JobResult]:
-        # Récupération de tous les résultats
-        results = await self.get_results(job_id)
+        redis = await self.__get_redis()
 
-        # Tri selon le critère spécifié
-        if sort_by == "score" and results:
-            # Vérifier que le score est présent dans les métadonnées
-            results = sorted(
-                results,
-                key=lambda x: float(x.metadata.get('score', 0)),
-                reverse=desc
-            )
-        elif sort_by == "date" and results:
-            # Tri par timestamp dans les métadonnées
-            results = sorted(
-                results,
-                key=lambda x: x.metadata.get('timestamp', ''),
-                reverse=desc
-            )
 
-        # Application de la pagination après le tri
-        if end == -1:
-            end = len(results)
-        return results[start:end+1]
+        results_json = []
+        if sort_by == "score":
+            # Utiliser le sorted set pour un tri efficace par score
+            result_sort_key = self.__get_result_sort_key(job_id)
+            
+            if desc:
+                results_json = await redis.zrevrange(result_sort_key, start, end if end != -1 else -1)
+            else:
+                results_json = await redis.zrange(result_sort_key, start, end if end != -1 else -1)            
+        else:
+            # Tri par date - utiliser la liste Redis qui est naturellement triée par date d'insertion
+            result_list_key = self.__get_result_list_key(job_id)
+
+            if desc:
+                results_json = await redis.lrange(result_list_key, start, end if end != -1 else -1)
+            else:
+                total_count = await redis.llen(result_list_key)
+                if total_count != 0:
+                    # Calculer les indices inversés
+                    if end == -1:
+                        reverse_start = max(0, total_count - 1 - start) if start < total_count else 0
+                        reverse_end = 0
+                    else:
+                        reverse_start = max(0, total_count - 1 - end) if end < total_count else 0
+                        reverse_end = max(0, total_count - 1 - start) if start < total_count else 0
+                    
+                    # Récupérer les éléments dans l'ordre inverse
+                    if reverse_start <= reverse_end:
+                        temp_results = await redis.lrange(result_list_key, reverse_start, reverse_end)
+                        results_json = list(reversed(temp_results))
+
+        results = []
+        for result_json in results_json:
+            try:
+                message = json.loads(result_json)
+                result = await JobResult.from_redis_message(message, redis)
+                results.append(result)
+            except Exception as e:
+                logger.error("Error parsing JSON message from date-sorted list", exc_info=True)
+                continue
+
+        return results
 
     async def get_frame(self, job_id: str, frame_uuid: str) -> Optional[bytes]:
         redis = await self.__get_redis()
@@ -209,6 +231,7 @@ class ResultsStore:
 
         # Clés Redis pour cette tâche
         result_list_key = self.__get_result_list_key(result.job_id)
+        result_sort_key = self.__get_result_sort_key(result.job_id)
         channel_name = self.__get_channel_name(result.job_id)
 
         # Stocker les métadonnées du résultat (sans la frame)
@@ -222,10 +245,21 @@ class ResultsStore:
         # Définir une TTL pour que les données expirent après 5 minutes
         await redis.expire(channel_name, 5 * 60)
 
-        # Conserver les métadonnées dans la liste existante pour l'historique
+        # Conserver les métadonnées dans la liste existante pour l'historique (tri par date)
         if result.frame_uuid:
             await redis.lpush(result_list_key, json.dumps(result_data))
             await redis.ltrim(result_list_key, 0, self.max_results - 1)
+
+            # Ajouter aussi dans la liste triée par score si le score est présent
+            score = result.metadata.get('score')
+            if score is not None:
+                try:
+                    # Utiliser un sorted set pour maintenir l'ordre par score
+                    await redis.zadd(result_sort_key, {json.dumps(result_data): float(score)})
+                    # Limiter le nombre d'éléments dans le sorted set
+                    await redis.zremrangebyrank(result_sort_key, 0, -(self.max_results + 1))
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Invalid score value for sorting: {score}, error: {e}")
 
         if result.frame and result.frame_uuid:
             frame_key = self.__get_frame_key(result.job_id, result.frame_uuid)
@@ -308,9 +342,14 @@ class ResultsStore:
         redis = await self.__get_redis()
         deleted_keys = 0
 
-        # Supprimer la liste des résultats
+        # Supprimer la liste des résultats (tri par date)
         result_list_key = self.__get_result_list_key(job_id)
         deleted = await redis.delete(result_list_key)
+        deleted_keys += deleted
+
+        # Supprimer la liste des résultats (triée par score)
+        result_sort_key = self.__get_result_sort_key(job_id)
+        deleted = await redis.delete(result_sort_key)
         deleted_keys += deleted
 
         # Supprimer toutes les frames associées
@@ -380,6 +419,19 @@ class ResultsStore:
         except Exception as e:
             logger.error(f"Erreur lors de la lecture du stream de résultats: {e}")
             logger.error(traceback.format_exc())
+
+    async def get_all_job_ids(self) -> List[str]:
+        redis = await self.__get_redis()
+        keys = await redis.keys("task:*:results:date")
+        job_ids = []
+        
+        for key in keys:
+            key_str = key.decode('utf-8') if isinstance(key, bytes) else str(key)
+            parts = key_str.split(':')
+            if len(parts) >= 2:
+                job_ids.append(parts[1])
+                
+        return job_ids
 
 results_store = ResultsStore()
 
