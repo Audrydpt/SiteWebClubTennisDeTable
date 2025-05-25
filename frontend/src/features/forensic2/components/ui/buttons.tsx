@@ -1,35 +1,29 @@
 /* eslint-disable @typescript-eslint/no-unused-vars,react/no-unused-prop-types */
-import { Trash2 } from 'lucide-react';
+import { SortAsc, SortDesc, Trash2 } from 'lucide-react';
 
 import DeleteConfirmation from '@/components/confirm-delete';
 import { Button } from '@/components/ui/button';
 
-import useJobs from '../../hooks/use-jobs';
+import { useJobsContext } from '../../providers/job-context';
+import { useSearchContext } from '../../providers/search-context';
 
 export type SortType = 'score' | 'date';
 
-interface SortButtonsProps {
-  sortType?: SortType;
-  setSortType?: (type: SortType) => void;
-  sortOrder?: 'asc' | 'desc';
-  toggleSortOrder?: () => void;
-  clearResults?: () => void;
-}
+export function SortButtons() {
+  const { deleteAllTabs } = useJobsContext();
+  const { order, setOrder, setCurrentPage } = useSearchContext();
 
-export function SortButtons({
-  sortType = 'score',
-  setSortType = () => {},
-  /* sortOrder,
-  toggleSortOrder, */
-  clearResults = () => {},
-}: SortButtonsProps) {
-  // Fonction pour gérer le reset complet
+  const handleSortBy = (by: 'score' | 'date') => {
+    setOrder({ ...order, by });
+    setCurrentPage(1);
+  };
 
-  const { deleteAllTasks } = useJobs();
-
-  const handleReset = () => {
-    deleteAllTasks();
-    clearResults();
+  const toggleSortOrder = () => {
+    setOrder({
+      ...order,
+      direction: order.direction === 'desc' ? 'asc' : 'desc',
+    });
+    setCurrentPage(1);
   };
 
   return (
@@ -37,40 +31,41 @@ export function SortButtons({
       {/* Contrôles de tri */}
       <div className="flex items-center gap-1 mr-2">
         <Button
-          variant={sortType === 'score' ? 'default' : 'outline'}
+          variant={order.by === 'score' ? 'default' : 'outline'}
           size="sm"
-          onClick={() => setSortType('score')}
+          onClick={() => handleSortBy('score')}
         >
           Score
         </Button>
         <Button
-          variant={sortType === 'date' ? 'default' : 'outline'}
+          variant={order.by === 'date' ? 'default' : 'outline'}
           size="sm"
-          onClick={() => setSortType('date')}
+          onClick={() => handleSortBy('date')}
         >
           Date
         </Button>
       </div>
 
-      {/* Bouton pour basculer l'ordre 
+      {/* Bouton pour basculer l'ordre */}
       <Button
         variant="outline"
         size="icon"
         onClick={toggleSortOrder}
         className="h-8 w-8"
-        title={sortOrder === 'desc' ? 'Ordre décroissant' : 'Ordre croissant'}
+        title={
+          order.direction === 'desc' ? 'Ordre décroissant' : 'Ordre croissant'
+        }
       >
-        {sortOrder === 'desc' ? (
+        {order.direction === 'desc' ? (
           <SortDesc className="h-4 w-4" />
         ) : (
           <SortAsc className="h-4 w-4" />
         )}
       </Button>
-      */}
 
       {/* Bouton pour vider les résultats avec confirmation */}
       <DeleteConfirmation
-        onDelete={handleReset}
+        onDelete={deleteAllTabs}
         title="Supprimer tous les résultats"
         description="Êtes-vous sûr de vouloir supprimer tous les onglets et résultats ? Cette action est irréversible."
         confirmText="Supprimer tout"

@@ -1,0 +1,118 @@
+{
+  "typeOptions": [
+    { "value": "person", "label": "Person" },
+    { "value": "vehicle", "label": "Vehicle" }
+  ],
+  "genderOptions": [
+    { "value": "male", "label": "Male" },
+    { "value": "female", "label": "Female" }
+  ],
+  "ageOptions": [
+    { "value": "child", "label": "Child" },
+    { "value": "adult", "label": "Adult" },
+    { "value": "senior", "label": "Senior" }
+  ],
+  "buildOptions": [
+    { "value": "slim", "label": "Slim" },
+    { "value": "average", "label": "Average" },
+    { "value": "athletic", "label": "Athletic" },
+    { "value": "heavy", "label": "Heavy" }
+  ],
+  "heightOptions": [
+    { "value": "short", "label": "Short" },
+    { "value": "average", "label": "Average" },
+    { "value": "tall", "label": "Tall" }
+  ],
+  "hairLengthOptions": [
+    { "value": "short", "label": "Short" },
+    { "value": "medium", "label": "Medium" },
+    { "value": "long", "label": "Long" },
+    { "value": "none", "label": "None" }
+  ],
+  "hairStyleOptions": [
+    { "value": "straight", "label": "Straight" },
+    { "value": "wavy", "label": "Wavy" },
+    { "value": "curly", "label": "Curly" }
+  ],
+  "topTypeOptions": [
+    { "value": "shortSleeve", "label": "Short Sleeve" },
+    { "value": "longSleeve", "label": "Long Sleeve" },
+    { "value": "upperStride", "label": "Stride" },
+    { "value": "upperLogo", "label": "Logo" },
+    { "value": "upperPlaid", "label": "Plaid" },
+    { "value": "upperSplice", "label": "Splice" }
+  ],
+  "bottomTypeOptions": [
+    { "value": "lowerStripe", "label": "Stripe" },
+    { "value": "lowerPattern", "label": "Pattern" },
+    { "value": "longCoat", "label": "Long Coat" },
+    { "value": "trousers", "label": "Trousers" },
+    { "value": "shorts", "label": "Shorts" },
+    { "value": "skirtOrDress", "label": "Skirt or Dress" }
+  ],
+  "sizeOptions": [
+    { "value": "small", "label": "Small" },
+    { "value": "medium", "label": "Medium" },
+    { "value": "large", "label": "Large" }
+  ],
+  "toleranceOptions": [
+    { "value": "low", "label": "Low" },
+    { "value": "medium", "label": "Medium" },
+    { "value": "high", "label": "High" }
+  ],
+  "vehicleTypes": [
+    { "value": "car", "label": "Car" },
+    { "value": "bus", "label": "Bus" },
+    { "value": "heavy truck", "label": "Heavy Truck" },
+    { "value": "light truck", "label": "Light Truck" },
+    { "value": "motorbike", "label": "Motorbike" },
+    { "value": "van", "label": "Van" },
+    { "value": "pickup", "label": "Pickup" },
+    { "value": "caravan", "label": "Caravan" },
+    { "value": "trailer", "label": "Trailer" },
+    { "value": "industrial", "label": "Industrial" },
+    { "value": "military", "label": "Military" },
+    { "value": "bike", "label": "Bike" }
+  ],
+  "distinctiveItems": {
+    "person": [
+      { "id": "bag", "label": "Bag/Luggage" },
+      { "id": "hat", "label": "Headwear" },
+      { "id": "glasses", "label": "Glasses" },
+      { "id": "mask", "label": "Mask/Balaclava" }
+    ],
+    "vehicle": [
+      { "id": "damaged", "label": "Visible Damage" },
+      { "id": "modified", "label": "Modifications" },
+      { "id": "tinted", "label": "Tinted Windows" },
+      { "id": "roof_rack", "label": "Roof Rack/Box" }
+    ]
+  },
+  "contextualItems": {
+    "person": [
+      { "id": "group", "label": "In Group" },
+      { "id": "running", "label": "Running/Fleeing" },
+      { "id": "vehicle", "label": "With Vehicle" },
+      { "id": "suspicious", "label": "Suspicious Behavior" }
+    ],
+    "vehicle": [
+      { "id": "speeding", "label": "Excessive Speed" },
+      { "id": "suspicious_behavior", "label": "Suspicious Behavior" },
+      { "id": "multiple_occupants", "label": "Multiple Occupants" }
+    ]
+  },
+  "colors": [
+    { "name": "gray", "value": "#808080", "label": "Gray" },
+    { "name": "black", "value": "#000000", "label": "Black" },
+    { "name": "white", "value": "#FFFFFF", "label": "White" },
+    { "name": "red", "value": "#FF0000", "label": "Red" },
+    { "name": "blue", "value": "#0000FF", "label": "Blue" },
+    { "name": "green", "value": "#008000", "label": "Green" },
+    { "name": "cyan", "value": "#00FFFF", "label": "Cyan" },
+    { "name": "orange", "value": "#FFA500", "label": "Orange" },
+    { "name": "violet", "value": "#8F00FF", "label": "Violet" },
+    { "name": "yellow", "value": "#FFFF00", "label": "Yellow" },
+    { "name": "brown", "value": "#964B00", "label": "Brown" },
+    { "name": "pink", "value": "#FFC0CB", "label": "Pink" }
+  ]
+}

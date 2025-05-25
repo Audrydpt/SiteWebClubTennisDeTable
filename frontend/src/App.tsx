@@ -56,6 +56,10 @@ const ForensicMain = lazyLoadFeature(
   'forensic',
   () => import('./features/forensic/ForensicMain')
 );
+const Forensic = lazyLoadFeature(
+  'forensic',
+  () => import('./features/forensic2/ForensicMain')
+);
 const Configuration = lazyLoadFeature(
   'forensic',
   () => import('./features/forensic/Configuration')
@@ -89,6 +93,12 @@ export default function App() {
             <Route path="/forensic">
               <Route index element={<ForensicMain />} />
               <Route path=":taskId/*" element={<ForensicMain />} />
+            </Route>
+          </Route>
+          <Route element={<ProtectedRoute role={UserPrivileges.Operator} />}>
+            <Route path="/forensic2">
+              <Route index element={<Forensic />} />
+              <Route path=":taskId/*" element={<Forensic />} />
             </Route>
           </Route>
         </Route>

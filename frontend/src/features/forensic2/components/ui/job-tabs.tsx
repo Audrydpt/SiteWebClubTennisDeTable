@@ -1,6 +1,6 @@
 import { Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import DeleteConfirmation from '@/components/confirm-delete';
 import Loading from '@/components/loading';
@@ -27,7 +27,8 @@ export default function JobTabs({
 }: JobTabsProps) {
   const MAX_TABS = 5;
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const { tasks: tabJobs, activeTabIndex, deleteTab } = useJobs();
+  const { tasks: tabJobs, deleteTab } = useJobs();
+  const { taskId: activeTabIndex } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {

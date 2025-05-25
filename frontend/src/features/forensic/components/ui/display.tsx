@@ -51,15 +51,15 @@ const extractCameraInfo = (cameraId: string | undefined) => {
 };
 
 interface DisplayProps {
-  results: ForensicResult[];
-  isSearching: boolean;
-  progress: number | null;
-  sortType: SortType;
-  sortOrder: 'asc' | 'desc';
+  results?: ForensicResult[];
+  isSearching?: boolean;
+  progress?: number | null;
+  sortType?: SortType;
+  sortOrder?: 'asc' | 'desc';
   isTabLoading?: boolean;
-  currentPage: number;
-  onPageChange: (page: number) => void;
-  paginationInfo: {
+  currentPage?: number;
+  onPageChange?: (page: number) => void;
+  paginationInfo?: {
     currentPage: number;
     pageSize: number;
     totalPages: number;
@@ -68,15 +68,20 @@ interface DisplayProps {
 }
 
 export default function Display({
-  results,
-  isSearching,
-  progress,
-  sortType,
-  sortOrder,
+  results = [],
+  isSearching = false,
+  progress = 0,
+  sortType = 'score',
+  sortOrder = 'desc',
   isTabLoading = false,
-  currentPage,
-  onPageChange,
-  paginationInfo,
+  currentPage = 1,
+  onPageChange = () => {},
+  paginationInfo = {
+    currentPage: 1,
+    pageSize: Number(process.env.FORENSIC_PAGINATION_ITEMS) || 12,
+    totalPages: 1,
+    total: 0,
+  },
 }: DisplayProps) {
   // Generate stable skeleton IDs
   const skeletonIds = useMemo(

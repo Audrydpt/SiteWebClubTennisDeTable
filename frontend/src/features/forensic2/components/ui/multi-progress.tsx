@@ -4,8 +4,8 @@ import { useMemo } from 'react';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Progress } from '@/components/ui/progress';
 
-import { calculateTimeRemaining } from '../../lib/estimation/estimation';
-import { SourceProgress } from '../../lib/types';
+import { calculateTimeRemaining } from '@/features/forensic/lib/estimation/estimation';
+import { SourceProgress } from '@/features/forensic/lib/types';
 
 interface MultiProgressProps {
   sourceProgress?: SourceProgress[];

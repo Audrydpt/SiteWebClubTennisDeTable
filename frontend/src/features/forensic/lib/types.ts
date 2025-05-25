@@ -4,6 +4,7 @@ import { z } from 'zod';
 export interface ForensicResult {
   id: string;
   imageData: string;
+  frame_uuid?: string;
   timestamp: string;
   score: number;
   progress?: number;
