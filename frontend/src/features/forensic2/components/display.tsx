@@ -183,7 +183,7 @@ function RenderImage(result: ForensicResult) {
           </div>
           <div className="p-4">
             <div className="text-xs text-muted-foreground">
-              {DateTime.fromISO(timestamp).toLocaleString(
+              {DateTime.fromJSDate(timestamp).toLocaleString(
                 DateTime.DATETIME_SHORT
               )}
             </div>
@@ -200,11 +200,11 @@ function RenderImage(result: ForensicResult) {
               onClick={(e) => {
                 e.stopPropagation();
 
-                const fromTimestamp = DateTime.fromISO(timestamp)
+                const fromTimestamp = DateTime.fromJSDate(timestamp)
                   .minus({ seconds: 5 })
                   .toUTC()
                   .toISO({ includeOffset: false });
-                const toTimestamp = DateTime.fromISO(timestamp)
+                const toTimestamp = DateTime.fromJSDate(timestamp)
                   .plus({ seconds: 10 })
                   .toUTC()
                   .toISO({ includeOffset: false });
@@ -244,7 +244,7 @@ function RenderImage(result: ForensicResult) {
 
                 <div className="text-muted-foreground">Timestamp:</div>
                 <div>
-                  {DateTime.fromISO(timestamp).toLocaleString(
+                  {DateTime.fromJSDate(timestamp).toLocaleString(
                     DateTime.DATETIME_SHORT
                   )}
                 </div>

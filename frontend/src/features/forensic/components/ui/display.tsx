@@ -183,11 +183,11 @@ export default function Display({
                 onClick={(e) => {
                   e.stopPropagation();
 
-                  const fromTimestamp = DateTime.fromISO(result.timestamp)
+                  const fromTimestamp = DateTime.fromJSDate(result.timestamp)
                     .minus({ seconds: 5 })
                     .toUTC()
                     .toISO({ includeOffset: false });
-                  const toTimestamp = DateTime.fromISO(result.timestamp)
+                  const toTimestamp = DateTime.fromJSDate(result.timestamp)
                     .plus({ seconds: 10 })
                     .toUTC()
                     .toISO({ includeOffset: false });

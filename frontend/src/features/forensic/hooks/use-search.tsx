@@ -363,9 +363,7 @@ export default function useSearch() {
                     const newResult: ForensicResult = {
                       id: data.frame_uuid,
                       imageData: imageUrl,
-                      timestamp: data.timestamp
-                        ? new Date(data.timestamp).toISOString()
-                        : new Date().toISOString(),
+                      timestamp: new Date(data.timestamp),
                       score: data.score ?? 0,
                       progress: data.progress ?? metadataQueue.current.progress,
                       attributes: data.attributes ?? {},

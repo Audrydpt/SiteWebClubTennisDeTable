@@ -5,7 +5,7 @@ export interface ForensicResult {
   id: string;
   imageData: string;
   frame_uuid?: string;
-  timestamp: string;
+  timestamp: Date;
   score: number;
   progress?: number;
   cameraId: string;

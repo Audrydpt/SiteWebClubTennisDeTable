@@ -622,7 +622,6 @@ class FastAPIServer:
                 if result["success"]:
                     return {
                         "status": "ok",
-                        "message": result["message"],
                         "cancelled_tasks": cancelled_count
                     }
                 else:
