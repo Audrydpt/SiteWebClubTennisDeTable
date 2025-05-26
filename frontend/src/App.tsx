@@ -58,7 +58,7 @@ const ForensicOld = lazyLoadFeature(
 );
 const ForensicNew = lazyLoadFeature(
   'forensic',
-  () => import('./features/forensic2/ForensicMain')
+  () => import('./features/forensic/ForensicMain')
 );
 const Camera = lazyLoadFeature(
   'camera',
