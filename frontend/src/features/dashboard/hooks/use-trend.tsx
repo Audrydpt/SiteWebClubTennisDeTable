@@ -59,7 +59,7 @@ export default function useTrendAPI(
         queryGlobalTrend,
       ]);
 
-      const data = 1 - actualTrend.global.avg / globalTrend.global.avg;
+      const data = 1 - globalTrend.global.avg / actualTrend.global.avg;
       return Number(data);
     },
   });
