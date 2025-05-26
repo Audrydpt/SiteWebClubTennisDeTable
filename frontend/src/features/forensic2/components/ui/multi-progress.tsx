@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Progress } from '@/components/ui/progress';
 
-import { calculateTimeRemaining } from '@/features/forensic/lib/estimation/estimation';
+import { calculateTimeRemaining } from '../../lib/estimation/estimation';
 import { useSearchContext } from '../../providers/search-context';
 
 // Helper to extract camera name and IP from camera ID

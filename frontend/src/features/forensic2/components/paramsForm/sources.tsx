@@ -19,10 +19,9 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area.tsx';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
 
-import { useForensicForm } from '@/features/forensic/lib/provider/forensic-form-context.tsx';
-import { ForensicFormValues } from '@/features/forensic/lib/types.ts';
-
 import useSources from '../../hooks/use-sources.tsx';
+import { ForensicFormValues } from '../../lib/types.ts';
+import { useForensicForm } from '../../providers/forensic-form-context.tsx';
 
 interface SourcesProps {
   useScrollArea?: boolean;

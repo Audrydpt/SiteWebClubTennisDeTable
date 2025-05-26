@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select.tsx';
 
-import { useForensicForm } from '@/features/forensic/lib/provider/forensic-form-context.tsx';
+import { useForensicForm } from '../../providers/forensic-form-context.tsx';
 
 const typeOptions = [
   { value: 'vehicle', label: 'Véhicule' },

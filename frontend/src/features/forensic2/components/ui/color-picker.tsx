@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
-import { ForensicFormValues } from '@/features/forensic/lib/types';
+import { ForensicFormValues } from '../../lib/types';
 
 interface Color {
   name: string;

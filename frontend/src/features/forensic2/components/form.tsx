@@ -1,8 +1,7 @@
 import { Form } from '@/components/ui/form';
 
-import { useForensicForm } from '@/features/forensic/lib/provider/forensic-form-context';
-import { ForensicFormValues } from '@/features/forensic/lib/types';
-
+import { ForensicFormValues } from '../lib/types';
+import { useForensicForm } from '../providers/forensic-form-context.tsx';
 import Params from './ui/params';
 import Submit from './ui/submit';
 

@@ -46,9 +46,9 @@ export default function useJobs() {
   const setActiveJobId = (jobId?: string) => {
     if (jobId === activeTabIndex) return;
     if (jobId) {
-      navigate(`/forensic/${jobId}`);
+      navigate(`/forensic.old/${jobId}`);
     } else {
-      navigate('/forensic');
+      navigate('/forensic.old');
     }
   };
 
@@ -255,7 +255,7 @@ export default function useJobs() {
       queryClient.invalidateQueries({ queryKey: ['forensicTasks'] });
 
       if (activeTabIndex) {
-        navigate('/forensic');
+        navigate('/forensic.old');
       }
     },
   });

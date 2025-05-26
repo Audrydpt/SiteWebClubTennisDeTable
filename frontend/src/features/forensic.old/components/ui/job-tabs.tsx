@@ -65,7 +65,7 @@ export default function JobTabs({
     if (onTabChange) {
       onTabChange(value);
     } else {
-      navigate(`/forensic2/${value}`);
+      navigate(`/forensic.old/${value}`);
     }
   };
 

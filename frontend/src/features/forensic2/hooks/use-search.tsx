@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { ForensicResult, SourceProgress } from '@/features/forensic/lib/types';
+import { ForensicResult, SourceProgress } from '../lib/types';
 import { useJobsContext } from '../providers/job-context';
 import { ForensicTaskStatus, isForensicTaskCompleted } from './use-jobs';
 

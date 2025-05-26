@@ -52,17 +52,13 @@ const ForensicSettings = lazyLoadFeature(
   'settings',
   () => import('./features/settings/components/forensic-settings')
 );
-const ForensicMain = lazyLoadFeature(
+const ForensicOld = lazyLoadFeature(
   'forensic',
-  () => import('./features/forensic/ForensicMain')
+  () => import('./features/forensic.old/ForensicMain')
 );
-const Forensic = lazyLoadFeature(
+const ForensicNew = lazyLoadFeature(
   'forensic',
   () => import('./features/forensic2/ForensicMain')
-);
-const Configuration = lazyLoadFeature(
-  'forensic',
-  () => import('./features/forensic/Configuration')
 );
 const Camera = lazyLoadFeature(
   'camera',
@@ -91,14 +87,14 @@ export default function App() {
         >
           <Route element={<ProtectedRoute role={UserPrivileges.Operator} />}>
             <Route path="/forensic">
-              <Route index element={<ForensicMain />} />
-              <Route path=":taskId/*" element={<ForensicMain />} />
+              <Route index element={<ForensicNew />} />
+              <Route path=":taskId/*" element={<ForensicNew />} />
             </Route>
           </Route>
           <Route element={<ProtectedRoute role={UserPrivileges.Operator} />}>
-            <Route path="/forensic2">
-              <Route index element={<Forensic />} />
-              <Route path=":taskId/*" element={<Forensic />} />
+            <Route path="/forensic.old">
+              <Route index element={<ForensicOld />} />
+              <Route path=":taskId/*" element={<ForensicOld />} />
             </Route>
           </Route>
         </Route>
@@ -136,7 +132,6 @@ export default function App() {
               <Route path="retention" element={<Retention />} />
               <Route path="forensicSettings" element={<ForensicSettings />} />
             </Route>
-            <Route path="forensic/config" element={<Configuration />} />
 
             <Route path="/theme" element={<Theme />} />
           </Route>

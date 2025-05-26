@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CalendarIcon, Clock } from 'lucide-react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useWatch } from 'react-hook-form';
 
 import {
@@ -33,8 +32,8 @@ import {
 } from '@/components/ui/select.tsx';
 import { cn } from '@/lib/utils.ts';
 
-import { useForensicForm } from '@/features/forensic/lib/provider/forensic-form-context.tsx';
-import { ForensicFormValues } from '@/features/forensic/lib/types.ts';
+import { ForensicFormValues } from '../../lib/types.ts';
+import { useForensicForm } from '../../providers/forensic-form-context.tsx';
 
 function DateTimePicker({
   isStart,

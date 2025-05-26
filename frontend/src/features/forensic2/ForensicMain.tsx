@@ -4,13 +4,12 @@ import { Route, Routes } from 'react-router-dom';
 import Header from '@/components/header';
 import { Card, CardContent } from '@/components/ui/card';
 
-import ForensicFormProvider from '../forensic/lib/provider/forensic-form-provider';
-
 import Display from './components/display';
 import ForensicForm from './components/form';
 import { SortButtons } from './components/ui/buttons';
 import JobTabs from './components/ui/job-tabs';
 import MultiProgress from './components/ui/multi-progress';
+import ForensicFormProvider from './providers/forensic-form-provider';
 import { useJobsContext } from './providers/job-context';
 import JobsProvider from './providers/job-provider';
 import SearchProvider from './providers/search-provider';

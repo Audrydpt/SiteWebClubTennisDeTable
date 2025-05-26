@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/accordion.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { ScrollArea } from '@/components/ui/scroll-area.tsx';
-
 import {
   Select,
   SelectContent,
@@ -17,12 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.tsx';
-import { useForensicForm } from '@/features/forensic/lib/provider/forensic-form-context.tsx';
-import {
-  ForensicFormValues,
-  PersonForensicFormValues,
-  VehicleForensicFormValues,
-} from '@/features/forensic/lib/types.ts';
+
 import {
   ageOptions,
   buildOptions,
@@ -34,6 +28,12 @@ import {
   toleranceOptions,
   vehicleTypes,
 } from '../../lib/json/form-config.ts';
+import {
+  ForensicFormValues,
+  PersonForensicFormValues,
+  VehicleForensicFormValues,
+} from '../../lib/types.ts';
+import { useForensicForm } from '../../providers/forensic-form-context.tsx';
 import ColorPicker from '../ui/color-picker.tsx';
 
 export default function Appearances() {

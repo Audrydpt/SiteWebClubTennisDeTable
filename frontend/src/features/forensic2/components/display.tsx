@@ -5,9 +5,6 @@ import { useParams } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-
-import { ForensicResult } from '@/features/forensic/lib/types';
-
 import {
   Pagination,
   PaginationContent,
@@ -17,6 +14,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
+
+import { ForensicResult } from '../lib/types';
 import { useSearchContext } from '../providers/search-context';
 
 const getScoreBackgroundColor = (score: number) => {

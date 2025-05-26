@@ -3,11 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import {
-  createSearchFormData,
-  formatQuery,
-} from '@/features/forensic/lib/format-query';
-import { ForensicFormValues } from '@/features/forensic/lib/types';
+import { createSearchFormData, formatQuery } from '../lib/format-query';
+import { ForensicFormValues } from '../lib/types';
 
 export enum ForensicTaskStatus {
   PENDING = 'PENDING', // Tâche créée, pas encore préparée pour l'exécution
@@ -53,9 +50,9 @@ export default function useJobs() {
   const setActiveJobId = (jobId?: string) => {
     if (jobId === activeTabIndex) return;
     if (jobId) {
-      navigate(`/forensic2/${jobId}`);
+      navigate(`/forensic/${jobId}`);
     } else {
-      navigate('/forensic2');
+      navigate('/forensic');
     }
   };
 
