@@ -29,13 +29,19 @@ export default defineConfig(({ mode }) => {
     },
     test: {
       environment: 'jsdom',
-      exclude: ['**/node_modules/**', '**/dist/**', '**/src/components/ui/**'],
+      exclude: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/*.old/**',
+        '**/src/components/ui/**',
+      ],
       globals: true,
       setupFiles: './vitest-setup.ts',
       coverage: {
         provider: 'v8',
         reporter: ['json-summary', 'text-summary', 'html'],
         reportsDirectory: './coverage',
+        exclude: ['**/node_modules/**', '**/dist/**', '**/*.old/**'],
       },
     },
     server: {
