@@ -5,7 +5,7 @@ import { useParams } from 'react-router-dom';
 
 import { ForensicResult, SourceProgress } from '@/features/forensic/lib/types';
 import { useJobsContext } from '../providers/job-context';
-import { isForensicTaskCompleted } from './use-jobs';
+import { ForensicTaskStatus, isForensicTaskCompleted } from './use-jobs';
 
 interface PaginatedResponse {
   results: ForensicResult[];
@@ -19,7 +19,7 @@ interface PaginatedResponse {
 
 export default function useSearch() {
   const { taskId } = useParams();
-  const { getTaskById, loading: tasksLoading } = useJobsContext();
+  const { currentTaskStatus } = useJobsContext();
 
   const [order, setOrder] = useState<{
     by: 'score' | 'date';
@@ -31,16 +31,15 @@ export default function useSearch() {
   const [progress, setProgress] = useState<SourceProgress[]>([]);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const wsRef = useRef<WebSocket | null>(null);
+  const wsRef = useRef<{ ws?: WebSocket; taskId?: string } | null>(null);
+  const [wsCounter, setWsCounter] = useState(0);
 
   // page data
   const { data, isLoading, error } = useQuery({
     queryKey: ['forensic-results', taskId, currentPage, order],
     enabled: !!taskId,
     refetchInterval: () => {
-      const task = getTaskById(taskId);
-      if (!task) return false;
-      if (isForensicTaskCompleted(task.status)) return false;
+      if (isForensicTaskCompleted(currentTaskStatus)) return false;
       return 1000;
     },
     // staleTime: 1000,
@@ -71,31 +70,40 @@ export default function useSearch() {
   });
 
   const updateResults = (newResult: ForensicResult) => {
-    if (data) {
-      data.results.push(newResult);
-    }
+    // console.log('updateResults', newResult);
   };
 
   // on task changed, close the websocket and open a new one
   useEffect(() => {
-    setCurrentPage(1);
-    setProgress([]);
-    setOrder({ by: 'score', direction: 'desc' });
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
+    // if the task is the same, do nothing
+    if (wsRef.current?.taskId === taskId) {
+      console.log('Task is the same, do nothing');
+      return;
     }
 
-    const task = getTaskById(taskId);
-    if (!task) return;
-    if (isForensicTaskCompleted(task.status)) return;
+    // the task changed, close the previous websocket
+    if (wsRef.current) {
+      wsRef.current.ws?.close();
+      wsRef.current = null;
+      setCurrentPage(1);
+      setProgress([]);
+      setOrder({ by: 'score', direction: 'desc' });
+      console.log('WebSocket closed and reset');
+    }
+
+    if (currentTaskStatus === ForensicTaskStatus.UNKNOWN) {
+      console.log('Task is unknown, do nothing');
+      return;
+    }
+    if (isForensicTaskCompleted(currentTaskStatus)) {
+      console.log('Task is completed, do nothing');
+      return;
+    }
 
     const ws = new WebSocket(`${process.env.MAIN_API_URL}/forensics/${taskId}`);
-
     ws.onopen = () => {
       console.log('WebSocket connected');
     };
-
     ws.onmessage = (event) => {
       if (typeof event.data === 'string') {
         const json = JSON.parse(event.data);
@@ -129,14 +137,22 @@ export default function useSearch() {
         }
       }
     };
+    ws.onclose = (event) => {
+      console.log('WebSocket closed', event, wsRef.current?.taskId, taskId);
 
-    ws.onerror = (event) => {
-      console.error('on error', event);
+      if (wsRef.current?.taskId === taskId) {
+        console.log('Something went wrong, the taskId is the same');
+        console.log('I guess I need to restart the websocket');
+        wsRef.current = null;
+        setWsCounter((prev) => prev + 1);
+      } else {
+        console.log("I guess it's a normal close, do nothing");
+      }
     };
 
-    wsRef.current = ws;
+    wsRef.current = { ws, taskId };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tasksLoading, taskId]);
+  }, [taskId, currentTaskStatus, wsCounter]);
 
   return {
     results: data?.results || [],

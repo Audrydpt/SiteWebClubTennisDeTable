@@ -17,6 +17,7 @@ export enum ForensicTaskStatus {
   FAILURE = 'FAILURE', // Tâche échouée
   REVOKED = 'REVOKED', // Tâche annulée
   RETRY = 'RETRY', // Tâche en cours de nouvelle tentative après échec
+  UNKNOWN = 'UNKNOWN', // Tâche inconnue
 }
 export function isForensicTaskCompleted(status: ForensicTaskStatus): boolean {
   return (
@@ -95,7 +96,7 @@ export default function useJobs() {
         return [];
       }
     },
-    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchInterval: 10_000, // Refetch every 10 seconds
   });
 
   // Update tasks state when query data changes
@@ -210,7 +211,6 @@ export default function useJobs() {
       setError("Impossible d'ajouter un nouvel onglet");
     },
     onSettled: () => {
-      // Always refetch after error or success to ensure we have the correct server state
       queryClient.invalidateQueries({ queryKey: ['forensicTasks'] });
     },
   });
@@ -242,8 +242,7 @@ export default function useJobs() {
 
       // Set tasks and tabJobs to empty
       setTasks([]);
-
-      console.log('Tâches supprimées optimistiquement');
+      setActiveJobId();
 
       // Return a context with the previous value
       return { previousTasks };
@@ -259,10 +258,6 @@ export default function useJobs() {
     onSettled: () => {
       // Always refetch after error or success to ensure we have the correct server state
       queryClient.invalidateQueries({ queryKey: ['forensicTasks'] });
-
-      if (activeTabIndex) {
-        setActiveJobId();
-      }
     },
   });
 
@@ -340,7 +335,6 @@ export default function useJobs() {
       setError(`Impossible de supprimer la tâche ${context?.tabIndex}`);
     },
     onSettled: () => {
-      // Always refetch to ensure we have the correct server state
       queryClient.invalidateQueries({ queryKey: ['forensicTasks'] });
     },
   });
@@ -355,7 +349,8 @@ export default function useJobs() {
     tasks,
     loading,
     error,
-    getTaskById,
+    currentTaskStatus:
+      getTaskById(activeTabIndex)?.status || ForensicTaskStatus.UNKNOWN,
     addNewTab,
     deleteTab,
     deleteAllTabs,
