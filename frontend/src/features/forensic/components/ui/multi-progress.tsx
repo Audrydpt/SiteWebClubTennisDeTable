@@ -6,11 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Progress } from '@/components/ui/progress';
 
-import { calculateTimeRemaining } from '../../lib/estimation/estimation';
+import { calculateTimeRemaining } from '../../lib/estimation';
 import { useSearchContext } from '../../providers/search-context';
 
 // Helper to extract camera name and IP from camera ID
 const extractCameraInfo = (cameraId: string) => {
+  // Handle undefined or null cameraId
+  if (!cameraId) {
+    return {
+      name: 'Caméra inconnue',
+      ip: 'IP inconnue',
+    };
+  }
+
   // If cameraId has a structure like "Camera Name (192.168.1.1)"
   const match = cameraId.match(/^(.+?)\s*\(([^)]+)\)$/);
   if (match) {
@@ -30,18 +38,19 @@ const extractCameraInfo = (cameraId: string) => {
 export default function MultiProgress() {
   const [showSourceDetails, setShowSourceDetails] = useState(false);
   const { progress: sourceProgress } = useSearchContext();
+  const sourceProgressArray = Object.values(sourceProgress);
   const timeEstimates = useMemo(
-    () => calculateTimeRemaining(sourceProgress),
-    [sourceProgress]
+    () => calculateTimeRemaining(sourceProgressArray),
+    [sourceProgressArray]
   );
 
-  if (sourceProgress.length === 0) {
+  if (sourceProgressArray.length === 0) {
     return null;
   }
 
   const progress =
-    sourceProgress.reduce((acc, source) => acc + source.progress, 0) /
-    sourceProgress.length;
+    sourceProgressArray.reduce((acc, source) => acc + source.progress, 0) /
+    sourceProgressArray.length;
 
   return (
     <Collapsible
@@ -55,10 +64,13 @@ export default function MultiProgress() {
             Progression :{' '}
             <span className="text-primary font-semibold">
               {progress !== null ? progress.toFixed(0) : 0}%
+            </span>{' '}
+            <span className="text-sm font-medium text-muted">
+              - {timeEstimates.combined}
             </span>
           </p>
         </div>
-        {sourceProgress.length > 0 && (
+        {sourceProgressArray.length > 0 && (
           <Button
             variant="ghost"
             size="sm"
@@ -79,9 +91,13 @@ export default function MultiProgress() {
 
       <CollapsibleContent className="bg-muted rounded-lg p-3 transition-all">
         <div className="grid gap-3">
-          {sourceProgress.map((source) => {
+          {sourceProgressArray.map((source) => {
+            if (source.progress === 0 || source.progress === 100) {
+              return null;
+            }
+
             // Get camera name from the sourceId using extractCameraInfo
-            const cameraInfo = extractCameraInfo(source.sourceId);
+            const cameraInfo = extractCameraInfo(source.sourceId ?? '');
 
             return (
               <div

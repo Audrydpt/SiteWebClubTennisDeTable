@@ -35,7 +35,7 @@ jobs:
       - name: Check coverage threshold
         working-directory: ./frontend
         run: |
-          THRESHOLD=50
+          THRESHOLD=55
 
           # Get the lines coverage percentage from coverage-summary.json
           COVERAGE_TOTAL=$(cat coverage/coverage-summary.json | jq -r '.total.lines.pct')

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { createSearchFormData, formatQuery } from '../lib/format-query';
-import { ForensicFormValues } from '../lib/types';
+import { ForensicFormValues, SourceProgress } from '../lib/types';
 
 export enum ForensicTaskStatus {
   PENDING = 'PENDING', // Tâche créée, pas encore préparée pour l'exécution
@@ -26,11 +26,20 @@ export function isForensicTaskCompleted(status: ForensicTaskStatus): boolean {
 
 export interface ForensicTask {
   id: string;
-  status: ForensicTaskStatus;
-  type: string;
   created: string;
+  job_type: string;
+  type: string;
+  timerange: {
+    time_from: string;
+    time_to: string;
+  };
+  sources: string[];
+  appearance: object;
+  attributes: object;
+  context: object;
+  status: ForensicTaskStatus;
+  progress: Record<string, SourceProgress>;
   count: number;
-  size: number;
   total_pages: number;
 }
 
@@ -73,15 +82,7 @@ export default function useJobs() {
         }
         // Transform tasks into array
         const transformedTasks: ForensicTask[] = Object.entries(data.tasks).map(
-          ([id, task]) => ({
-            id,
-            status: task.status,
-            type: task.type,
-            created: task.created,
-            count: task.count || 0,
-            size: task.size || 0,
-            total_pages: task.total_pages || 0,
-          })
+          ([id, task]) => ({ ...task, id })
         );
         return transformedTasks.sort(
           (a, b) =>
@@ -178,9 +179,8 @@ export default function useJobs() {
         type: 'vehicle',
         created: new Date().toISOString(),
         count: 0,
-        size: 0,
         total_pages: 0,
-      };
+      } as ForensicTask;
 
       // Update the cache
       queryClient.setQueryData<ForensicTask[]>(
