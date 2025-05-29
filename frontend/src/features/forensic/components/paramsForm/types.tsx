@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import {
   AccordionContent,
   AccordionItem,
@@ -16,25 +18,23 @@ import {
 
 import { useForensicForm } from '../../providers/forensic-form-context.tsx';
 
-const typeOptions = [
-  { value: 'vehicle', label: 'Véhicule' },
-  { value: 'person', label: 'Personne' },
-];
+const typeOptions = [{ value: 'vehicle' }, { value: 'person' }];
 
 export default function Types() {
   const { formMethods, subjectType, setSubjectType } = useForensicForm();
   const { control } = formMethods;
+  const { t } = useTranslation();
 
   return (
     <AccordionItem value="type">
-      <AccordionTrigger>Type de suspect</AccordionTrigger>
+      <AccordionTrigger>{t('forensic:types.title')}</AccordionTrigger>
       <AccordionContent>
         <FormField
           control={control}
           name="type"
           render={() => (
             <FormItem>
-              <FormLabel>Type</FormLabel>
+              <FormLabel>{t('forensic:types.type')}</FormLabel>
               <Select
                 value={subjectType}
                 onValueChange={(value: 'vehicle' | 'person') => {
@@ -46,10 +46,10 @@ export default function Types() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel>Type</SelectLabel>
+                    <SelectLabel>{t('forensic:types.type')}</SelectLabel>
                     {typeOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        {t(`forensic:types.${option.value}`)}
                       </SelectItem>
                     ))}
                   </SelectGroup>

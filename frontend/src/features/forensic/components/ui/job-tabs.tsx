@@ -1,5 +1,6 @@
 import { Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import DeleteConfirmation from '@/components/confirm-delete';
@@ -25,6 +26,8 @@ export default function JobTabs({
   isLoading = false,
   setIsLoading,
 }: JobTabsProps) {
+  const { t } = useTranslation();
+
   const MAX_TABS = 5;
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { tasks: tabJobs, deleteTab } = useJobs();
@@ -88,7 +91,7 @@ export default function JobTabs({
         <TabsList className="grid w-full grid-cols-5">
           {displayTabs.map((tab, index) => {
             const hasJob = !!tab.id;
-            let tabDisplay = 'Nouvel onglet';
+            let tabDisplay = t('forensic:job-tabs.new_tab');
             let statusIndicator = null;
 
             if (hasJob) {
@@ -130,15 +133,17 @@ export default function JobTabs({
                     <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       <DeleteConfirmation
                         onDelete={() => deleteTab(tab.id || '')}
-                        title="Supprimer cette recherche"
-                        description="Êtes-vous sûr de vouloir supprimer cet onglet de recherche ?"
-                        confirmText="Supprimer"
+                        title={t('forensic:job-tabs.delete_tab')}
+                        description={t(
+                          'forensic:job-tabs.delete_tab_description'
+                        )}
+                        confirmText={t('forensic:job-tabs.delete_tab_confirm')}
                       >
                         <Button
                           variant="destructive"
                           className="h-4 w-4 p-0"
-                          title="Supprimer cette recherche"
-                          aria-label="Supprimer cette recherche"
+                          title={t('forensic:job-tabs.delete_tab')}
+                          aria-label={t('forensic:job-tabs.delete_tab')}
                         >
                           <Trash2 className="!h-3 !w-3" />
                         </Button>

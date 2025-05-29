@@ -1,6 +1,7 @@
 import { Eye } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import SearchInput from '@/components/search-input';
 import {
@@ -34,6 +35,7 @@ export default function Sources({
 }: SourcesProps) {
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const { t } = useTranslation();
 
   // Use the forensic form context instead of direct useFormContext
   const { formMethods } = useForensicForm();
@@ -97,7 +99,7 @@ export default function Sources({
       <SearchInput
         value={searchTerm}
         onChange={setSearchTerm}
-        placeholder="Rechercher une caméra..."
+        placeholder={t('forensic:sources.search_placeholder')}
         className="w-full mb-2"
       />
 
@@ -112,7 +114,7 @@ export default function Sources({
             onCheckedChange={toggleAllCameras}
           />
           <Label htmlFor="select-all" className="text-sm font-medium">
-            Sélectionner tout
+            {t('forensic:sources.select_all')}
           </Label>
         </div>
       )}
@@ -184,7 +186,7 @@ export default function Sources({
 
         {!isLoading && filteredCameras.length === 0 && (
           <div className="text-sm text-muted-foreground py-2">
-            Aucunes caméras trouvées
+            {t('forensic:sources.no_cameras_found')}
           </div>
         )}
       </div>
@@ -201,10 +203,10 @@ export default function Sources({
             <AccordionTrigger
               className={fieldState.error ? 'text-destructive font-medium' : ''}
             >
-              Sources vidéo
+              {t('forensic:sources.title')}
               {sources?.length > 0 && (
                 <span className="ml-2 text-xs text-muted-foreground">
-                  ({sources.length} sélectionnées)
+                  ({sources.length} {t('forensic:sources.selected')})
                 </span>
               )}
             </AccordionTrigger>
@@ -221,9 +223,7 @@ export default function Sources({
                   renderCameraList()
                 )}
                 {fieldState.error && (
-                  <FormMessage>
-                    Veuillez sélectionner au moins une source vidéo
-                  </FormMessage>
+                  <FormMessage>{t('forensic:sources.error')}</FormMessage>
                 )}
               </FormItem>
             </AccordionContent>

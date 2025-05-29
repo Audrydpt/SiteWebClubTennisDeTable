@@ -1,5 +1,6 @@
 import { AlertCircle, Download, Loader2, Search } from 'lucide-react';
 import { DateTime } from 'luxon';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -25,8 +26,7 @@ const getScoreBackgroundColor = (score: number) => {
 };
 
 function RenderPagination() {
-  const { currentPage, setCurrentPage, totalPages, isLoading } =
-    useSearchContext();
+  const { currentPage, setCurrentPage, totalPages } = useSearchContext();
 
   // Ne pas afficher la pagination s'il n'y a qu'une page
   if (totalPages <= 1) return null;
@@ -82,14 +82,12 @@ function RenderPagination() {
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                if (!isLoading && currentPage > 1) {
+                if (currentPage > 1) {
                   setCurrentPage(currentPage - 1);
                 }
               }}
               className={
-                currentPage === 1 || isLoading
-                  ? 'pointer-events-none text-muted'
-                  : ''
+                currentPage === 1 ? 'pointer-events-none text-muted' : ''
               }
             />
           </PaginationItem>
@@ -101,12 +99,9 @@ function RenderPagination() {
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    if (!isLoading) {
-                      setCurrentPage(page);
-                    }
+                    setCurrentPage(page);
                   }}
                   isActive={currentPage === page}
-                  className={isLoading ? 'pointer-events-none' : ''}
                 >
                   {page}
                 </PaginationLink>
@@ -124,12 +119,12 @@ function RenderPagination() {
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                if (!isLoading && currentPage < totalPages) {
+                if (currentPage < totalPages) {
                   setCurrentPage(currentPage + 1);
                 }
               }}
               className={
-                currentPage === totalPages || isLoading
+                currentPage === totalPages
                   ? 'pointer-events-none text-muted'
                   : ''
               }
@@ -137,19 +132,13 @@ function RenderPagination() {
           </PaginationItem>
         </PaginationContent>
       </Pagination>
-
-      {isLoading && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Chargement...
-        </div>
-      )}
     </div>
   );
 }
 
 function RenderImage(result: ForensicResult) {
-  const { cameraId: cameraUuid, imageData, score, timestamp, type } = result;
+  const { camera: cameraUuid, imageData, score, timestamp, type } = result;
+  const { t } = useTranslation();
 
   return (
     <Dialog>
@@ -167,7 +156,7 @@ function RenderImage(result: ForensicResult) {
             ) : (
               <div className="w-full aspect-[16/9] bg-muted flex items-center justify-center">
                 <span className="text-muted-foreground text-sm">
-                  Pas d&#39;image
+                  {t('forensic:display.no_image')}
                 </span>
               </div>
             )}
@@ -227,21 +216,28 @@ function RenderImage(result: ForensicResult) {
           {/* Metadata Section */}
           <div className="space-y-4">
             <div className="space-y-2">
-              <h3 className="font-medium text-lg">Métadonnées</h3>
+              <h3 className="font-medium text-lg">
+                {t('forensic:display.metadata')}
+              </h3>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="text-muted-foreground">Type:</div>
+                <div className="text-muted-foreground">
+                  {t('forensic:display.type')}:
+                </div>
                 <div>{type || 'detection'}</div>
 
-                <div className="text-muted-foreground">Caméra:</div>
-                <div>unknown</div>
+                <div className="text-muted-foreground">
+                  {t('forensic:display.camera')}:
+                </div>
+                <div>{cameraUuid}</div>
 
-                <div className="text-muted-foreground">IP:</div>
-                <div>unknown</div>
-
-                <div className="text-muted-foreground">Score:</div>
+                <div className="text-muted-foreground">
+                  {t('forensic:display.score')}:
+                </div>
                 <div>{(score * 100).toFixed(1)}%</div>
 
-                <div className="text-muted-foreground">Timestamp:</div>
+                <div className="text-muted-foreground">
+                  {t('forensic:display.timestamp')}:
+                </div>
                 <div>
                   {DateTime.fromJSDate(timestamp).toLocaleString(
                     DateTime.DATETIME_SHORT
@@ -252,7 +248,9 @@ function RenderImage(result: ForensicResult) {
 
             {/* Raw Data Section */}
             <div className="space-y-2">
-              <h3 className="font-medium text-lg">Données brutes</h3>
+              <h3 className="font-medium text-lg">
+                {t('forensic:display.raw_data')}
+              </h3>
               <div className="mt-2 p-2 bg-muted rounded-md overflow-auto max-h-48">
                 <pre className="text-xs whitespace-pre-wrap">
                   {JSON.stringify(result, null, 2)}
@@ -269,12 +267,13 @@ function RenderImage(result: ForensicResult) {
 export default function Display() {
   const { taskId } = useParams();
   const { results, isLoading, error } = useSearchContext();
+  const { t } = useTranslation();
 
   if (!taskId) {
     return (
       <div className="flex flex-col h-[50vh] items-center justify-center text-muted-foreground">
         <Search className="mb-2 opacity-30" size={48} />
-        <p>Sélectionnez une caméra et lancez une recherche</p>
+        <p>{t('forensic:display.no_camera')}</p>
       </div>
     );
   }
@@ -284,10 +283,7 @@ export default function Display() {
       <div className="flex flex-col h-[50vh] items-center justify-center">
         <Alert variant="destructive" className="max-w-md">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Erreur lors du chargement des résultats:{' '}
-            {error?.message || 'Erreur inconnue'}
-          </AlertDescription>
+          <AlertDescription>{t('forensic:display.error')}</AlertDescription>
         </Alert>
       </div>
     );
@@ -299,7 +295,7 @@ export default function Display() {
         {isLoading && (
           <div className="flex flex-col h-[50vh] w-full items-center justify-center text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Chargement...
+            {t('forensic:display.loading')}
           </div>
         )}
         {!isLoading &&

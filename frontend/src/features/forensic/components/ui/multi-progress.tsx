@@ -1,6 +1,7 @@
 /* eslint-disable @stylistic/indent */
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Clock, Timer } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
@@ -36,6 +37,7 @@ const extractCameraInfo = (cameraId: string) => {
 };
 
 export default function MultiProgress() {
+  const { t } = useTranslation();
   const [showSourceDetails, setShowSourceDetails] = useState(false);
   const { progress: sourceProgress } = useSearchContext();
   const sourceProgressArray = Object.values(sourceProgress);
@@ -61,7 +63,7 @@ export default function MultiProgress() {
       <div className="flex justify-between items-center">
         <div className="flex flex-col">
           <p className="text-sm font-medium text-foreground">
-            Progression :{' '}
+            {t('forensic:multi-progress.progression')}:{' '}
             <span className="text-primary font-semibold">
               {progress !== null ? progress.toFixed(0) : 0}%
             </span>{' '}
@@ -77,7 +79,9 @@ export default function MultiProgress() {
             className="h-7 px-2 hover:bg-muted/80"
             onClick={() => setShowSourceDetails(!showSourceDetails)}
           >
-            {showSourceDetails ? 'Masquer les détails' : 'Afficher les détails'}
+            {showSourceDetails
+              ? t('forensic:multi-progress.hide_details')
+              : t('forensic:multi-progress.show_details')}
             {showSourceDetails ? (
               <ChevronUp className="ml-1 h-4 w-4" />
             ) : (
@@ -112,45 +116,15 @@ export default function MultiProgress() {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 text-xs text-muted-foreground mt-0.5">
                       {source.timestamp && (
                         <span className="flex items-center">
-                          <svg
-                            className="w-3 h-3 mr-1 inline-block"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <circle cx="12" cy="12" r="10" />
-                            <polyline points="12 6 12 12 16 14" />
-                          </svg>
-                          {new Date(source.timestamp).toLocaleString('fr-FR', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          <Clock className="w-3 h-3 mr-1 inline-block" />
+                          {new Date(source.timestamp).toLocaleString()}
                         </span>
                       )}
                       {source.progress > 0 &&
                         source.progress < 100 &&
                         timeEstimates.individual[source.sourceId] && (
                           <span className="flex items-center">
-                            <svg
-                              className="w-3 h-3 mr-1 inline-block"
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M17 8h2a2 2 0 0 1 2 2v2m-2 8H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h10" />
-                              <path d="M22 16H13c-2 0-2-4-4-4H7" />
-                            </svg>
+                            <Timer className="w-3 h-3 mr-1 inline-block" />
                             {timeEstimates.individual[source.sourceId]}
                           </span>
                         )}

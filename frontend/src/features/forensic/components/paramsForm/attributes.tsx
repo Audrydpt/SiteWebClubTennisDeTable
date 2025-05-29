@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import MultiSelect from '@/components/multi-select.tsx';
 import {
@@ -39,6 +40,7 @@ import ColorPicker from '../ui/color-picker.tsx';
 export default function Attributes() {
   const { formMethods, subjectType } = useForensicForm();
   const { setValue, control } = formMethods;
+  const { t } = useTranslation();
 
   const attributes = useWatch<ForensicFormValues, 'attributes'>({
     control,
@@ -192,7 +194,7 @@ export default function Attributes() {
 
   return (
     <AccordionItem value="attributes">
-      <AccordionTrigger>Attributs spécifiques</AccordionTrigger>
+      <AccordionTrigger>{t('forensic:attributes.title')}</AccordionTrigger>
       <AccordionContent>
         <ScrollArea className="pr-4 rounded-sm pb-5">
           {subjectType === 'person' ? (
@@ -200,7 +202,9 @@ export default function Attributes() {
               {/* Upper clothing section */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Type de haut</Label>
+                  <Label className="text-sm font-medium">
+                    {t('forensic:attributes.top_type')}
+                  </Label>
                   <div className="h-10 max-w-full">
                     <MultiSelect
                       options={optionMaps.topType}
@@ -213,7 +217,9 @@ export default function Attributes() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Couleur haut*</Label>
+                  <Label className="text-sm font-medium">
+                    {t('forensic:attributes.top_color')}
+                  </Label>
                   <ColorPicker
                     colors={colors}
                     name="attributes.upper.color"
@@ -226,7 +232,9 @@ export default function Attributes() {
               {/* Lower clothing section */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Type de bas</Label>
+                  <Label className="text-sm font-medium">
+                    {t('forensic:attributes.bottom_type')}
+                  </Label>
                   <div className="h-10 max-w-full">
                     <MultiSelect
                       options={optionMaps.bottomType}
@@ -239,7 +247,9 @@ export default function Attributes() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Couleur bas*</Label>
+                  <Label className="text-sm font-medium">
+                    {t('forensic:attributes.bottom_color')}
+                  </Label>
                   <ColorPicker
                     colors={colors}
                     name="attributes.lower.color"
@@ -252,7 +262,7 @@ export default function Attributes() {
               {/* Distinctive features section */}
               <div className="space-y-4">
                 <Label className="text-sm font-medium">
-                  Signes distinctifs*
+                  {t('forensic:attributes.distinctive_features')}
                 </Label>
                 <div className="grid grid-cols-2 gap-2">
                   {distinctiveItems.person.map((item) => (
@@ -274,7 +284,9 @@ export default function Attributes() {
             <div className="space-y-6">
               {/* Brand and model section */}
               <div className="space-y-4">
-                <Label className="text-sm font-medium">Marque*</Label>
+                <Label className="text-sm font-medium">
+                  {t('forensic:attributes.brand')}
+                </Label>
                 <div className="h-10 max-w-[250px]">
                   <MultiSelect
                     options={optionMaps.brands}
@@ -289,7 +301,9 @@ export default function Attributes() {
 
               {/* Model selection - only show if brand is selected */}
               <div className="space-y-4">
-                <Label className="text-sm font-medium">Modèle*</Label>
+                <Label className="text-sm font-medium">
+                  {t('forensic:attributes.model')}
+                </Label>
                 <div className="h-10 max-w-[250px]">
                   <MultiSelect
                     options={getAvailableModels()}
@@ -303,7 +317,7 @@ export default function Attributes() {
               {/* License plate field */}
               <div className="space-y-4">
                 <Label className="text-sm font-medium">
-                  Plaque d&#39;immatriculation*
+                  {t('forensic:attributes.plate')}
                 </Label>
                 <Input
                   placeholder="AB-123-CD"
@@ -316,7 +330,7 @@ export default function Attributes() {
               {/* Vehicle distinctive features */}
               <div className="space-y-4">
                 <Label className="text-sm font-medium">
-                  Caractéristiques distinctives*
+                  {t('forensic:attributes.distinctive_features')}
                 </Label>
                 <div className="grid grid-cols-2 gap-2">
                   {distinctiveItems.vehicle.map((item) => (
@@ -337,7 +351,7 @@ export default function Attributes() {
               {/* Contextual situation */}
               <div className="space-y-4">
                 <Label className="text-sm font-medium">
-                  Situation contextuelle*
+                  {t('forensic:attributes.contextual_situation')}
                 </Label>
                 <div className="grid grid-cols-2 gap-2">
                   {contextualItems.vehicle.map((item) => (
@@ -362,7 +376,9 @@ export default function Attributes() {
             </div>
           )}
           <div className="space-y-4 pt-4 border-t">
-            <Label className="text-sm font-medium">Tolérance attributs</Label>
+            <Label className="text-sm font-medium">
+              {t('forensic:attributes.tolerance')}
+            </Label>
             <div className="h-10 max-w-[250px]">
               <Select
                 value={tolerance}
@@ -374,7 +390,9 @@ export default function Attributes() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Niveau de tolérance" />
+                  <SelectValue
+                    placeholder={t('forensic:attributes.tolerance')}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {optionMaps.tolerance.map((option) => (

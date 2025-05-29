@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import MultiSelect from '@/components/multi-select.tsx';
 import {
@@ -38,6 +39,7 @@ import ColorPicker from '../ui/color-picker.tsx';
 
 export default function Appearances() {
   const { formMethods, subjectType } = useForensicForm();
+  const { t } = useTranslation();
   const { setValue, control } = formMethods;
 
   const appearances = useWatch<ForensicFormValues>({
@@ -89,7 +91,7 @@ export default function Appearances() {
 
   return (
     <AccordionItem value="appearances">
-      <AccordionTrigger>Apparence générale</AccordionTrigger>
+      <AccordionTrigger>{t('forensic:appearances.title')}</AccordionTrigger>
       <AccordionContent>
         <ScrollArea
           className="pr-4 rounded-sm"
@@ -99,7 +101,9 @@ export default function Appearances() {
             <div className="space-y-6">
               {/* Gender section */}
               <div className="space-y-4">
-                <Label className="text-sm font-medium">Genre</Label>
+                <Label className="text-sm font-medium">
+                  {t('forensic:appearances.gender')}
+                </Label>
                 <div className="h-10 max-w-[250px]">
                   <MultiSelect
                     options={optionMaps.gender}
@@ -117,7 +121,9 @@ export default function Appearances() {
 
               {/* Age section */}
               <div className="space-y-4">
-                <Label className="text-sm font-medium">Âge</Label>
+                <Label className="text-sm font-medium">
+                  {t('forensic:appearances.age')}
+                </Label>
                 <div className="h-10 max-w-[250px]">
                   <MultiSelect
                     options={optionMaps.age}
@@ -135,7 +141,9 @@ export default function Appearances() {
 
               {/* Build section */}
               <div className="space-y-4">
-                <Label className="text-sm font-medium">Corpulence*</Label>
+                <Label className="text-sm font-medium">
+                  {t('forensic:appearances.build')}
+                </Label>
                 <div className="h-10 max-w-[250px]">
                   <MultiSelect
                     options={optionMaps.build}
@@ -153,7 +161,9 @@ export default function Appearances() {
 
               {/* Height section */}
               <div className="space-y-4">
-                <Label className="text-sm font-medium">Taille*</Label>
+                <Label className="text-sm font-medium">
+                  {t('forensic:appearances.height')}
+                </Label>
                 <div className="h-10 max-w-[250px]">
                   <MultiSelect
                     options={optionMaps.height}
@@ -171,12 +181,14 @@ export default function Appearances() {
 
               {/* Hair section */}
               <div className="space-y-4">
-                <Label className="text-sm font-medium">Cheveux*</Label>
+                <Label className="text-sm font-medium">
+                  {t('forensic:appearances.hair')}
+                </Label>
                 <div className="grid grid-cols-2 gap-4">
                   {/* Hair Length */}
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">
-                      Longueur
+                      {t('forensic:appearances.hair_length')}
                     </Label>
                     <div className="h-10">
                       <MultiSelect
@@ -197,7 +209,7 @@ export default function Appearances() {
                   {/* Hair Style */}
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">
-                      Style
+                      {t('forensic:appearances.hair_style')}
                     </Label>
                     <div className="h-10">
                       <MultiSelect
@@ -218,7 +230,7 @@ export default function Appearances() {
                   {/* Hair Color */}
                   <div className="space-y-2 col-span-2">
                     <Label className="text-xs text-muted-foreground">
-                      Couleur*
+                      {t('forensic:appearances.hair_color')}
                     </Label>
                     <ColorPicker
                       colors={colors}
@@ -235,7 +247,9 @@ export default function Appearances() {
             <div className="space-y-6">
               {/* Vehicle type */}
               <div className="space-y-4">
-                <Label className="text-sm font-medium">Type de véhicule</Label>
+                <Label className="text-sm font-medium">
+                  {t('forensic:appearances.vehicle_type')}
+                </Label>
                 <div className="h-10 max-w-[250px]">
                   <MultiSelect
                     options={optionMaps.vehicleTypes}
@@ -253,7 +267,9 @@ export default function Appearances() {
 
               {/* Vehicle color */}
               <div className="space-y-4">
-                <Label className="text-sm font-medium">Couleur</Label>
+                <Label className="text-sm font-medium">
+                  {t('forensic:appearances.vehicle_color')}
+                </Label>
                 <div>
                   <ColorPicker
                     colors={colors}
@@ -268,7 +284,9 @@ export default function Appearances() {
           )}
 
           <div className="space-y-4 pt-4 border-t">
-            <Label className="text-sm font-medium">Tolérance</Label>
+            <Label className="text-sm font-medium">
+              {t('forensic:appearances.tolerance')}
+            </Label>
             <div className="h-10 max-w-[250px]">
               <Select
                 value={tolerance}
@@ -280,7 +298,9 @@ export default function Appearances() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Niveau de tolérance" />
+                  <SelectValue
+                    placeholder={t('forensic:appearances.tolerance')}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {optionMaps.tolerance.map((option) => (
