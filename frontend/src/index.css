@@ -151,6 +151,7 @@
   --sidebar-accent-foreground: var(--white);
   --sidebar-border: var(--dark-gray);
   --sidebar-ring: var(--dark-gray);
+  --sidebar: hsl(0 0% 98%);
 }
 .dark {
   --background: var(--dark-gray);
@@ -187,6 +188,7 @@
   --sidebar-accent-foreground: var(--white);
   --sidebar-border: var(--dark-gray);
   --sidebar-ring: var(--dark-gray);
+  --sidebar: hsl(240 5.9% 10%);
 }
 
 @layer base {
