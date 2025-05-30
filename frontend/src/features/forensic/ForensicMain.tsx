@@ -35,10 +35,10 @@ function Forensic() {
           {/* Panneau des onglets */}
           <div className="mb-4">
             <div className="flex justify-between items-center gap-4">
-              <div className="flex-grow">
+              <div className="grow">
                 <JobTabs />
               </div>
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <SortButtons />
               </div>
             </div>

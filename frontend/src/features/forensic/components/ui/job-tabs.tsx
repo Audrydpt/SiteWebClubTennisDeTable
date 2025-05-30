@@ -145,7 +145,7 @@ export default function JobTabs({
                           title={t('forensic:job-tabs.delete_tab')}
                           aria-label={t('forensic:job-tabs.delete_tab')}
                         >
-                          <Trash2 className="!h-3 !w-3" />
+                          <Trash2 className="h-3! w-3!" />
                         </Button>
                       </DeleteConfirmation>
                     </div>

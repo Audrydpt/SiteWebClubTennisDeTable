@@ -37,14 +37,14 @@ export function SortButtons({
       {/* Contrôles de tri */}
       <div className="flex items-center gap-1 mr-2">
         <Button
-          variant={sortType === 'score' ? 'default' : 'outline'}
+          variant={sortType === 'score' ? 'default' : 'outline-solid'}
           size="sm"
           onClick={() => setSortType('score')}
         >
           Score
         </Button>
         <Button
-          variant={sortType === 'date' ? 'default' : 'outline'}
+          variant={sortType === 'date' ? 'default' : 'outline-solid'}
           size="sm"
           onClick={() => setSortType('date')}
         >

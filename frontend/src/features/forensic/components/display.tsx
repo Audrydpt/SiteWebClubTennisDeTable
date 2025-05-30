@@ -143,18 +143,18 @@ function RenderImage(result: ForensicResult) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <div className="border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-card cursor-pointer relative group">
+        <div className="border rounded-md overflow-hidden shadow-xs hover:shadow-md transition-shadow bg-card cursor-pointer relative group">
           <div className="relative">
             {imageData ? (
               <div className="relative">
                 <img
                   src={imageData}
                   alt="Forensic result"
-                  className="w-full h-auto object-cover object-[center_10%] aspect-[16/9]"
+                  className="w-full h-auto object-cover object-[center_10%] aspect-video"
                 />
               </div>
             ) : (
-              <div className="w-full aspect-[16/9] bg-muted flex items-center justify-center">
+              <div className="w-full aspect-video bg-muted flex items-center justify-center">
                 <span className="text-muted-foreground text-sm">
                   {t('forensic:display.no_image')}
                 </span>

@@ -101,7 +101,7 @@ export default function BarComponent({
         <CardHeader>
           <CardTitle>{title ?? `Bar ${layout.toString()}`}</CardTitle>
         </CardHeader>
-        <CardContent className="flex-grow w-full">
+        <CardContent className="grow w-full">
           <ChartContainer config={{}} className="h-full w-full">
             {isLoading ? (
               <Skeleton className="h-full w-full bg-muted" />
@@ -140,7 +140,7 @@ export default function BarComponent({
           {title ?? `Bar ${layout.toString()}`}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-grow w-full">
+      <CardContent className="grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <BarChart data={Object.values(dataMerged)} layout={baseLayout}>
             <CartesianGrid
@@ -191,7 +191,7 @@ export default function BarComponent({
                 key={group}
                 dataKey={String(group)}
                 stackId={isStacked ? 'stack' : undefined}
-                fill={`hsl(var(--chart-${(index % 5) + 1}))`}
+                fill={`var(--chart-${(index % 5) + 1})`}
                 radius={getBarRadius(index)}
                 unit={table === 'AcicOccupancy' ? '%' : ''}
               />

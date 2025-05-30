@@ -17,7 +17,7 @@ export default function Model({
   availableModels,
 }: ModelProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 bg-white rounded-lg shadow-sm">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 bg-white rounded-lg shadow-xs">
       <ModelTypeSelector
         analysisType={analysisType}
         setAnalysisType={setAnalysisType}

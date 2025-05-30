@@ -75,7 +75,7 @@ export default function PieComponent({
           existingGroup.count += count;
         } else {
           const groupIndex = acc.dataMerged.length;
-          const color = `hsl(var(--chart-${(groupIndex % 5) + 1}))`;
+          const color = `var(--chart-${(groupIndex % 5) + 1})`;
 
           acc.dataMerged.push({
             count,
@@ -100,7 +100,7 @@ export default function PieComponent({
       .sort((a, b) => b.count - a.count)
       .map((item, index) => ({
         ...item,
-        fill: `hsl(var(--chart-${(index % 5) + 1}))`,
+        fill: `var(--chart-${(index % 5) + 1})`,
       }));
 
     return {
@@ -115,7 +115,7 @@ export default function PieComponent({
         <CardHeader>
           <CardTitle>{title ?? `Pie ${layout.toString()}`}</CardTitle>
         </CardHeader>
-        <CardContent className="flex-grow w-full">
+        <CardContent className="grow w-full">
           <ChartContainer config={{}} className="h-full w-full">
             {isLoading ? (
               <Skeleton className="h-full w-full bg-muted" />
@@ -135,7 +135,7 @@ export default function PieComponent({
           {title ?? `Pie ${layout.toString()}`}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-grow w-full">
+      <CardContent className="grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <PieChart>
             <ChartTooltip
@@ -167,8 +167,8 @@ export default function PieComponent({
               strokeWidth={
                 layout === 'donut' || layout === 'halfdonut' ? 0 : gap
               }
-              stroke="hsl(var(--muted))"
-              fill="hsl(var(--muted))"
+              stroke="var(--muted)"
+              fill="var(--muted)"
             />
           </PieChart>
         </ChartContainer>

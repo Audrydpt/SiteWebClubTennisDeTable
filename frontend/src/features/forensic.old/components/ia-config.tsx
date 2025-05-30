@@ -285,7 +285,7 @@ export default function IAConfig() {
                   d&apos;actions et d&apos;objets dans vos fichiers multimédias.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <div className="bg-white p-4 rounded-lg shadow-xs">
                     <div className="h-8 w-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center mb-2">
                       1
                     </div>
@@ -295,7 +295,7 @@ export default function IAConfig() {
                       d&apos;actions
                     </p>
                   </div>
-                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <div className="bg-white p-4 rounded-lg shadow-xs">
                     <div className="h-8 w-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center mb-2">
                       2
                     </div>
@@ -306,7 +306,7 @@ export default function IAConfig() {
                       Ajustez les seuils et filtres selon vos besoins
                     </p>
                   </div>
-                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <div className="bg-white p-4 rounded-lg shadow-xs">
                     <div className="h-8 w-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center mb-2">
                       3
                     </div>

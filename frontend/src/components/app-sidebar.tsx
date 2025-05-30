@@ -246,7 +246,7 @@ export default function AppSidebar() {
                     <ChevronsUpDown className="ml-auto" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[--radix-popper-anchor-width]">
+                <DropdownMenuContent className="w-(--radix-popper-anchor-width)">
                   {workspaces.map((workspace) => (
                     <DropdownMenuItem
                       key={workspace}
@@ -307,7 +307,7 @@ export default function AppSidebar() {
                                           to={child.url || '#'}
                                           className={
                                             item.disabled
-                                              ? '!text-gray-400 pointer-events-none'
+                                              ? 'text-gray-400! pointer-events-none'
                                               : ''
                                           }
                                         >
@@ -358,7 +358,7 @@ export default function AppSidebar() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   side="top"
-                  className="w-[--radix-popper-anchor-width]"
+                  className="w-(--radix-popper-anchor-width)"
                 >
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2" /> <span>{t('logout.title')}</span>

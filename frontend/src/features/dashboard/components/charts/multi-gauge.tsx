@@ -75,13 +75,13 @@ export default function MultiGaugeComponent({
           acc.dataMerged.push({
             count,
             [groupValue]: groupValue,
-            fill: `hsl(var(--chart-${(groupIndex % 5) + 1}))`,
+            fill: `var(--chart-${(groupIndex % 5) + 1})`,
             name: String(groupValue),
           });
 
           acc.chartConfig[groupValue] = {
             label: String(groupValue),
-            color: `hsl(var(--chart-${(groupIndex % 5) + 1}))`,
+            color: `var(--chart-${(groupIndex % 5) + 1})`,
           };
         }
 
@@ -97,7 +97,7 @@ export default function MultiGaugeComponent({
         <CardHeader>
           <CardTitle>{title ?? `Multi-Gauge ${layout.toString()}`}</CardTitle>
         </CardHeader>
-        <CardContent className="flex-grow w-full">
+        <CardContent className="grow w-full">
           <ChartContainer config={{}} className="h-full w-full">
             {isLoading ? (
               <Skeleton className="h-full w-full bg-muted" />
@@ -117,7 +117,7 @@ export default function MultiGaugeComponent({
           {title ?? `Multi-Gauge ${layout.toString()}`}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-grow w-full">
+      <CardContent className="grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <RadialBarChart
             data={dataMerged}

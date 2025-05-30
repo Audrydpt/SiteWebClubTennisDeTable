@@ -195,7 +195,7 @@ export default function CreateBackupWizard() {
                       />
                       <label
                         htmlFor={`stream-${stream.id}`}
-                        className="cursor-pointer flex-grow"
+                        className="cursor-pointer grow"
                       >
                         {stream.name}
                       </label>

@@ -87,7 +87,7 @@ describe('Firmware', () => {
   });
 
   describe('Button Properties', () => {
-    it('renders buttons with outline variant', () => {
+    it('renders buttons with outline-solid variant', () => {
       renderComponent();
 
       const browseButton = screen.getByRole('button', {

@@ -76,7 +76,7 @@ export default function StackedGaugeComponent({
           const groupIndex = Object.keys(acc.chartConfig).length;
           acc.chartConfig[groupValue] = {
             label: String(groupValue),
-            color: `hsl(var(--chart-${(groupIndex % 5) + 1}))`,
+            color: `var(--chart-${(groupIndex % 5) + 1})`,
           };
         }
 
@@ -94,7 +94,7 @@ export default function StackedGaugeComponent({
             {title ?? `Stacked-Gauge ${layout.toString()}`}
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex-grow w-full">
+        <CardContent className="grow w-full">
           <ChartContainer config={{}} className="h-full w-full">
             {isLoading ? (
               <Skeleton className="h-full w-full bg-muted" />
@@ -112,7 +112,7 @@ export default function StackedGaugeComponent({
       <CardHeader className="items-center pb-0">
         <CardTitle>{title ?? `Stacked-Gauge ${layout.toString()}`}</CardTitle>
       </CardHeader>
-      <CardContent className="flex-grow w-full">
+      <CardContent className="grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <RadialBarChart
             data={dataMerged}

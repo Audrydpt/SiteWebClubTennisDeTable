@@ -115,7 +115,7 @@ function Retention() {
                 />
 
                 <div className="flex gap-4 mt-6 items-start">
-                  <div className="flex-shrink-0 w-25">
+                  <div className="shrink-0 w-25">
                     <FormField
                       control={form.control}
                       name="days"

@@ -139,7 +139,7 @@ export default function JobTabs({
                           title="Supprimer cette recherche"
                           aria-label="Supprimer cette recherche"
                         >
-                          <Trash2 className="!h-3 !w-3" />
+                          <Trash2 className="h-3! w-3!" />
                         </Button>
                       </DeleteConfirmation>
                     </div>

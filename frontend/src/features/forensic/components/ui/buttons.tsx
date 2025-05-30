@@ -33,14 +33,14 @@ export function SortButtons() {
       {/* Contrôles de tri */}
       <div className="flex items-center gap-1 mr-2">
         <Button
-          variant={order.by === 'score' ? 'default' : 'outline'}
+          variant={order.by === 'score' ? 'default' : 'outline-solid'}
           size="sm"
           onClick={() => handleSortBy('score')}
         >
           {t('forensic:buttons.score')}
         </Button>
         <Button
-          variant={order.by === 'date' ? 'default' : 'outline'}
+          variant={order.by === 'date' ? 'default' : 'outline-solid'}
           size="sm"
           onClick={() => handleSortBy('date')}
         >

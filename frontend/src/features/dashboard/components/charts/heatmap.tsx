@@ -285,7 +285,7 @@ export default function HeatmapComponent({
         <CardHeader>
           <CardTitle>{title ?? `Heatmap ${layout.toString()}`}</CardTitle>
         </CardHeader>
-        <CardContent className="flex-grow w-full">
+        <CardContent className="grow w-full">
           <ChartContainer config={{}} className="h-full w-full">
             {isLoading ? (
               <Skeleton className="h-full w-full bg-muted" />
@@ -305,7 +305,7 @@ export default function HeatmapComponent({
           {title ?? `Heatmap ${layout.toString()}`}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-grow w-full">
+      <CardContent className="grow w-full">
         {layout === 'horizontal' ? (
           <table className="w-full text-sm">
             <thead>

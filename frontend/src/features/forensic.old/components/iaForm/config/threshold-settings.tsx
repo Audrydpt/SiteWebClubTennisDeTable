@@ -73,7 +73,7 @@ export default function ThresholdSettings({
         </div>
 
         {/* Legend */}
-        <div className="absolute bottom-2 right-2 text-xs flex flex-col gap-1 bg-white/90 p-2 rounded shadow-sm z-10">
+        <div className="absolute bottom-2 right-2 text-xs flex flex-col gap-1 bg-white/90 p-2 rounded shadow-xs z-10">
           <div className="flex items-center gap-1">
             <div
               className={`w-3 h-3 rounded-full ${modelColor}`}
@@ -95,7 +95,7 @@ export default function ThresholdSettings({
 
       {/* Reorganized sliders in a more graphical layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-        <div className="bg-white p-4 rounded-lg shadow-sm">
+        <div className="bg-white p-4 rounded-lg shadow-xs">
           <div className="flex justify-between mb-2">
             <Label
               htmlFor="confidence-threshold"
@@ -145,7 +145,7 @@ export default function ThresholdSettings({
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm">
+        <div className="bg-white p-4 rounded-lg shadow-xs">
           <div className="flex justify-between mb-2">
             <Label
               htmlFor="overlap-threshold"
@@ -199,7 +199,7 @@ export default function ThresholdSettings({
       </div>
 
       {/* Visual explanation */}
-      <div className="bg-white p-4 rounded-lg shadow-sm mt-4">
+      <div className="bg-white p-4 rounded-lg shadow-xs mt-4">
         <h5 className="font-medium mb-2 flex items-center gap-2">
           <AlertCircle className="h-4 w-4 text-primary" />
           Impact des seuils
