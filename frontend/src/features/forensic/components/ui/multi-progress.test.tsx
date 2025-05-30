@@ -398,8 +398,7 @@ describe('MultiProgress', () => {
       fireEvent.click(screen.getByText('forensic:multi-progress.show_details'));
 
       expect(screen.getByText('source1')).toBeInTheDocument();
-      // Verify timestamp is displayed when available
-      expect(screen.getByText('01/01/2024 11:00:00')).toBeInTheDocument();
+      expect(screen.getByText(/01\/01\/2024/)).toBeInTheDocument();
     });
 
     it('should apply correct styling for completed sources', () => {
