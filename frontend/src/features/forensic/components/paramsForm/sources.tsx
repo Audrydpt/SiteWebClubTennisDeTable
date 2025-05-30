@@ -108,6 +108,7 @@ export default function Sources({
           <Checkbox
             id="select-all"
             checked={
+              selectedCameras &&
               selectedCameras.length >= filteredCameras.length &&
               filteredCameras.length > 0
             }
@@ -139,13 +140,14 @@ export default function Sources({
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id={`camera-${camera.id}`}
-                  checked={selectedCameras.includes(camera.id)}
+                  checked={selectedCameras?.includes(camera.id) || false}
                   onCheckedChange={(checked) => {
+                    const currentSelected = selectedCameras || [];
                     if (checked) {
-                      updateSelectedCameras([...selectedCameras, camera.id]);
+                      updateSelectedCameras([...currentSelected, camera.id]);
                     } else {
                       updateSelectedCameras(
-                        selectedCameras.filter((id) => id !== camera.id)
+                        currentSelected.filter((id) => id !== camera.id)
                       );
                     }
                   }}

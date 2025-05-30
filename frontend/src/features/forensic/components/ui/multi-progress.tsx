@@ -51,8 +51,10 @@ export default function MultiProgress() {
   }
 
   const progress =
-    sourceProgressArray.reduce((acc, source) => acc + source.progress, 0) /
-    sourceProgressArray.length;
+    sourceProgressArray.reduce(
+      (acc, source) => acc + (source.progress ?? 0),
+      0
+    ) / sourceProgressArray.length;
 
   return (
     <Collapsible
@@ -140,7 +142,7 @@ export default function MultiProgress() {
                     {source.progress.toFixed(0)}%
                   </span>
                 </div>
-                <Progress value={source.progress} className="w-full" />
+                <Progress value={source.progress ?? 0} className="w-full" />
               </div>
             );
           })}
