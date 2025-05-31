@@ -94,8 +94,10 @@ export default function MultiGaugeComponent({
   if (isLoading || isError) {
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
-        <CardHeader>
-          <CardTitle>{title ?? `Multi-Gauge ${layout.toString()}`}</CardTitle>
+        <CardHeader className="w-full">
+          <CardTitle className="text-center">
+            {title ?? `Multi-Gauge ${layout.toString()}`}
+          </CardTitle>
         </CardHeader>
         <CardContent className="grow w-full">
           <ChartContainer config={{}} className="h-full w-full">
@@ -112,7 +114,7 @@ export default function MultiGaugeComponent({
 
   return (
     <Card className="w-full h-full flex flex-col justify-center">
-      <CardHeader>
+      <CardHeader className="w-full">
         <CardTitle className="text-center">
           {title ?? `Multi-Gauge ${layout.toString()}`}
         </CardTitle>

@@ -68,7 +68,7 @@ export default function Login() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10">
+    <div className="w-md mx-auto mt-10">
       <Card>
         <CardHeader>
           <img src={logo} alt="Logo" className="w-[100px] mb-4 mx-auto" />

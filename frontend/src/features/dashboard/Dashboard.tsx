@@ -96,7 +96,11 @@ function DashboardContent() {
       >
         <TabsList className="w-full justify-start">
           {Object.entries(data).map(([key, value]) => (
-            <TabsTrigger key={key} value={key} className="relative group">
+            <TabsTrigger
+              key={key}
+              value={key}
+              className="relative group flex-none"
+            >
               <span>{value.title}</span>
 
               {couldBeRemoved(key) && (

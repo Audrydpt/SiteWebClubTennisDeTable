@@ -18,9 +18,7 @@ const usePermissionDetails = (): PermissionDetail[] => {
   return [
     {
       action: t('settings:privileges.actions.operationalFeatures'),
-      [AcicPrivileges.Operator]: (
-        <PencilIcon className="size-4 text-primary" />
-      ),
+      [AcicPrivileges.Operator]: <PencilIcon className="size-4 text-primary" />,
       [AcicPrivileges.Maintainer]: (
         <PencilIcon className="size-4 text-primary" />
       ),

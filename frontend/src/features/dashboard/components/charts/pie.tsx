@@ -112,8 +112,10 @@ export default function PieComponent({
   if (isLoading || isError) {
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
-        <CardHeader>
-          <CardTitle>{title ?? `Pie ${layout.toString()}`}</CardTitle>
+        <CardHeader className="w-full">
+          <CardTitle className="text-center">
+            {title ?? `Pie ${layout.toString()}`}
+          </CardTitle>
         </CardHeader>
         <CardContent className="grow w-full">
           <ChartContainer config={{}} className="h-full w-full">
@@ -130,7 +132,7 @@ export default function PieComponent({
 
   return (
     <Card className="w-full h-full flex flex-col justify-center">
-      <CardHeader>
+      <CardHeader className="w-full">
         <CardTitle className="text-center">
           {title ?? `Pie ${layout.toString()}`}
         </CardTitle>

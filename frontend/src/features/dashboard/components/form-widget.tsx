@@ -280,7 +280,7 @@ export function FormWidget({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-5xl max-h-[90vh]">
+      <DialogContent className="sm:max-w-[80vw] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
             {edition ? t('dashboard:widget.edit') : t('dashboard:widget.add')}

@@ -104,8 +104,10 @@ export default function GaugeComponent({
   if (isLoading || isError) {
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
-        <CardHeader>
-          <CardTitle>{title ?? `Gauge ${layout.toString()}`}</CardTitle>
+        <CardHeader className="w-full">
+          <CardTitle className="text-center">
+            {title ?? `Gauge ${layout.toString()}`}
+          </CardTitle>
         </CardHeader>
         <CardContent className="grow w-full">
           <ChartContainer config={chartConfig} className="h-full w-full">
@@ -127,7 +129,7 @@ export default function GaugeComponent({
 
   return (
     <Card className="w-full h-full flex flex-col justify-center">
-      <CardHeader>
+      <CardHeader className="w-full">
         <CardTitle className="text-center">
           {title ?? `Gauge ${layout.toString()}`}
         </CardTitle>
