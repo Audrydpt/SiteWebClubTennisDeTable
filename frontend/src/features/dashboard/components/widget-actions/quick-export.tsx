@@ -126,7 +126,7 @@ export default function QuickExport({
                   htmlFor="excel"
                   className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
                 >
-                  <FileSpreadsheet className="mb-3 h-6 w-6" />
+                  <FileSpreadsheet className="mb-3 size-6" />
                   Excel
                 </Label>
               </div>
@@ -136,7 +136,7 @@ export default function QuickExport({
                   htmlFor="pdf"
                   className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
                 >
-                  <FileType className="mb-3 h-6 w-6" />
+                  <FileType className="mb-3 size-6" />
                   PDF
                 </Label>
               </div>
@@ -151,7 +151,7 @@ export default function QuickExport({
                     htmlFor="jpeg"
                     className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
                   >
-                    <FileImage className="mb-3 h-6 w-6" />
+                    <FileImage className="mb-3 size-6" />
                     JPEG
                   </Label>
                 </div>
@@ -163,7 +163,7 @@ export default function QuickExport({
                 className="flex items-center justify-center space-x-2"
                 data-testid="loading-spinner"
               >
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <Loader2 className="size-6 animate-spin text-primary" />
                 <span>Fetching data for exporting file...</span>
               </div>
             )}
@@ -173,7 +173,7 @@ export default function QuickExport({
                 className="flex items-center justify-center space-x-2"
                 data-testid="generating-spinner"
               >
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <Loader2 className="size-6 animate-spin text-primary" />
                 <span>Generating file...</span>
               </div>
             )}

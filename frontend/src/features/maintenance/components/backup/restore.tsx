@@ -238,7 +238,7 @@ export default function RestoreBackupWizard({
 
             {!useLastBackup && (
               <div className="border-2 border-dashed rounded-lg p-8 text-center">
-                <Upload className="w-8 h-8 mx-auto mb-4" />
+                <Upload className="size-8 mx-auto mb-4" />
                 <Input
                   id="backup-file"
                   type="file"
@@ -323,7 +323,7 @@ export default function RestoreBackupWizard({
                             id={`stream-${streamId}`}
                             checked={selectedBackupStreams.has(streamId)}
                             onChange={() => toggleBackupStream(streamId)}
-                            className="h-4 w-4"
+                            className="size-4"
                           />
                           <Label htmlFor={`stream-${streamId}`}>
                             Stream {streamId} [{name}]
@@ -455,7 +455,7 @@ export default function RestoreBackupWizard({
                   type="radio"
                   id="reboot-now"
                   name="reboot"
-                  className="h-4 w-4"
+                  className="size-4"
                   value="now"
                   checked={rebootChoice === 'now'}
                   onChange={(e) => {
@@ -470,7 +470,7 @@ export default function RestoreBackupWizard({
                   type="radio"
                   id="reboot-later"
                   name="reboot"
-                  className="h-4 w-4"
+                  className="size-4"
                   value="later"
                   checked={rebootChoice === 'later'}
                   onChange={(e) => {
@@ -500,7 +500,7 @@ export default function RestoreBackupWizard({
       <CardContent>
         {(error || hookError) && (
           <div className="text-destructive bg-muted rounded flex items-center p-3 mb-4">
-            <AlertCircle className="w-5 h-5 mr-2" />
+            <AlertCircle className="size-5 mr-2" />
             {error || hookError}
           </div>
         )}
@@ -536,7 +536,7 @@ export default function RestoreBackupWizard({
           >
             {isLoading && rebootChoice === 'now' ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 size-4 animate-spin" />
                 Rebooting...
               </>
             ) : (
@@ -558,7 +558,7 @@ export default function RestoreBackupWizard({
                 if (isLoading) {
                   return (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 size-4 animate-spin" />
                       Restoring...
                     </>
                   );

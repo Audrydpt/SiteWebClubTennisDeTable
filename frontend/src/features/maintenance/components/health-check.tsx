@@ -89,7 +89,7 @@ function renderServiceStatus(
   }
   return (
     <div className="flex items-center">
-      <LoadingSpinner className="w-4 h-4 mr-2" />
+      <LoadingSpinner className="size-4 mr-2" />
       <span className="text-muted-foreground">
         {SERVICE_LABELS[service]} checking...
       </span>
@@ -148,9 +148,9 @@ export default function HealthCheck() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="p-0 h-6 w-6 group"
+                        className="p-0 size-6 group"
                       >
-                        <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                        <ChevronRight className="size-4 transition-transform duration-200 group-data-[state=open]:rotate-90" />
                       </Button>
                     </CollapsibleTrigger>
                   )}

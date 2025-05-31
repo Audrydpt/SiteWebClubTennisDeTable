@@ -20,9 +20,9 @@ type FilePreviewProps = {
 export default function FilePreview({ file, onRemove }: FilePreviewProps) {
   const getFileIcon = () => {
     if (file.type === 'image') {
-      return <ImageIcon className="h-5 w-5" />;
+      return <ImageIcon className="size-5" />;
     }
-    return <Video className="h-5 w-5" />;
+    return <Video className="size-5" />;
   };
 
   const getStatusBadge = () => {
@@ -64,13 +64,13 @@ export default function FilePreview({ file, onRemove }: FilePreviewProps) {
             onRemove(file.id);
           }}
         >
-          <X className="h-4 w-4" />
+          <X className="size-4" />
         </button>
 
         {file.status === 'analyzing' && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
             <div className="text-white text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2" />
+              <div className="animate-spin rounded-full size-8 border-b-2 border-white mx-auto mb-2" />
               <p>Analyse en cours...</p>
               <p className="text-sm">{file.progress}%</p>
             </div>
@@ -103,19 +103,19 @@ export default function FilePreview({ file, onRemove }: FilePreviewProps) {
           <div className="mt-3 pt-3 border-t border-muted">
             <div className="grid grid-cols-3 gap-2 text-sm">
               <div className="flex flex-col items-center p-1 bg-muted/50 rounded">
-                <BarChart2 className="h-4 w-4 mb-1 text-primary" />
+                <BarChart2 className="size-4 mb-1 text-primary" />
                 <span className="text-xs text-muted-foreground">
                   Détections
                 </span>
                 <span className="font-medium">{file.results.detections}</span>
               </div>
               <div className="flex flex-col items-center p-1 bg-muted/50 rounded">
-                <CheckCircle2 className="h-4 w-4 mb-1 text-primary" />
+                <CheckCircle2 className="size-4 mb-1 text-primary" />
                 <span className="text-xs text-muted-foreground">Confiance</span>
                 <span className="font-medium">{file.results.confidence}</span>
               </div>
               <div className="flex flex-col items-center p-1 bg-muted/50 rounded">
-                <Clock className="h-4 w-4 mb-1 text-primary" />
+                <Clock className="size-4 mb-1 text-primary" />
                 <span className="text-xs text-muted-foreground">Temps</span>
                 <span className="font-medium">
                   {file.results.processingTime}s

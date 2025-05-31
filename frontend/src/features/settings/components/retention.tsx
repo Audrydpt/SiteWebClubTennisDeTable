@@ -152,7 +152,7 @@ function Retention() {
 
                   <div className="flex p-3 rounded-md bg-muted flex-1">
                     <div className="mr-3 mt-1">
-                      <DatabaseIcon className="h-4 w-4 text-muted-foreground" />
+                      <DatabaseIcon className="size-4 text-muted-foreground" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">

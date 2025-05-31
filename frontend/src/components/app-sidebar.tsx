@@ -294,7 +294,7 @@ export default function AppSidebar() {
                                 </SidebarMenuButton>
                                 <CollapsibleTrigger asChild>
                                   <SidebarMenuAction className="group">
-                                    <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                                    <ChevronRight className="size-4 transition-transform duration-200 group-data-[state=open]:rotate-90" />
                                   </SidebarMenuAction>
                                 </CollapsibleTrigger>
                               </div>

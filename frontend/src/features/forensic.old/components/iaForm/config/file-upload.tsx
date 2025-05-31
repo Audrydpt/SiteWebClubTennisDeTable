@@ -54,7 +54,7 @@ export default function FileUpload({
           accept="image/*,video/*"
           multiple
         />
-        <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
+        <Upload className="size-12 mx-auto text-muted-foreground" />
         <h3 className="mt-4 text-lg font-medium">
           Glissez-déposez vos fichiers ici
         </h3>
@@ -79,7 +79,7 @@ export default function FileUpload({
               onClick={onRemoveAllFiles}
               className="flex items-center gap-1"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="size-4" />
               Tout supprimer
             </Button>
           </div>

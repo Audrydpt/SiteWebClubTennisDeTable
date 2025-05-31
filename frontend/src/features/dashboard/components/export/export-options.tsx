@@ -205,7 +205,7 @@ export default function ExportStepSource({
                 <FormLabel>{t('dashboard:export:options.filters')}</FormLabel>
                 {isLoading ? (
                   <div className="flex items-center justify-center space-x-2">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <Loader2 className="size-6 animate-spin text-primary" />
                     <span>{t('dashboard:export:options.fetchingFilters')}</span>
                   </div>
                 ) : (

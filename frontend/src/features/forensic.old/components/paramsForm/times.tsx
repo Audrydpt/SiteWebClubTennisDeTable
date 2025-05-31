@@ -73,7 +73,7 @@ function DateTimePicker({
                 !selectedDate && 'text-muted-foreground'
               )}
             >
-              <CalendarIcon className="mr-2 h-4 w-4" />
+              <CalendarIcon className="mr-2 size-4" />
               {selectedDate
                 ? format(selectedDate, 'dd/MM/yyyy', { locale: fr })
                 : 'Sélectionner une date'}
@@ -98,7 +98,7 @@ function DateTimePicker({
         </Popover>
 
         <div className="flex items-center gap-1">
-          <Clock className="h-4 w-4 text-muted-foreground" />
+          <Clock className="size-4 text-muted-foreground" />
           <Select
             value={hours}
             onValueChange={(value) => updateTimeValue(value, minutes)}

@@ -191,7 +191,7 @@ export default function CreateBackupWizard() {
                         type="checkbox"
                         checked={selectedStreams.has(stream.id)}
                         onChange={() => toggleStream(stream.id)}
-                        className="form-checkbox h-4 w-4"
+                        className="form-checkbox size-4"
                       />
                       <label
                         htmlFor={`stream-${stream.id}`}
@@ -247,7 +247,7 @@ export default function CreateBackupWizard() {
                 disabled={isGenerating || selectedStreams.size === 0}
                 className="gap-2"
               >
-                <Download className="h-4 w-4" />
+                <Download className="size-4" />
                 {isGenerating ? 'Generating...' : 'Download Backup'}
               </Button>
             </div>

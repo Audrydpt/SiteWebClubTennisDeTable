@@ -204,7 +204,7 @@ function RenderImage(result: ForensicResult) {
                 link.click();
               }}
             >
-              <Download className="h-5 w-5" />
+              <Download className="size-5" />
             </Button>
             <img
               src={imageData}
@@ -282,7 +282,7 @@ export default function Display() {
     return (
       <div className="flex flex-col h-[50vh] items-center justify-center">
         <Alert variant="destructive" className="max-w-md">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <AlertDescription>{t('forensic:display.error')}</AlertDescription>
         </Alert>
       </div>
@@ -294,7 +294,7 @@ export default function Display() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {isLoading && (
           <div className="flex flex-col h-[50vh] w-full items-center justify-center text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="size-4 animate-spin" />
             {t('forensic:display.loading')}
           </div>
         )}

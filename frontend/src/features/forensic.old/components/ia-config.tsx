@@ -249,11 +249,11 @@ export default function IAConfig() {
       <CardHeader className="pb-3">
         <div className="flex justify-between items-center">
           <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-primary" />
+            <Activity className="size-5 text-primary" />
             Interface d&apos;analyse IA
           </CardTitle>
           <Badge variant="outline" className="gap-1 text-xs">
-            <Settings className="h-3 w-3" />
+            <Settings className="size-3" />
             {modelStats.total} modèles disponibles
           </Badge>
         </div>
@@ -263,11 +263,11 @@ export default function IAConfig() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-2 mb-6">
             <TabsTrigger value="config" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
+              <Settings className="size-4" />
               Configuration
             </TabsTrigger>
             <TabsTrigger value="results" className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
+              <Activity className="size-4" />
               Résultats
             </TabsTrigger>
           </TabsList>
@@ -286,7 +286,7 @@ export default function IAConfig() {
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-white p-4 rounded-lg shadow-xs">
-                    <div className="h-8 w-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center mb-2">
+                    <div className="size-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center mb-2">
                       1
                     </div>
                     <h3 className="font-medium mb-1">Sélectionnez un modèle</h3>
@@ -296,7 +296,7 @@ export default function IAConfig() {
                     </p>
                   </div>
                   <div className="bg-white p-4 rounded-lg shadow-xs">
-                    <div className="h-8 w-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center mb-2">
+                    <div className="size-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center mb-2">
                       2
                     </div>
                     <h3 className="font-medium mb-1">
@@ -307,7 +307,7 @@ export default function IAConfig() {
                     </p>
                   </div>
                   <div className="bg-white p-4 rounded-lg shadow-xs">
-                    <div className="h-8 w-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center mb-2">
+                    <div className="size-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center mb-2">
                       3
                     </div>
                     <h3 className="font-medium mb-1">Lancez l&apos;analyse</h3>

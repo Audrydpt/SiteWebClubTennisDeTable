@@ -223,9 +223,9 @@ export default function Results({
                 ? 'Masquer les détails'
                 : 'Afficher les détails'}
               {showSourceDetails ? (
-                <ChevronUp className="ml-1 h-4 w-4" />
+                <ChevronUp className="ml-1 size-4" />
               ) : (
-                <ChevronDown className="ml-1 h-4 w-4" />
+                <ChevronDown className="ml-1 size-4" />
               )}
             </Button>
           )}

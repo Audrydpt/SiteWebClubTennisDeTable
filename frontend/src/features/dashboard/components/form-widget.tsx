@@ -618,7 +618,7 @@ export function FormWidget({
             <div className="h-full w-full">
               {hasTooManyPoints(formValues.aggregation, formValues.duration) ? (
                 <Alert>
-                  <TriangleAlert className="h-4 w-4" />
+                  <TriangleAlert className="size-4" />
                   <AlertTitle>Too many points!</AlertTitle>
                   <AlertDescription>
                     Aggregation period is too small for the given duration

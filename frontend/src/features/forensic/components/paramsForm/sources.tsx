@@ -127,7 +127,7 @@ export default function Sources({
                 key={`loading-skeleton-${skeleton}`}
                 className="flex items-center space-x-2"
               >
-                <Skeleton className="h-4 w-4" />
+                <Skeleton className="size-4" />
                 <Skeleton className="h-5 w-32" />
               </div>
             ))}
@@ -172,7 +172,7 @@ export default function Sources({
                     className="p-1 hover:bg-muted rounded-sm relative"
                     aria-label="Afficher l'aperçu"
                   >
-                    <Eye className="h-4 w-4 text-muted-foreground" />
+                    <Eye className="size-4 text-muted-foreground" />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="end">

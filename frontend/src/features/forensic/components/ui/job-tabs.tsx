@@ -78,7 +78,7 @@ export default function JobTabs({
       {!hideTitle && (
         <div className="flex items-center gap-2 mb-2">
           {isLoading && (
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <Loader2 className="size-4 animate-spin text-primary" />
           )}
         </div>
       )}
@@ -98,7 +98,7 @@ export default function JobTabs({
               tabDisplay = `R${index + 1}`;
               if (!isForensicTaskCompleted(tab.status)) {
                 statusIndicator = (
-                  <Loader2 className="ml-1 h-3 w-3 animate-spin" />
+                  <Loader2 className="ml-1 size-3 animate-spin" />
                 );
               } else if (tab.status === ForensicTaskStatus.SUCCESS) {
                 statusIndicator = <span className="ml-1 text-primary">✓</span>;
@@ -141,7 +141,7 @@ export default function JobTabs({
                       >
                         <Button
                           variant="destructive"
-                          className="h-4 w-4 p-0"
+                          className="size-4 p-0"
                           title={t('forensic:job-tabs.delete_tab')}
                           aria-label={t('forensic:job-tabs.delete_tab')}
                         >

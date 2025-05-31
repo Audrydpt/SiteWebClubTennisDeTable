@@ -24,25 +24,25 @@ const ERROR_CONFIGS: Record<ErrorType, ErrorConfig> = {
     title: 'Page Not Found',
     description:
       "We couldn't find the page you're looking for. Please check the URL or navigate back.",
-    icon: <AlertCircle className="h-16 w-16 text-muted-foreground" />,
+    icon: <AlertCircle className="size-16 text-muted-foreground" />,
   },
   '403': {
     title: 'Access Forbidden',
     description:
       "You don't have permission to access this page. Please contact your administrator if you believe this is a mistake.",
-    icon: <ShieldAlert className="h-16 w-16 text-destructive" />,
+    icon: <ShieldAlert className="size-16 text-destructive" />,
   },
   '500': {
     title: 'Server Error',
     description:
       'Our servers are experiencing issues. Please try again later or contact support if the problem persists.',
-    icon: <Server className="h-16 w-16 text-destructive" />,
+    icon: <Server className="size-16 text-destructive" />,
   },
   crash: {
     title: 'Application Error',
     description:
       'The application encountered an unexpected error. Please refresh the page or contact support if the issue continues.',
-    icon: <Ban className="h-16 w-16 text-destructive" />,
+    icon: <Ban className="size-16 text-destructive" />,
   },
 };
 
@@ -77,7 +77,7 @@ export default function ErrorPage({ type }: ErrorPageProps) {
               onClick={() => navigate('/')}
               className="flex gap-2 w-full sm:w-auto"
             >
-              <Home className="h-5 w-5" />
+              <Home className="size-5" />
               Return Home
             </Button>
             <Button

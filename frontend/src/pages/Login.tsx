@@ -114,7 +114,7 @@ export default function Login() {
               {error && <p className="text-destructive">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
-                  <LoadingSpinner className="w-5 h-5 mx-auto" />
+                  <LoadingSpinner className="size-5 mx-auto" />
                 ) : (
                   t('login.submit')
                 )}

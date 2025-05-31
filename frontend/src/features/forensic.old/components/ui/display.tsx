@@ -199,7 +199,7 @@ export default function Display({
                   link.click();
                 }}
               >
-                <Download className="h-5 w-5" />
+                <Download className="size-5" />
               </Button>
               <img
                 src={result.imageData}

@@ -40,7 +40,7 @@ export default function ClearableSelect({
           onClick={handleClear}
           aria-label="Clear selection"
         >
-          <X className="h-4 w-4" />
+          <X className="size-4" />
         </Button>
       )}
     </div>

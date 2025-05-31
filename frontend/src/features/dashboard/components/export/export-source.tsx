@@ -173,7 +173,7 @@ export default function ExportStepSource({
                             {field.value.to.toLocaleDateString()}
                           </span>
                         )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        <CalendarIcon className="ml-auto size-4 opacity-50" />
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
@@ -198,7 +198,7 @@ export default function ExportStepSource({
         </div>
         {isFetching && (
           <div className="flex items-center justify-center space-x-2">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <Loader2 className="size-6 animate-spin text-primary" />
             <span>{t('dashboard:export:source.fetchData')}</span>
           </div>
         )}

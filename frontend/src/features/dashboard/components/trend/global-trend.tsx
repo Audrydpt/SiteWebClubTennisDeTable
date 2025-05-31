@@ -36,14 +36,14 @@ export default function GlobalTrend({
           >
             {trendValue.data > 0 ? (
               <div className="flex items-center text-primary cursor-pointer hover:underline">
-                <MoveUpRight className="h-4 w-4" />
+                <MoveUpRight className="size-4" />
                 <span className="font-medium">
                   {(trendValue.data * 100).toFixed(2)} %
                 </span>
               </div>
             ) : (
               <div className="flex items-center text-destructive cursor-pointer hover:underline">
-                <MoveDownRight className="h-4 w-4" />
+                <MoveDownRight className="size-4" />
                 <span className="font-medium">
                   {(Math.abs(trendValue.data) * 100).toFixed(2)} %
                 </span>

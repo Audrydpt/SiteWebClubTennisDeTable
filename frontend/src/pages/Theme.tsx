@@ -101,14 +101,14 @@ export default function Theme() {
             <h3 className="text-lg font-medium">Alerts</h3>
             <div className="space-y-2">
               <Alert>
-                <Terminal className="h-4 w-4" />
+                <Terminal className="size-4" />
                 <AlertTitle>Default Alert</AlertTitle>
                 <AlertDescription>
                   This is a default alert using text-foreground
                 </AlertDescription>
               </Alert>
               <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
+                <AlertCircle className="size-4" />
                 <AlertTitle>Destructive Alert</AlertTitle>
                 <AlertDescription>
                   This is a destructive alert using destructive colors

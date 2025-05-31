@@ -135,12 +135,12 @@ function WhereClausesWithSearch({
               type="button"
               variant="ghost"
               size="icon"
-              className="h-9 w-9"
+              className="size-9"
               onClick={() => handleRemoveClause(index)}
               disabled={disabled}
               aria-label="Remove filter"
             >
-              <X className="h-4 w-4" />
+              <X className="size-4" />
             </Button>
           </div>
         ))}
@@ -155,7 +155,7 @@ function WhereClausesWithSearch({
         disabled={disabled || value.length >= columns.length}
         aria-label={addButtonLabel}
       >
-        <PlusCircle className="mr-2 h-4 w-4" />
+        <PlusCircle className="mr-2 size-4" />
         {addButtonLabel}
       </Button>
     </div>

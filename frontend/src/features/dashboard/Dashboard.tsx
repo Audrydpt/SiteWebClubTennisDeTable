@@ -105,7 +105,7 @@ function DashboardContent() {
                     onDelete={() => handleDelete(key)}
                     description={t('dashboard:dashboard.deleteConfirmation')}
                   >
-                    <Button variant="destructive" className="h-4 w-4 p-0">
+                    <Button variant="destructive" className="size-4 p-0">
                       <Trash2 className="h-3! w-3!" />
                     </Button>
                   </DeleteConfirmation>
