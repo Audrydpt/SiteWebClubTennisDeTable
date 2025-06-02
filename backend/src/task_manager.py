@@ -1215,7 +1215,9 @@ class VehicleReplayJob:
                     async for img, time in client.start_replay(
                         source_guid, 
                         self.time_from, 
-                        self.time_to
+                        self.time_to,
+                        0,
+                        True
                     ):
                         if self.cancel_event.is_set():
                             return

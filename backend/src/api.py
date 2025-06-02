@@ -729,7 +729,7 @@ class FastAPIServer:
                 
                 VMS = CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type)
                 async with VMS() as client:                    
-                    streams = client.start_replay(guuid, from_time.astimezone(datetime.timezone.utc), to_time.astimezone(datetime.timezone.utc), gap, True)
+                    streams = client.start_replay(guuid, from_time.astimezone(datetime.timezone.utc), to_time.astimezone(datetime.timezone.utc), gap, False)
                     
                     container, codec = "webm", "vp8"
                     buffer = io.BytesIO()

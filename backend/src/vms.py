@@ -23,6 +23,8 @@ from dateutil import parser
 from typing import Optional, Dict, AsyncGenerator, Tuple, Any
 
 from resolver import Resolver
+from tqdm import tqdm
+import time as t
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -623,8 +625,8 @@ class MilestoneCameraClient(CameraClient):
             f"<methodname>connect</methodname>"
             f"<username />"
             f"<password />"
-            f"<alwaysstdjpeg>{'yes' if False else 'no'}</alwaysstdjpeg>"            # yes for jpeg, no for h264
-            f"<transcode><allframes>no</allframes></transcode>"
+            f"<alwaysstdjpeg>no</alwaysstdjpeg>"            # yes for jpeg, no for h264
+            f"<transcode><allframes>yes</allframes></transcode>"
             f"<connectparam>id={camera_guid}&amp;connectiontoken={self.__token}</connectparam>"
             f"<clientcapabilities>"
             f"<privacymask>no</privacymask>"
@@ -778,7 +780,7 @@ class MilestoneCameraClient(CameraClient):
             f"<username />"
             f"<password />"
             f"<alwaysstdjpeg>{'yes' if only_key_frames else 'no'}</alwaysstdjpeg>"                  # yes for jpeg, no for h264
-            f"<transcode><allframes>no</allframes></transcode>"
+            f"<transcode><allframes>yes</allframes></transcode>"
             f"<connectparam>id={camera_guid}&amp;connectiontoken={self.__token}</connectparam>"
             f"<clientcapabilities>"
             f"<privacymask>no</privacymask>"
@@ -959,27 +961,34 @@ async def test_genetec():
         print(f"Erreur lors de l'exécution: {e}")
 
 async def test_milestone():
-    #async with MilestoneCameraClient("10.39.0.50", 80, "AcicMilestoneGrab", "UhH66PjFSTWrrbiH2RiM--") as client:
+    async with MilestoneCameraClient("192.168.20.50", 80, "AcicMilestoneGrab", "UhH66PjFSTWrrbiH2RiM--" , auth_method="ntml") as client:
     #async with MilestoneCameraClient("192.168.20.232", 443, 'Admininstrator', "7ednHuLXNThoQg5p--", is_fallback=True, auth_method="ntlm") as client:
     #async with MilestoneCameraClient("192.168.20.76", 443, 'bb', "Acicacic1-", is_fallback=False, auth_method="basic") as client:
     #async with MilestoneCameraClient("192.168.20.76", 443, 'bbarrie', "RedHeel44+", is_fallback=True, auth_method="ntlm") as client:
     #async with MilestoneCameraClient("192.168.20.232", 443, 'sbakkouche', 'YxCt4gLEHB758F', True, "ntlm") as client:
-    async with MilestoneCameraClient("192.168.20.76", 443, 'bbarrie', "RedHeel44+", is_fallback=True) as client:
+    #async with MilestoneCameraClient("192.168.20.76", 443, 'bbarrie', "RedHeel44+", is_fallback=True) as client:
         cameras = await client.get_system_info()
-        print(cameras)
+        print(f"cameras : {cameras}")
         first_guid = next(iter(cameras))
+        print(f"first_guid : {first_guid}")
 
-        streams = client.start_live(first_guid)
-        #now = datetime.datetime.now()
+        #streams = client.start_live(first_guid)
+        now = datetime.datetime.now()
         
-        #from_time = now.replace(hour=7, minute=10, second=0).astimezone(datetime.timezone.utc)
-        #to_time = now.replace(hour=8, minute=10, second=0).astimezone(datetime.timezone.utc)
+        from_time = now.replace(hour=7, minute=10, second=0).astimezone(datetime.timezone.utc)
+        to_time = now.replace(hour=8, minute=10, second=0).astimezone(datetime.timezone.utc)
 
-        #streams = client.start_replay(first_guid, from_time, to_time, 0)
-        async for img, time_frame in streams:
-            #print(time_frame)
-            cv2.imwrite("test.jpg", img)
-            break
+        streams = client.start_replay(first_guid, from_time, to_time, 0,False)
+        prev_time = None
+        with tqdm() as pbar:
+            async for img, time_frame in streams:
+                if prev_time:
+                    elapsed = (time_frame - prev_time).total_seconds()
+                    pbar.set_description(f"Time between frames: {elapsed:.2f} seconds")
+                prev_time = time_frame
+                pbar.update(1)
+                #cv2.imwrite("test.jpg", img)
+                #break
 
 if __name__ == "__main__":
     asyncio.run(test_milestone())
