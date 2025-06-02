@@ -31,6 +31,7 @@ logger.setLevel(logging.INFO)
 file_handler = logging.FileHandler(f"/tmp/{__name__}.log")
 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 logger.addHandler(file_handler)
+logger.addHandler(logging.StreamHandler())
 
 TIMEOUT = 10.0
 
@@ -101,16 +102,19 @@ class CameraClient(ABC):
         return self
     
     async def __aexit__(self, exc_type, exc, tb):
+        if self.reader:
+            self.reader = None
+
         if self.writer:
             self.writer.close()
-            await asyncio.wait_for(self.writer.wait_closed(), timeout=TIMEOUT)
+            self.writer = None
 
     @abstractmethod
     async def get_system_info(self) -> Optional[Dict[str, str]]:
         pass
     
     @abstractmethod
-    async def start_live(self, camera_guid: str) -> AsyncGenerator[np.ndarray, None]:
+    async def start_live(self, camera_guid: str, only_key_frames: bool = True) -> AsyncGenerator[np.ndarray, None]:
         pass
 
     @abstractmethod
@@ -279,7 +283,7 @@ class GenetecCameraClient(CameraClient):
         bytes = struct.unpack(format_str, data[:expected_size])
         return bytes, data[expected_size:]
     
-    async def start_live(self, camera_guid: str) -> AsyncGenerator[np.ndarray, None]:
+    async def start_live(self, camera_guid: str, only_key_frames: bool = True) -> AsyncGenerator[np.ndarray, None]:
 
         xml = (
             f'<?xml version="1.0" encoding="UTF-8"?>'
@@ -593,7 +597,7 @@ class MilestoneCameraClient(CameraClient):
         datetime_time = datetime.datetime.fromtimestamp(time/1000, datetime.timezone.utc)
         return datetime_time, data[expected_size+header_extension:]
     
-    async def start_live(self, camera_guid: str) -> AsyncGenerator[np.ndarray, None]:
+    async def start_live(self, camera_guid: str, only_key_frames: bool = True) -> AsyncGenerator[np.ndarray, None]:
         if not self.__token:
             raise Exception("Not logged in")
 
@@ -625,12 +629,12 @@ class MilestoneCameraClient(CameraClient):
             f"<methodname>connect</methodname>"
             f"<username />"
             f"<password />"
-            f"<alwaysstdjpeg>no</alwaysstdjpeg>"            # yes for jpeg, no for h264
+            f"<alwaysstdjpeg>no</alwaysstdjpeg>"
             f"<transcode><allframes>yes</allframes></transcode>"
             f"<connectparam>id={camera_guid}&amp;connectiontoken={self.__token}</connectparam>"
             f"<clientcapabilities>"
             f"<privacymask>no</privacymask>"
-            f"<multipart>no</multipart>"
+            f"<multipartdata>{'no' if only_key_frames else 'yes'}</multipartdata>"
             f"</clientcapabilities>"
             f"</methodcall>\r\n\r\n"
         ).encode("utf-8")
@@ -656,18 +660,27 @@ class MilestoneCameraClient(CameraClient):
         await asyncio.wait_for(self.writer.drain(), timeout=TIMEOUT)
 
         decoder = VideoDecoder()
+        boundary = None
 
         while True:
-
             # new chunk of data
             data = b""
             while True:
                 line = await asyncio.wait_for(self.reader.readuntil(b"\r\n"), timeout=TIMEOUT)
+                data += line
                 if not line or line == b"\r\n":
                     break
-                data += line
+            
+            logger.debug("--------------------------------")
+            logger.debug("raw headers:")
+            logger.debug(data)
 
-            if data.startswith(b"ImageResponse"):
+            if (
+                data.startswith(b"ImageResponse") or
+                (boundary is not None and data.startswith(boundary)) or
+                data.startswith(b"Content-length")
+            ):
+
                 headers = {}
                 header_lines = data.decode("utf-8").split("\r\n")
                 for line in header_lines:
@@ -676,46 +689,64 @@ class MilestoneCameraClient(CameraClient):
                         headers[key.strip().lower()] = value.strip()
                 
                 content_length = int(headers.get("content-length", 0))
-                content_type = headers.get("content-type", "").lower()
+                content_type = headers.get("content-type", "")
                 current_time = int(headers.get("current", 0)) / 1000
                 datetime_time = datetime.datetime.fromtimestamp(current_time, datetime.timezone.utc)
 
+                #print(current_time)
+                logger.debug("decoded headers:")
+                logger.debug(headers)
+
+                if "multipart" in content_type:
+                    for line in content_type.split(";"):
+                        if "=" in line:
+                            key, value = line.split("=", 1)
+                            key = key.strip().lower()
+                            value = value.strip()
+                            if key == "boundary":
+                                boundary = b"--" + value.strip().encode("utf-8") + b"\r\n"
+                                break
+
                 if content_length > 0 and content_type == "application/x-genericbytedata-octet-stream":
                     bytes = await asyncio.wait_for(self.reader.readexactly(content_length), timeout=TIMEOUT)
+
+                    logger.debug("raw bytes:")
+                    logger.debug(bytes[:10])
 
                     # raw jpeg
                     if bytes.startswith(b"\xff\xd8\xff\xe0"):
                         data = cv2.imdecode(np.frombuffer(bytes, dtype=np.uint8), cv2.IMREAD_COLOR)
                         yield data, datetime_time
+
                     # video block
-                    elif (bytes.startswith(b"\x00\x01") or
-                          bytes.startswith(b"\x00\x02") or
-                          bytes.startswith(b"\x00\x03") or
-                          bytes.startswith(b"\x00\x04") or
-                          bytes.startswith(b"\x00\x05") or
-                          bytes.startswith(b"\x00\x06") or
-                          bytes.startswith(b"\x00\x07") or
-                          bytes.startswith(b"\x00\x08") or
-                          bytes.startswith(b"\x00\x09") or
-                          bytes.startswith(b"\x00\x0a") or
-                          bytes.startswith(b"\x00\x0b") or
-                          bytes.startswith(b"\x00\x0c") or
-                          bytes.startswith(b"\x00\x0d") or
-                          bytes.startswith(b"\x00\x0e") or
-                          bytes.startswith(b"\x00\x0f")):
+                    elif bytes[0] == 0x00 and (
+                        bytes[1] == 0x01 or
+                        bytes[1] == 0x02 or
+                        bytes[1] == 0x03 or
+                        bytes[1] == 0x04 or
+                        bytes[1] == 0x05 or
+                        bytes[1] == 0x06 or
+                        bytes[1] == 0x07 or
+                        bytes[1] == 0x08 or
+                        bytes[1] == 0x09 or
+                        bytes[1] == 0x0a or
+                        bytes[1] == 0x0b or
+                        bytes[1] == 0x0c or
+                        bytes[1] == 0x0d or
+                        bytes[1] == 0x0e or
+                        bytes[1] == 0x0f ):
                         
                         time_frame, data = self._parse_video_block(bytes)
                         for img in decoder.decode(data):
                             yield img, datetime_time
-                    
+
                     # stream packet
                     elif bytes.startswith(b"\x00\x10"):
                         time_frame, data = self._parse_stream_packet(bytes)
-
                         for img in decoder.decode(data):
                             yield img, datetime_time
-                            
                     else:
+                        logger.error("Unknown content type", content_type, bytes[:10])
                         raise Exception("Unknown content type", content_type, bytes[:10])
 
                     # raw byte end with \r\n\r\n
@@ -724,8 +755,10 @@ class MilestoneCameraClient(CameraClient):
                     
             elif data.startswith(b"<?xml"):
                 pass
+            elif data == b"\r\n":
+                pass
             else:
-                print(data)
+                logger.debug(data)
                 break # ??? end of stream ?
 
             if await self._refresh_token():
@@ -740,7 +773,7 @@ class MilestoneCameraClient(CameraClient):
                 self.requestid += 1
                 self.writer.write(connectupdate)
                 await asyncio.wait_for(self.writer.drain(), timeout=TIMEOUT)
-        
+
     async def start_replay(self, camera_guid: str, from_time: datetime.datetime, to_time: datetime.datetime, gap: int = 0, only_key_frames: bool = True) -> AsyncGenerator[Tuple[np.ndarray, str], None]:
         if not self.__token:
             raise Exception("Not logged in")
@@ -779,12 +812,12 @@ class MilestoneCameraClient(CameraClient):
             f"<methodname>connect</methodname>"
             f"<username />"
             f"<password />"
-            f"<alwaysstdjpeg>{'yes' if only_key_frames else 'no'}</alwaysstdjpeg>"                  # yes for jpeg, no for h264
+            f"<alwaysstdjpeg>no</alwaysstdjpeg>"
             f"<transcode><allframes>yes</allframes></transcode>"
             f"<connectparam>id={camera_guid}&amp;connectiontoken={self.__token}</connectparam>"
             f"<clientcapabilities>"
             f"<privacymask>no</privacymask>"
-            f"<multipart>no</multipart>"
+            f"<multipartdata>{'no' if only_key_frames else 'yes'}</multipartdata>"
             f"</clientcapabilities>"
             f"</methodcall>\r\n\r\n"
         ).encode("utf-8")
@@ -811,9 +844,9 @@ class MilestoneCameraClient(CameraClient):
         await asyncio.wait_for(self.writer.drain(), timeout=TIMEOUT)
 
         decoder = VideoDecoder()
+        boundary = None
 
         while True:
-
             # new chunk of data
             data = b""
             while True:
@@ -821,8 +854,17 @@ class MilestoneCameraClient(CameraClient):
                 data += line
                 if not line or line == b"\r\n":
                     break
+            
+            logger.debug("--------------------------------")
+            logger.debug("raw headers:")
+            logger.debug(data)
 
-            if data.startswith(b"ImageResponse"):
+            if (
+                data.startswith(b"ImageResponse") or
+                (boundary is not None and data.startswith(boundary)) or
+                data.startswith(b"Content-length")
+            ):
+
                 headers = {}
                 header_lines = data.decode("utf-8").split("\r\n")
                 for line in header_lines:
@@ -831,9 +873,23 @@ class MilestoneCameraClient(CameraClient):
                         headers[key.strip().lower()] = value.strip()
                 
                 content_length = int(headers.get("content-length", 0))
-                content_type = headers.get("content-type", "").lower()
+                content_type = headers.get("content-type", "")
                 current_time = int(headers.get("current", 0)) / 1000
                 datetime_time = datetime.datetime.fromtimestamp(current_time, datetime.timezone.utc)
+
+                #print(current_time)
+                logger.debug("decoded headers:")
+                logger.debug(headers)
+
+                if "multipart" in content_type:
+                    for line in content_type.split(";"):
+                        if "=" in line:
+                            key, value = line.split("=", 1)
+                            key = key.strip().lower()
+                            value = value.strip()
+                            if key == "boundary":
+                                boundary = b"--" + value.strip().encode("utf-8") + b"\r\n"
+                                break
 
                 if datetime_time > to_time:
                     break
@@ -841,59 +897,66 @@ class MilestoneCameraClient(CameraClient):
                 if content_length > 0 and content_type == "application/x-genericbytedata-octet-stream":
                     bytes = await asyncio.wait_for(self.reader.readexactly(content_length), timeout=TIMEOUT)
 
+                    logger.debug("raw bytes:")
+                    logger.debug(bytes[:10])
+
                     # raw jpeg
                     if bytes.startswith(b"\xff\xd8\xff\xe0"):
                         data = cv2.imdecode(np.frombuffer(bytes, dtype=np.uint8), cv2.IMREAD_COLOR)
                         yield data, datetime_time
-                        
+
                     # video block
                     elif bytes[0] == 0x00 and (
-                         bytes[1] == 0x01 or
-                         bytes[1] == 0x02 or
-                         bytes[1] == 0x03 or
-                         bytes[1] == 0x04 or
-                         bytes[1] == 0x05 or
-                         bytes[1] == 0x06 or
-                         bytes[1] == 0x07 or
-                         bytes[1] == 0x08 or
-                         bytes[1] == 0x09 or
-                         bytes[1] == 0x0a or
-                         bytes[1] == 0x0b or
-                         bytes[1] == 0x0c or
-                         bytes[1] == 0x0d or
-                         bytes[1] == 0x0e or
-                         bytes[1] == 0x0f ):
+                        bytes[1] == 0x01 or
+                        bytes[1] == 0x02 or
+                        bytes[1] == 0x03 or
+                        bytes[1] == 0x04 or
+                        bytes[1] == 0x05 or
+                        bytes[1] == 0x06 or
+                        bytes[1] == 0x07 or
+                        bytes[1] == 0x08 or
+                        bytes[1] == 0x09 or
+                        bytes[1] == 0x0a or
+                        bytes[1] == 0x0b or
+                        bytes[1] == 0x0c or
+                        bytes[1] == 0x0d or
+                        bytes[1] == 0x0e or
+                        bytes[1] == 0x0f ):
                         
                         time_frame, data = self._parse_video_block(bytes)
                         for img in decoder.decode(data):
                             yield img, datetime_time
+
                     # stream packet
                     elif bytes.startswith(b"\x00\x10"):
                         time_frame, data = self._parse_stream_packet(bytes)
-
                         for img in decoder.decode(data):
                             yield img, datetime_time
                     else:
+                        logger.error("Unknown content type", content_type, bytes[:10])
                         raise Exception("Unknown content type", content_type, bytes[:10])
 
                     # raw byte end with \r\n\r\n
                     await asyncio.wait_for(self.reader.readline(), timeout=TIMEOUT)
                     await asyncio.wait_for(self.reader.readline(), timeout=TIMEOUT)
-                
-                next = (
-                    f'<?xml version="1.0" encoding="UTF-8"?>'
-                    f"<methodcall>"
-                    f"<requestid>{self.requestid}</requestid>"
-                    f"<methodname>next</methodname>"
-                    f"</methodcall>\r\n\r\n"
-                ).encode("utf-8")
-                self.requestid += 1
-                self.writer.write(next)
+
+                    next = (
+                        f'<?xml version="1.0" encoding="UTF-8"?>'
+                        f"<methodcall>"
+                        f"<requestid>{self.requestid}</requestid>"
+                        f"<methodname>next</methodname>"
+                        f"</methodcall>\r\n\r\n"
+                    ).encode("utf-8")
+                    self.requestid += 1
+                    self.writer.write(next)
+
                 await asyncio.wait_for(self.writer.drain(), timeout=TIMEOUT)
             elif data.startswith(b"<?xml"):
                 pass
+            elif data == b"\r\n":
+                pass
             else:
-                print("hmmm? ", data)
+                logger.debug(data)
                 break # ??? end of stream ?
 
             if await self._refresh_token():
@@ -953,7 +1016,7 @@ async def test_genetec():
             first_guid = next(iter(cameras))
             print("GUID de la première caméra:", first_guid)
 
-            streams = client.start_live(first_guid)
+            streams = client.start_live(first_guid, False)
             img = await anext(streams)
             cv2.imwrite("test.jpg", img)
 
@@ -972,23 +1035,36 @@ async def test_milestone():
         first_guid = next(iter(cameras))
         print(f"first_guid : {first_guid}")
 
-        #streams = client.start_live(first_guid)
+        #streams = client.start_live(first_guid, False)
         now = datetime.datetime.now()
         
-        from_time = now.replace(hour=7, minute=10, second=0).astimezone(datetime.timezone.utc)
-        to_time = now.replace(hour=8, minute=10, second=0).astimezone(datetime.timezone.utc)
+        from_time = now.replace(hour=12, minute=10, second=0).astimezone(datetime.timezone.utc)
+        to_time = now.replace(hour=12, minute=11, second=0).astimezone(datetime.timezone.utc)
 
-        streams = client.start_replay(first_guid, from_time, to_time, 0,False)
-        prev_time = None
-        with tqdm() as pbar:
-            async for img, time_frame in streams:
-                if prev_time:
-                    elapsed = (time_frame - prev_time).total_seconds()
-                    pbar.set_description(f"Time between frames: {elapsed:.2f} seconds")
-                prev_time = time_frame
-                pbar.update(1)
-                #cv2.imwrite("test.jpg", img)
-                #break
+        container, codec = "webm", "vp8"
+        output = av.open("output.webm", mode='w', format=container)
+        stream = output.add_stream(codec, rate=1)
+        stream.pix_fmt = 'yuv420p'
+        
+        try:
+            prev_time = None
+            with tqdm() as pbar:
+                streams = client.start_replay(first_guid, from_time, to_time, 0, False)
+                async for img, time_frame in streams:
+                    if prev_time:
+                        elapsed = (time_frame - prev_time).total_seconds()
+                        pbar.set_description(f"Time between frames: {elapsed:.2f} seconds")
+                    prev_time = time_frame
+                    pbar.update(1)
+
+                    frame = av.VideoFrame.from_ndarray(img, format='bgr24')
+                    packet = stream.encode(frame)
+                    output.mux(packet)
+                
+        except Exception as e:
+            print(e)
+        finally:
+            output.close()
 
 if __name__ == "__main__":
     asyncio.run(test_milestone())

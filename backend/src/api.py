@@ -710,7 +710,7 @@ class FastAPIServer:
             try:
                 VMS = CameraClient.create(vms_host, vms_port, vms_username, vms_password, vms_type)
                 async with VMS() as client:
-                    streams = client.start_live(guuid)
+                    streams = client.start_live(guuid, True)
                     img, time_frame = await anext(streams)
                     _, bytes = cv2.imencode('.jpg', img)
                     return Response(content=bytes.tobytes(), status_code=200, headers={"Content-Type": "image/jpeg"})

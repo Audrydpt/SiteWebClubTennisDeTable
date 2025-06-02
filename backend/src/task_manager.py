@@ -39,6 +39,7 @@ logger.addHandler(logging.StreamHandler())
 file_handler = logging.FileHandler(f"/tmp/{__name__}.log")
 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 logger.addHandler(file_handler)
+logger.addHandler(logging.StreamHandler())
 
 celery_app = Celery(
     'forensic_tasks',

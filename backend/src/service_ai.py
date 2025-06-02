@@ -11,6 +11,7 @@ logger.setLevel(logging.INFO)
 file_handler = logging.FileHandler(f"/tmp/{__name__}.log")
 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 logger.addHandler(file_handler)
+logger.addHandler(logging.StreamHandler())
 
 def bgr_to_yuv420p(bgr_image):
     """Convert BGR image to YUV420p raw format"""
