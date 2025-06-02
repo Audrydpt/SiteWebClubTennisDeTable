@@ -20,7 +20,7 @@ interface PaginatedResponse {
 export default function useSearch() {
   const { taskId } = useParams();
   const queryClient = useQueryClient();
-  const { currentTaskStatus } = useJobsContext();
+  const { tasks, currentTaskStatus } = useJobsContext();
 
   const [order, setOrder] = useState<{
     by: 'score' | 'date';
@@ -29,7 +29,7 @@ export default function useSearch() {
     by: 'score',
     direction: 'desc',
   });
-  const [progress, setProgress] = useState<SourceProgress[]>([]);
+  const [progress, setProgress] = useState<Record<string, SourceProgress>>({});
 
   const [currentPage, setCurrentPage] = useState(1);
   const wsRef = useRef<{ ws?: WebSocket; taskId?: string } | null>(null);
@@ -165,6 +165,10 @@ export default function useSearch() {
     },
   });
 
+  const updatedProgress = (sourceId: string, newProgress: SourceProgress) => {
+    setProgress((prev) => ({ ...prev, [sourceId]: newProgress }));
+  };
+
   // on task changed, close the websocket and open a new one
   useEffect(() => {
     // if the task is the same, do nothing
@@ -178,7 +182,7 @@ export default function useSearch() {
       wsRef.current.ws?.close();
       wsRef.current = null;
       setCurrentPage(1);
-      setProgress([]);
+      setProgress({});
       setOrder({ by: 'score', direction: 'desc' });
       console.log('WebSocket closed and reset');
     }
@@ -192,6 +196,9 @@ export default function useSearch() {
       return;
     }
 
+    const task = tasks.find((t) => t.id === taskId);
+    setProgress(task?.progress || {});
+
     const ws = new WebSocket(`${process.env.MAIN_API_URL}/forensics/${taskId}`);
     ws.onopen = () => {
       console.log('WebSocket connected');
@@ -200,17 +207,14 @@ export default function useSearch() {
       if (typeof event.data === 'string') {
         const json = JSON.parse(event.data);
         if (json.type === 'progress') {
-          const cur = progress.find((p) => p.sourceId === json.guid);
-          const tmp = progress.filter((p) => p.sourceId !== json.guid);
-
           const newProgress: SourceProgress = {
-            sourceId: json.guid,
+            sourceId: json.sourceId ?? json.guid,
             progress: json.progress,
             timestamp: json.timestamp,
-            startTime: cur ? cur.startTime : json.timestamp,
+            startTime: json.startTime,
           };
 
-          setProgress([...tmp, newProgress]);
+          updatedProgress(json.sourceId, newProgress);
         } else if (json.type === 'detection') {
           const imageUrl = `${process.env.MAIN_API_URL}/forensics/${taskId}/frames/${json.frame_uuid}`;
 

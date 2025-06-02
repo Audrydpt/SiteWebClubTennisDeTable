@@ -18,13 +18,6 @@ vi.mock('sonner', () => ({
   toast: vi.fn(),
 }));
 
-// Mock la traduction pour éviter des erreurs
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
-
 describe('Retention', () => {
   const mockRetentionAPI = {
     query: {

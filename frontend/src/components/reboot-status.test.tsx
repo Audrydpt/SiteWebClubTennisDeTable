@@ -9,17 +9,6 @@ import RebootStatus from './reboot-status';
 // Mock the dependencies
 vi.mock('@/hooks/use-server-status');
 vi.mock('@/providers/auth-context');
-vi.mock('@/components/ui/dialog', () => ({
-  Dialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
-    open ? <div data-testid="dialog">{children}</div> : null,
-  DialogContent: ({
-    children,
-    className,
-  }: {
-    children: React.ReactNode;
-    className?: string;
-  }) => <div className={className}>{children}</div>,
-}));
 
 describe('RebootStatus', () => {
   const mockOnRebootComplete = vi.fn();

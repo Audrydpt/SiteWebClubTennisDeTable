@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import { useTranslation } from 'react-i18next';
 import { Route, Routes } from 'react-router-dom';
 
 import Header from '@/components/header';
@@ -16,6 +17,7 @@ import SearchProvider from './providers/search-provider';
 
 function Forensic() {
   const { addNewTab } = useJobsContext();
+  const { t } = useTranslation();
 
   return (
     <div className="flex h-full w-full">
@@ -28,7 +30,7 @@ function Forensic() {
 
       <Card className="h-full flex-1 ml-2">
         <CardContent className="p-10 pb-8 h-full">
-          <Header title="Recherche à postériori" />
+          <Header title={t('forensic:search.title')} />
 
           {/* Panneau des onglets */}
           <div className="mb-4">

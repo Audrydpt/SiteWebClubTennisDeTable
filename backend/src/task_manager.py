@@ -145,6 +145,7 @@ class ResultsStore:
     - task:{job_id}:results:date - Liste des résultats trié par date ASC
     - task:{job_id}:results:score - Liste des résultats trié par score DESC
     - task:{job_id}:results:updates - Stream des mises à jour
+    - task:{job_id}:progress:{camera_uuid} - Set de progression de la tâche
     - task:{job_id}:frames:{frame_uuid} - Frames individuelles
     
     Ces clés ne doivent être accessibles que via les méthodes publiques de cette classe.
@@ -167,6 +168,9 @@ class ResultsStore:
     
     def __get_result_sort_key(self, job_id: str) -> str:
         return f"task:{job_id}:results:score"
+
+    def __get_progress_key(self, job_id: str, camera_uuid: str) -> str:
+        return f"task:{job_id}:progress:{camera_uuid}"
 
     def __get_frame_key(self, job_id: str, frame_uuid: str) -> str:
         return f"task:{job_id}:frames:{frame_uuid}"
@@ -242,7 +246,6 @@ class ResultsStore:
             maxlen=self.max_results,
             approximate=True,
         )
-        # Définir une TTL pour que les données expirent après 5 minutes
         await redis.expire(channel_name, 5 * 60)
 
         # Conserver les métadonnées dans la liste existante pour l'historique (tri par date)
@@ -264,6 +267,15 @@ class ResultsStore:
         if result.frame and result.frame_uuid:
             frame_key = self.__get_frame_key(result.job_id, result.frame_uuid)
             await redis.set(frame_key, result.frame)
+        
+        if result.metadata.get("type") == "progress":
+            camera_uuid = result.metadata.get("sourceId")
+            progress = result.metadata.get("progress")
+            timestamp = result.metadata.get("timestamp")
+            startTime = result.metadata.get("startTime")
+
+            if camera_uuid and progress and timestamp and startTime:
+                await self.set_progress(result.job_id, camera_uuid, {"progress": progress, "timestamp": timestamp, "startTime": startTime})
 
     async def get_results(self, job_id: str, start: int = 0, end: int = -1) -> List[JobResult]:
         redis = await self.__get_redis()
@@ -305,38 +317,34 @@ class ResultsStore:
             logger.error(f"Error parsing last result JSON: {e}")
             return None
 
-    async def estimate_job_size(self, job_id: str) -> int:
+    async def set_progress(self, job_id: str, camera_uuid: str, progress: dict) -> None:
         redis = await self.__get_redis()
-        result_list_key = self.__get_result_list_key(job_id)
+        progress_key = self.__get_progress_key(job_id, camera_uuid)
+        progress["sourceId"] = camera_uuid
+        await redis.set(progress_key, json.dumps(progress))
 
-        # Récupérer le nombre de résultats
-        nb_results = await redis.llen(result_list_key)
+    async def get_progress(self, job_id: str, camera_uuid: str = None) -> Optional[dict]:
+        redis = await self.__get_redis()
 
-        # Estimer la taille des métadonnées (approximation)
-        metadata_size = 0
-        results_json = await redis.lrange(result_list_key, 0, min(5, nb_results-1))
-        if results_json:
-            # Calculer la taille moyenne des métadonnées sur les premiers résultats
-            avg_size = sum(len(r) for r in results_json) / len(results_json)
-            metadata_size = int(avg_size * nb_results)
+        if camera_uuid:
+            progress_key = self.__get_progress_key(job_id, camera_uuid)
+            progress_json = await redis.get(progress_key)
+            if progress_json:
+                return json.loads(progress_json)
+        else:
+            progress_pattern = self.__get_progress_key(job_id, "*")
+            progress_keys = await redis.keys(progress_pattern)
 
-        # Estimer la taille des frames (en supposant une taille moyenne de 50Ko par frame)
-        frame_pattern = f"task:{job_id}:frames:*"
-        frame_keys = await redis.keys(frame_pattern)
-        frame_size = 0
-
-        if frame_keys:
-            # Échantillonner quelques frames pour obtenir une taille moyenne
-            sample_size = min(5, len(frame_keys))
-            sample_keys = frame_keys[:sample_size]
-            sample_frames = [await redis.get(key) for key in sample_keys]
-            avg_frame_size = sum(len(frame) if frame else 0 for frame in sample_frames) / sample_size
-            frame_size = int(avg_frame_size * len(frame_keys))
-
-        # Taille totale estimée en kilooctets
-        total_size_kb = (metadata_size + frame_size) // 1024
-
-        return total_size_kb if total_size_kb > 0 else 1  # Retourner au moins 1Ko
+            ret = {}
+            for progress_key in progress_keys:
+                key = progress_key.decode('utf-8')
+                logger.info(f"Progress key: {key}")
+                uuid = key.split(":")[-1]
+                progress_json = await redis.get(progress_key)
+                if progress_json:
+                    ret[uuid] = json.loads(progress_json)
+            return ret
+        return None
 
     async def delete_job(self, job_id: str) -> int:
         redis = await self.__get_redis()
@@ -344,30 +352,31 @@ class ResultsStore:
 
         # Supprimer la liste des résultats (tri par date)
         result_list_key = self.__get_result_list_key(job_id)
-        deleted = await redis.delete(result_list_key)
-        deleted_keys += deleted
+        deleted_keys += await redis.delete(result_list_key)
 
         # Supprimer la liste des résultats (triée par score)
         result_sort_key = self.__get_result_sort_key(job_id)
-        deleted = await redis.delete(result_sort_key)
-        deleted_keys += deleted
+        deleted_keys += await redis.delete(result_sort_key)
 
         # Supprimer toutes les frames associées
-        frame_pattern = f"task:{job_id}:frames:*"
+        frame_pattern = self.__get_frame_key(job_id, "*")
         frame_keys = await redis.keys(frame_pattern)
         if frame_keys:
-            deleted = await redis.delete(*frame_keys)
-            deleted_keys += deleted
+            deleted_keys += await redis.delete(*frame_keys)
         
         # Supprimer le stream des mises à jour
         channel_name = self.__get_channel_name(job_id)
-        deleted = await redis.delete(channel_name)
-        deleted_keys += deleted
+        deleted_keys += await redis.delete(channel_name)
+
+        # Supprimer la progression de la tâche
+        progress_pattern = self.__get_progress_key(job_id, "*")
+        progress_keys = await redis.keys(progress_pattern)
+        if progress_keys:
+            deleted_keys += await redis.delete(*progress_keys)
 
         # Supprimer les métadonnées du job
         job_key = f"task:{job_id}"
-        deleted = await redis.delete(job_key)
-        deleted_keys += deleted
+        deleted_keys += await redis.delete(job_key)
 
         return deleted_keys
     
@@ -422,7 +431,7 @@ class ResultsStore:
 
     async def get_all_job_ids(self) -> List[str]:
         redis = await self.__get_redis()
-        keys = await redis.keys("task:*:results:date")
+        keys = await redis.keys("task:*")
         job_ids = []
         
         for key in keys:
@@ -524,11 +533,23 @@ class TaskManager:
 
             with Redis(db=1) as redis_sync:
                 job_key = f"task:{job_id}"
-                created_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
-                redis_sync.hset(job_key, "created_at", created_at)
-                redis_sync.hset(job_key, "job_type", job_type)
+                timerange = job_params.get("timerange", {})
 
+                redis_sync.set(job_key, json.dumps({
+                    "created": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                    "job_type": job_type,
+                    "type": job_params.get("type", ""),
+                    "timerange": {
+                        "time_from": timerange.get("time_from").isoformat(),
+                        "time_to": timerange.get("time_to").isoformat(),
+                    },
+                    "sources": job_params.get("sources", []),
+                    "appearances": job_params.get("appearances", {}),
+                    "attributes": job_params.get("attributes", {}),
+                    "context": job_params.get("context", {}),
+                }))
+            
             return job_id
 
         except Exception as e:
@@ -556,20 +577,20 @@ class TaskManager:
         except Exception as send_e:
             logger.error(f"Erreur lors de l'envoi de la notification d'annulation pour le job {job_id}: {send_e}")
             return False
-
+    
     @staticmethod
-    async def get_job_created(job_id: str) -> Optional[datetime.datetime]:
+    async def get_job_metadata(job_id: str) -> Optional[dict]:
         try:
             async with Redis(db=1) as redis_client:
                 job_key = f"task:{job_id}"
-                created_at = await redis_client.hget(job_key, "created_at")
-                if created_at:
-                    return datetime.datetime.fromisoformat(created_at.decode('utf-8'))
-            return None
+                job_json = await redis_client.get(job_key)
+                if job_json:
+                    return json.loads(job_json)
+                return None
         except Exception as e:
-            logger.error(f"Erreur lors de la récupération de la date de création du job {job_id}: {e}")
+            logger.error(f"Erreur lors de la récupération des métadonnées du job {job_id}: {e}")
             return None
-        
+    
     @staticmethod
     async def get_job_total_pages(job_id: str) -> Optional[int]:
         try:
@@ -583,29 +604,13 @@ class TaskManager:
             return None
 
     @staticmethod
-    async def get_job_type(job_id: str) -> Optional[str]:
+    async def get_job_progress(job_id: str) -> Optional[dict]:
         try:
-            with Redis(db=1) as redis_client:
-                job_key = f"task:{job_id}"
-                job_type = redis_client.hget(job_key, "job_type")
-
-                if job_type:
-                    return job_type.decode('utf-8')
-
-            results = await results_store.get_results(job_id)
-            if results:
-                for result in results:
-                    if "type" in result.metadata:
-                        if result.metadata.get("type") == "person":
-                            return "PersonReplayJob"
-                        else:
-                            return "VehicleReplayJob"
-
-            return "UnknownJobType"
+            return await results_store.get_progress(job_id)
         except Exception as e:
-            logger.error(f"Erreur lors de la récupération du type du job {job_id}: {e}")
+            logger.error(f"Erreur lors de la récupération de la progression du job {job_id}: {e}")
             return None
-
+    
     @staticmethod
     async def get_job_count(job_id: str) -> Optional[int]:
         try:
@@ -614,43 +619,6 @@ class TaskManager:
 
         except Exception as e:
             logger.error(f"Erreur lors de la récupération du nombre de résultats du job {job_id}: {e}")
-            logger.error(traceback.format_exc())
-            return None
-
-    @staticmethod
-    async def get_job_size(job_id: str) -> Optional[int]:
-        try:
-            return await results_store.estimate_job_size(job_id)
-        except Exception as e:
-            logger.error(f"Erreur lors de la récupération de la taille du job {job_id}: {e}")
-            logger.error(traceback.format_exc())
-            return None
-
-    @staticmethod
-    async def get_job_updated(job_id: str) -> Optional[datetime.datetime]:
-        try:
-            # Essayer d'abord de récupérer via Celery qui a l'information la plus précise
-            task_result = AsyncResult(job_id)
-            if hasattr(task_result, 'date_done') and task_result.date_done:
-                return task_result.date_done
-
-            # Si pas trouvé dans Celery, vérifier Redis pour les derniers résultats
-            last_result = await results_store.get_last_result(job_id)
-            if last_result and "timestamp" in last_result.metadata:
-                try:
-                    return datetime.datetime.fromisoformat(last_result.metadata["timestamp"])
-                except ValueError:
-                    pass
-
-            # Sinon, utiliser la date de création comme fallback
-            created_at = await TaskManager.get_job_created(job_id)
-            if created_at:
-                return created_at
-
-            return datetime.datetime.now(datetime.timezone.utc)
-
-        except Exception as e:
-            logger.error(f"Erreur lors de la récupération de la date de mise à jour du job {job_id}: {e}")
             logger.error(traceback.format_exc())
             return None
 
@@ -1178,7 +1146,8 @@ class VehicleReplayJob:
             ai_object = settings_dict.get("object", None)
             ai_vehicle = settings_dict.get("vehicle", None)
             ai_person = settings_dict.get("person", None)
-            
+            start_time = datetime.datetime.now()
+            yield {"type": "progress", "progress": 0, "sourceId": source_guid, "timestamp": self.time_from.isoformat(), "startTime": start_time.isoformat()}, None
 
             async with ServiceAI(ai_host, ai_port, ai_object, ai_vehicle, ai_person) as forensic:
                 logger.info("Connected to AI Service")
@@ -1227,7 +1196,7 @@ class VehicleReplayJob:
                         now_time = datetime.datetime.now()
                         if now_time > next_progress_to_send:
                             progress = self._calculate_progress(time, self.time_from, self.time_to)                        
-                            yield {"type": "progress", "progress": progress, "guid": source_guid, "timestamp": time.isoformat()}, None
+                            yield {"type": "progress", "progress": progress, "sourceId": source_guid, "timestamp": time.isoformat(), "startTime": start_time.isoformat()}, None
                             next_progress_to_send = now_time + datetime.timedelta(seconds=2)
                         
                         async for metadata, frame_bytes, current_boxes in self.__process_image(forensic, img, time, previous_boxes, progress,source_guid):
@@ -1242,23 +1211,25 @@ class VehicleReplayJob:
             logger.error(f"Exception in __process_stream: {stacktrace}")
             yield {"type": "error", "message": f"Exception in stream processing: {ex}"}, None
         finally:
-            yield {"type": "progress", "progress": 100, "guid": source_guid, "timestamp": self.time_to.isoformat()}, None
+            yield {"type": "progress", "progress": 100, "sourceId": source_guid, "timestamp": self.time_to.isoformat(), "startTime": start_time.isoformat()}, None
         
         logger.info("Stream processing completed")
 
     async def _execute(self) -> AsyncGenerator[Tuple[dict, Optional[bytes]], None]:
         logger.info(f"Processing Forensic job {self.job_id}")
         logger.info(f"Sources: {self.sources}")
-        logger.info(f"Time range: {self.time_from} - {self.time_to}")
-        
+        logger.info(f"Time range: {self.time_from} - {self.time_to}")        
         if not self.sources:
             logger.error("No sources provided, yielding error result")
             yield {"type": "error", "message": "Aucune source spécifiée"}, None
             return
         
+        for camera in self.sources:
+            await results_store.set_progress(self.job_id, camera, {"progress": 0, "timestamp": self.time_from.isoformat()})
+        
         try:
             # TODO: await asyncio.gather() pour traiter plusieurs flux en parallèle
-            sequential = True
+            sequential = False
             if sequential:
                 for source_guid in self.sources:
                     if self.cancel_event.is_set():

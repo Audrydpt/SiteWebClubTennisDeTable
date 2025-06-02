@@ -387,17 +387,15 @@ class FastAPIServer:
             try:
                 tasks = {}
                 for job_id in await TaskManager.get_jobs():
+
+                    metadata = await TaskManager.get_job_metadata(job_id)
                     status = TaskManager.get_job_status(job_id)
 
-                    task_info = {
-                        "status": status,
-                        "created": await TaskManager.get_job_created(job_id),
-                        "type": await TaskManager.get_job_type(job_id),
-                        "updated": await TaskManager.get_job_updated(job_id),
-                        "count": await TaskManager.get_job_count(job_id),
-                        "size": await TaskManager.get_job_size(job_id),
-                        "total_pages": await TaskManager.get_job_total_pages(job_id),
-                    }
+                    task_info = metadata if metadata else {}
+                    task_info["status"] = status
+                    task_info["progress"] = await TaskManager.get_job_progress(job_id)
+                    task_info["count"] = await TaskManager.get_job_count(job_id)
+                    task_info["total_pages"] = await TaskManager.get_job_total_pages(job_id)
                     
                     if status == JobStatus.FAILURE:
                         error, stacktrace = await TaskManager.get_job_error(job_id)

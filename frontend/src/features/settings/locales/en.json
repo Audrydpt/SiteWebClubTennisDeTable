@@ -107,7 +107,7 @@
       "errorDescription": "Failed to update VMS Settings. Please try again."
     }
   },
-  "ia-settings": {
+  "ai-settings": {
     "title": "AI Settings",
     "description": "Configure AI settings for your video management system.",
     "host": "Hôte",

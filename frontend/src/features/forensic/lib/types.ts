@@ -22,10 +22,9 @@ export interface ForensicResult {
 
 export interface SourceProgress {
   sourceId: string;
-  sourceName?: string;
   progress: number;
-  timestamp?: string;
-  startTime: string;
+  timestamp: Date;
+  startTime?: Date;
 }
 
 // Définition des schémas Zod

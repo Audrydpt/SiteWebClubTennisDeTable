@@ -4,6 +4,7 @@ import { fr } from 'date-fns/locale';
 import { CalendarIcon, Clock } from 'lucide-react';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import {
   AccordionContent,
@@ -58,7 +59,11 @@ function DateTimePicker({
   timeOptions: { hours: string[]; minutes: string[] };
   timeFrom?: Date;
 }) {
-  const label = isStart ? 'Date de début' : 'Date de fin';
+  const { t } = useTranslation();
+
+  const label = isStart
+    ? t('forensic:times.start_date')
+    : t('forensic:times.end_date');
 
   return (
     <FormItem className="grid gap-2">
@@ -76,7 +81,7 @@ function DateTimePicker({
               <CalendarIcon className="mr-2 h-4 w-4" />
               {selectedDate
                 ? format(selectedDate, 'dd/MM/yyyy', { locale: fr })
-                : 'Sélectionner une date'}
+                : t('forensic:times.select_date')}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -147,6 +152,7 @@ function DateTimePicker({
 export default function Times() {
   const { formMethods } = useForensicForm();
   const { control, setValue, setError, clearErrors } = formMethods;
+  const { t } = useTranslation();
 
   const [rerender, setRerender] = useState(0);
 
@@ -310,7 +316,7 @@ export default function Times() {
       <AccordionTrigger
         className={hasError ? 'text-destructive font-medium' : ''}
       >
-        Plage temporelle
+        {t('forensic:times.title')}
       </AccordionTrigger>
       <AccordionContent>
         <FormField
@@ -361,8 +367,7 @@ export default function Times() {
 
               {hasError && (
                 <FormMessage>
-                  {timerangeError ||
-                    "L'heure de début doit être antérieure à l'heure de fin"}
+                  {timerangeError || t('forensic:times.error')}
                 </FormMessage>
               )}
             </div>

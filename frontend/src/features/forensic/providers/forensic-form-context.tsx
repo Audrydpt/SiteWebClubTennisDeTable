@@ -67,7 +67,7 @@ export const getDefaultValues = (
 };
 
 // Interface du contexte
-interface ForensicFormContextProps {
+export interface ForensicFormContextProps {
   formMethods: UseFormReturn<ForensicFormValues>;
   subjectType: 'vehicle' | 'person';
   setSubjectType: (type: 'vehicle' | 'person') => void;

@@ -1,0 +1,90 @@
+{
+  "search": {
+    "title": "Recherche à postériori"
+  },
+  "display": {
+    "metadata": "Métadonnées",
+    "type": "Type",
+    "camera": "Caméra",
+    "score": "Score",
+    "timestamp": "Heure",
+    "no_camera": "Sélectionnez une caméra et lancez une recherche",
+    "error": "Erreur lors du chargement des résultats",
+    "loading": "Chargement...",
+    "no_image": "Pas d'image",
+    "raw_data": "Données brutes"
+  },
+  "appearances": {
+    "title": "Apparence générale",
+    "gender": "Genre",
+    "age": "Âge",
+    "build": "Corpulence",
+    "height": "Taille",
+    "hair": "Cheveux",
+    "hair_length": "Longueur",
+    "hair_style": "Style",
+    "hair_color": "Couleur",
+    "vehicle_type": "Type de véhicule",
+    "vehicle_color": "Couleur",
+    "tolerance": "Niveau de confiance"
+  },
+  "attributes": {
+    "title": "Attributs spécifiques",
+    "top_type": "Type de haut",
+    "top_color": "Couleur haut",
+    "bottom_type": "Type de bas",
+    "bottom_color": "Couleur bas",
+    "distinctive_features": "Signes distinctifs",
+    "brand": "Marque",
+    "model": "Modèle",
+    "plate": "Plaque d'immatriculation",
+    "contextual_situation": "Situation contextuelle",
+    "tolerance": "Niveau de confiance"
+  },
+  "sources": {
+    "title": "Sources vidéo",
+    "search_placeholder": "Rechercher une caméra...",
+    "select_all": "Sélectionner tout",
+    "no_cameras_found": "Aucunes caméras trouvées",
+    "selected": "sélectionnées",
+    "error": "Veuillez sélectionner au moins une source vidéo"
+  },
+  "times": {
+    "title": "Plage temporelle",
+    "start_date": "Date de début",
+    "end_date": "Date de fin",
+    "select_date": "Sélectionner une date",
+    "error": "L'heure de début doit être antérieure à l'heure de fin"
+  },
+  "types": {
+    "title": "Type de suspect",
+    "type": "Type",
+    "vehicle": "Véhicule",
+    "person": "Personne"
+  },
+  "submit": {
+    "launch": "Lancer la recherche"
+  },
+  "buttons": {
+    "score": "Score",
+    "date": "Date",
+    "descending": "Ordre décroissant",
+    "ascending": "Ordre croissant",
+    "delete_all_results": "Supprimer tous les résultats",
+    "delete_all_results_description": "Êtes-vous sûr de vouloir supprimer tous les onglets et résultats ? Cette action est irréversible.",
+    "delete_all_results_confirm": "Supprimer tout",
+    "clear_results": "Vider les résultats"
+  },
+  "job-tabs": {
+    "new_tab": "Nouvel onglet",
+    "delete_tab": "Supprimer cette recherche",
+    "delete_tab_description": "Êtes-vous sûr de vouloir supprimer cet onglet de recherche ?",
+    "delete_tab_confirm": "Supprimer",
+    "delete_tab_aria_label": "Supprimer cette recherche"
+  },
+  "multi-progress": {
+    "progression": "Progression",
+    "hide_details": "Masquer les détails",
+    "show_details": "Afficher les détails"
+  }
+}

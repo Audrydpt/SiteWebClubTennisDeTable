@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars,react/no-unused-prop-types */
 import { SortAsc, SortDesc, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import DeleteConfirmation from '@/components/confirm-delete';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ export type SortType = 'score' | 'date';
 export function SortButtons() {
   const { deleteAllTabs } = useJobsContext();
   const { order, setOrder, setCurrentPage } = useSearchContext();
+  const { t } = useTranslation();
 
   const handleSortBy = (by: 'score' | 'date') => {
     setOrder({ ...order, by });
@@ -35,14 +37,14 @@ export function SortButtons() {
           size="sm"
           onClick={() => handleSortBy('score')}
         >
-          Score
+          {t('forensic:buttons.score')}
         </Button>
         <Button
           variant={order.by === 'date' ? 'default' : 'outline'}
           size="sm"
           onClick={() => handleSortBy('date')}
         >
-          Date
+          {t('forensic:buttons.date')}
         </Button>
       </div>
 
@@ -53,7 +55,9 @@ export function SortButtons() {
         onClick={toggleSortOrder}
         className="h-8 w-8"
         title={
-          order.direction === 'desc' ? 'Ordre décroissant' : 'Ordre croissant'
+          order.direction === 'desc'
+            ? t('forensic:buttons.descending')
+            : t('forensic:buttons.ascending')
         }
       >
         {order.direction === 'desc' ? (
@@ -66,15 +70,15 @@ export function SortButtons() {
       {/* Bouton pour vider les résultats avec confirmation */}
       <DeleteConfirmation
         onDelete={deleteAllTabs}
-        title="Supprimer tous les résultats"
-        description="Êtes-vous sûr de vouloir supprimer tous les onglets et résultats ? Cette action est irréversible."
-        confirmText="Supprimer tout"
+        title={t('forensic:buttons.delete_all_results')}
+        description={t('forensic:buttons.delete_all_results_description')}
+        confirmText={t('forensic:buttons.delete_all_results_confirm')}
       >
         <Button
           variant="ghost"
           size="icon"
           className="h-8 w-8 text-muted-foreground hover:text-destructive"
-          title="Vider les résultats"
+          title={t('forensic:buttons.clear_results')}
         >
           <Trash2 className="h-4 w-4" />
         </Button>

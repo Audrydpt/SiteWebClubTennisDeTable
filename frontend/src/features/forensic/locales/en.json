@@ -1,0 +1,90 @@
+{
+  "search": {
+    "title": "Post-mortem search"
+  },
+  "display": {
+    "metadata": "Metadata",
+    "type": "Type",
+    "camera": "Camera",
+    "score": "Score",
+    "timestamp": "Timestamp",
+    "no_camera": "Select a camera and run a search",
+    "error": "Error loading results",
+    "loading": "Loading...",
+    "no_image": "No image",
+    "raw_data": "Raw data"
+  },
+  "appearances": {
+    "title": "General appearance",
+    "gender": "Gender",
+    "age": "Age",
+    "build": "Build",
+    "height": "Height",
+    "hair": "Hair",
+    "hair_length": "Hair length",
+    "hair_style": "Hair style",
+    "hair_color": "Hair color",
+    "vehicle_type": "Vehicle type",
+    "vehicle_color": "Vehicle color",
+    "tolerance": "Confidence"
+  },
+  "attributes": {
+    "title": "Specific attributes",
+    "top_type": "Top type",
+    "top_color": "Top color",
+    "bottom_type": "Bottom type",
+    "bottom_color": "Bottom color",
+    "distinctive_features": "Distinctive features",
+    "brand": "Brand",
+    "model": "Model",
+    "plate": "Plate",
+    "contextual_situation": "Contextual situation",
+    "tolerance": "Confidence"
+  },
+  "sources": {
+    "title": "Video sources",
+    "search_placeholder": "Search for a camera...",
+    "select_all": "Select all",
+    "no_cameras_found": "No cameras found",
+    "selected": "selected",
+    "error": "Please select at least one video source"
+  },
+  "times": {
+    "title": "Time range",
+    "start_date": "Start date",
+    "end_date": "End date",
+    "select_date": "Select a date",
+    "error": "The start time must be before the end time"
+  },
+  "types": {
+    "title": "Suspect type",
+    "type": "Type",
+    "vehicle": "Vehicle",
+    "person": "Person"
+  },
+  "submit": {
+    "launch": "Start search"
+  },
+  "buttons": {
+    "score": "Score",
+    "date": "Date",
+    "descending": "Descending",
+    "ascending": "Ascending",
+    "delete_all_results": "Delete all results",
+    "delete_all_results_description": "Are you sure you want to delete all tabs and results? This action is irreversible.",
+    "delete_all_results_confirm": "Delete all",
+    "clear_results": "Clear results"
+  },
+  "job-tabs": {
+    "new_tab": "New tab",
+    "delete_tab": "Delete this search",
+    "delete_tab_description": "Are you sure you want to delete this search tab?",
+    "delete_tab_confirm": "Delete",
+    "delete_tab_aria_label": "Delete this search"
+  },
+  "multi-progress": {
+    "progression": "Progression",
+    "hide_details": "Hide details",
+    "show_details": "Show details"
+  }
+}
