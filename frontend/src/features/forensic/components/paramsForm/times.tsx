@@ -109,7 +109,7 @@ function DateTimePicker({
             onValueChange={(value) => updateTimeValue(value, minutes)}
             disabled={!selectedDate}
           >
-            <SelectTrigger className="w-[60px]">
+            <SelectTrigger className="w-18">
               <SelectValue placeholder="H" />
             </SelectTrigger>
             <SelectContent>
@@ -129,7 +129,7 @@ function DateTimePicker({
             onValueChange={(value) => updateTimeValue(hours, value)}
             disabled={!selectedDate}
           >
-            <SelectTrigger className="w-[60px]">
+            <SelectTrigger className="w-18">
               <SelectValue placeholder="Min" />
             </SelectTrigger>
             <SelectContent>

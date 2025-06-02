@@ -88,7 +88,7 @@ function WhereClauses({
                 }
                 disabled={disabled}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select column" />
                 </SelectTrigger>
                 <SelectContent>

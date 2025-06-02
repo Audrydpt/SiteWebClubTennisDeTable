@@ -373,7 +373,7 @@ export default function Attributes() {
                   )
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Niveau de tolérance" />
                 </SelectTrigger>
                 <SelectContent>

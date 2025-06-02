@@ -166,7 +166,7 @@ export default function IASettings() {
                       disabled={!describeQuery.data?.detector}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue
                             placeholder={t('ai-settings.selectAI')}
                           />
@@ -197,7 +197,7 @@ export default function IASettings() {
                       disabled={!describeQuery.data?.classifier}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue
                             placeholder={t('ai-settings.selectAI')}
                           />
@@ -228,7 +228,7 @@ export default function IASettings() {
                       disabled={!describeQuery.data?.classifier}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue
                             placeholder={t('ai-settings.selectAI')}
                           />

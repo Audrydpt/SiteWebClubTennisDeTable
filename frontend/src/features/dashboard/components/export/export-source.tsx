@@ -121,7 +121,7 @@ export default function ExportStepSource({
                     }}
                     value={field.value}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue
                         placeholder={t('dashboard:export:source.selectTable')}
                       />

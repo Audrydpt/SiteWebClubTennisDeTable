@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars,react-hooks/exhaustive-deps */
-import { useState, useEffect, Dispatch, SetStateAction } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -104,7 +104,7 @@ function DateTimePicker({
             onValueChange={(value) => updateTimeValue(value, minutes)}
             disabled={!selectedDate}
           >
-            <SelectTrigger className="w-[60px]">
+            <SelectTrigger className="w-16">
               <SelectValue placeholder="H" />
             </SelectTrigger>
             <SelectContent>
@@ -124,7 +124,7 @@ function DateTimePicker({
             onValueChange={(value) => updateTimeValue(hours, value)}
             disabled={!selectedDate}
           >
-            <SelectTrigger className="w-[60px]">
+            <SelectTrigger className="w-16">
               <SelectValue placeholder="Min" />
             </SelectTrigger>
             <SelectContent>

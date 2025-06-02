@@ -70,7 +70,7 @@ export function FormDashboard({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="sm:max-w-full sm:w-4xl sm:max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
             {edition

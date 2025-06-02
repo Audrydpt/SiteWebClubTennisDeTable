@@ -22,7 +22,7 @@ function Forensic() {
   return (
     <div className="flex h-full w-full">
       {/* Panneau du formulaire */}
-      <Card className="h-full flex flex-col w-[350px]">
+      <Card className="h-full flex flex-col w-[375px]">
         <CardContent className="p4 h-full flex flex-col">
           <ForensicForm onSubmit={addNewTab} />
         </CardContent>

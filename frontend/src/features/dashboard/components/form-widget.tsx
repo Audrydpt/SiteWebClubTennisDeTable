@@ -280,7 +280,7 @@ export function FormWidget({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[80vw] max-h-[90vh]">
+      <DialogContent className="sm:max-w-full sm:w-6xl sm:max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
             {edition ? t('dashboard:widget.edit') : t('dashboard:widget.add')}
@@ -320,7 +320,7 @@ export function FormWidget({
                         value={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue
                               placeholder={t(
                                 'dashboard:widget.type.placeholder'
@@ -364,7 +364,7 @@ export function FormWidget({
                             value={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full">
                                 <SelectValue
                                   placeholder={t(
                                     'dashboard:widget.layout.placeholder'
@@ -401,7 +401,7 @@ export function FormWidget({
                             value={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full">
                                 <SelectValue
                                   placeholder={t(
                                     'dashboard:widget.size.placeholder'
@@ -440,7 +440,7 @@ export function FormWidget({
                             value={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full">
                                 <SelectValue
                                   placeholder={t(
                                     'dashboard:widget.table.placeholder'
@@ -477,7 +477,7 @@ export function FormWidget({
                             disabled={!getStackedOptions(formValues.type)}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full">
                                 <SelectValue
                                   placeholder={t(
                                     'dashboard:widget.groupBy.placeholder'
@@ -541,7 +541,7 @@ export function FormWidget({
                             disabled={UniqueValuesOptions[formValues.type]}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full">
                                 <SelectValue
                                   placeholder={t(
                                     'dashboard:widget.aggregation.placeholder'
@@ -579,7 +579,7 @@ export function FormWidget({
                             value={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full">
                                 <SelectValue
                                   placeholder={t(
                                     'dashboard:widget.duration.placeholder'

@@ -405,7 +405,7 @@ export default function RestoreBackupWizard({
                           )
                         }
                       >
-                        <SelectTrigger className="w-[200px]">
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Keep current stream" />
                         </SelectTrigger>
                         <SelectContent>

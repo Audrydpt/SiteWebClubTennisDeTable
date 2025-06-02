@@ -17,7 +17,7 @@ describe('ClearableSelect', () => {
 
     return render(
       <ClearableSelect {...defaultProps} {...props}>
-        <SelectTrigger>
+        <SelectTrigger className="w-full">
           <SelectValue placeholder="Select option" />
         </SelectTrigger>
         <SelectContent>
@@ -75,7 +75,7 @@ describe('ClearableSelect', () => {
       // Rerender with the selected value to simulate the component with a value
       rerender(
         <ClearableSelect onValueChange={onValueChange} value="option1">
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Select option" />
           </SelectTrigger>
           <SelectContent>
@@ -110,7 +110,7 @@ describe('ClearableSelect', () => {
       // Rerender with the selected value to make sure the clear button appears
       rerender(
         <ClearableSelect onValueChange={onValueChange} value="option1">
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Select option" />
           </SelectTrigger>
           <SelectContent>
@@ -158,7 +158,7 @@ describe('ClearableSelect', () => {
     it('renders properly with minimal props', () => {
       render(
         <ClearableSelect onValueChange={vi.fn()}>
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Select option" />
           </SelectTrigger>
         </ClearableSelect>

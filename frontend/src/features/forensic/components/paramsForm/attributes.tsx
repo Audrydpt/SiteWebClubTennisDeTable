@@ -287,7 +287,7 @@ export default function Attributes() {
                 <Label className="text-sm font-medium">
                   {t('forensic:attributes.brand')}
                 </Label>
-                <div className="h-10 max-w-[250px]">
+                <div className="h-10">
                   <MultiSelect
                     options={optionMaps.brands}
                     selected={
@@ -304,7 +304,7 @@ export default function Attributes() {
                 <Label className="text-sm font-medium">
                   {t('forensic:attributes.model')}
                 </Label>
-                <div className="h-10 max-w-[250px]">
+                <div className="h-10">
                   <MultiSelect
                     options={getAvailableModels()}
                     selected={vehicleAttributes?.mmr[0]?.model || []}
@@ -323,7 +323,7 @@ export default function Attributes() {
                   placeholder="AB-123-CD"
                   value={vehicleAttributes?.plate || ''}
                   onChange={(e) => setValue('attributes.plate', e.target.value)}
-                  className="max-w-[250px]"
+                  className="max-w-full"
                 />
               </div>
 
@@ -379,7 +379,7 @@ export default function Attributes() {
             <Label className="text-sm font-medium">
               {t('forensic:attributes.tolerance')}
             </Label>
-            <div className="h-10 max-w-[250px]">
+            <div className="h-10">
               <Select
                 value={tolerance}
                 onValueChange={(value) =>
@@ -389,7 +389,7 @@ export default function Attributes() {
                   )
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue
                     placeholder={t('forensic:attributes.tolerance')}
                   />

@@ -113,7 +113,7 @@ export default function FormCreateUser({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-full sm:w-xl sm:max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{t('settings:createUser.title')}</DialogTitle>
           <DialogDescription>
@@ -169,7 +169,7 @@ export default function FormCreateUser({
                     value={field.value}
                   >
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue
                           placeholder={t('settings:createUser.selectPrivilege')}
                         />

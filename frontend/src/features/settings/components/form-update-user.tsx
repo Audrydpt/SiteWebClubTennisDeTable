@@ -113,7 +113,7 @@ export default function FormUpdateUser({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="sm:max-w-full sm:w-xl sm:max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{t('settings:updateUser.title')}</DialogTitle>
           <DialogDescription>
@@ -137,7 +137,7 @@ export default function FormUpdateUser({
                     value={field.value}
                   >
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue
                           placeholder={t('settings:updateUser.selectPrivilege')}
                         />

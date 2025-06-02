@@ -178,7 +178,7 @@ function RenderImage(result: ForensicResult) {
           </div>
         </div>
       </DialogTrigger>
-      <DialogContent className="max-w-[90vw] max-h-[90vh] p-6">
+      <DialogContent className="sm:max-w-full sm:w-6xl sm:max-h-[90vh]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Image Section */}
           <div className="relative">

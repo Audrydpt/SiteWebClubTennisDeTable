@@ -145,7 +145,7 @@ export default function VMSSettings() {
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue
                             placeholder={t('vms-settings.selectVMS')}
                           />

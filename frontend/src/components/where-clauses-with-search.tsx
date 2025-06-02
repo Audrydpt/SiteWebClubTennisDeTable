@@ -105,7 +105,7 @@ function WhereClausesWithSearch({
                 }
                 disabled={disabled}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select column" />
                 </SelectTrigger>
                 <SelectContent>
@@ -118,7 +118,7 @@ function WhereClausesWithSearch({
               </Select>
             </div>
 
-            <div className="flex-1 min-w-[150px]">
+            <div className="flex-1">
               <MultiSelect
                 options={Array.from(
                   whereClauseAutocompletion[clause.column] || []
@@ -150,7 +150,7 @@ function WhereClausesWithSearch({
         type="button"
         variant="outline"
         size="sm"
-        className="h-8"
+        className="h-8 w-full"
         onClick={handleAddClause}
         disabled={disabled || value.length >= columns.length}
         aria-label={addButtonLabel}

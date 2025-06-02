@@ -104,7 +104,7 @@ export default function Appearances() {
                 <Label className="text-sm font-medium">
                   {t('forensic:appearances.gender')}
                 </Label>
-                <div className="h-10 max-w-[250px]">
+                <div className="h-10">
                   <MultiSelect
                     options={optionMaps.gender}
                     selected={
@@ -144,7 +144,7 @@ export default function Appearances() {
                 <Label className="text-sm font-medium">
                   {t('forensic:appearances.build')}
                 </Label>
-                <div className="h-10 max-w-[250px]">
+                <div className="h-10">
                   <MultiSelect
                     options={optionMaps.build}
                     selected={
@@ -164,7 +164,7 @@ export default function Appearances() {
                 <Label className="text-sm font-medium">
                   {t('forensic:appearances.height')}
                 </Label>
-                <div className="h-10 max-w-[250px]">
+                <div className="h-10">
                   <MultiSelect
                     options={optionMaps.height}
                     selected={
@@ -250,7 +250,7 @@ export default function Appearances() {
                 <Label className="text-sm font-medium">
                   {t('forensic:appearances.vehicle_type')}
                 </Label>
-                <div className="h-10 max-w-[250px]">
+                <div className="h-10 max-w-full">
                   <MultiSelect
                     options={optionMaps.vehicleTypes}
                     selected={
@@ -275,7 +275,7 @@ export default function Appearances() {
                     colors={colors}
                     name="appearances.color"
                     control={control}
-                    className="w-full max-w-[250px]"
+                    className="w-full"
                     useColorNames
                   />
                 </div>
@@ -287,7 +287,7 @@ export default function Appearances() {
             <Label className="text-sm font-medium">
               {t('forensic:appearances.tolerance')}
             </Label>
-            <div className="h-10 max-w-[250px]">
+            <div className="h-10">
               <Select
                 value={tolerance}
                 onValueChange={(value) =>
@@ -297,7 +297,7 @@ export default function Appearances() {
                   )
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue
                     placeholder={t('forensic:appearances.tolerance')}
                   />

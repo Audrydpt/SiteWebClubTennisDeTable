@@ -46,7 +46,7 @@ function BackupRestoreDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-full sm:w-2xl sm:max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
             {type === 'backup' ? 'Create Backup' : 'Restore Backup'}
