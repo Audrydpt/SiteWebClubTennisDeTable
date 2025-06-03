@@ -14,7 +14,6 @@ import { lazyLoadFeature } from './lib/i18n';
 import Error from './pages/Error';
 import Home from './pages/Home';
 import Login from './pages/Login';
-import Theme from './pages/Theme';
 
 const Dashboard = lazyLoadFeature(
   'dashboard',
@@ -64,6 +63,7 @@ const Camera = lazyLoadFeature(
   'camera',
   () => import('./features/camera/Camera')
 );
+const Theme = lazyLoadFeature('theme', () => import('./pages/Theme'));
 
 export default function App() {
   const { open, setOpen } = useSidebarState();
@@ -109,6 +109,7 @@ export default function App() {
           }
         >
           <Route path="/" element={<Home />} />
+          <Route path="/theme" element={<Theme />} />
 
           {/* Dashboard routes */}
           <Route path="/dashboard">
@@ -132,8 +133,6 @@ export default function App() {
               <Route path="retention" element={<Retention />} />
               <Route path="forensicSettings" element={<ForensicSettings />} />
             </Route>
-
-            <Route path="/theme" element={<Theme />} />
           </Route>
 
           {/* Operator routers */}

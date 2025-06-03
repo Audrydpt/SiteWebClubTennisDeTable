@@ -507,7 +507,7 @@ export default function RestoreBackupWizard({
         {renderStepContent()}
       </CardContent>
 
-      <CardFooter className="flex justify-between">
+      <CardFooter className="flex justify-between mt-4">
         <Button
           variant="outline"
           onClick={() => setStep((prev) => Math.max(1, prev - 1))}

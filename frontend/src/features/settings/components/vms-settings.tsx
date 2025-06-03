@@ -256,7 +256,7 @@ export default function VMSSettings() {
               )}
             </CardContent>
 
-            <CardFooter>
+            <CardFooter className="mt-4">
               <Button
                 type="submit"
                 className="w-full"

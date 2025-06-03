@@ -56,7 +56,7 @@ export default function MultiSelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between h-10"
+          className="w-full justify-between border-input"
         >
           <span className="truncate max-w-[85%] inline-block">
             {selected.length > 0 ? selected.join(' | ') : placeholder}

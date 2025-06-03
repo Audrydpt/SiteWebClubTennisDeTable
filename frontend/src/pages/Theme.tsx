@@ -1,6 +1,8 @@
 import { AlertCircle, Terminal } from 'lucide-react';
+import * as React from 'react';
 
 import Header from '@/components/header';
+import MultiSelect from '@/components/multi-select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,6 +31,8 @@ const tableData = [
 ];
 
 export default function Theme() {
+  const [multiSelected, setMultiSelected] = React.useState<string[]>([]);
+
   return (
     <div className="p-6 space-y-8">
       <Header title="Thème" />
@@ -44,27 +48,39 @@ export default function Theme() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <div className="h-12 w-full bg-background border rounded-md" />
+              <div className="h-12 w-full bg-background border rounded-md justify-center items-center flex">
+                #FFFFFF
+              </div>
               <p className="text-sm">bg-background</p>
             </div>
             <div className="space-y-2">
-              <div className="h-12 w-full bg-foreground border rounded-md" />
+              <div className="h-12 w-full bg-foreground border rounded-md justify-center items-center flex text-background">
+                #212529
+              </div>
               <p className="text-sm">bg-foreground</p>
             </div>
             <div className="space-y-2">
-              <div className="h-12 w-full bg-primary border rounded-md" />
+              <div className="h-12 w-full bg-primary border rounded-md justify-center items-center flex text-primary-foreground">
+                #39939E
+              </div>
               <p className="text-sm">bg-primary</p>
             </div>
             <div className="space-y-2">
-              <div className="h-12 w-full bg-secondary border rounded-md" />
+              <div className="h-12 w-full bg-secondary border rounded-md justify-center items-center flex text-secondary-foreground">
+                #EBB13B
+              </div>
               <p className="text-sm">bg-secondary</p>
             </div>
             <div className="space-y-2">
-              <div className="h-12 w-full bg-muted border rounded-md" />
+              <div className="h-12 w-full bg-muted border rounded-md justify-center items-center flex text-foreground">
+                #E5E8EB
+              </div>
               <p className="text-sm">bg-muted</p>
             </div>
             <div className="space-y-2">
-              <div className="h-12 w-full bg-accent border rounded-md" />
+              <div className="h-12 w-full bg-accent border rounded-md justify-center items-center flex text-foreground">
+                #E5E8EB
+              </div>
               <p className="text-sm">bg-accent</p>
             </div>
           </div>
@@ -276,16 +292,6 @@ export default function Theme() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  className="w-full"
-                />
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
@@ -306,6 +312,16 @@ export default function Theme() {
                     <SelectItem value="user">User</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>MultiSelect Example</Label>
+                <MultiSelect
+                  options={['Apple', 'Banana', 'Orange', 'Grape']}
+                  selected={multiSelected}
+                  onChange={setMultiSelected}
+                  placeholder="Select fruits..."
+                />
               </div>
             </div>
 

@@ -29,7 +29,6 @@ export interface WhereClausesProps
 }
 
 function WhereClauses({
-  ref,
   columns,
   value,
   onValueChange,
@@ -37,9 +36,7 @@ function WhereClauses({
   disabled,
   addButtonLabel = 'Add filter',
   ...props
-}: WhereClausesProps & {
-  ref: React.RefObject<HTMLDivElement>;
-}) {
+}: WhereClausesProps) {
   const getAvailableColumns = React.useCallback(
     (currentIndex?: number) => {
       const selectedColumns = value
@@ -76,7 +73,7 @@ function WhereClauses({
   );
 
   return (
-    <div ref={ref} className={cn('space-y-3', className)} {...props}>
+    <div className={cn('space-y-3', className)} {...props}>
       <div className="space-y-2">
         {value.map((clause, index) => (
           <div key={clause.column} className="flex gap-2 items-center">
@@ -131,7 +128,7 @@ function WhereClauses({
         type="button"
         variant="outline"
         size="sm"
-        className="h-8"
+        className="h-8 border-input"
         onClick={handleAddClause}
         disabled={disabled || value.length >= columns.length}
         aria-label={addButtonLabel}

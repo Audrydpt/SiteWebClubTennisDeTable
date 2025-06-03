@@ -33,7 +33,6 @@ export interface WhereClausesWithSearchProps
 const DELIMITER = '|||';
 
 function WhereClausesWithSearch({
-  ref,
   columns,
   value,
   onValueChange,
@@ -43,9 +42,7 @@ function WhereClausesWithSearch({
   addButtonLabel = 'Add filter',
   placeholder,
   ...props
-}: WhereClausesWithSearchProps & {
-  ref: React.RefObject<HTMLDivElement>;
-}) {
+}: WhereClausesWithSearchProps) {
   const getAvailableColumns = React.useCallback(
     (currentIndex?: number) => {
       const selectedColumns = value
@@ -93,7 +90,7 @@ function WhereClausesWithSearch({
   );
 
   return (
-    <div ref={ref} className={cn('space-y-3', className)} {...props}>
+    <div className={cn('space-y-3', className)} {...props}>
       <div className="space-y-2">
         {value.map((clause, index) => (
           <div key={clause.column} className="flex gap-2 items-center">
@@ -150,7 +147,7 @@ function WhereClausesWithSearch({
         type="button"
         variant="outline"
         size="sm"
-        className="h-8 w-full"
+        className="h-8 w-full border-input"
         onClick={handleAddClause}
         disabled={disabled || value.length >= columns.length}
         aria-label={addButtonLabel}

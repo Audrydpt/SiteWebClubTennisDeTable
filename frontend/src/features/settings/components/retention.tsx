@@ -166,7 +166,7 @@ function Retention() {
                 </div>
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="mt-4">
               <Button
                 type="submit"
                 className="w-full"
