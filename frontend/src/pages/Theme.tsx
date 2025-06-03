@@ -1,8 +1,17 @@
 import { AlertCircle, Terminal } from 'lucide-react';
 import * as React from 'react';
+import { toast } from 'sonner';
 
+import logo from '@/assets/logo.svg';
+import DeleteConfirmation from '@/components/confirm-delete';
 import Header from '@/components/header';
 import MultiSelect from '@/components/multi-select';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,8 +22,20 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import { Progress } from '@/components/ui/progress';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Select,
   SelectContent,
@@ -22,7 +43,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const tableData = [
   { id: 1, name: 'John Doe', role: 'Developer', status: 'Active' },
@@ -32,10 +61,16 @@ const tableData = [
 
 export default function Theme() {
   const [multiSelected, setMultiSelected] = React.useState<string[]>([]);
+  const [switchOn, setSwitchOn] = React.useState(false);
+  const [radioValue, setRadioValue] = React.useState('option1');
+  const [sliderValue, setSliderValue] = React.useState([50]);
+  const [textareaValue, setTextareaValue] = React.useState('');
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-6 space-y-8 w-full">
       <Header title="Thème" />
+
+      <img src={logo} alt="Logo" className="w-32 mb-4 mx-auto" />
 
       {/* Couleurs de base */}
       <Card>
@@ -99,12 +134,37 @@ export default function Theme() {
           {/* Buttons */}
           <div className="space-y-2">
             <h3 className="text-lg font-medium">Buttons</h3>
-            <div className="flex flex-wrap gap-2">
-              <Button>Default</Button>
-              <Button variant="secondary">Secondary</Button>
-              <Button variant="destructive">Destructive</Button>
-              <Button variant="outline">Outline</Button>
-              <Button variant="ghost">Ghost</Button>
+            <div className="flex flex-wrap gap-2 justify-between">
+              <div className="flex flex-wrap gap-2">
+                <Button>Default</Button>
+                <Button variant="secondary">Secondary</Button>
+                <Button variant="destructive">Destructive</Button>
+                <Button variant="outline">Outline</Button>
+                <Button variant="ghost">Ghost</Button>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline">Survole-moi</Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Voici un tooltip ShadCN !</TooltipContent>
+                </Tooltip>
+
+                <DeleteConfirmation
+                  onDelete={() => toast.success('Suppression confirmée !')}
+                  title="Supprimer l'élément ?"
+                  description="Cette action est irréversible."
+                  cancelText="Annuler"
+                  confirmText="Supprimer"
+                >
+                  <Button variant="destructive">Supprimer</Button>
+                </DeleteConfirmation>
+
+                <Button onClick={() => toast('Ceci est un toast ShadCN !')}>
+                  Afficher un toast
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -149,11 +209,9 @@ export default function Theme() {
               <p className="text-foreground">text-foreground (Default text)</p>
               <p className="text-muted">text-muted</p>
               <p className="text-muted-foreground">text-muted-foreground</p>
-              <p className="text-primary">text-primary (Primary text)</p>
-              <p className="text-secondary">text-secondary (Secondary text)</p>
-              <p className="text-destructive">
-                text-destructive (Destructive text)
-              </p>
+              <p className="text-primary">text-primary</p>
+              <p className="text-secondary">text-secondary</p>
+              <p className="text-destructive">text-destructive</p>
             </div>
           </div>
         </CardContent>
@@ -222,6 +280,51 @@ export default function Theme() {
               </div>
             </TabsContent>
           </Tabs>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Accordion Example</CardTitle>
+          <CardDescription>
+            Exemple d&apos;utilisation de l&apos;accordion
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Accordion type="single" collapsible className="w-full mb-8">
+            <AccordionItem value="account">
+              <AccordionTrigger>Account</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Account Tab Content</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Manage your account settings and preferences.
+                  </p>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="password">
+              <AccordionTrigger>Password</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Password Tab Content</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Change your password and security settings.
+                  </p>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="settings">
+              <AccordionTrigger>Settings</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Settings Tab Content</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Customize your application settings.
+                  </p>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </CardContent>
       </Card>
 
@@ -323,6 +426,18 @@ export default function Theme() {
                   placeholder="Select fruits..."
                 />
               </div>
+
+              {/* Textarea Example */}
+              <div className="space-y-2">
+                <Label htmlFor="bio">Bio</Label>
+                <textarea
+                  id="bio"
+                  className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-base shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                  placeholder="Tell us about yourself..."
+                  value={textareaValue}
+                  onChange={(e) => setTextareaValue(e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="flex justify-end space-x-2">
@@ -330,6 +445,120 @@ export default function Theme() {
               <Button>Submit</Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Switch, Checkbox & Radio, Slider, ...</CardTitle>
+          <CardDescription>
+            Exemples d&apos;interrupteur, case à cocher et boutons radio
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center gap-4">
+            <Switch
+              checked={switchOn}
+              onCheckedChange={setSwitchOn}
+              id="theme-switch"
+            />
+            <Label htmlFor="theme-switch">Switch</Label>
+          </div>
+          <div className="flex items-center gap-4">
+            <Checkbox
+              id="newsletter"
+              checked={switchOn}
+              onCheckedChange={(e) => setSwitchOn(e as boolean)}
+            />
+            <Label htmlFor="newsletter">Subscribe to newsletter</Label>
+          </div>
+          <div>
+            <RadioGroup
+              value={radioValue}
+              onValueChange={setRadioValue}
+              className="flex gap-4"
+            >
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="option1" id="radio1" />
+                <Label htmlFor="radio1">Option 1</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="option2" id="radio2" />
+                <Label htmlFor="radio2">Option 2</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="option3" id="radio3" />
+                <Label htmlFor="radio3">Option 3</Label>
+              </div>
+            </RadioGroup>
+          </div>
+          <div className="flex items-center gap-4">
+            <Slider
+              value={sliderValue}
+              onValueChange={setSliderValue}
+              min={0}
+              max={100}
+              step={1}
+              className="w-64"
+            />
+            <span>{sliderValue[0]}%</span>
+          </div>
+          <Progress value={sliderValue[0]} className="h-3" />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Pagination Example</CardTitle>
+          <CardDescription>Exemple de Pagination</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious href="#" />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink href="#" isActive>
+                  1
+                </PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink href="#">2</PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink href="#">3</PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationEllipsis />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink href="#">8</PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext href="#" />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Skeleton Example</CardTitle>
+          <CardDescription>
+            Exemple de Skeleton pour afficher un chargement élégant
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center space-x-4">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div className="space-y-2 w-full">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          </div>
+          <Skeleton className="h-32 w-full" />
         </CardContent>
       </Card>
     </div>
