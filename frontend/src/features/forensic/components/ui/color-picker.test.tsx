@@ -142,17 +142,17 @@ describe('ColorPicker', () => {
       fireEvent.click(document.body);
 
       // Check if the selected color appears in the trigger button
-      const selectedColor = within(triggerButton).getByTitle('#FF0000');
+      const selectedColor = within(triggerButton).getByTitle('red');
       expect(selectedColor).toBeInTheDocument();
     });
 
     it('should deselect a color when clicked again', async () => {
       const user = userEvent.setup();
-      renderComponent({ defaultValue: ['#FF0000'] });
+      renderComponent({ defaultValue: ['red'] });
 
       // Initially should show the selected color
       const triggerButton = screen.getByRole('button');
-      expect(within(triggerButton).getByTitle('#FF0000')).toBeInTheDocument();
+      expect(within(triggerButton).getByTitle('red')).toBeInTheDocument();
 
       // Open popover
       await user.click(triggerButton);
@@ -189,8 +189,8 @@ describe('ColorPicker', () => {
       fireEvent.click(document.body);
 
       // Both colors should be visible in trigger button
-      expect(within(triggerButton).getByTitle('#FF0000')).toBeInTheDocument();
-      expect(within(triggerButton).getByTitle('#0000FF')).toBeInTheDocument();
+      expect(within(triggerButton).getByTitle('red')).toBeInTheDocument();
+      expect(within(triggerButton).getByTitle('blue')).toBeInTheDocument();
     });
 
     it('should display selected colors in trigger button', async () => {
@@ -208,42 +208,6 @@ describe('ColorPicker', () => {
       fireEvent.click(document.body);
 
       // Check that selected color appears in trigger button
-      const colorDisplay = within(triggerButton).getByTitle('#FF0000');
-      expect(colorDisplay).toBeInTheDocument();
-      expect(colorDisplay).toHaveStyle({ backgroundColor: '#FF0000' });
-    });
-  });
-
-  describe('Color Names vs Values', () => {
-    it('should use hex values by default', async () => {
-      const user = userEvent.setup();
-      renderComponent({ useColorNames: false });
-
-      // Open popover and select a color
-      const triggerButton = screen.getByRole('button');
-      await user.click(triggerButton);
-
-      const redButton = screen.getByRole('button', { name: 'Red' });
-      await user.click(redButton);
-
-      // Should use hex value
-      const colorDisplay = within(triggerButton).getByTitle('#FF0000');
-      expect(colorDisplay).toBeInTheDocument();
-      expect(colorDisplay).toHaveStyle({ backgroundColor: '#FF0000' });
-    });
-
-    it('should use color names when useColorNames is true', async () => {
-      const user = userEvent.setup();
-      renderComponent({ useColorNames: true });
-
-      // Open popover and select a color
-      const triggerButton = screen.getByRole('button');
-      await user.click(triggerButton);
-
-      const redButton = screen.getByRole('button', { name: 'Red' });
-      await user.click(redButton);
-
-      // Should use color name (lowercase)
       const colorDisplay = within(triggerButton).getByTitle('red');
       expect(colorDisplay).toBeInTheDocument();
       expect(colorDisplay).toHaveStyle({ backgroundColor: '#FF0000' });
@@ -253,7 +217,7 @@ describe('ColorPicker', () => {
   describe('Visual States', () => {
     it('should show selected state for white background', async () => {
       const user = userEvent.setup();
-      renderComponent({ defaultValue: ['#FFFFFF'] });
+      renderComponent({ defaultValue: ['white'] });
 
       // Open popover
       const triggerButton = screen.getByRole('button');
@@ -267,7 +231,7 @@ describe('ColorPicker', () => {
 
     it('should show selected state for dark background', async () => {
       const user = userEvent.setup();
-      renderComponent({ defaultValue: ['#000000'] });
+      renderComponent({ defaultValue: ['black'] });
 
       // Open popover
       const triggerButton = screen.getByRole('button');
@@ -303,13 +267,13 @@ describe('ColorPicker', () => {
     });
 
     it('should handle pre-selected values', () => {
-      renderComponent({ defaultValue: ['#FF0000', '#008000'] });
+      renderComponent({ defaultValue: ['red', 'green'] });
 
       const triggerButton = screen.getByRole('button');
 
       // Should show selected colors
-      expect(within(triggerButton).getByTitle('#FF0000')).toBeInTheDocument();
-      expect(within(triggerButton).getByTitle('#008000')).toBeInTheDocument();
+      expect(within(triggerButton).getByTitle('red')).toBeInTheDocument();
+      expect(within(triggerButton).getByTitle('green')).toBeInTheDocument();
     });
 
     it('should handle non-array values gracefully', () => {
@@ -327,10 +291,10 @@ describe('ColorPicker', () => {
 
   describe('Color Matching', () => {
     it('should find colors by hex value', () => {
-      renderComponent({ defaultValue: ['#FF0000'] });
+      renderComponent({ defaultValue: ['red'] });
 
       const triggerButton = screen.getByRole('button');
-      const colorDisplay = within(triggerButton).getByTitle('#FF0000');
+      const colorDisplay = within(triggerButton).getByTitle('red');
       expect(colorDisplay).toHaveStyle({ backgroundColor: '#FF0000' });
     });
 
@@ -375,10 +339,8 @@ describe('ColorPicker', () => {
       fireEvent.click(document.body);
 
       // Blue should remain selected, red should be deselected
-      expect(within(triggerButton).getByTitle('#0000FF')).toBeInTheDocument();
-      expect(
-        within(triggerButton).queryByTitle('#FF0000')
-      ).not.toBeInTheDocument();
+      expect(within(triggerButton).getByTitle('blue')).toBeInTheDocument();
+      expect(within(triggerButton).queryByTitle('red')).not.toBeInTheDocument();
     });
 
     it('should handle keyboard navigation', async () => {
