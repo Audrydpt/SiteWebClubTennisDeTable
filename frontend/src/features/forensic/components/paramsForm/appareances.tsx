@@ -124,7 +124,7 @@ export default function Appearances() {
                 <Label className="text-sm font-medium">
                   {t('forensic:appearances.age')}
                 </Label>
-                <div className="h-10 max-w-[250px]">
+                <div className="h-10">
                   <MultiSelect
                     options={optionMaps.age}
                     selected={
@@ -237,7 +237,6 @@ export default function Appearances() {
                       name="appearances.hair.color"
                       control={control}
                       className="w-full"
-                      useColorNames
                     />
                   </div>
                 </div>
@@ -276,7 +275,6 @@ export default function Appearances() {
                     name="appearances.color"
                     control={control}
                     className="w-full"
-                    useColorNames
                   />
                 </div>
               </div>

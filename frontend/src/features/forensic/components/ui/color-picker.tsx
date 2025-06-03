@@ -21,7 +21,6 @@ interface ColorPickerProps {
   name: Path<ForensicFormValues>;
   control: Control<ForensicFormValues>;
   className?: string;
-  useColorNames?: boolean;
 }
 
 export default function ColorPicker({
@@ -29,7 +28,6 @@ export default function ColorPicker({
   name,
   control,
   className,
-  useColorNames = false,
 }: ColorPickerProps) {
   const {
     field: { value, onChange },
@@ -54,7 +52,7 @@ export default function ColorPicker({
   };
 
   const handleColorToggle = (color: Color) => {
-    const colorValue = useColorNames ? color.name.toLowerCase() : color.value;
+    const colorValue = color.name.toLowerCase();
 
     if (selected.includes(colorValue)) {
       onChange(selected.filter((c: string) => c !== colorValue));
@@ -68,7 +66,7 @@ export default function ColorPicker({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className={cn('h-auto p-2 gap-1 flex-wrap', className)}
+          className={cn('h-auto p-2 gap-1 flex-wrap border-input', className)}
         >
           {selected.length === 0 ? (
             <Palette />
@@ -87,9 +85,7 @@ export default function ColorPicker({
       <PopoverContent className="w-64">
         <div className="grid grid-cols-4 gap-2">
           {colors.map((color) => {
-            const colorValue = useColorNames
-              ? color.name.toLowerCase()
-              : color.value;
+            const colorValue = color.name.toLowerCase();
             const isSelected = selected.includes(colorValue);
 
             return (
