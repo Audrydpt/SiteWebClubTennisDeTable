@@ -52,24 +52,7 @@ export const vehicleForensicSchema = baseForensicSchema.extend({
   type: z.literal('vehicle'),
   appearances: z.object({
     type: z.array(z.string()).nullable().optional(),
-    color: z
-      .array(
-        z.enum([
-          'brown',
-          'red',
-          'orange',
-          'yellow',
-          'green',
-          'cyan',
-          'blue',
-          'purple',
-          'pink',
-          'white',
-          'gray',
-          'black',
-        ])
-      )
-      .default([]),
+    color: z.array(z.string()).nullable().optional(),
     confidence: z.enum(['low', 'medium', 'high']).default('medium'),
   }),
   attributes: z.object({
@@ -91,37 +74,16 @@ export const vehicleForensicSchema = baseForensicSchema.extend({
 export const personForensicSchema = baseForensicSchema.extend({
   type: z.literal('person'),
   appearances: z.object({
-    gender: z
-      .array(z.enum(['male', 'female']))
-      .nullable()
-      .optional(),
-    seenAge: z
-      .array(z.enum(['child', 'adult', 'senior']))
-      .nullable()
-      .optional(),
+    gender: z.array(z.string()).nullable().optional(),
+    seenAge: z.array(z.string()).nullable().optional(),
     realAge: z.number().int().nullable().optional(),
-    build: z
-      .array(z.enum(['slim', 'average', 'athletic', 'heavy']))
-      .nullable()
-      .optional(),
-    height: z
-      .array(z.enum(['short', 'average', 'tall']))
-      .nullable()
-      .optional(),
+    build: z.array(z.string()).nullable().optional(),
+    height: z.array(z.string()).nullable().optional(),
     hair: z
       .object({
-        length: z
-          .array(z.enum(['none', 'short', 'medium', 'long']))
-          .nullable()
-          .optional(),
-        color: z
-          .array(z.enum(['black', 'brown', 'blonde', 'gray', 'white', 'other']))
-          .nullable()
-          .optional(),
-        style: z
-          .array(z.enum(['straight', 'wavy', 'curly']))
-          .nullable()
-          .optional(),
+        length: z.array(z.string()).nullable().optional(),
+        color: z.array(z.string()).nullable().optional(),
+        style: z.array(z.string()).nullable().optional(),
       })
       .default({
         length: [],
@@ -133,24 +95,7 @@ export const personForensicSchema = baseForensicSchema.extend({
   attributes: z.object({
     upper: z
       .object({
-        color: z
-          .array(
-            z.enum([
-              'brown',
-              'red',
-              'orange',
-              'yellow',
-              'green',
-              'cyan',
-              'blue',
-              'purple',
-              'pink',
-              'white',
-              'gray',
-              'black',
-            ])
-          )
-          .default([]),
+        color: z.array(z.string()).default([]),
         type: z.array(z.string()).nullable().optional(),
       })
       .default({
@@ -159,24 +104,7 @@ export const personForensicSchema = baseForensicSchema.extend({
       }),
     lower: z
       .object({
-        color: z
-          .array(
-            z.enum([
-              'brown',
-              'red',
-              'orange',
-              'yellow',
-              'green',
-              'cyan',
-              'blue',
-              'purple',
-              'pink',
-              'white',
-              'gray',
-              'black',
-            ])
-          )
-          .default([]),
+        color: z.array(z.string()).default([]),
         type: z.array(z.string()).nullable().optional(),
       })
       .default({
