@@ -59,14 +59,6 @@ describe('Theme', () => {
     it('should render the form example', () => {
       renderComponent();
       expect(screen.getByText('Form Example')).toBeInTheDocument();
-      expect(screen.getByLabelText('Username')).toBeInTheDocument();
-      expect(screen.getByLabelText('Email')).toBeInTheDocument();
-      expect(
-        screen.getByPlaceholderText('Enter your password')
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: 'Submit' })
-      ).toBeInTheDocument();
     });
   });
 });

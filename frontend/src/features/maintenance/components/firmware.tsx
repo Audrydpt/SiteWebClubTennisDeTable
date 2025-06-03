@@ -7,7 +7,7 @@ function Firmware() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center">
+        <CardTitle className="flex items-center" role="heading" aria-level={1}>
           <CheckSquare className="mr-2" />
           Firmware Update
         </CardTitle>

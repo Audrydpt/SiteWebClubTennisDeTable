@@ -100,6 +100,11 @@ vi.mock('@/components/where-clauses-with-search', () => ({
 // Mock Loader component
 vi.mock('lucide-react', () => ({
   Loader2: () => <div data-testid="loader">Loading spinner</div>,
+  ChevronDownIcon: () => (
+    <div data-testid="chevron-down-icon">ChevronDownIcon</div>
+  ),
+  ChevronUpIcon: () => <div data-testid="chevron-up-icon">ChevronUpIcon</div>,
+  CheckIcon: () => <div data-testid="check-icon">CheckIcon</div>,
 }));
 
 describe('ExportStepSource', () => {
