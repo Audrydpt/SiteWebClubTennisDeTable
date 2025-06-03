@@ -26,7 +26,7 @@ export default function Result({
   if (uploadedFiles.length === 0) {
     return (
       <div className="text-center py-12 bg-muted/30 rounded-lg">
-        <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground" />
+        <AlertCircle className="size-12 mx-auto text-muted-foreground" />
         <h3 className="mt-4 text-lg font-medium">Aucun résultat disponible</h3>
         <p className="text-sm text-muted-foreground mt-2">
           Téléchargez des fichiers et lancez l&#39;analyse pour voir les
@@ -43,12 +43,12 @@ export default function Result({
     <div>
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-medium flex items-center gap-2">
-          <Activity className="h-5 w-5 text-primary" />
+          <Activity className="size-5 text-primary" />
           Résultats d&#39;analyse
         </h3>
         {hasAnalyzingFiles && (
           <Badge variant="secondary" className="flex items-center gap-1">
-            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current" />
+            <div className="animate-spin rounded-full size-3 border-b-2 border-current" />
             Analyse en cours
           </Badge>
         )}

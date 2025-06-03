@@ -25,7 +25,7 @@ export default function SearchInput({
       />
       {value && (
         <X
-          className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground cursor-pointer"
+          className="absolute right-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground hover:text-foreground cursor-pointer"
           onClick={() => onChange('')}
           aria-label="Clear search"
         />

@@ -25,7 +25,7 @@ export default function ForensicHeader({
   return (
     <div className="mb-4">
       <div className="flex justify-between items-center gap-4">
-        <div className="flex-grow">
+        <div className="grow">
           <JobTabs
             onTabChange={onTabChange}
             isLoading={loading}
@@ -33,7 +33,7 @@ export default function ForensicHeader({
             setIsLoading={setIsLoading}
           />
         </div>
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           <SortButtons
             sortType={sortType}
             setSortType={setSortType}

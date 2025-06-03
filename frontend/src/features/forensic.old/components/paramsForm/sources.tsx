@@ -101,16 +101,16 @@ export default function Sources({
     const isLoadingThisCamera = snapshotLoadingStates[cameraId];
 
     if (isLoadingThisCamera) {
-      return <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />;
+      return <Loader2 className="size-4 text-muted-foreground animate-spin" />;
     }
-    return <Eye className="h-4 w-4 text-muted-foreground" />;
+    return <Eye className="size-4 text-muted-foreground" />;
   };
 
   const renderSnapshotContent = (cameraId: string, cameraName: string) => {
     if (snapshotLoadingStates[cameraId]) {
       return (
         <div className="h-[150px] w-[200px] flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="size-8 animate-spin text-primary" />
         </div>
       );
     }
@@ -164,7 +164,7 @@ export default function Sources({
                 key={`loading-skeleton-${skeleton}`}
                 className="flex items-center space-x-2"
               >
-                <Skeleton className="h-4 w-4" />
+                <Skeleton className="size-4" />
                 <Skeleton className="h-5 w-32" />
               </div>
             ))}

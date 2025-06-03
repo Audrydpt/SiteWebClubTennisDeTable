@@ -27,7 +27,7 @@ export default function AnalysisSummary({
     <div className="mt-8 p-4 bg-muted/30 rounded-lg">
       <h4 className="font-medium mb-2">Résumé de l&#39;analyse</h4>
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white p-3 rounded-lg shadow-sm">
+        <div className="bg-white p-3 rounded-lg shadow-xs">
           <div className="text-center">
             <div className="text-3xl font-bold text-primary">
               {completedFiles.length}
@@ -37,7 +37,7 @@ export default function AnalysisSummary({
             </div>
           </div>
         </div>
-        <div className="bg-white p-3 rounded-lg shadow-sm">
+        <div className="bg-white p-3 rounded-lg shadow-xs">
           <div className="text-center">
             <div className="text-3xl font-bold text-primary">
               {totalDetections}
@@ -45,7 +45,7 @@ export default function AnalysisSummary({
             <div className="text-sm text-muted-foreground">Objets détectés</div>
           </div>
         </div>
-        <div className="bg-white p-3 rounded-lg shadow-sm">
+        <div className="bg-white p-3 rounded-lg shadow-xs">
           <div className="text-center">
             <div className="text-3xl font-bold text-primary">
               {averageProcessingTime}s

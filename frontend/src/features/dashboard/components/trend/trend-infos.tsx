@@ -47,7 +47,7 @@ export default function TrendInfos({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger>{children}</DialogTrigger>
-      <DialogContent className="max-w-3xl w-[80vw] h-auto overflow-y-auto">
+      <DialogContent className="sm:max-w-full sm:w-3xl sm:max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{t('dashboard:trend.title')}</DialogTitle>
           <DialogDescription>

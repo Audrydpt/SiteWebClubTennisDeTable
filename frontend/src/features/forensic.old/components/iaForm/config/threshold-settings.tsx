@@ -20,7 +20,7 @@ export default function ThresholdSettings({
   return (
     <div className="space-y-4 bg-muted/30 p-4 rounded-lg">
       <div className="flex items-center gap-2">
-        <Percent className="h-5 w-5 text-primary" />
+        <Percent className="size-5 text-primary" />
         <h3 className="text-lg font-medium">Seuils de Détection</h3>
       </div>
 
@@ -73,17 +73,17 @@ export default function ThresholdSettings({
         </div>
 
         {/* Legend */}
-        <div className="absolute bottom-2 right-2 text-xs flex flex-col gap-1 bg-white/90 p-2 rounded shadow-sm z-10">
+        <div className="absolute bottom-2 right-2 text-xs flex flex-col gap-1 bg-white/90 p-2 rounded shadow-xs z-10">
           <div className="flex items-center gap-1">
             <div
-              className={`w-3 h-3 rounded-full ${modelColor}`}
+              className={`size-3 rounded-full ${modelColor}`}
               style={{ opacity: 0.25 }}
             />
             <span>Confiance</span>
           </div>
           <div className="flex items-center gap-1">
             <div
-              className="w-3 h-3 rounded-full border border-dashed"
+              className="size-3 rounded-full border border-dashed"
               style={{
                 borderColor: modelColor.replace('bg-', '').split('-')[0],
               }}
@@ -95,14 +95,14 @@ export default function ThresholdSettings({
 
       {/* Reorganized sliders in a more graphical layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-        <div className="bg-white p-4 rounded-lg shadow-sm">
+        <div className="bg-white p-4 rounded-lg shadow-xs">
           <div className="flex justify-between mb-2">
             <Label
               htmlFor="confidence-threshold"
               className="font-medium flex items-center"
             >
               <div
-                className={`w-3 h-3 rounded-full ${modelColor} mr-2`}
+                className={`size-3 rounded-full ${modelColor} mr-2`}
                 style={{ opacity: 0.5 }}
               />
               Seuil de confiance
@@ -145,14 +145,14 @@ export default function ThresholdSettings({
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm">
+        <div className="bg-white p-4 rounded-lg shadow-xs">
           <div className="flex justify-between mb-2">
             <Label
               htmlFor="overlap-threshold"
               className="font-medium flex items-center"
             >
               <div
-                className="w-3 h-3 rounded-full border border-dashed mr-2"
+                className="size-3 rounded-full border border-dashed mr-2"
                 style={{
                   borderColor: modelColor.replace('bg-', '').split('-')[0],
                 }}
@@ -199,14 +199,14 @@ export default function ThresholdSettings({
       </div>
 
       {/* Visual explanation */}
-      <div className="bg-white p-4 rounded-lg shadow-sm mt-4">
+      <div className="bg-white p-4 rounded-lg shadow-xs mt-4">
         <h5 className="font-medium mb-2 flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 text-primary" />
+          <AlertCircle className="size-4 text-primary" />
           Impact des seuils
         </h5>
         <div className="grid grid-cols-2 gap-4 mt-3">
           <div className="flex flex-col items-center text-center">
-            <div className="relative w-24 h-24 mb-2">
+            <div className="relative size-24 mb-2">
               <div
                 className={`absolute inset-0 rounded-full ${modelColor}`}
                 style={{ opacity: 0.1 }}
@@ -234,20 +234,20 @@ export default function ThresholdSettings({
             </span>
           </div>
           <div className="flex flex-col items-center text-center">
-            <div className="relative w-24 h-24 mb-2">
+            <div className="relative size-24 mb-2">
               <div
-                className="absolute top-0 left-0 w-16 h-16 border-2 border-dashed rounded-lg"
+                className="absolute top-0 left-0 size-16 border-2 border-dashed rounded-lg"
                 style={{
                   borderColor: modelColor.replace('bg-', '').split('-')[0],
                 }}
               />
               <div
-                className="absolute bottom-0 right-0 w-16 h-16 border-2 border-dashed rounded-lg"
+                className="absolute bottom-0 right-0 size-16 border-2 border-dashed rounded-lg"
                 style={{
                   borderColor: modelColor.replace('bg-', '').split('-')[0],
                 }}
               />
-              <div className="absolute top-8 left-8 w-8 h-8 bg-primary/20 rounded-sm" />
+              <div className="absolute top-8 left-8 size-8 bg-primary/20 rounded-sm" />
             </div>
             <span className="text-sm font-medium">Chevauchement optimal</span>
             <span className="text-xs text-muted-foreground">

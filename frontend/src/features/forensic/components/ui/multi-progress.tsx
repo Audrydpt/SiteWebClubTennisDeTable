@@ -85,9 +85,9 @@ export default function MultiProgress() {
               ? t('forensic:multi-progress.hide_details')
               : t('forensic:multi-progress.show_details')}
             {showSourceDetails ? (
-              <ChevronUp className="ml-1 h-4 w-4" />
+              <ChevronUp className="ml-1 size-4" />
             ) : (
-              <ChevronDown className="ml-1 h-4 w-4" />
+              <ChevronDown className="ml-1 size-4" />
             )}
           </Button>
         )}
@@ -118,7 +118,7 @@ export default function MultiProgress() {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 text-xs text-muted-foreground mt-0.5">
                       {source.timestamp && (
                         <span className="flex items-center">
-                          <Clock className="w-3 h-3 mr-1 inline-block" />
+                          <Clock className="size-3 mr-1 inline-block" />
                           {new Date(source.timestamp).toLocaleString()}
                         </span>
                       )}
@@ -126,7 +126,7 @@ export default function MultiProgress() {
                         source.progress < 100 &&
                         timeEstimates.individual[source.sourceId] && (
                           <span className="flex items-center">
-                            <Timer className="w-3 h-3 mr-1 inline-block" />
+                            <Timer className="size-3 mr-1 inline-block" />
                             {timeEstimates.individual[source.sourceId]}
                           </span>
                         )}

@@ -185,10 +185,12 @@ export default function LineComponent({
   if (isLoading || isError) {
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
-        <CardHeader>
-          <CardTitle>{title ?? `Line ${layout.toString()}`}</CardTitle>
+        <CardHeader className="w-full">
+          <CardTitle className="text-center">
+            {title ?? `Line ${layout.toString()}`}
+          </CardTitle>
         </CardHeader>
-        <CardContent className="flex-grow w-full">
+        <CardContent className="grow w-full">
           <ChartContainer config={{}} className="h-full w-full">
             {isLoading ? (
               <Skeleton className="h-full w-full bg-muted" />
@@ -203,12 +205,12 @@ export default function LineComponent({
 
   return (
     <Card className="w-full h-full flex flex-col justify-center">
-      <CardHeader>
+      <CardHeader className="w-full">
         <CardTitle className="text-center">
           {title ?? `Line ${layout.toString()}`}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-grow w-full">
+      <CardContent className="grow w-full">
         <ChartContainer config={enhancedChartConfig} className="h-full w-full">
           <ComposedChart
             data={chartData}
@@ -261,7 +263,7 @@ export default function LineComponent({
                 key={group}
                 dataKey={String(group)}
                 type={layout}
-                stroke={`hsl(var(--chart-${(index % 5) + 1}))`}
+                stroke={`var(--chart-${(index % 5) + 1})`}
                 strokeWidth={2}
                 dot={false}
                 unit={table === 'AcicOccupancy' ? '%' : ''}

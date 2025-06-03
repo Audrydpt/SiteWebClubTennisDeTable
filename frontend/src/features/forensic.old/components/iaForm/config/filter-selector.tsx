@@ -16,7 +16,7 @@ export default function FilterSelector({
   return (
     <div className="bg-muted/30 p-4 rounded-lg">
       <div className="flex items-center gap-2 mb-4">
-        <Filter className="h-5 w-5 text-primary" />
+        <Filter className="size-5 text-primary" />
         <h3 className="text-lg font-medium">Filtres Disponibles</h3>
       </div>
 
@@ -39,11 +39,11 @@ export default function FilterSelector({
             }}
           >
             <div className="flex flex-col items-center gap-2 text-center">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center">
+              <div className="size-8 rounded-full flex items-center justify-center">
                 {selectedFilters.includes(filter) ? (
-                  <CheckCircle2 className="h-6 w-6 text-primary" />
+                  <CheckCircle2 className="size-6 text-primary" />
                 ) : (
-                  <div className="w-5 h-5 rounded border-2 border-muted-foreground/50" />
+                  <div className="size-5 rounded border-2 border-muted-foreground/50" />
                 )}
               </div>
               <Label className="capitalize cursor-pointer text-sm">
@@ -76,7 +76,7 @@ export default function FilterSelector({
                 tabIndex={0}
                 role="button"
               >
-                {filter} <X className="ml-1 h-3 w-3" />
+                {filter} <X className="ml-1 size-3" />
               </Badge>
             ))}
           </div>

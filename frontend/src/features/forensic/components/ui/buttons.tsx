@@ -53,7 +53,7 @@ export function SortButtons() {
         variant="outline"
         size="icon"
         onClick={toggleSortOrder}
-        className="h-8 w-8"
+        className="size-8"
         title={
           order.direction === 'desc'
             ? t('forensic:buttons.descending')
@@ -61,9 +61,9 @@ export function SortButtons() {
         }
       >
         {order.direction === 'desc' ? (
-          <SortDesc className="h-4 w-4" />
+          <SortDesc className="size-4" />
         ) : (
-          <SortAsc className="h-4 w-4" />
+          <SortAsc className="size-4" />
         )}
       </Button>
 
@@ -77,10 +77,10 @@ export function SortButtons() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+          className="size-8 text-muted-foreground hover:text-destructive"
           title={t('forensic:buttons.clear_results')}
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="size-4" />
         </Button>
       </DeleteConfirmation>
     </div>

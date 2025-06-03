@@ -145,7 +145,7 @@ export default function VMSSettings() {
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue
                             placeholder={t('vms-settings.selectVMS')}
                           />
@@ -256,7 +256,7 @@ export default function VMSSettings() {
               )}
             </CardContent>
 
-            <CardFooter>
+            <CardFooter className="mt-4">
               <Button
                 type="submit"
                 className="w-full"

@@ -64,7 +64,7 @@ export default function DeleteConfirmation({
           <AlertDialogCancel>{defaultValues.cancelText}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
-            className="bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90"
+            className="bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90"
           >
             {defaultValues.confirmText}
           </AlertDialogAction>

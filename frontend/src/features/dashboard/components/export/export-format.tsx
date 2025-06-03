@@ -71,7 +71,7 @@ export default function ExportStepFormat({
               htmlFor="excel"
               className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
             >
-              <FileSpreadsheet className="mb-3 h-6 w-6" />
+              <FileSpreadsheet className="mb-3 size-6" />
               {t('dashboard:export:format.Excel')}
             </Label>
           </div>
@@ -81,7 +81,7 @@ export default function ExportStepFormat({
               htmlFor="pdf"
               className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
             >
-              <FileType className="mb-3 h-6 w-6" />
+              <FileType className="mb-3 size-6" />
               {t('dashboard:export:format.PDF')}
             </Label>
           </div>
@@ -89,14 +89,14 @@ export default function ExportStepFormat({
 
         {isLoading && (
           <div className="flex items-center justify-center space-x-2">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <Loader2 className="size-6 animate-spin text-primary" />
             <span>{t('dashboard:export:format.fetchingMessage')}</span>
           </div>
         )}
 
         {loading && (
           <div className="flex items-center justify-center space-x-2">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <Loader2 className="size-6 animate-spin text-primary" />
             <span>{t('dashboard:export:format.generatingMessage')}</span>
           </div>
         )}

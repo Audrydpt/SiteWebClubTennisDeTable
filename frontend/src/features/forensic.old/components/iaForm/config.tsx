@@ -79,7 +79,7 @@ export default function Config({
       {/* Zone de téléchargement */}
       <div className="mt-8">
         <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-          <FileSymlink className="h-5 w-5 text-primary" />
+          <FileSymlink className="size-5 text-primary" />
           Fichiers à analyser
         </h3>
 
@@ -102,12 +102,12 @@ export default function Config({
         >
           {isAnalyzing ? (
             <>
-              <div className="animate-spin mr-2 h-5 w-5 border-2 border-b-transparent rounded-full" />
+              <div className="animate-spin mr-2 size-5 border-2 border-b-transparent rounded-full" />
               Analyse en cours...
             </>
           ) : (
             <>
-              <Play className="h-5 w-5" />
+              <Play className="size-5" />
               Lancer l&apos;analyse
             </>
           )}

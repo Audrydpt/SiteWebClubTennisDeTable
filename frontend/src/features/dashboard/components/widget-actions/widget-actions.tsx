@@ -43,7 +43,7 @@ export default function WidgetActions({
           area-label="Clone"
           onClick={() => clone(item.widget)}
         >
-          <Copy className="h-4 w-4" />
+          <Copy className="size-4" />
         </Button>
       )}
 
@@ -58,7 +58,7 @@ export default function WidgetActions({
           setStepValidity={() => {}}
         >
           <Button variant="default" size="icon" area-label="Export">
-            <Share className="h-4 w-4" />
+            <Share className="size-4" />
           </Button>
         </QuickExport>
       )}
@@ -70,7 +70,7 @@ export default function WidgetActions({
           edition
         >
           <Button variant="secondary" size="icon" area-label="Edit">
-            <Edit3 className="h-4 w-4" />
+            <Edit3 className="size-4" />
           </Button>
         </FormWidget>
       )}
@@ -81,7 +81,7 @@ export default function WidgetActions({
           description={t('dashboard:widget.deleteConfirmation')}
         >
           <Button variant="destructive" size="icon" aria-label="Delete">
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="size-4" />
           </Button>
         </DeleteConfirmation>
       )}

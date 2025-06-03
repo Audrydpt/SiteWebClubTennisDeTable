@@ -12,7 +12,7 @@ function Webmin() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center">
+        <CardTitle className="flex items-center" role="heading" aria-level={1}>
           <Settings className="mr-2" />
           System Configuration
         </CardTitle>

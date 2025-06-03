@@ -5,7 +5,7 @@ import {
   mockRemoveEventListener,
 } from '../../vitest-setup';
 
-import useIsMobile from './use-mobile';
+import { useIsMobile } from './use-mobile';
 
 describe('useIsMobile', () => {
   describe('Basic Functionality', () => {

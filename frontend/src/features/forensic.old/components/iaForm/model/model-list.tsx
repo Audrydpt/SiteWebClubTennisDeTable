@@ -17,7 +17,7 @@ export default function ModelList({
   return (
     <div className="md:col-span-3 space-y-3">
       <div className="flex items-center gap-2">
-        <Eye className="h-5 w-5 text-primary" />
+        <Eye className="size-5 text-primary" />
         <Label htmlFor="model" className="text-lg font-medium">
           Modèle
         </Label>
@@ -49,7 +49,7 @@ export default function ModelList({
               }}
             >
               <div className="flex items-center gap-2">
-                <div className={`h-4 w-4 rounded-full ${model.color}`} />
+                <div className={`size-4 rounded-full ${model.color}`} />
                 <span className="font-medium text-sm truncate">
                   {model.name}
                 </span>
@@ -65,7 +65,7 @@ export default function ModelList({
           model.type === analysisType
       ).length === 0 && (
         <div className="p-6 bg-muted/30 rounded-lg text-center">
-          <AlertCircle className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+          <AlertCircle className="size-8 mx-auto text-muted-foreground mb-2" />
           <p className="text-muted-foreground">
             Sélectionnez un type d&#39;analyse pour voir les modèles disponibles
           </p>

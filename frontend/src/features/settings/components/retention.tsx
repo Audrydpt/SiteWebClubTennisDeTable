@@ -115,7 +115,7 @@ function Retention() {
                 />
 
                 <div className="flex gap-4 mt-6 items-start">
-                  <div className="flex-shrink-0 w-25">
+                  <div className="shrink-0 w-25">
                     <FormField
                       control={form.control}
                       name="days"
@@ -152,7 +152,7 @@ function Retention() {
 
                   <div className="flex p-3 rounded-md bg-muted flex-1">
                     <div className="mr-3 mt-1">
-                      <DatabaseIcon className="h-4 w-4 text-muted-foreground" />
+                      <DatabaseIcon className="size-4 text-muted-foreground" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">
@@ -166,7 +166,7 @@ function Retention() {
                 </div>
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="mt-4">
               <Button
                 type="submit"
                 className="w-full"

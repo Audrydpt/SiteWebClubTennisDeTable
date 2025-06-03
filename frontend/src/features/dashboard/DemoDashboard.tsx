@@ -36,7 +36,7 @@ import { Separator } from '@/components/ui/separator';
 export default function DemoDashboard() {
   return (
     <div className="mx-auto flex max-w-6xl flex-wrap items-start gap-6 p-6 sm:p-8 w-full">
-      <div className="grid w-full gap-6 sm:grid-cols-2 lg:max-w-[20rem] lg:grid-cols-1 xl:max-w-[25rem]">
+      <div className="grid w-full gap-6 sm:grid-cols-2 lg:max-w-[20rem] lg:grid-cols-1 xl:max-w-100">
         <Card className="lg:max-w-md" x-chunk="charts-01-chunk-0">
           <CardHeader className="space-y-0 pb-2">
             <CardDescription>Today</CardDescription>
@@ -52,7 +52,7 @@ export default function DemoDashboard() {
               config={{
                 steps: {
                   label: 'Steps',
-                  color: 'hsl(var(--chart-1))',
+                  color: 'var(--chart-1)',
                 },
               }}
             >
@@ -127,7 +127,7 @@ export default function DemoDashboard() {
                 />
                 <ReferenceLine
                   y={1200}
-                  stroke="hsl(var(--muted-foreground))"
+                  stroke="var(--muted-foreground)"
                   strokeDasharray="3 3"
                   strokeWidth={1}
                 >
@@ -135,13 +135,13 @@ export default function DemoDashboard() {
                     position="insideBottomLeft"
                     value="Average Steps"
                     offset={10}
-                    fill="hsl(var(--foreground))"
+                    fill="var(--foreground)"
                   />
                   <Label
                     position="insideTopLeft"
                     value="12,343"
                     className="text-lg"
-                    fill="hsl(var(--foreground))"
+                    fill="var(--foreground)"
                     offset={10}
                     startOffset={100}
                   />
@@ -187,7 +187,7 @@ export default function DemoDashboard() {
               config={{
                 resting: {
                   label: 'Resting',
-                  color: 'hsl(var(--chart-1))',
+                  color: 'var(--chart-1)',
                 },
               }}
               className="w-full"
@@ -232,7 +232,7 @@ export default function DemoDashboard() {
                 <CartesianGrid
                   strokeDasharray="4 4"
                   vertical={false}
-                  stroke="hsl(var(--muted-foreground))"
+                  stroke="var(--muted-foreground)"
                   strokeOpacity={0.5}
                 />
                 <YAxis hide domain={['dataMin - 10', 'dataMax + 10']} />
@@ -301,7 +301,7 @@ export default function DemoDashboard() {
                 config={{
                   steps: {
                     label: 'Steps',
-                    color: 'hsl(var(--chart-1))',
+                    color: 'var(--chart-1)',
                   },
                 }}
                 className="aspect-auto h-[32px] w-full"
@@ -351,7 +351,7 @@ export default function DemoDashboard() {
                 config={{
                   steps: {
                     label: 'Steps',
-                    color: 'hsl(var(--muted))',
+                    color: 'var(--muted)',
                   },
                 }}
                 className="aspect-auto h-[32px] w-full"
@@ -382,7 +382,7 @@ export default function DemoDashboard() {
                       dataKey="date"
                       offset={8}
                       fontSize={12}
-                      fill="hsl(var(--muted-foreground))"
+                      fill="var(--muted-foreground)"
                     />
                   </Bar>
                   <YAxis dataKey="date" type="category" tickCount={1} hide />
@@ -411,7 +411,7 @@ export default function DemoDashboard() {
               config={{
                 steps: {
                   label: 'Steps',
-                  color: 'hsl(var(--chart-1))',
+                  color: 'var(--chart-1)',
                 },
               }}
               className="ml-auto w-[72px]"
@@ -479,15 +479,15 @@ export default function DemoDashboard() {
               config={{
                 move: {
                   label: 'Move',
-                  color: 'hsl(var(--chart-1))',
+                  color: 'var(--chart-1)',
                 },
                 stand: {
                   label: 'Stand',
-                  color: 'hsl(var(--chart-2))',
+                  color: 'var(--chart-2)',
                 },
                 exercise: {
                   label: 'Exercise',
-                  color: 'hsl(var(--chart-3))',
+                  color: 'var(--chart-3)',
                 },
               }}
               className="h-[140px] w-full"
@@ -616,15 +616,15 @@ export default function DemoDashboard() {
               config={{
                 move: {
                   label: 'Move',
-                  color: 'hsl(var(--chart-1))',
+                  color: 'var(--chart-1)',
                 },
                 exercise: {
                   label: 'Exercise',
-                  color: 'hsl(var(--chart-2))',
+                  color: 'var(--chart-2)',
                 },
                 stand: {
                   label: 'Stand',
-                  color: 'hsl(var(--chart-3))',
+                  color: 'var(--chart-3)',
                 },
               }}
               className="mx-auto aspect-square w-full max-w-[80%]"
@@ -687,7 +687,7 @@ export default function DemoDashboard() {
               config={{
                 calories: {
                   label: 'Calories',
-                  color: 'hsl(var(--chart-1))',
+                  color: 'var(--chart-1)',
                 },
               }}
               className="ml-auto w-[64px]"
@@ -768,7 +768,7 @@ export default function DemoDashboard() {
               config={{
                 time: {
                   label: 'Time',
-                  color: 'hsl(var(--chart-2))',
+                  color: 'var(--chart-2)',
                 },
               }}
             >

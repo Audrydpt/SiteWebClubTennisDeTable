@@ -76,7 +76,7 @@ export default function ColorPicker({
             selected.map((colorValue: string) => (
               <div
                 key={colorValue}
-                className="w-6 h-6 rounded border"
+                className="size-6 rounded border"
                 style={{ backgroundColor: getDisplayColor(colorValue) }}
                 title={colorValue}
               />
@@ -95,7 +95,7 @@ export default function ColorPicker({
             return (
               <button
                 key={color.value}
-                className="w-12 h-12 rounded-lg border relative hover:scale-105 transition-transform"
+                className="size-12 rounded-lg border relative hover:scale-105 transition-transform"
                 style={{ backgroundColor: color.value }}
                 onClick={() => handleColorToggle(color)}
                 title={color.name}

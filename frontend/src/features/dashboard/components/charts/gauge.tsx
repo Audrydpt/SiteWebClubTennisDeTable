@@ -13,7 +13,7 @@ import { getWidgetData } from '../../lib/utils';
 const chartConfig = {
   count: {
     label: 'Count',
-    color: 'hsl(var(--chart-1))',
+    color: 'var(--chart-1)',
   },
 } satisfies ChartConfig;
 
@@ -104,10 +104,12 @@ export default function GaugeComponent({
   if (isLoading || isError) {
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
-        <CardHeader>
-          <CardTitle>{title ?? `Gauge ${layout.toString()}`}</CardTitle>
+        <CardHeader className="w-full">
+          <CardTitle className="text-center">
+            {title ?? `Gauge ${layout.toString()}`}
+          </CardTitle>
         </CardHeader>
-        <CardContent className="flex-grow w-full">
+        <CardContent className="grow w-full">
           <ChartContainer config={chartConfig} className="h-full w-full">
             {isLoading ? (
               <Skeleton className="h-full w-full bg-muted" />
@@ -127,12 +129,12 @@ export default function GaugeComponent({
 
   return (
     <Card className="w-full h-full flex flex-col justify-center">
-      <CardHeader>
+      <CardHeader className="w-full">
         <CardTitle className="text-center">
           {title ?? `Gauge ${layout.toString()}`}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-grow w-full">
+      <CardContent className="grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <RadialBarChart
             data={dataMerged}
@@ -147,7 +149,7 @@ export default function GaugeComponent({
             />
             <RadialBar
               dataKey="value"
-              fill="hsl(var(--chart-1))"
+              fill="var(--chart-1)"
               background
               cornerRadius={10}
             />

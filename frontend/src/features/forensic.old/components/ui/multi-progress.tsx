@@ -71,7 +71,7 @@ export default function MultiProgress({
                       {source.timestamp && (
                         <span className="flex items-center">
                           <svg
-                            className="w-3 h-3 mr-1 inline-block"
+                            className="size-3 mr-1 inline-block"
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"
                             fill="none"
@@ -97,7 +97,7 @@ export default function MultiProgress({
                         timeEstimates.individual[source.sourceId] && (
                           <span className="flex items-center">
                             <svg
-                              className="w-3 h-3 mr-1 inline-block"
+                              className="size-3 mr-1 inline-block"
                               xmlns="http://www.w3.org/2000/svg"
                               viewBox="0 0 24 24"
                               fill="none"

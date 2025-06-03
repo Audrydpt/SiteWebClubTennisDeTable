@@ -279,7 +279,7 @@ export default function Appearances() {
                   )
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Niveau de tolérance" />
                 </SelectTrigger>
                 <SelectContent>

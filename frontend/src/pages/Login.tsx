@@ -68,12 +68,16 @@ export default function Login() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10">
+    <div className="w-md mx-auto mt-10">
       <Card>
         <CardHeader>
           <img src={logo} alt="Logo" className="w-[100px] mb-4 mx-auto" />
-          <CardTitle className="text-2xl">{t('login.title')}</CardTitle>
-          <CardDescription>{t('login.description')}</CardDescription>
+          <CardTitle className="text-2xl" role="heading" aria-level={1}>
+            {t('login.title')}
+          </CardTitle>
+          <CardDescription role="heading" aria-level={2}>
+            {t('login.description')}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -114,7 +118,7 @@ export default function Login() {
               {error && <p className="text-destructive">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
-                  <LoadingSpinner className="w-5 h-5 mx-auto" />
+                  <LoadingSpinner className="size-5 mx-auto" />
                 ) : (
                   t('login.submit')
                 )}

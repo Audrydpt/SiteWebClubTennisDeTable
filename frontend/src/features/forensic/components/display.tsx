@@ -143,18 +143,18 @@ function RenderImage(result: ForensicResult) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <div className="border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-card cursor-pointer relative group">
+        <div className="border rounded-md overflow-hidden shadow-xs hover:shadow-md transition-shadow bg-card cursor-pointer relative group">
           <div className="relative">
             {imageData ? (
               <div className="relative">
                 <img
                   src={imageData}
                   alt="Forensic result"
-                  className="w-full h-auto object-cover object-[center_10%] aspect-[16/9]"
+                  className="w-full h-auto object-cover object-[center_10%] aspect-video"
                 />
               </div>
             ) : (
-              <div className="w-full aspect-[16/9] bg-muted flex items-center justify-center">
+              <div className="w-full aspect-video bg-muted flex items-center justify-center">
                 <span className="text-muted-foreground text-sm">
                   {t('forensic:display.no_image')}
                 </span>
@@ -178,7 +178,7 @@ function RenderImage(result: ForensicResult) {
           </div>
         </div>
       </DialogTrigger>
-      <DialogContent className="max-w-[90vw] max-h-[90vh] p-6">
+      <DialogContent className="sm:max-w-full sm:w-6xl sm:max-h-[90vh]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Image Section */}
           <div className="relative">
@@ -204,7 +204,7 @@ function RenderImage(result: ForensicResult) {
                 link.click();
               }}
             >
-              <Download className="h-5 w-5" />
+              <Download className="size-5" />
             </Button>
             <img
               src={imageData}
@@ -282,7 +282,7 @@ export default function Display() {
     return (
       <div className="flex flex-col h-[50vh] items-center justify-center">
         <Alert variant="destructive" className="max-w-md">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <AlertDescription>{t('forensic:display.error')}</AlertDescription>
         </Alert>
       </div>
@@ -294,7 +294,7 @@ export default function Display() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {isLoading && (
           <div className="flex flex-col h-[50vh] w-full items-center justify-center text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="size-4 animate-spin" />
             {t('forensic:display.loading')}
           </div>
         )}

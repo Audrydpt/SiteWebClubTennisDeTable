@@ -140,18 +140,18 @@ export default function Display({
     return (
       <Dialog>
         <DialogTrigger asChild>
-          <div className="border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-card cursor-pointer relative group">
+          <div className="border rounded-md overflow-hidden shadow-xs hover:shadow-md transition-shadow bg-card cursor-pointer relative group">
             <div className="relative">
               {result.imageData ? (
                 <div className="relative">
                   <img
                     src={result.imageData}
                     alt="Forensic result"
-                    className="w-full h-auto object-cover object-[center_10%] aspect-[16/9]"
+                    className="w-full h-auto object-cover object-[center_10%] aspect-video"
                   />
                 </div>
               ) : (
-                <div className="w-full aspect-[16/9] bg-muted flex items-center justify-center">
+                <div className="w-full aspect-video bg-muted flex items-center justify-center">
                   <span className="text-muted-foreground text-sm">
                     Pas d&#39;image
                   </span>
@@ -173,7 +173,7 @@ export default function Display({
             </div>
           </div>
         </DialogTrigger>
-        <DialogContent className="max-w-[90vw] max-h-[90vh] p-6">
+        <DialogContent className="sm:max-w-full sm:w-6xl sm:max-h-[90vh]">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Image Section */}
             <div className="relative">
@@ -199,7 +199,7 @@ export default function Display({
                   link.click();
                 }}
               >
-                <Download className="h-5 w-5" />
+                <Download className="size-5" />
               </Button>
               <img
                 src={result.imageData}
@@ -379,17 +379,17 @@ export default function Display({
           {skeletonIds.map((id, index) => (
             <div
               key={`skeleton-${id}`}
-              className="border rounded-md overflow-hidden shadow-sm animate-pulse"
+              className="border rounded-md overflow-hidden shadow-xs animate-pulse"
               style={{
                 animationDelay: `${index * 80}ms`,
                 animationDuration: '2s',
               }}
             >
-              <div className="bg-muted/80 w-full aspect-[16/9] relative">
+              <div className="bg-muted/80 w-full aspect-video relative">
                 {/* Effet de balayage sur l'image */}
                 <div className="absolute inset-0 overflow-hidden">
                   <div
-                    className="h-full w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent absolute"
+                    className="h-full w-1/3 bg-linear-to-r from-transparent via-white/10 to-transparent absolute"
                     style={{
                       left: '-100%',
                       animationName: 'shimmer',
@@ -435,9 +435,9 @@ export default function Display({
         {skeletonIds.map((id) => (
           <div
             key={`skeleton-${id}`}
-            className="border rounded-md overflow-hidden shadow-sm"
+            className="border rounded-md overflow-hidden shadow-xs"
           >
-            <div className="bg-muted w-full aspect-[16/9] animate-pulse" />
+            <div className="bg-muted w-full aspect-video animate-pulse" />
             <div className="p-3">
               <div className="h-4 bg-muted rounded w-3/4 mb-1 animate-pulse" />
               <div className="h-3 bg-muted rounded w-1/2 animate-pulse" />

@@ -22,7 +22,7 @@ function Forensic() {
   return (
     <div className="flex h-full w-full">
       {/* Panneau du formulaire */}
-      <Card className="h-full flex flex-col w-[350px]">
+      <Card className="h-full flex flex-col w-[375px]">
         <CardContent className="p4 h-full flex flex-col">
           <ForensicForm onSubmit={addNewTab} />
         </CardContent>
@@ -35,10 +35,10 @@ function Forensic() {
           {/* Panneau des onglets */}
           <div className="mb-4">
             <div className="flex justify-between items-center gap-4">
-              <div className="flex-grow">
+              <div className="grow">
                 <JobTabs />
               </div>
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <SortButtons />
               </div>
             </div>

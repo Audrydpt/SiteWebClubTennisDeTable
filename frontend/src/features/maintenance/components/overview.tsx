@@ -9,7 +9,7 @@ function VersionDisplay() {
   const { version, productVersion, isLoading, error } = useOverview();
 
   if (isLoading) {
-    return <LoadingSpinner className="w-4 h-4" />;
+    return <LoadingSpinner className="size-4" />;
   }
 
   if (error) {

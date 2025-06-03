@@ -109,7 +109,7 @@ function UserContent() {
                             size="sm"
                             aria-label="Edit"
                           >
-                            <Pencil className="h-4 w-4" />
+                            <Pencil className="size-4" />
                           </Button>
                         </FormUpdateUser>
 
@@ -124,7 +124,7 @@ function UserContent() {
                             size="sm"
                             aria-label="Delete"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="size-4" />
                           </Button>
                         </DeleteConfirmation>
                       </>

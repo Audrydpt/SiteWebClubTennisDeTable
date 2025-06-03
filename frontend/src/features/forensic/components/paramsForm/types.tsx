@@ -41,7 +41,7 @@ export default function Types() {
                   setSubjectType(value);
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

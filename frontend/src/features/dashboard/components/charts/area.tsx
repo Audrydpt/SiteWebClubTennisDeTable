@@ -92,10 +92,12 @@ export default function AreaComponent({
   if (isLoading || isError) {
     return (
       <Card className="w-full h-full flex flex-col justify-center items-center">
-        <CardHeader>
-          <CardTitle>{title ?? `Area ${layout.toString()}`}</CardTitle>
+        <CardHeader className="w-full">
+          <CardTitle className="text-center">
+            {title ?? `Area ${layout.toString()}`}
+          </CardTitle>
         </CardHeader>
-        <CardContent className="flex-grow w-full">
+        <CardContent className="grow w-full">
           <ChartContainer config={{}} className="h-full w-full">
             {isLoading ? (
               <Skeleton className="h-full w-full bg-muted" />
@@ -116,12 +118,12 @@ export default function AreaComponent({
 
   return (
     <Card className="w-full h-full flex flex-col justify-center">
-      <CardHeader>
+      <CardHeader className="w-full">
         <CardTitle className="text-center">
           {title ?? `Area ${layout.toString()}`}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-grow w-full">
+      <CardContent className="grow w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <AreaChart
             data={Object.values(dataMerged)}
@@ -173,8 +175,8 @@ export default function AreaComponent({
                 dataKey={String(group)}
                 type={layout}
                 unit={table === 'AcicOccupancy' ? '%' : ''}
-                stroke={`hsl(var(--chart-${(index % 5) + 1}))`}
-                fill={`hsl(var(--chart-${(index % 5) + 1}))`}
+                stroke={`var(--chart-${(index % 5) + 1})`}
+                fill={`var(--chart-${(index % 5) + 1})`}
                 fillOpacity={0.4}
                 stackId="a"
               />

@@ -13,7 +13,7 @@ export default function ModelTypeSelector({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Layers className="h-5 w-5 text-primary" />
+        <Layers className="size-5 text-primary" />
         <Label htmlFor="analysis-type" className="text-lg font-medium">
           Type d&#39;analyse
         </Label>
@@ -35,7 +35,7 @@ export default function ModelTypeSelector({
             }
           }}
         >
-          <div className="h-3 w-3 rounded-full bg-gray-500 mb-2" />
+          <div className="size-3 rounded-full bg-gray-500 mb-2" />
           <span className="text-xs font-medium">Tous</span>
         </div>
 
@@ -54,7 +54,7 @@ export default function ModelTypeSelector({
             }
           }}
         >
-          <div className="h-3 w-3 rounded-full bg-purple-500 mb-2" />
+          <div className="size-3 rounded-full bg-purple-500 mb-2" />
           <span className="text-xs font-medium">Action</span>
         </div>
 
@@ -73,7 +73,7 @@ export default function ModelTypeSelector({
             }
           }}
         >
-          <div className="h-3 w-3 rounded-full bg-blue-500 mb-2" />
+          <div className="size-3 rounded-full bg-blue-500 mb-2" />
           <span className="text-xs font-medium">Détecteur</span>
         </div>
 
@@ -92,7 +92,7 @@ export default function ModelTypeSelector({
             }
           }}
         >
-          <div className="h-3 w-3 rounded-full bg-green-500 mb-2" />
+          <div className="size-3 rounded-full bg-green-500 mb-2" />
           <span className="text-xs font-medium">Classifieur</span>
         </div>
       </div>
