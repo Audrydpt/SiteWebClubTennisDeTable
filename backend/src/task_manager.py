@@ -900,6 +900,7 @@ class VehicleReplayJob:
     def _filter_detections(self, bbox, probabilities: Dict[str, float]):
         size = self._filter_detections_size(bbox)
         detector = self._filter_detections_classes(probabilities)
+        logger.info(f"size: {size} - detector: {detector}")
         return size * detector
     
     def _filter_detections_size(self, bbox):
@@ -958,9 +959,11 @@ class VehicleReplayJob:
         return max(filtered_probs.values()) if filtered_probs else 0.0
 
     def _filter_classification(self, probabilities: Dict[str, float], appearances: Dict[str, Dict[str,float]], attributes: Dict[str, Dict[str,float]]):
-        appearance = self._filter_classification_appearance(probabilities, appearances)
-        attributes = self._filter_classification_attributes(probabilities, attributes)
-        return appearance * attributes
+        appearance_score = self._filter_classification_appearance(probabilities, appearances)
+        attributes_score = self._filter_classification_attributes(probabilities, attributes)
+
+        logger.info(f"appearance: {appearance_score} - attributes: {attributes_score}")
+        return appearance_score * attributes_score
     
     def _filter_classification_appearance(self, probabilities: Dict[str, float], appearances: Dict[str, Dict[str,float]]):
         try:       
@@ -1047,21 +1050,56 @@ class VehicleReplayJob:
             elif self.type == "mobility":
                 return 1.0
             elif self.type == "person":
-                upper_score = 1.0
-                wanted_upper = self.attributes.get("upper", {}).get("type", [])
-                if len(wanted_upper) > 0:
-                    upper_score = 0.0
-                    detected_upper = attributes.get("upper", {}).get("type", {})
-                    for u in wanted_upper:
-                        upper_score = max(upper_score, detected_upper.get(u, 0.0))
 
-                lower_score = 1.0
-                wanted_lower = self.attributes.get("lower", {}).get("type", [])
-                if len(wanted_lower) > 0:
-                    lower_score = 0.0
-                    detected_lower = attributes.get("lower", {}).get("type", {})
-                    for l in wanted_lower:
-                        lower_score = max(lower_score, detected_lower.get(l, 0.0))
+                wanted_upper = self.attributes.get("upper", {})
+                wanted_lower = self.attributes.get("lower", {})
+                
+                # upper
+                upper_type_score = 1.0
+                wanted_upper_type = wanted_upper.get("type", [])
+                detected_upper_type = attributes.get("upper_type", [])
+                if len(wanted_upper_type) > 0 and len(detected_upper_type) > 0:
+                    upper_type_score = 0.0
+                    for u in wanted_upper_type:
+                        upper_type_score = max(upper_type_score, detected_upper_type.get(u, 0.0))
+                
+                upper_color_score = 1.0
+                wanted_upper_color = wanted_upper.get("color", [])
+                detected_upper_color = attributes.get("upper_color", [])
+                if len(wanted_upper_color) > 0 and len(detected_upper_color) > 0:
+                    upper_color_score = 0.0
+
+                    detected_upper_color = {k: v for k, v in detected_upper_color.items() if v > self.threshold_color}  # filter conf too low
+                    detected_upper_color = dict(list(detected_upper_color.items())[:self.top_color])                    # keep top x results
+                    for c in wanted_upper_color:
+                        upper_color_score = max(upper_color_score, detected_upper_color.get(c, 0.0))
+                logger.info(f"config: {wanted_upper_type} - found: {detected_upper_type} - score: {upper_type_score}")
+                logger.info(f"config: {wanted_upper_color} - found: {detected_upper_color} - score: {upper_color_score}")
+
+                # lower
+                lower_type_score = 1.0
+                wanted_lower_type = wanted_lower.get("type", [])
+                detected_lower_type = attributes.get("lower_type", [])
+                if len(wanted_lower_type) > 0 and len(detected_lower_type) > 0:
+                    lower_type_score = 0.0
+                    for l in wanted_lower_type:
+                        lower_type_score = max(lower_type_score, detected_lower_type.get(l, 0.0))
+                
+                lower_color_score = 1.0
+                wanted_lower_color = wanted_lower.get("color", [])
+                detected_lower_color = attributes.get("lower_color", [])
+                if len(wanted_lower_color) > 0 and len(detected_lower_color) > 0:
+                    lower_color_score = 0.0
+                    detected_lower_color = {k: v for k, v in detected_lower_color.items() if v > self.threshold_color}  # filter conf too low
+                    detected_lower_color = dict(list(detected_lower_color.items())[:self.top_color])                    # keep top x results
+                    for c in wanted_lower_color:
+                        lower_color_score = max(lower_color_score, detected_lower_color.get(c, 0.0))
+                logger.info(f"config: {wanted_lower_type} - found: {detected_lower_type} - score: {lower_type_score}")
+                logger.info(f"config: {wanted_lower_color} - found: {detected_lower_color} - score: {lower_color_score}")
+
+                upper_score = upper_type_score * upper_color_score
+                lower_score = lower_type_score * lower_color_score
+
                 return upper_score * lower_score
             else:
                 logger.error(f"Unknown type: {self.type}")
@@ -1082,6 +1120,7 @@ class VehicleReplayJob:
 
             obj_score = self._filter_detections(bbox, probabilities)
             if obj_score <= 0.1:
+                logger.debug(f"obj_score: {obj_score} - skipping")
                 continue
 
             current_boxes.append(bbox)
@@ -1092,20 +1131,25 @@ class VehicleReplayJob:
                 if iou > 0.2:
                     is_duplicate = True
                     break
+            
             if is_duplicate:
+                logger.debug(f"is_duplicate: {is_duplicate} - skipping")
                 continue
 
             thumbnail = forensic.get_thumbnail(img, detection)
             if thumbnail is None:
+                logger.debug(f"thumbnail is None - skipping")
                 continue
             
             attributes = await forensic.classify(thumbnail, self.type)
             cls_score = self._filter_classification(probabilities, attributes, attributes)
             if cls_score <= self.class_score:
+                logger.debug(f"cls_score: {cls_score} - class_score: {self.class_score} - skipping")
                 continue
 
             global_score = obj_score * cls_score
             if global_score <= self.global_score:
+                logger.debug(f"global_score: {global_score} - global_score: {self.global_score} - skipping")
                 continue
 
             metadata = {
@@ -1119,6 +1163,7 @@ class VehicleReplayJob:
             }
             export = forensic.get_thumbnail(img, detection, 1.1)
             if export is None:
+                logger.debug(f"export is None - skipping")
                 continue
             
             _, encoded_image = cv2.imencode('.jpg', export)
