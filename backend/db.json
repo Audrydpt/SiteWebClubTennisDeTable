@@ -1,0 +1,24 @@
+{
+  "test": [
+    {
+      "id": "1",
+      "name": "Vitest Run"
+    },
+    {
+      "id": "2",
+      "name": "Vitest UI"
+    },
+    {
+      "id": "3",
+      "name": "Vitest Coverage"
+    },
+    {
+      "id": "4",
+      "name": "Vitest Coverage UI"
+    },
+    {
+      "id": "c236",
+      "name": "Draft request body"
+    }
+  ]
+}
