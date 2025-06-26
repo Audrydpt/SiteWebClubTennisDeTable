@@ -2,8 +2,6 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 
-import { UserPrivileges, UserType } from '@/lib/authenticate';
-
 // Mock the ResizeObserver
 global.ResizeObserver = class MockResizeObserver {
   observe = vi.fn();
@@ -111,30 +109,6 @@ window.PointerEvent = MockPointerEvent as any;
 window.HTMLElement.prototype.scrollIntoView = vi.fn();
 window.HTMLElement.prototype.releasePointerCapture = vi.fn();
 window.HTMLElement.prototype.hasPointerCapture = vi.fn();
-
-// Mock the auth context
-vi.mock('@/providers/auth-context', () => ({
-  useAuth: () => ({
-    user: {
-      user: 'Administrator',
-      privileges: UserPrivileges.Administrator,
-    } as UserType,
-    isAuthenticated: true,
-    isLoading: false,
-    sessionId: 'test-session-id',
-  }),
-}));
-
-// Mock the i18n context
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-    i18n: {
-      language: 'en',
-      changeLanguage: vi.fn(),
-    },
-  }),
-}));
 
 // Mock the toast
 vi.mock('sonner', () => ({
