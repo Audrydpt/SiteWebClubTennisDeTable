@@ -1,5 +1,5 @@
 import React from 'react';
 
 export default function HomePage() {
-  return <p>bonjour user</p>;
+  return <p>bonjour admin</p>;
 }
