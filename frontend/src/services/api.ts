@@ -2,7 +2,7 @@
 // src/services/api.ts
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL;
+const API_URL = import.meta.env.VITE_API_URL;
 export const fetchTestData = async () => {
   const response = await axios.get(`${API_URL}/test`);
   return response.data;
