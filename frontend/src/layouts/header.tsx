@@ -31,6 +31,8 @@ export default function Header({ title, className, ...props }: HeaderProps) {
   const [mobileCompetitionOpen, setMobileCompetitionOpen] = useState(false);
   const [mobileHistoriqueOpen, setMobileHistoriqueOpen] = useState(false);
   const [mobileEvenementsOpen, setMobileEvenementsOpen] = useState(false);
+  // Nouvel état pour contrôler l'affichage du formulaire de connexion mobile
+  const [mobileLoginFormOpen, setMobileLoginFormOpen] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +45,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
       setError('');
       navigate('/admin');
       setMobileMenuOpen(false);
+      setMobileLoginFormOpen(false);
     }
   };
 
@@ -53,6 +56,21 @@ export default function Header({ title, className, ...props }: HeaderProps) {
     setError('');
     navigate('/');
     setMobileMenuOpen(false);
+    setMobileLoginFormOpen(false);
+  };
+
+  // Ferme tous les sous-menus quand le menu principal est fermé
+  const handleMobileMenuToggle = () => {
+    const newState = !mobileMenuOpen;
+    setMobileMenuOpen(newState);
+
+    if (!newState) {
+      // Réinitialiser tous les sous-menus si on ferme le menu principal
+      setMobileCompetitionOpen(false);
+      setMobileHistoriqueOpen(false);
+      setMobileEvenementsOpen(false);
+      setMobileLoginFormOpen(false);
+    }
   };
 
   const competitionItems = [
@@ -115,7 +133,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   <HoverCardTrigger asChild>
                     <span
                       className={cn(
-                        'text-sm font-medium transition-colors px-3 py-2 cursor-pointer flex items-center rounded-md',
+                        'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1 cursor-pointer',
                         location.pathname.includes('/competition')
                           ? 'text-[#F1C40F]'
                           : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
@@ -124,15 +142,14 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                       Compétition
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="14"
-                        height="14"
+                        width="16"
+                        height="16"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        className={`ml-1 transition-transform ${competitionOpen ? 'rotate-180' : ''}`}
                       >
                         <path d="m6 9 6 6 6-6" />
                       </svg>
@@ -147,11 +164,9 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         <Link
                           key={item.path}
                           to={item.path}
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]"
+                          className="text-sm text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A] p-2 rounded-md"
                         >
-                          <div className="text-sm font-medium leading-none">
-                            {item.label}
-                          </div>
+                          {item.label}
                         </Link>
                       ))}
                     </div>
@@ -183,7 +198,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   <HoverCardTrigger asChild>
                     <span
                       className={cn(
-                        'text-sm font-medium transition-colors px-3 py-2 cursor-pointer flex items-center rounded-md',
+                        'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1 cursor-pointer',
                         location.pathname.includes('/historique')
                           ? 'text-[#F1C40F]'
                           : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
@@ -192,15 +207,14 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                       Historique
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="14"
-                        height="14"
+                        width="16"
+                        height="16"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        className={`ml-1 transition-transform ${historiqueOpen ? 'rotate-180' : ''}`}
                       >
                         <path d="m6 9 6 6 6-6" />
                       </svg>
@@ -215,11 +229,9 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         <Link
                           key={item.path}
                           to={item.path}
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]"
+                          className="text-sm text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A] p-2 rounded-md"
                         >
-                          <div className="text-sm font-medium leading-none">
-                            {item.label}
-                          </div>
+                          {item.label}
                         </Link>
                       ))}
                     </div>
@@ -237,7 +249,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   <HoverCardTrigger asChild>
                     <span
                       className={cn(
-                        'text-sm font-medium transition-colors px-3 py-2 cursor-pointer flex items-center rounded-md',
+                        'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1 cursor-pointer',
                         location.pathname.includes('/evenements')
                           ? 'text-[#F1C40F]'
                           : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
@@ -246,15 +258,14 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                       Événements
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="14"
-                        height="14"
+                        width="16"
+                        height="16"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        className={`ml-1 transition-transform ${evenementsOpen ? 'rotate-180' : ''}`}
                       >
                         <path d="m6 9 6 6 6-6" />
                       </svg>
@@ -269,11 +280,9 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         <Link
                           key={item.path}
                           to={item.path}
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]"
+                          className="text-sm text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A] p-2 rounded-md"
                         >
-                          <div className="text-sm font-medium leading-none">
-                            {item.label}
-                          </div>
+                          {item.label}
                         </Link>
                       ))}
                     </div>
@@ -312,10 +321,10 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   <button
                     className="hidden md:flex items-center justify-center text-white p-2 rounded-md text-sm font-medium transition-colors"
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#F1C40F';
+                      e.currentTarget.style.backgroundColor = '#4A4A4A';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#3A3A3A';
+                      e.currentTarget.style.backgroundColor = '';
                     }}
                   >
                     <UserCircle size={24} strokeWidth={2} />
@@ -330,15 +339,6 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 >
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
-                      <h4 className="text-sm font-semibold text-white">
-                        Accès administrateur
-                      </h4>
-                      <p className="text-sm text-gray-300">
-                        Veuillez vous connecter pour accéder à cette section.
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
                       <label
                         htmlFor="username"
                         className="text-sm font-medium text-white"
@@ -350,13 +350,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 bg-gray-700 text-white"
-                        style={
-                          {
-                            focusRingColor: '#F1C40F',
-                            '--tw-ring-color': '#F1C40F',
-                          } as React.CSSProperties
-                        }
+                        className="w-full px-3 py-2 border border-gray-600 rounded-md text-sm bg-gray-700 text-white"
                         required
                       />
                     </div>
@@ -373,29 +367,19 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 bg-gray-700 text-white"
-                        style={
-                          {
-                            focusRingColor: '#F1C40F',
-                            '--tw-ring-color': '#F1C40F',
-                          } as React.CSSProperties
-                        }
+                        className="w-full px-3 py-2 border border-gray-600 rounded-md text-sm bg-gray-700 text-white"
                         required
                       />
                     </div>
 
-                    {error && <p className="text-sm text-red-400">{error}</p>}
+                    <div className="space-y-2">
+                      {error && <p className="text-sm text-red-400">{error}</p>}
+                    </div>
 
                     <button
                       type="submit"
-                      className="w-full text-black px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                      className="w-full text-black py-2 rounded-md text-sm font-medium"
                       style={{ backgroundColor: '#F1C40F' }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#E6B800';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#F1C40F';
-                      }}
                     >
                       Se connecter
                     </button>
@@ -406,7 +390,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
 
             {/* Menu mobile - Bouton hamburger */}
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              onClick={handleMobileMenuToggle}
               className="md:hidden p-2 rounded-md hover:bg-gray-600 text-white"
             >
               <svg
@@ -613,43 +597,73 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 Déconnexion
               </button>
             ) : (
-              <div className="px-4 py-4 border-t border-gray-700">
-                <form onSubmit={handleLogin} className="space-y-3">
-                  <div>
-                    <label htmlFor="mobile-username" className="text-sm font-medium text-white">
-                      Nom d'utilisateur
-                    </label>
-                    <input
-                      id="mobile-username"
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="w-full px-3 py-2 mt-1 border border-gray-600 rounded-md text-sm bg-gray-700 text-white"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="mobile-password" className="text-sm font-medium text-white">
-                      Mot de passe
-                    </label>
-                    <input
-                      id="mobile-password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-3 py-2 mt-1 border border-gray-600 rounded-md text-sm bg-gray-700 text-white"
-                      required
-                    />
-                  </div>
-                  {error && <p className="text-sm text-red-400">{error}</p>}
-                  <button
-                    type="submit"
-                    className="w-full text-black py-2 rounded-md text-base font-medium"
-                    style={{ backgroundColor: '#F1C40F' }}
+              <div>
+                {/* Bouton Espace Admin qui affiche le formulaire */}
+                <button
+                  onClick={() => setMobileLoginFormOpen(!mobileLoginFormOpen)}
+                  className={cn(
+                    'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
+                    'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                  )}
+                >
+                  <span>Espace admin</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={`transition-transform ${mobileLoginFormOpen ? 'rotate-180' : ''}`}
                   >
-                    Se connecter
-                  </button>
-                </form>
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+
+                {/* Formulaire de connexion mobile affiché conditionnellement */}
+                {mobileLoginFormOpen && (
+                  <div className="pl-6 py-4 bg-[#444444]">
+                    <form onSubmit={handleLogin} className="space-y-3">
+                      <div>
+                        <label htmlFor="mobile-username" className="text-sm font-medium text-white">
+                          Nom d'utilisateur
+                        </label>
+                        <input
+                          id="mobile-username"
+                          type="text"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          className="w-full px-3 py-2 mt-1 border border-gray-600 rounded-md text-sm bg-gray-700 text-white"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="mobile-password" className="text-sm font-medium text-white">
+                          Mot de passe
+                        </label>
+                        <input
+                          id="mobile-password"
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full px-3 py-2 mt-1 border border-gray-600 rounded-md text-sm bg-gray-700 text-white"
+                          required
+                        />
+                      </div>
+                      {error && <p className="text-sm text-red-400">{error}</p>}
+                      <button
+                        type="submit"
+                        className="w-full text-black py-2 rounded-md text-base font-medium"
+                        style={{ backgroundColor: '#F1C40F' }}
+                      >
+                        Se connecter
+                      </button>
+                    </form>
+                  </div>
+                )}
               </div>
             )}
           </div>
