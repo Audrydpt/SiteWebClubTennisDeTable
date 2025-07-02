@@ -1,7 +1,7 @@
 /* eslint-disable */
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { UserCircle } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import { cn } from '@/lib/utils.ts';
 import { useAuth } from '@/lib/authContext.tsx';
 import {
@@ -31,7 +31,6 @@ export default function Header({ title, className, ...props }: HeaderProps) {
   const [mobileCompetitionOpen, setMobileCompetitionOpen] = useState(false);
   const [mobileHistoriqueOpen, setMobileHistoriqueOpen] = useState(false);
   const [mobileEvenementsOpen, setMobileEvenementsOpen] = useState(false);
-  // Nouvel état pour contrôler l'affichage du formulaire de connexion mobile
   const [mobileLoginFormOpen, setMobileLoginFormOpen] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -59,6 +58,16 @@ export default function Header({ title, className, ...props }: HeaderProps) {
     setMobileLoginFormOpen(false);
   };
 
+  // Fonction pour gérer les clics sur les liens quand l'utilisateur est authentifié
+  const handleLinkClick = (e: React.MouseEvent, path: string) => {
+    if (isAuthenticated) {
+      e.preventDefault(); // Empêcher la navigation si authentifié
+      return;
+    }
+    navigate(path);
+    setMobileMenuOpen(false);
+  };
+
   // Ferme tous les sous-menus quand le menu principal est fermé
   const handleMobileMenuToggle = () => {
     const newState = !mobileMenuOpen;
@@ -84,9 +93,20 @@ export default function Header({ title, className, ...props }: HeaderProps) {
   ];
 
   const evenementsItems = [
+    { path: '/evenements/calendrier', label: 'Calendrier' },
     { path: '/evenements/galerie', label: 'Galerie' },
-    { path: '/evenements/agenda', label: 'Agenda' },
+
   ];
+
+  // Style des liens selon l'état d'authentification
+  const getLinkStyles = (isActive: boolean) => {
+    if (isAuthenticated) {
+      return 'text-gray-500 cursor-not-allowed'; // Style grisé et non cliquable
+    }
+    return isActive
+      ? 'text-[#F1C40F]'
+      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]';
+  };
 
   return (
     <header
@@ -97,7 +117,11 @@ export default function Header({ title, className, ...props }: HeaderProps) {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo et titre */}
-          <Link to="/" className="flex items-center space-x-2">
+          <Link
+            to="/"
+            className="flex items-center space-x-2"
+            onClick={(e) => isAuthenticated && e.preventDefault()}
+          >
             <img
               src="./logo-removebg.jpg"
               alt="CTT Frameries Logo"
@@ -114,10 +138,9 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   to="/"
                   className={cn(
                     'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
-                    location.pathname === '/'
-                      ? 'text-[#F1C40F]'
-                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                    getLinkStyles(location.pathname === '/')
                   )}
+                  onClick={(e) => handleLinkClick(e, '/')}
                 >
                   Accueil
                 </Link>
@@ -127,33 +150,35 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 <HoverCard
                   openDelay={0}
                   closeDelay={150}
-                  open={competitionOpen}
+                  open={!isAuthenticated && competitionOpen}
                   onOpenChange={setCompetitionOpen}
                 >
                   <HoverCardTrigger asChild>
-                    <span
-                      className={cn(
-                        'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1 cursor-pointer',
-                        location.pathname.includes('/competition')
-                          ? 'text-[#F1C40F]'
-                          : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-                      )}
-                    >
-                      Compétition
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="m6 9 6 6 6-6" />
-                      </svg>
-                    </span>
+  <span
+    className={cn(
+      'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1',
+      isAuthenticated
+        ? 'text-gray-500 cursor-not-allowed'
+        : location.pathname.includes('/competition')
+          ? 'text-[#F1C40F] cursor-pointer'
+          : 'text-white cursor-pointer hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+    )}
+  >
+    Compétition
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  </span>
                   </HoverCardTrigger>
                   <HoverCardContent
                     className="w-[200px] p-0"
@@ -165,6 +190,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                           key={item.path}
                           to={item.path}
                           className="text-sm text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A] p-2 rounded-md"
+                          onClick={(e) => handleLinkClick(e, item.path)}
                         >
                           {item.label}
                         </Link>
@@ -179,10 +205,9 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   to="/sponsors"
                   className={cn(
                     'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
-                    location.pathname === '/sponsors'
-                      ? 'text-[#F1C40F]'
-                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                    getLinkStyles(location.pathname === '/sponsors')
                   )}
+                  onClick={(e) => handleLinkClick(e, '/sponsors')}
                 >
                   Sponsors
                 </Link>
@@ -192,33 +217,35 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 <HoverCard
                   openDelay={0}
                   closeDelay={150}
-                  open={historiqueOpen}
+                  open={!isAuthenticated && historiqueOpen}
                   onOpenChange={setHistoriqueOpen}
                 >
                   <HoverCardTrigger asChild>
-                    <span
-                      className={cn(
-                        'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1 cursor-pointer',
-                        location.pathname.includes('/historique')
-                          ? 'text-[#F1C40F]'
-                          : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-                      )}
-                    >
-                      Historique
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="m6 9 6 6 6-6" />
-                      </svg>
-                    </span>
+  <span
+    className={cn(
+      'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1',
+      isAuthenticated
+        ? 'text-gray-500 cursor-not-allowed'
+        : location.pathname.includes('/historique')
+          ? 'text-[#F1C40F] cursor-pointer'
+          : 'text-white cursor-pointer hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+    )}
+  >
+    Historique
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  </span>
                   </HoverCardTrigger>
                   <HoverCardContent
                     className="w-[200px] p-0"
@@ -230,6 +257,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                           key={item.path}
                           to={item.path}
                           className="text-sm text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A] p-2 rounded-md"
+                          onClick={(e) => handleLinkClick(e, item.path)}
                         >
                           {item.label}
                         </Link>
@@ -243,33 +271,35 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 <HoverCard
                   openDelay={0}
                   closeDelay={150}
-                  open={evenementsOpen}
+                  open={!isAuthenticated && evenementsOpen}
                   onOpenChange={setEvenementsOpen}
                 >
                   <HoverCardTrigger asChild>
-                    <span
-                      className={cn(
-                        'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1 cursor-pointer',
-                        location.pathname.includes('/evenements')
-                          ? 'text-[#F1C40F]'
-                          : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-                      )}
-                    >
-                      Événements
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="m6 9 6 6 6-6" />
-                      </svg>
-                    </span>
+  <span
+    className={cn(
+      'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1',
+      isAuthenticated
+        ? 'text-gray-500 cursor-not-allowed'
+        : location.pathname.includes('/evenements')
+          ? 'text-[#F1C40F] cursor-pointer'
+          : 'text-white cursor-pointer hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+    )}
+  >
+    Événements
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  </span>
                   </HoverCardTrigger>
                   <HoverCardContent
                     className="w-[200px] p-0"
@@ -281,6 +311,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                           key={item.path}
                           to={item.path}
                           className="text-sm text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A] p-2 rounded-md"
+                          onClick={(e) => handleLinkClick(e, item.path)}
                         >
                           {item.label}
                         </Link>
@@ -295,10 +326,9 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   to="/contact"
                   className={cn(
                     'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
-                    location.pathname === '/contact'
-                      ? 'text-[#F1C40F]'
-                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                    getLinkStyles(location.pathname === '/contact')
                   )}
+                  onClick={(e) => handleLinkClick(e, '/contact')}
                 >
                   Contact
                 </Link>
@@ -327,7 +357,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                       e.currentTarget.style.backgroundColor = '';
                     }}
                   >
-                    <UserCircle size={24} strokeWidth={2} />
+                    <LogIn size={24} strokeWidth={2} />
                   </button>
                 </HoverCardTrigger>
                 <HoverCardContent
@@ -419,11 +449,9 @@ export default function Header({ title, className, ...props }: HeaderProps) {
               to="/"
               className={cn(
                 'block px-4 py-2 text-base font-medium',
-                location.pathname === '/'
-                  ? 'text-[#F1C40F]'
-                  : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                getLinkStyles(location.pathname === '/')
               )}
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={(e) => handleLinkClick(e, '/')}
             >
               Accueil
             </Link>
@@ -431,12 +459,14 @@ export default function Header({ title, className, ...props }: HeaderProps) {
             {/* Menu Compétition mobile */}
             <div>
               <button
-                onClick={() => setMobileCompetitionOpen(!mobileCompetitionOpen)}
+                onClick={() => !isAuthenticated && setMobileCompetitionOpen(!mobileCompetitionOpen)}
                 className={cn(
                   'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
-                  location.pathname.includes('/competition')
-                    ? 'text-[#F1C40F]'
-                    : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                  isAuthenticated
+                    ? 'text-gray-500 cursor-not-allowed'
+                    : location.pathname.includes('/competition')
+                      ? 'text-[#F1C40F]'
+                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                 )}
               >
                 <span>Compétition</span>
@@ -456,14 +486,14 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 </svg>
               </button>
 
-              {mobileCompetitionOpen && (
+              {mobileCompetitionOpen && !isAuthenticated && (
                 <div className="pl-6 bg-[#444444]">
                   {competitionItems.map((item) => (
                     <Link
                       key={item.path}
                       to={item.path}
                       className="block px-4 py-2 text-base text-white hover:text-[#F1C40F]"
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={(e) => handleLinkClick(e, item.path)}
                     >
                       {item.label}
                     </Link>
@@ -477,11 +507,9 @@ export default function Header({ title, className, ...props }: HeaderProps) {
               to="/sponsors"
               className={cn(
                 'block px-4 py-2 text-base font-medium',
-                location.pathname === '/sponsors'
-                  ? 'text-[#F1C40F]'
-                  : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                getLinkStyles(location.pathname === '/sponsors')
               )}
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={(e) => handleLinkClick(e, '/sponsors')}
             >
               Sponsors
             </Link>
@@ -489,12 +517,14 @@ export default function Header({ title, className, ...props }: HeaderProps) {
             {/* Menu Historique mobile */}
             <div>
               <button
-                onClick={() => setMobileHistoriqueOpen(!mobileHistoriqueOpen)}
+                onClick={() => !isAuthenticated && setMobileHistoriqueOpen(!mobileHistoriqueOpen)}
                 className={cn(
                   'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
-                  location.pathname.includes('/historique')
-                    ? 'text-[#F1C40F]'
-                    : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                  isAuthenticated
+                    ? 'text-gray-500 cursor-not-allowed'
+                    : location.pathname.includes('/historique')
+                      ? 'text-[#F1C40F]'
+                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                 )}
               >
                 <span>Historique</span>
@@ -514,14 +544,14 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 </svg>
               </button>
 
-              {mobileHistoriqueOpen && (
+              {mobileHistoriqueOpen && !isAuthenticated && (
                 <div className="pl-6 bg-[#444444]">
                   {historiqueItems.map((item) => (
                     <Link
                       key={item.path}
                       to={item.path}
                       className="block px-4 py-2 text-base text-white hover:text-[#F1C40F]"
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={(e) => handleLinkClick(e, item.path)}
                     >
                       {item.label}
                     </Link>
@@ -533,12 +563,14 @@ export default function Header({ title, className, ...props }: HeaderProps) {
             {/* Menu Événements mobile */}
             <div>
               <button
-                onClick={() => setMobileEvenementsOpen(!mobileEvenementsOpen)}
+                onClick={() => !isAuthenticated && setMobileEvenementsOpen(!mobileEvenementsOpen)}
                 className={cn(
                   'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
-                  location.pathname.includes('/evenements')
-                    ? 'text-[#F1C40F]'
-                    : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                  isAuthenticated
+                    ? 'text-gray-500 cursor-not-allowed'
+                    : location.pathname.includes('/evenements')
+                      ? 'text-[#F1C40F]'
+                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                 )}
               >
                 <span>Événements</span>
@@ -558,14 +590,14 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 </svg>
               </button>
 
-              {mobileEvenementsOpen && (
+              {mobileEvenementsOpen && !isAuthenticated && (
                 <div className="pl-6 bg-[#444444]">
                   {evenementsItems.map((item) => (
                     <Link
                       key={item.path}
                       to={item.path}
                       className="block px-4 py-2 text-base text-white hover:text-[#F1C40F]"
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={(e) => handleLinkClick(e, item.path)}
                     >
                       {item.label}
                     </Link>
@@ -579,11 +611,9 @@ export default function Header({ title, className, ...props }: HeaderProps) {
               to="/contact"
               className={cn(
                 'block px-4 py-2 text-base font-medium',
-                location.pathname === '/contact'
-                  ? 'text-[#F1C40F]'
-                  : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                getLinkStyles(location.pathname === '/contact')
               )}
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={(e) => handleLinkClick(e, '/contact')}
             >
               Contact
             </Link>
