@@ -1,28 +1,18 @@
 {
-  "user": [
-    {
-
-    }],
   "test": [
     {
-      "id": "1",
-      "name": "Vitest Run"
-    },
-    {
       "id": "2",
-      "name": "Vitest UI"
+      "name": "Test 2",
+      "description": "This is another test description",
+      "created_at": "2023-10-02T12:00:00Z",
+      "updated_at": "2023-10-02T12:00:00Z"
     },
     {
-      "id": "3",
-      "name": "Vitest Coverage"
-    },
-    {
-      "id": "4",
-      "name": "Vitest Coverage UI"
-    },
-    {
-      "id": "c236",
-      "name": "Draft request body"
+      "id": "5ec9",
+      "name": "",
+      "description": "",
+      "created_at": "2025-07-01T23:50:48.555Z",
+      "updated_at": "2025-07-01T23:50:58.025Z"
     }
   ]
 }

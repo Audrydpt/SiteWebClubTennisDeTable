@@ -1,23 +1,20 @@
 /* eslint-disable */
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils.ts';
 import { useAuth } from '@/lib/authContext.tsx';
 import {
   NavigationMenu,
-  NavigationMenuContent,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu.tsx';
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from '@/components/ui/hover-card.tsx';
-import { useNavigate } from 'react-router-dom';
-
+import { UserCircle } from 'lucide-react';
 
 type HeaderProps = {
   title: string;
@@ -32,8 +29,11 @@ export default function Header({ title, className, ...props }: HeaderProps) {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  // États pour suivre les menus ouverts
+  const [competitionOpen, setCompetitionOpen] = useState(false);
+  const [historiqueOpen, setHistoriqueOpen] = useState(false);
+  const [evenementsOpen, setEvenementsOpen] = useState(false);
 
-// Modifiez handleLogin :
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     const success = login(username, password);
@@ -43,53 +43,49 @@ export default function Header({ title, className, ...props }: HeaderProps) {
       setUsername('');
       setPassword('');
       setError('');
-      // Redirection après connexion réussie
       navigate('/admin');
     }
   };
 
-// Modifiez handleLogout :
   const handleLogout = () => {
     logout();
     setUsername('');
     setPassword('');
     setError('');
-    // Redirection après déconnexion
     navigate('/');
   };
 
-  const sportsItems = [
-    { path: '/sports/football', label: 'Football' },
-    { path: '/sports/basketball', label: 'Basketball' },
-    { path: '/sports/tennis', label: 'Tennis' },
-    { path: '/sports/natation', label: 'Natation' },
+  const competitionItems = [
+    { path: '/competition/calendrier', label: 'Calendrier' },
+    { path: '/competition/equipes', label: 'Équipes' },
   ];
 
-  const equipesItems = [
-    { path: '/equipes/seniors', label: 'Seniors' },
-    { path: '/equipes/juniors', label: 'Juniors' },
-    { path: '/equipes/minimes', label: 'Minimes' },
-    { path: '/equipes/benjamins', label: 'Benjamins' },
+  const historiqueItems = [
+    { path: '/historique/a-propos', label: 'À propos de nous' },
+    { path: '/historique/croissance', label: 'Croissance' },
+  ];
+
+  const evenementsItems = [
+    { path: '/evenements/galerie', label: 'Galerie' },
+    { path: '/evenements/agenda', label: 'Agenda' },
   ];
 
   return (
     <header
-      className={cn(
-        'sticky top-0 z-50 bg-background border-b shadow-sm',
-        className
-      )}
+      className={cn('sticky top-0 z-50 border-b shadow-sm', className)}
+      style={{ backgroundColor: '#3A3A3A' }}
       {...props}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo et titre */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">
-                CS
-              </span>
-            </div>
-            <span className="text-xl font-bold text-foreground">{title}</span>
+            <img
+              src="./logo-removebg.jpg"
+              alt="CTT Frameries Logo"
+              className="h-16 w-16 object-contain"
+            />
+            <span className="text-lg font-semibold text-white">{title}</span>
           </Link>
 
           {/* Navigation principale */}
@@ -100,10 +96,10 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   <Link
                     to="/"
                     className={cn(
-                      'text-sm font-medium transition-colors hover:text-primary px-3 py-2',
+                      'text-sm font-medium transition-colors px-3 py-2',
                       location.pathname === '/'
-                        ? 'text-primary'
-                        : 'text-muted-foreground'
+                        ? 'text-[#F1C40F]'
+                        : 'text-white hover:text-[#F1C40F]'
                     )}
                   >
                     Accueil
@@ -112,75 +108,181 @@ export default function Header({ title, className, ...props }: HeaderProps) {
               </NavigationMenuItem>
 
               <NavigationMenuItem>
-                <NavigationMenuTrigger>Sports</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="grid w-[200px] gap-2 p-4">
-                    {sportsItems.map((item) => (
-                      <NavigationMenuLink key={item.path} asChild>
+                <HoverCard
+                  openDelay={0}
+                  closeDelay={150}
+                  open={competitionOpen}
+                  onOpenChange={setCompetitionOpen}
+                >
+                  <HoverCardTrigger asChild>
+                    <span
+                      className={cn(
+                        'text-sm font-medium transition-colors px-3 py-2 cursor-pointer flex items-center',
+                        location.pathname.includes('/competition')
+                          ? 'text-[#F1C40F]'
+                          : 'text-white hover:text-[#F1C40F]'
+                      )}
+                    >
+                      Compétition
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`ml-1 transition-transform ${competitionOpen ? 'rotate-180' : ''}`}
+                      >
+                        <path d="m6 9 6 6 6-6"/>
+                      </svg>
+                    </span>
+                  </HoverCardTrigger>
+                  <HoverCardContent
+                    className="w-[200px] p-0"
+                    style={{ backgroundColor: '#3A3A3A' }}
+                  >
+                    <div className="grid gap-2 p-2">
+                      {competitionItems.map((item) => (
                         <Link
+                          key={item.path}
                           to={item.path}
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]"
                         >
                           <div className="text-sm font-medium leading-none">
                             {item.label}
                           </div>
                         </Link>
-                      </NavigationMenuLink>
-                    ))}
-                  </div>
-                </NavigationMenuContent>
+                      ))}
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
               </NavigationMenuItem>
 
               <NavigationMenuItem>
-                <NavigationMenuTrigger>Équipes</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="grid w-[200px] gap-2 p-4">
-                    {equipesItems.map((item) => (
-                      <NavigationMenuLink key={item.path} asChild>
+                <NavigationMenuLink asChild>
+                  <Link
+                    to="/sponsors"
+                    className={cn(
+                      'text-sm font-medium transition-colors px-3 py-2',
+                      location.pathname === '/sponsors'
+                        ? 'text-[#F1C40F]'
+                        : 'text-white hover:text-[#F1C40F]'
+                    )}
+                  >
+                    Sponsors
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+
+              <NavigationMenuItem>
+                <HoverCard
+                  openDelay={0}
+                  closeDelay={150}
+                  open={historiqueOpen}
+                  onOpenChange={setHistoriqueOpen}
+                >
+                  <HoverCardTrigger asChild>
+                    <span
+                      className={cn(
+                        'text-sm font-medium transition-colors px-3 py-2 cursor-pointer flex items-center',
+                        location.pathname.includes('/historique')
+                          ? 'text-[#F1C40F]'
+                          : 'text-white hover:text-[#F1C40F]'
+                      )}
+                    >
+                      Historique
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`ml-1 transition-transform ${historiqueOpen ? 'rotate-180' : ''}`}
+                      >
+                        <path d="m6 9 6 6 6-6"/>
+                      </svg>
+                    </span>
+                  </HoverCardTrigger>
+                  <HoverCardContent
+                    className="w-[200px] p-0"
+                    style={{ backgroundColor: '#3A3A3A' }}
+                  >
+                    <div className="grid gap-2 p-2">
+                      {historiqueItems.map((item) => (
                         <Link
+                          key={item.path}
                           to={item.path}
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]"
                         >
                           <div className="text-sm font-medium leading-none">
                             {item.label}
                           </div>
                         </Link>
-                      </NavigationMenuLink>
-                    ))}
-                  </div>
-                </NavigationMenuContent>
+                      ))}
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
               </NavigationMenuItem>
 
               <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link
-                    to="/actualites"
-                    className={cn(
-                      'text-sm font-medium transition-colors hover:text-primary px-3 py-2',
-                      location.pathname === '/actualites'
-                        ? 'text-primary'
-                        : 'text-muted-foreground'
-                    )}
+                <HoverCard
+                  openDelay={0}
+                  closeDelay={150}
+                  open={evenementsOpen}
+                  onOpenChange={setEvenementsOpen}
+                >
+                  <HoverCardTrigger asChild>
+                    <span
+                      className={cn(
+                        'text-sm font-medium transition-colors px-3 py-2 cursor-pointer flex items-center',
+                        location.pathname.includes('/evenements')
+                          ? 'text-[#F1C40F]'
+                          : 'text-white hover:text-[#F1C40F]'
+                      )}
+                    >
+                      Événements
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`ml-1 transition-transform ${evenementsOpen ? 'rotate-180' : ''}`}
+                      >
+                        <path d="m6 9 6 6 6-6"/>
+                      </svg>
+                    </span>
+                  </HoverCardTrigger>
+                  <HoverCardContent
+                    className="w-[200px] p-0"
+                    style={{ backgroundColor: '#3A3A3A' }}
                   >
-                    Actualités
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link
-                    to="/about"
-                    className={cn(
-                      'text-sm font-medium transition-colors hover:text-primary px-3 py-2',
-                      location.pathname === '/about'
-                        ? 'text-primary'
-                        : 'text-muted-foreground'
-                    )}
-                  >
-                    À propos
-                  </Link>
-                </NavigationMenuLink>
+                    <div className="grid gap-2 p-2">
+                      {evenementsItems.map((item) => (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]"
+                        >
+                          <div className="text-sm font-medium leading-none">
+                            {item.label}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
               </NavigationMenuItem>
 
               <NavigationMenuItem>
@@ -188,10 +290,10 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   <Link
                     to="/contact"
                     className={cn(
-                      'text-sm font-medium transition-colors hover:text-primary px-3 py-2',
+                      'text-sm font-medium transition-colors px-3 py-2',
                       location.pathname === '/contact'
-                        ? 'text-primary'
-                        : 'text-muted-foreground'
+                        ? 'text-[#F1C40F]'
+                        : 'text-white hover:text-[#F1C40F]'
                     )}
                   >
                     Contact
@@ -206,30 +308,47 @@ export default function Header({ title, className, ...props }: HeaderProps) {
             {isAuthenticated ? (
               <button
                 onClick={handleLogout}
-                className="hidden md:block bg-destructive text-destructive-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-destructive/90 transition-colors"
+                className="hidden md:block bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
               >
                 Déconnexion
               </button>
             ) : (
               <HoverCard>
                 <HoverCardTrigger asChild>
-                  <button className="hidden md:block bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors">
-                    Login
+                  <button
+                    className="hidden md:flex items-center justify-center text-white p-2 rounded-md text-sm font-medium transition-colors"
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#F1C40F';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#3A3A3A';
+                    }}
+                  >
+                    <UserCircle size={24} strokeWidth={2} />
                   </button>
                 </HoverCardTrigger>
-                <HoverCardContent className="w-80">
+                <HoverCardContent
+                  className="w-80"
+                  style={{
+                    backgroundColor: '#3A3A3A',
+                    border: '1px solid #4A4A4A',
+                  }}
+                >
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
-                      <h4 className="text-sm font-semibold">
+                      <h4 className="text-sm font-semibold text-white">
                         Accès administrateur
                       </h4>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-gray-300">
                         Veuillez vous connecter pour accéder à cette section.
                       </p>
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="username" className="text-sm font-medium">
+                      <label
+                        htmlFor="username"
+                        className="text-sm font-medium text-white"
+                      >
                         Nom d'utilisateur
                       </label>
                       <input
@@ -237,13 +356,20 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        className="w-full px-3 py-2 border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full px-3 py-2 border border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 bg-gray-700 text-white"
+                        style={{
+                          focusRingColor: '#F1C40F',
+                          '--tw-ring-color': '#F1C40F'
+                        } as React.CSSProperties}
                         required
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="password" className="text-sm font-medium">
+                      <label
+                        htmlFor="password"
+                        className="text-sm font-medium text-white"
+                      >
                         Mot de passe
                       </label>
                       <input
@@ -251,18 +377,27 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-3 py-2 border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full px-3 py-2 border border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 bg-gray-700 text-white"
+                        style={{
+                          focusRingColor: '#F1C40F',
+                          '--tw-ring-color': '#F1C40F'
+                        } as React.CSSProperties}
                         required
                       />
                     </div>
 
-                    {error && (
-                      <p className="text-sm text-destructive">{error}</p>
-                    )}
+                    {error && <p className="text-sm text-red-400">{error}</p>}
 
                     <button
                       type="submit"
-                      className="w-full bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
+                      className="w-full text-black px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                      style={{ backgroundColor: '#F1C40F' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#E6B800';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#F1C40F';
+                      }}
                     >
                       Se connecter
                     </button>
@@ -272,7 +407,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
             )}
 
             {/* Menu mobile */}
-            <button className="md:hidden p-2 rounded-md hover:bg-accent">
+            <button className="md:hidden p-2 rounded-md hover:bg-gray-600 text-white">
               <svg
                 className="w-6 h-6"
                 fill="none"

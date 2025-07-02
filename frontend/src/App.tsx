@@ -12,10 +12,7 @@ import AdminHomePage from './features/admin/website/Home';
 export default function App() {
   return (
     <div className="min-h-screen flex flex-col">
-      <Header
-        title="Club Sportif"
-        className="sticky top-0 z-50 bg-background border-b shadow-sm"
-      />
+      <Header title="" />
 
       <main className="flex-1">
         <Suspense fallback={<LoadingSpinner />}>

@@ -1,10 +1,16 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 export default function Footer() {
   return (
-    <footer className="bg-muted text-muted-foreground py-8 mt-auto">
-      <div className="container mx-auto px-4">
+    <footer
+      className={cn(
+        'border-t shadow-sm',
+        'py-8 mt-auto text-white bg-[#3A3A3A] relative overflow-hidden'
+      )}
+    >
+      <div className="container mx-auto px-4 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <h3 className="font-bold text-lg mb-4">Club Sportif</h3>
@@ -25,21 +31,30 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Suivez-nous</h4>
             <div className="flex space-x-4">
-              <a href="#" className="hover:text-primary transition-colors">
+              <a
+                href="#"
+                className="text-white hover:text-[#F1C40F] transition-colors"
+              >
                 Facebook
               </a>
-              <a href="#" className="hover:text-primary transition-colors">
+              <a
+                href="#"
+                className="text-white hover:text-[#F1C40F] transition-colors"
+              >
                 Instagram
               </a>
-              <a href="#" className="hover:text-primary transition-colors">
+              <a
+                href="#"
+                className="text-white hover:text-[#F1C40F] transition-colors"
+              >
                 Twitter
               </a>
             </div>
           </div>
         </div>
 
-        <div className="border-t mt-8 pt-4 text-center text-sm">
-          <p>&copy; 2024 Club Sportif. Tous droits réservés.</p>
+        <div className="border-t border-gray-600 mt-8 pt-4 text-center text-sm">
+          <p>&copy; 2025 CTT Frameries. Tous droits réservés.</p>
         </div>
       </div>
     </footer>
