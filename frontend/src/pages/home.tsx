@@ -1,28 +1,30 @@
-/* eslint-disable no-console */
 // frontend/src/pages/home.tsx
 import React, { useEffect, useState } from 'react';
+import Slider from 'react-slick';
 import { fetchTestData } from '../services/api';
+import '../lib/styles/home.css';
 
-// Définition de l'interface pour les données de test
-interface TestData {
-  id: number;
-  name: string;
-  description: string;
-  image?: string;
-  created_at: string;
-  updated_at: string;
+// Imports CSS pour slick-carousel
+import 'slick-carousel/slick/slick.css';
+import 'slick-carousel/slick/slick-theme.css';
+
+interface ActualiteData {
+  id: string;
+  title: string;
+  content: string;
+  imageName: string;
 }
 
 export default function HomePage() {
-  // Spécifier le type du tableau
-  const [testData, setTestData] = useState<TestData[]>([]);
+  const [actualites, setActualites] = useState<ActualiteData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         const data = await fetchTestData();
-        setTestData(data);
+        console.log('Données récupérées:', data);
+        setActualites(data || []);
       } catch (error) {
         console.error('Erreur lors du chargement des données :', error);
       } finally {
@@ -33,9 +35,66 @@ export default function HomePage() {
     loadData();
   }, []);
 
+  const carouselSettings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 3000,
+    arrows: true,
+  };
+
+  const renderCarouselContent = () => {
+    if (loading) {
+      return (
+        <div className="text-center py-8">
+          <p>Chargement des actualités...</p>
+        </div>
+      );
+    }
+
+    if (actualites.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <p>Aucune actualité disponible.</p>
+        </div>
+      );
+    }
+
+    const getImageUrl = (imageName: string): string => {
+      const url = `/images/${imageName}`;
+      return url;
+    };
+    return (
+      <div className="carousel-container">
+        <Slider {...carouselSettings}>
+          {actualites.map((actualite) => (
+            <div key={actualite.id} className="carousel-slide">
+              <div className="bg-white border rounded-lg shadow-md p-4 h-96">
+                <img
+                  src={getImageUrl(actualite.imageName)}
+                  alt={actualite.title}
+                  className="w-full h-48 object-cover rounded-lg mb-4"
+                />
+                <h3 className="text-xl font-semibold mb-3 text-gray-800">
+                  {actualite.title}
+                </h3>
+                <p className="text-gray-600 text-sm line-clamp-3">
+                  {actualite.content}
+                </p>
+              </div>
+            </div>
+          ))}
+        </Slider>
+      </div>
+    );
+  };
+
   return (
     <div>
-      {/* Section Hero - code existant conservé */}
+      {/* Section Hero */}
       <section
         className="relative min-h-[300px] flex items-center justify-center text-center bg-cover bg-center"
         style={{
@@ -52,7 +111,6 @@ export default function HomePage() {
               className="h-40 md:h-80 w-auto drop-shadow-lg"
             />
           </div>
-
           <div className="text-white">
             <h1 className="text-4xl md:text-6xl font-bold mb-2 md:mb-4 drop-shadow-lg">
               CTT Frameries
@@ -65,28 +123,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Contenu principal avec les données JSON */}
+      {/* Carousel */}
       <div className="container mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold mb-6">
-          Bienvenue sur le site du CTT Frameries
-        </h2>
-
-        {loading ? (
-          <p>Chargement des données...</p>
-        ) : (
-          <div className="space-y-6">
-            {testData.map((item) => (
-              <div key={item.id} className="bg-gray-50 p-4 rounded-lg shadow">
-                <h3 className="text-xl font-semibold">{item.name}</h3>
-                <p className="mt-2">{item.description}</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Dernière mise à jour:{' '}
-                  {new Date(item.updated_at).toLocaleDateString()}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
+        <h2 className="text-2xl font-bold mb-6">Actualités du CTT Frameries</h2>
+        {renderCarouselContent()}
       </div>
     </div>
   );
