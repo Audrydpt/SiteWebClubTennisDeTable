@@ -27,6 +27,10 @@ export default function Header({ title, className, ...props }: HeaderProps) {
   const [competitionOpen, setCompetitionOpen] = useState(false);
   const [historiqueOpen, setHistoriqueOpen] = useState(false);
   const [evenementsOpen, setEvenementsOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileCompetitionOpen, setMobileCompetitionOpen] = useState(false);
+  const [mobileHistoriqueOpen, setMobileHistoriqueOpen] = useState(false);
+  const [mobileEvenementsOpen, setMobileEvenementsOpen] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +42,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
       setPassword('');
       setError('');
       navigate('/admin');
+      setMobileMenuOpen(false);
     }
   };
 
@@ -47,6 +52,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
     setPassword('');
     setError('');
     navigate('/');
+    setMobileMenuOpen(false);
   };
 
   const competitionItems = [
@@ -398,8 +404,11 @@ export default function Header({ title, className, ...props }: HeaderProps) {
               </HoverCard>
             )}
 
-            {/* Menu mobile */}
-            <button className="md:hidden p-2 rounded-md hover:bg-gray-600 text-white">
+            {/* Menu mobile - Bouton hamburger */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-md hover:bg-gray-600 text-white"
+            >
               <svg
                 className="w-6 h-6"
                 fill="none"
@@ -417,6 +426,235 @@ export default function Header({ title, className, ...props }: HeaderProps) {
           </div>
         </div>
       </div>
+
+      {/* Menu mobile - Contenu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-[#3A3A3A] border-t border-gray-700 shadow-lg">
+          <div className="py-2 space-y-1">
+            <Link
+              to="/"
+              className={cn(
+                'block px-4 py-2 text-base font-medium',
+                location.pathname === '/'
+                  ? 'text-[#F1C40F]'
+                  : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+              )}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Accueil
+            </Link>
+
+            {/* Menu Compétition mobile */}
+            <div>
+              <button
+                onClick={() => setMobileCompetitionOpen(!mobileCompetitionOpen)}
+                className={cn(
+                  'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
+                  location.pathname.includes('/competition')
+                    ? 'text-[#F1C40F]'
+                    : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                )}
+              >
+                <span>Compétition</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`transition-transform ${mobileCompetitionOpen ? 'rotate-180' : ''}`}
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+
+              {mobileCompetitionOpen && (
+                <div className="pl-6 bg-[#444444]">
+                  {competitionItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className="block px-4 py-2 text-base text-white hover:text-[#F1C40F]"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Sponsors */}
+            <Link
+              to="/sponsors"
+              className={cn(
+                'block px-4 py-2 text-base font-medium',
+                location.pathname === '/sponsors'
+                  ? 'text-[#F1C40F]'
+                  : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+              )}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Sponsors
+            </Link>
+
+            {/* Menu Historique mobile */}
+            <div>
+              <button
+                onClick={() => setMobileHistoriqueOpen(!mobileHistoriqueOpen)}
+                className={cn(
+                  'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
+                  location.pathname.includes('/historique')
+                    ? 'text-[#F1C40F]'
+                    : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                )}
+              >
+                <span>Historique</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`transition-transform ${mobileHistoriqueOpen ? 'rotate-180' : ''}`}
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+
+              {mobileHistoriqueOpen && (
+                <div className="pl-6 bg-[#444444]">
+                  {historiqueItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className="block px-4 py-2 text-base text-white hover:text-[#F1C40F]"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Menu Événements mobile */}
+            <div>
+              <button
+                onClick={() => setMobileEvenementsOpen(!mobileEvenementsOpen)}
+                className={cn(
+                  'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
+                  location.pathname.includes('/evenements')
+                    ? 'text-[#F1C40F]'
+                    : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                )}
+              >
+                <span>Événements</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`transition-transform ${mobileEvenementsOpen ? 'rotate-180' : ''}`}
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+
+              {mobileEvenementsOpen && (
+                <div className="pl-6 bg-[#444444]">
+                  {evenementsItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className="block px-4 py-2 text-base text-white hover:text-[#F1C40F]"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Contact */}
+            <Link
+              to="/contact"
+              className={cn(
+                'block px-4 py-2 text-base font-medium',
+                location.pathname === '/contact'
+                  ? 'text-[#F1C40F]'
+                  : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+              )}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Contact
+            </Link>
+
+            {/* Connexion/Déconnexion mobile */}
+            {isAuthenticated ? (
+              <button
+                onClick={handleLogout}
+                className="block w-full text-left px-4 py-2 text-base font-medium text-white bg-red-600 hover:bg-red-700"
+              >
+                Déconnexion
+              </button>
+            ) : (
+              <div className="px-4 py-4 border-t border-gray-700">
+                <form onSubmit={handleLogin} className="space-y-3">
+                  <div>
+                    <label htmlFor="mobile-username" className="text-sm font-medium text-white">
+                      Nom d'utilisateur
+                    </label>
+                    <input
+                      id="mobile-username"
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full px-3 py-2 mt-1 border border-gray-600 rounded-md text-sm bg-gray-700 text-white"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="mobile-password" className="text-sm font-medium text-white">
+                      Mot de passe
+                    </label>
+                    <input
+                      id="mobile-password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full px-3 py-2 mt-1 border border-gray-600 rounded-md text-sm bg-gray-700 text-white"
+                      required
+                    />
+                  </div>
+                  {error && <p className="text-sm text-red-400">{error}</p>}
+                  <button
+                    type="submit"
+                    className="w-full text-black py-2 rounded-md text-base font-medium"
+                    style={{ backgroundColor: '#F1C40F' }}
+                  >
+                    Se connecter
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 }
