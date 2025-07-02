@@ -2,8 +2,7 @@
 // src/services/api.ts
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3001'; // Port par défaut de JSON Server
-
+const API_URL = process.env.REACT_APP_API_URL;
 export const fetchTestData = async () => {
   const response = await axios.get(`${API_URL}/test`);
   return response.data;

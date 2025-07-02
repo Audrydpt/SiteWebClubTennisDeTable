@@ -1,20 +1,14 @@
 /* eslint-disable */
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { UserCircle } from 'lucide-react';
 import { cn } from '@/lib/utils.ts';
 import { useAuth } from '@/lib/authContext.tsx';
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-} from '@/components/ui/navigation-menu.tsx';
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from '@/components/ui/hover-card.tsx';
-import { UserCircle } from 'lucide-react';
 
 type HeaderProps = {
   title: string;
@@ -88,26 +82,24 @@ export default function Header({ title, className, ...props }: HeaderProps) {
             <span className="text-lg font-semibold text-white">{title}</span>
           </Link>
 
-          {/* Navigation principale */}
-          <NavigationMenu className="hidden md:flex">
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link
-                    to="/"
-                    className={cn(
-                      'text-sm font-medium transition-colors px-3 py-2',
-                      location.pathname === '/'
-                        ? 'text-[#F1C40F]'
-                        : 'text-white hover:text-[#F1C40F]'
-                    )}
-                  >
-                    Accueil
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
+          {/* Navigation principale - Version sans NavigationMenu */}
+          <div className="hidden md:block">
+            <ul className="flex items-center space-x-1">
+              <li>
+                <Link
+                  to="/"
+                  className={cn(
+                    'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
+                    location.pathname === '/'
+                      ? 'text-[#F1C40F]'
+                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                  )}
+                >
+                  Accueil
+                </Link>
+              </li>
 
-              <NavigationMenuItem>
+              <li>
                 <HoverCard
                   openDelay={0}
                   closeDelay={150}
@@ -117,10 +109,10 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   <HoverCardTrigger asChild>
                     <span
                       className={cn(
-                        'text-sm font-medium transition-colors px-3 py-2 cursor-pointer flex items-center',
+                        'text-sm font-medium transition-colors px-3 py-2 cursor-pointer flex items-center rounded-md',
                         location.pathname.includes('/competition')
                           ? 'text-[#F1C40F]'
-                          : 'text-white hover:text-[#F1C40F]'
+                          : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                       )}
                     >
                       Compétition
@@ -136,7 +128,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         strokeLinejoin="round"
                         className={`ml-1 transition-transform ${competitionOpen ? 'rotate-180' : ''}`}
                       >
-                        <path d="m6 9 6 6 6-6"/>
+                        <path d="m6 9 6 6 6-6" />
                       </svg>
                     </span>
                   </HoverCardTrigger>
@@ -159,25 +151,23 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                     </div>
                   </HoverCardContent>
                 </HoverCard>
-              </NavigationMenuItem>
+              </li>
 
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link
-                    to="/sponsors"
-                    className={cn(
-                      'text-sm font-medium transition-colors px-3 py-2',
-                      location.pathname === '/sponsors'
-                        ? 'text-[#F1C40F]'
-                        : 'text-white hover:text-[#F1C40F]'
-                    )}
-                  >
-                    Sponsors
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
+              <li>
+                <Link
+                  to="/sponsors"
+                  className={cn(
+                    'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
+                    location.pathname === '/sponsors'
+                      ? 'text-[#F1C40F]'
+                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                  )}
+                >
+                  Sponsors
+                </Link>
+              </li>
 
-              <NavigationMenuItem>
+              <li>
                 <HoverCard
                   openDelay={0}
                   closeDelay={150}
@@ -187,10 +177,10 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   <HoverCardTrigger asChild>
                     <span
                       className={cn(
-                        'text-sm font-medium transition-colors px-3 py-2 cursor-pointer flex items-center',
+                        'text-sm font-medium transition-colors px-3 py-2 cursor-pointer flex items-center rounded-md',
                         location.pathname.includes('/historique')
                           ? 'text-[#F1C40F]'
-                          : 'text-white hover:text-[#F1C40F]'
+                          : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                       )}
                     >
                       Historique
@@ -206,7 +196,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         strokeLinejoin="round"
                         className={`ml-1 transition-transform ${historiqueOpen ? 'rotate-180' : ''}`}
                       >
-                        <path d="m6 9 6 6 6-6"/>
+                        <path d="m6 9 6 6 6-6" />
                       </svg>
                     </span>
                   </HoverCardTrigger>
@@ -229,9 +219,9 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                     </div>
                   </HoverCardContent>
                 </HoverCard>
-              </NavigationMenuItem>
+              </li>
 
-              <NavigationMenuItem>
+              <li>
                 <HoverCard
                   openDelay={0}
                   closeDelay={150}
@@ -241,10 +231,10 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   <HoverCardTrigger asChild>
                     <span
                       className={cn(
-                        'text-sm font-medium transition-colors px-3 py-2 cursor-pointer flex items-center',
+                        'text-sm font-medium transition-colors px-3 py-2 cursor-pointer flex items-center rounded-md',
                         location.pathname.includes('/evenements')
                           ? 'text-[#F1C40F]'
-                          : 'text-white hover:text-[#F1C40F]'
+                          : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                       )}
                     >
                       Événements
@@ -260,7 +250,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         strokeLinejoin="round"
                         className={`ml-1 transition-transform ${evenementsOpen ? 'rotate-180' : ''}`}
                       >
-                        <path d="m6 9 6 6 6-6"/>
+                        <path d="m6 9 6 6 6-6" />
                       </svg>
                     </span>
                   </HoverCardTrigger>
@@ -283,25 +273,23 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                     </div>
                   </HoverCardContent>
                 </HoverCard>
-              </NavigationMenuItem>
+              </li>
 
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link
-                    to="/contact"
-                    className={cn(
-                      'text-sm font-medium transition-colors px-3 py-2',
-                      location.pathname === '/contact'
-                        ? 'text-[#F1C40F]'
-                        : 'text-white hover:text-[#F1C40F]'
-                    )}
-                  >
-                    Contact
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+              <li>
+                <Link
+                  to="/contact"
+                  className={cn(
+                    'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
+                    location.pathname === '/contact'
+                      ? 'text-[#F1C40F]'
+                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                  )}
+                >
+                  Contact
+                </Link>
+              </li>
+            </ul>
+          </div>
 
           {/* Actions */}
           <div className="flex items-center space-x-4">
@@ -357,10 +345,12 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 bg-gray-700 text-white"
-                        style={{
-                          focusRingColor: '#F1C40F',
-                          '--tw-ring-color': '#F1C40F'
-                        } as React.CSSProperties}
+                        style={
+                          {
+                            focusRingColor: '#F1C40F',
+                            '--tw-ring-color': '#F1C40F',
+                          } as React.CSSProperties
+                        }
                         required
                       />
                     </div>
@@ -378,10 +368,12 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 bg-gray-700 text-white"
-                        style={{
-                          focusRingColor: '#F1C40F',
-                          '--tw-ring-color': '#F1C40F'
-                        } as React.CSSProperties}
+                        style={
+                          {
+                            focusRingColor: '#F1C40F',
+                            '--tw-ring-color': '#F1C40F',
+                          } as React.CSSProperties
+                        }
                         required
                       />
                     </div>
