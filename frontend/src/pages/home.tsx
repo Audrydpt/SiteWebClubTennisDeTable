@@ -95,7 +95,7 @@ export default function HomePage() {
           {
             id: '1',
             equipe: 'CTT Frameries A',
-            adversaire: 'CTT Mons',
+            adversaire: 'Caj-mir',
             score: '9-7',
             division: 'Division 2 - Semaine 12',
             domicile: true,
