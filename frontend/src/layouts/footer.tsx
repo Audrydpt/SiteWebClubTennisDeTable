@@ -1,5 +1,7 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 import React from 'react';
+import { Facebook, Instagram, Twitter } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 export default function Footer() {
@@ -13,18 +15,29 @@ export default function Footer() {
       <div className="container mx-auto px-4 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h3 className="font-bold text-lg mb-4">Club Sportif</h3>
+            <Link
+              to="/about"
+              className="hover:text-[#F1C40F] transition-colors cursor-pointer"
+            >
+              <h4 className="font-semibold mb-4">À propos de nous</h4>
+            </Link>
             <p className="text-sm">
-              Votre club de sport de référence pour tous les âges et niveaux.
+              CTT Frameries est un club de tennis passionné, dédié à la
+              promotion du tennis pour tous les âges et niveaux.
             </p>
           </div>
 
           <div>
-            <h4 className="font-semibold mb-4">Contact</h4>
+            <Link
+              to="/contact"
+              className="hover:text-[#F1C40F] transition-colors cursor-pointer"
+            >
+              <h4 className="font-semibold mb-4">Contact</h4>
+            </Link>
             <div className="text-sm space-y-2">
-              <p>📍 123 Rue du Sport, 75000 Paris</p>
+              <p>📍 7080 La Bouverie (Frameries), Rue de la Libération 65</p>
               <p>📞 01 23 45 67 89</p>
-              <p>✉️ contact@clubsportif.fr</p>
+              <p>✉️ h442cttframeries@outlook.be</p>
             </div>
           </div>
 
@@ -35,26 +48,26 @@ export default function Footer() {
                 href="#"
                 className="text-white hover:text-[#F1C40F] transition-colors"
               >
-                Facebook
+                <Facebook className="inline mr-1" />
               </a>
               <a
                 href="#"
                 className="text-white hover:text-[#F1C40F] transition-colors"
               >
-                Instagram
+                <Instagram className="inline mr-1" />
               </a>
               <a
                 href="#"
                 className="text-white hover:text-[#F1C40F] transition-colors"
               >
-                Twitter
+                <Twitter className="inline mr-1" />
               </a>
             </div>
           </div>
         </div>
 
         <div className="border-t border-gray-600 mt-8 pt-4 text-center text-sm">
-          <p>&copy; 2025 CTT Frameries. Tous droits réservés.</p>
+          <p>&copy; 2025 CTT Frameries - Tous droits réservés - Made by </p>
         </div>
       </div>
     </footer>
