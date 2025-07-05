@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars,no-console */
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Slider from 'react-slick';
@@ -8,16 +8,14 @@ import 'slick-carousel/slick/slick-theme.css';
 
 import { Calendar, Trophy } from 'lucide-react';
 
-import { fetchTestData } from '../services/api';
+import { fetchActualites } from '../services/api';
 import '../lib/styles/home.css';
 
 interface ActualiteData {
   id: string;
   title: string;
   content: string;
-  imageName: string;
-  category?: string;
-  image?: string;
+  imageUrl: string; // Modifié pour correspondre à db.json
 }
 
 interface ResultatData {
@@ -40,8 +38,6 @@ interface ArrowProps {
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
 }
 
-// Composants de flèches déplacés hors du composant principal
-// Composants de flèches transformés en déclarations de fonctions
 function PrevArrow({ onClick }: ArrowProps) {
   return (
     <button
@@ -77,7 +73,8 @@ export default function HomePage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await fetchTestData();
+        const data = await fetchActualites();
+        console.log('Actualités récupérées:', data);
 
         // Si data est directement un tableau, c'est notre tableau d'actualités
         if (Array.isArray(data)) {
@@ -125,6 +122,7 @@ export default function HomePage() {
           { id: '4', name: 'Sponsor 4', logo: '/images/sponsor4.png' },
         ]);
       } catch (error) {
+        console.error('Erreur lors du chargement des actualités:', error);
         setActualites([]);
       } finally {
         setLoading(false);
@@ -202,11 +200,6 @@ export default function HomePage() {
       );
     }
 
-    const getImageUrl = (imageName: string): string => {
-      if (!imageName) return '/placeholder.svg';
-      return `/images/${imageName}`;
-    };
-
     return (
       <div className="carousel-container px-4 py-2">
         <Slider {...mainCarouselSettings}>
@@ -216,26 +209,28 @@ export default function HomePage() {
                 {/* Image floutée en fond */}
                 <div className="absolute inset-0">
                   <img
-                    src={
-                      actualite.image ||
-                      getImageUrl(actualite.imageName) ||
-                      '/placeholder.svg'
-                    }
+                    src={actualite.imageUrl || '/placeholder.svg'}
                     alt={actualite.title}
                     className="w-full h-full object-cover blur-md opacity-50"
+                    onError={(e) => {
+                      console.log(
+                        'Erreur chargement image:',
+                        actualite.imageUrl
+                      );
+                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                    }}
                   />
                 </div>
 
                 {/* Image principale centrée sans rognage */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <img
-                    src={
-                      actualite.image ||
-                      getImageUrl(actualite.imageName) ||
-                      '/placeholder.svg'
-                    }
+                    src={actualite.imageUrl || '/placeholder.svg'}
                     alt={actualite.title}
                     className="max-h-full max-w-full object-contain z-10"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                    }}
                   />
                 </div>
 
