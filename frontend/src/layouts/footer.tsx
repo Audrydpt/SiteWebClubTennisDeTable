@@ -21,10 +21,7 @@ export default function Footer() {
             >
               <h4 className="font-semibold mb-4">À propos de nous</h4>
             </Link>
-            <p className="text-sm">
-              CTT Frameries est un club de tennis passionné, dédié à la
-              promotion du tennis pour tous les âges et niveaux.
-            </p>
+            <p className="text-sm">Texte ???</p>
           </div>
 
           <div>
@@ -36,7 +33,7 @@ export default function Footer() {
             </Link>
             <div className="text-sm space-y-2">
               <p>📍 7080 La Bouverie (Frameries), Rue de la Libération 65</p>
-              <p>📞 01 23 45 67 89</p>
+              <p>📞 ???</p>
               <p>✉️ h442cttframeries@outlook.be</p>
             </div>
           </div>

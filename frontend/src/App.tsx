@@ -7,7 +7,7 @@ import LoadingSpinner from './components/loading';
 import ProtectedRoute from './lib/protectedRoutes';
 import HomePage from './pages/home';
 import AboutPage from './pages/about';
-import AdminHomePage from './features/admin/website/Home';
+import AdminPage from '@/features/admin/website/AdminPage.tsx';
 
 export default function App() {
   return (
@@ -26,7 +26,7 @@ export default function App() {
               path="/admin"
               element={
                 <ProtectedRoute>
-                  <AdminHomePage />
+                  <AdminPage />
                 </ProtectedRoute>
               }
             />

@@ -95,13 +95,12 @@ export default function Header({ title, className, ...props }: HeaderProps) {
   const evenementsItems = [
     { path: '/evenements/calendrier', label: 'Calendrier' },
     { path: '/evenements/galerie', label: 'Galerie' },
-
   ];
 
   // Style des liens selon l'état d'authentification
   const getLinkStyles = (isActive: boolean) => {
     if (isAuthenticated) {
-      return 'text-gray-500 cursor-not-allowed'; // Style grisé et non cliquable
+      return 'text-[#3A3A3A] cursor-not-allowed'; // Style grisé et non cliquable
     }
     return isActive
       ? 'text-[#F1C40F]'
@@ -154,49 +153,51 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   onOpenChange={setCompetitionOpen}
                 >
                   <HoverCardTrigger asChild>
-  <span
-    className={cn(
-      'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1',
-      isAuthenticated
-        ? 'text-gray-500 cursor-not-allowed'
-        : location.pathname.includes('/competition')
-          ? 'text-[#F1C40F] cursor-pointer'
-          : 'text-white cursor-pointer hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-    )}
-  >
-    Compétition
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m6 9 6 6 6-6" />
-    </svg>
-  </span>
+                    <span
+                      className={cn(
+                        'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1',
+                        isAuthenticated
+                          ? 'text-[#3A3A3A] cursor-not-allowed'
+                          : location.pathname.includes('/competition')
+                            ? 'text-[#F1C40F] cursor-pointer'
+                            : 'text-white cursor-pointer hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                      )}
+                    >
+                      Compétition
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </span>
                   </HoverCardTrigger>
-                  <HoverCardContent
-                    className="w-[200px] p-0"
-                    style={{ backgroundColor: '#3A3A3A' }}
-                  >
-                    <div className="grid gap-2 p-2">
-                      {competitionItems.map((item) => (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          className="text-sm text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A] p-2 rounded-md"
-                          onClick={(e) => handleLinkClick(e, item.path)}
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </HoverCardContent>
+                  {!isAuthenticated && (
+                    <HoverCardContent
+                      className="w-[200px] p-0"
+                      style={{ backgroundColor: '#3A3A3A' }}
+                    >
+                      <div className="grid gap-2 p-2">
+                        {competitionItems.map((item) => (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            className="text-sm text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A] p-2 rounded-md"
+                            onClick={(e) => handleLinkClick(e, item.path)}
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </HoverCardContent>
+                  )}
                 </HoverCard>
               </li>
 
@@ -221,49 +222,51 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   onOpenChange={setHistoriqueOpen}
                 >
                   <HoverCardTrigger asChild>
-  <span
-    className={cn(
-      'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1',
-      isAuthenticated
-        ? 'text-gray-500 cursor-not-allowed'
-        : location.pathname.includes('/historique')
-          ? 'text-[#F1C40F] cursor-pointer'
-          : 'text-white cursor-pointer hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-    )}
-  >
-    Historique
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m6 9 6 6 6-6" />
-    </svg>
-  </span>
+                    <span
+                      className={cn(
+                        'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1',
+                        isAuthenticated
+                          ? 'text-[#3A3A3A] cursor-not-allowed'
+                          : location.pathname.includes('/historique')
+                            ? 'text-[#F1C40F] cursor-pointer'
+                            : 'text-white cursor-pointer hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                      )}
+                    >
+                      Historique
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </span>
                   </HoverCardTrigger>
-                  <HoverCardContent
-                    className="w-[200px] p-0"
-                    style={{ backgroundColor: '#3A3A3A' }}
-                  >
-                    <div className="grid gap-2 p-2">
-                      {historiqueItems.map((item) => (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          className="text-sm text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A] p-2 rounded-md"
-                          onClick={(e) => handleLinkClick(e, item.path)}
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </HoverCardContent>
+                  {!isAuthenticated && (
+                    <HoverCardContent
+                      className="w-[200px] p-0"
+                      style={{ backgroundColor: '#3A3A3A' }}
+                    >
+                      <div className="grid gap-2 p-2">
+                        {historiqueItems.map((item) => (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            className="text-sm text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A] p-2 rounded-md"
+                            onClick={(e) => handleLinkClick(e, item.path)}
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </HoverCardContent>
+                  )}
                 </HoverCard>
               </li>
 
@@ -275,49 +278,51 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   onOpenChange={setEvenementsOpen}
                 >
                   <HoverCardTrigger asChild>
-  <span
-    className={cn(
-      'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1',
-      isAuthenticated
-        ? 'text-gray-500 cursor-not-allowed'
-        : location.pathname.includes('/evenements')
-          ? 'text-[#F1C40F] cursor-pointer'
-          : 'text-white cursor-pointer hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-    )}
-  >
-    Événements
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m6 9 6 6 6-6" />
-    </svg>
-  </span>
+                    <span
+                      className={cn(
+                        'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1',
+                        isAuthenticated
+                          ? 'text-[#3A3A3A] cursor-not-allowed'
+                          : location.pathname.includes('/evenements')
+                            ? 'text-[#F1C40F] cursor-pointer'
+                            : 'text-white cursor-pointer hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                      )}
+                    >
+                      Evénements
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </span>
                   </HoverCardTrigger>
-                  <HoverCardContent
-                    className="w-[200px] p-0"
-                    style={{ backgroundColor: '#3A3A3A' }}
-                  >
-                    <div className="grid gap-2 p-2">
-                      {evenementsItems.map((item) => (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          className="text-sm text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A] p-2 rounded-md"
-                          onClick={(e) => handleLinkClick(e, item.path)}
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </HoverCardContent>
+                  {!isAuthenticated && (
+                    <HoverCardContent
+                      className="w-[200px] p-0"
+                      style={{ backgroundColor: '#3A3A3A' }}
+                    >
+                      <div className="grid gap-2 p-2">
+                        {evenementsItems.map((item) => (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            className="text-sm text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A] p-2 rounded-md"
+                            onClick={(e) => handleLinkClick(e, item.path)}
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </HoverCardContent>
+                  )}
                 </HoverCard>
               </li>
 
@@ -459,11 +464,14 @@ export default function Header({ title, className, ...props }: HeaderProps) {
             {/* Menu Compétition mobile */}
             <div>
               <button
-                onClick={() => !isAuthenticated && setMobileCompetitionOpen(!mobileCompetitionOpen)}
+                onClick={() =>
+                  !isAuthenticated &&
+                  setMobileCompetitionOpen(!mobileCompetitionOpen)
+                }
                 className={cn(
                   'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
                   isAuthenticated
-                    ? 'text-gray-500 cursor-not-allowed'
+                    ? 'text-[#3A3A3A] cursor-not-allowed'
                     : location.pathname.includes('/competition')
                       ? 'text-[#F1C40F]'
                       : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
@@ -517,11 +525,14 @@ export default function Header({ title, className, ...props }: HeaderProps) {
             {/* Menu Historique mobile */}
             <div>
               <button
-                onClick={() => !isAuthenticated && setMobileHistoriqueOpen(!mobileHistoriqueOpen)}
+                onClick={() =>
+                  !isAuthenticated &&
+                  setMobileHistoriqueOpen(!mobileHistoriqueOpen)
+                }
                 className={cn(
                   'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
                   isAuthenticated
-                    ? 'text-gray-500 cursor-not-allowed'
+                    ? 'text-[#3A3A3A] cursor-not-allowed'
                     : location.pathname.includes('/historique')
                       ? 'text-[#F1C40F]'
                       : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
@@ -563,11 +574,14 @@ export default function Header({ title, className, ...props }: HeaderProps) {
             {/* Menu Événements mobile */}
             <div>
               <button
-                onClick={() => !isAuthenticated && setMobileEvenementsOpen(!mobileEvenementsOpen)}
+                onClick={() =>
+                  !isAuthenticated &&
+                  setMobileEvenementsOpen(!mobileEvenementsOpen)
+                }
                 className={cn(
                   'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
                   isAuthenticated
-                    ? 'text-gray-500 cursor-not-allowed'
+                    ? 'text-[#3A3A3A] cursor-not-allowed'
                     : location.pathname.includes('/evenements')
                       ? 'text-[#F1C40F]'
                       : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
@@ -658,7 +672,10 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   <div className="pl-6 py-4 bg-[#444444]">
                     <form onSubmit={handleLogin} className="space-y-3">
                       <div>
-                        <label htmlFor="mobile-username" className="text-sm font-medium text-white">
+                        <label
+                          htmlFor="mobile-username"
+                          className="text-sm font-medium text-white"
+                        >
                           Nom d'utilisateur
                         </label>
                         <input
@@ -671,7 +688,10 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         />
                       </div>
                       <div>
-                        <label htmlFor="mobile-password" className="text-sm font-medium text-white">
+                        <label
+                          htmlFor="mobile-password"
+                          className="text-sm font-medium text-white"
+                        >
                           Mot de passe
                         </label>
                         <input

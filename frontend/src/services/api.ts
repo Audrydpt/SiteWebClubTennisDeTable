@@ -8,6 +8,7 @@ export interface Image {
   id: string;
   label: string;
   url: string;
+  uploadDate: string;
 }
 
 export const fetchActualites = async () => {
@@ -42,5 +43,11 @@ export async function createImage(data: {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
+  });
+}
+
+export async function deleteImage(id: string): Promise<void> {
+  await fetch(`${API_URL}/images/${id}`, {
+    method: 'DELETE',
   });
 }
