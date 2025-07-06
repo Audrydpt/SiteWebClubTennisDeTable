@@ -14,9 +14,9 @@ export default function AdminUsers() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Gestion des utilisateurs
+            Gestion des equipes et rencontres
           </CardTitle>
-          <CardDescription>Gérer les comptes et permissions</CardDescription>
+          <CardDescription>Gérer les equipes et les rencontres</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12">
@@ -24,9 +24,7 @@ export default function AdminUsers() {
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Section en développement
             </h3>
-            <p className="text-gray-500">
-              La gestion des utilisateurs sera bientôt disponible.
-            </p>
+            <p className="text-gray-500">La section sera bientôt disponible.</p>
           </div>
         </CardContent>
       </Card>
