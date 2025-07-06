@@ -7,7 +7,7 @@ import {
   FileText,
   Trophy,
   Calendar,
-  Users,
+  // Users,
 } from 'lucide-react';
 import {
   Card,
@@ -25,7 +25,7 @@ import {
 import ActualitesManager from '@/features/admin/website/components/content/actu.tsx';
 import TournoisManager from '@/features/admin/website/components/content/tournament.tsx';
 import ResultatsManager from '@/features/admin/website/components/content/result.tsx';
-import EquipesManager from '@/features/admin/website/components/content/equipe.tsx';
+// import SponsorsManager from '@/features/admin/website/components/content/sponsor.tsx';
 
 interface ContentSection {
   id: string;
@@ -37,7 +37,7 @@ interface ContentSection {
 }
 
 export default function AdminContent() {
-  const [openSections, setOpenSections] = useState<string[]>(['actualites']);
+  const [openSections, setOpenSections] = useState<string[]>(['']);
 
   const toggleSection = (sectionId: string) => {
     setOpenSections((prev) =>
@@ -51,7 +51,7 @@ export default function AdminContent() {
     {
       id: 'actualites',
       title: 'Gestion des Actualités',
-      description: 'Créer, modifier et supprimer les actualités du site',
+      description: 'Créer, modifier et supprimer les actualités',
       icon: <FileText className="h-5 w-5 text-green-600" />,
       component: <ActualitesManager />,
       color: 'bg-green-100',
@@ -72,23 +72,12 @@ export default function AdminContent() {
       component: <ResultatsManager />,
       color: 'bg-blue-100',
     },
-    {
-      id: 'equipes',
-      title: 'Gestion des Équipes',
-      description: 'Gérer les équipes et les joueurs du club',
-      icon: <Users className="h-5 w-5 text-purple-600" />,
-      component: <EquipesManager />,
-      color: 'bg-purple-100',
-    },
   ];
 
   return (
     <div className="space-y-4">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Gestion du Contenu</h2>
-        <p className="text-gray-600">
-          Gérez tous les contenus de votre site web
-        </p>
       </div>
 
       {contentSections.map((section) => (

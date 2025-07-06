@@ -11,6 +11,15 @@ export interface Image {
   uploadDate: string;
 }
 
+export interface Actualite {
+  imageUrl: string | undefined;
+  id: string;
+  title: string;
+  content: string;
+  imageUrl: string;
+  redirectUrl: string;
+}
+
 export const fetchActualites = async () => {
   const response = await axios.get(`${API_URL}/actualite`);
   return response.data;

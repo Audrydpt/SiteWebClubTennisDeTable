@@ -1,265 +1,210 @@
-import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-interface Actualite {
-  id: string;
-  title: string;
-  content: string;
-  imageUrl: string;
-  category: string;
-  date: string;
-  featured: boolean;
-}
+import {
+  fetchActualites,
+  createActualite,
+  updateActualite,
+  deleteActualite,
+  fetchImages,
+  Actualite,
+  Image,
+} from '@/services/api';
 
 export default function ActualitesManager() {
   const [actualites, setActualites] = useState<Actualite[]>([]);
+  const [images, setImages] = useState<Image[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showList, setShowList] = useState(false);
   const [editingItem, setEditingItem] = useState<Actualite | null>(null);
   const [newItem, setNewItem] = useState({
     title: '',
     content: '',
     imageUrl: '',
-    category: 'Actualités',
-    featured: false,
+    redirectUrl: '',
   });
 
-  useEffect(() => {
-    // Simulation de chargement des données
-    const mockData: Actualite[] = [
-      {
-        id: '1',
-        title: 'Victoire éclatante en championnat !',
-        content:
-          "Notre équipe première s'impose 16-2 face à Mons TTC. Une performance remarquable de tous nos joueurs qui nous place en tête du classement.",
-        imageUrl: '/images/art1-JOHAN_VET.png',
-        category: 'Résultats',
-        date: '2024-01-15',
-        featured: true,
-      },
-      {
-        id: '2',
-        title: 'Tournoi jeunes ce weekend',
-        content:
-          "Le tournoi annuel des jeunes aura lieu samedi et dimanche à la salle communale. Inscriptions encore possibles jusqu'à vendredi soir.",
-        imageUrl: '/images/art2-SALLE.png',
-        category: 'Événements',
-        date: '2024-01-10',
-        featured: false,
-      },
-      {
-        id: '3',
-        title: "Nouvelle table d'entraînement",
-        content:
-          "Le club vient d'acquérir une nouvelle table Cornilleau Competition 740 ITTF pour améliorer les conditions d'entraînement.",
-        imageUrl: '/images/art3-ENZO_TRANSFERT.png',
-        category: 'Équipement',
-        date: '2024-01-05',
-        featured: false,
-      },
-    ];
-
-    setTimeout(() => {
-      setActualites(mockData);
+  const loadData = async () => {
+    try {
+      const [actuRes, imgRes] = await Promise.all([
+        fetchActualites(),
+        fetchImages(),
+      ]);
+      setActualites(actuRes);
+      setImages(imgRes);
+    } catch (err) {
+      console.error('Erreur chargement des données', err);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
-  const handleEdit = (item: Actualite) => {
-    setEditingItem({ ...item });
-  };
-
-  const handleSave = () => {
-    if (editingItem) {
-      setActualites(
-        actualites.map((item) =>
-          item.id === editingItem.id ? editingItem : item
-        )
-      );
-      setEditingItem(null);
+  const handleCreate = async () => {
+    if (!newItem.title.trim() || !newItem.imageUrl.trim()) {
+      alert('Veuillez renseigner un titre et sélectionner une image.');
+      return;
     }
-  };
-
-  const handleCreate = () => {
-    const newActualite: Actualite = {
+    const newActu = {
       id: Date.now().toString(),
       ...newItem,
-      date: new Date().toISOString().split('T')[0],
     };
-    setActualites([newActualite, ...actualites]);
-    setNewItem({
-      title: '',
-      content: '',
-      imageUrl: '',
-      category: 'Actualités',
-      featured: false,
-    });
+    await createActualite(newActu);
+    setNewItem({ title: '', content: '', imageUrl: '', redirectUrl: '' });
+    await loadData();
   };
 
-  const handleDelete = (id: string) => {
-    if (
-      // eslint-disable-next-line no-alert
-      window.confirm('Êtes-vous sûr de vouloir supprimer cette actualité ?')
-    ) {
-      setActualites(actualites.filter((item) => item.id !== id));
+  const handleUpdate = async () => {
+    if (!editingItem) return;
+    await updateActualite(editingItem.id, editingItem);
+    setEditingItem(null);
+    await loadData();
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Supprimer cette actualité ?')) {
+      await deleteActualite(id);
+      await loadData();
     }
+  };
+
+  const moveItem = async (index: number, direction: 'up' | 'down') => {
+    const newOrder = [...actualites];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= actualites.length) return;
+
+    [newOrder[index], newOrder[targetIndex]] = [
+      newOrder[targetIndex],
+      newOrder[index],
+    ];
+
+    setActualites(newOrder);
+    await Promise.all(
+      newOrder.map((item) => updateActualite(item.id, { ...item }))
+    );
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-32">
-        Chargement des actualités...
-      </div>
-    );
+    return <div className="text-center py-10">Chargement...</div>;
   }
 
   return (
     <div className="space-y-6">
-      {/* Statistiques rapides */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-green-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-green-600">
-            {actualites.length}
-          </div>
-          <div className="text-sm text-green-700">Total actualités</div>
-        </div>
-        <div className="bg-yellow-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-yellow-600">
-            {actualites.filter((a) => a.featured).length}
-          </div>
-          <div className="text-sm text-yellow-700">À la une</div>
-        </div>
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-blue-600">
-            {
-              actualites.filter(
-                (a) =>
-                  new Date(a.date) >
-                  new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-              ).length
-            }
-          </div>
-          <div className="text-sm text-blue-700">Cette semaine</div>
-        </div>
-      </div>
-
-      {/* Formulaire d'ajout */}
+      {/* Formulaire */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            Nouvelle actualité
+            <Plus className="h-5 w-5" /> Ajouter une actualité
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="new-title">Titre</Label>
+            <div className="space-y-4">
               <Input
-                id="new-title"
+                placeholder="Titre"
                 value={newItem.title}
                 onChange={(e) =>
                   setNewItem({ ...newItem, title: e.target.value })
                 }
-                placeholder="Titre de l'actualité"
               />
-            </div>
-            <div>
-              <Label htmlFor="new-category">Catégorie</Label>
-              <Input
-                id="new-category"
-                value={newItem.category}
+              <Textarea
+                placeholder="Contenu"
+                value={newItem.content}
                 onChange={(e) =>
-                  setNewItem({ ...newItem, category: e.target.value })
+                  setNewItem({ ...newItem, content: e.target.value })
                 }
-                placeholder="Catégorie"
+              />
+              <Input
+                placeholder="URL de redirection (optionnel)"
+                value={newItem.redirectUrl}
+                onChange={(e) =>
+                  setNewItem({ ...newItem, redirectUrl: e.target.value })
+                }
               />
             </div>
+
+            <div className="space-y-2">
+              <Label>Image</Label>
+              <select
+                value={newItem.imageUrl}
+                onChange={(e) =>
+                  setNewItem({ ...newItem, imageUrl: e.target.value })
+                }
+                className="w-full border rounded p-2"
+              >
+                <option value="">-- Choisir une image --</option>
+                {images.map((img) => (
+                  <option key={img.id} value={img.url}>
+                    {img.label}
+                  </option>
+                ))}
+              </select>
+              {newItem.imageUrl && (
+                <img
+                  src={newItem.imageUrl}
+                  alt="aperçu"
+                  className="h-24 object-contain rounded border"
+                />
+              )}
+            </div>
           </div>
-          <div>
-            <Label htmlFor="new-content">Contenu</Label>
-            <Textarea
-              id="new-content"
-              value={newItem.content}
-              onChange={(e) =>
-                setNewItem({ ...newItem, content: e.target.value })
-              }
-              placeholder="Contenu de l'actualité"
-              rows={3}
-            />
-          </div>
-          <div>
-            <Label htmlFor="new-image">URL de l&rsquo;image</Label>
-            <Input
-              id="new-image"
-              value={newItem.imageUrl}
-              onChange={(e) =>
-                setNewItem({ ...newItem, imageUrl: e.target.value })
-              }
-              placeholder="https://..."
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="new-featured"
-              checked={newItem.featured}
-              onChange={(e) =>
-                setNewItem({ ...newItem, featured: e.target.checked })
-              }
-            />
-            <Label htmlFor="new-featured">Mettre à la une</Label>
-          </div>
+
           <Button onClick={handleCreate} className="w-full">
-            <Plus className="h-4 w-4 mr-2" />
-            Ajouter l&apos;actualité
+            Créer l&apos;actualité
           </Button>
         </CardContent>
       </Card>
 
-      {/* Liste des actualités */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">
-          Actualités existantes ({actualites.length})
-        </h3>
-        {actualites.map((item) => (
-          <Card key={item.id}>
-            <CardContent className="p-4">
-              {editingItem && editingItem.id === item.id ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label>Titre</Label>
-                      <Input
-                        value={editingItem.title}
-                        onChange={(e) =>
-                          setEditingItem({
-                            ...editingItem,
-                            title: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label>Catégorie</Label>
-                      <Input
-                        value={editingItem.category}
-                        onChange={(e) =>
-                          setEditingItem({
-                            ...editingItem,
-                            category: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Contenu</Label>
+      {/* Liste déroulante */}
+      <div className="text-center">
+        <Button
+          variant="outline"
+          onClick={() => setShowList(!showList)}
+          className="mx-auto"
+        >
+          {showList ? (
+            <>
+              <ChevronUp className="mr-2 h-4 w-4" /> Masquer les actualités
+            </>
+          ) : (
+            <>
+              <ChevronDown className="mr-2 h-4 w-4" /> Voir les actualités
+            </>
+          )}
+        </Button>
+      </div>
+
+      {showList && (
+        <div className="space-y-4">
+          {actualites.map((actu, index) => (
+            <Card key={actu.id}>
+              <CardContent className="p-4">
+                {editingItem?.id === actu.id ? (
+                  <div className="space-y-4">
+                    <Input
+                      value={editingItem.title}
+                      onChange={(e) =>
+                        setEditingItem({
+                          ...editingItem,
+                          title: e.target.value,
+                        })
+                      }
+                    />
                     <Textarea
                       value={editingItem.content}
                       onChange={(e) =>
@@ -268,12 +213,8 @@ export default function ActualitesManager() {
                           content: e.target.value,
                         })
                       }
-                      rows={3}
                     />
-                  </div>
-                  <div>
-                    <Label>URL de l&#39;image</Label>
-                    <Input
+                    <select
                       value={editingItem.imageUrl}
                       onChange={(e) =>
                         setEditingItem({
@@ -281,82 +222,105 @@ export default function ActualitesManager() {
                           imageUrl: e.target.value,
                         })
                       }
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={editingItem.featured}
+                      className="w-full border rounded p-2"
+                    >
+                      <option value="">-- Choisir une image --</option>
+                      {images.map((img) => (
+                        <option key={img.id} value={img.url}>
+                          {img.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <Input
+                      value={editingItem.redirectUrl}
                       onChange={(e) =>
                         setEditingItem({
                           ...editingItem,
-                          featured: e.target.checked,
+                          redirectUrl: e.target.value,
                         })
                       }
+                      placeholder="URL de redirection"
                     />
-                    <Label>Mettre à la une</Label>
+
+                    <div className="flex gap-2">
+                      <Button onClick={handleUpdate}>Enregistrer</Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setEditingItem(null)}
+                      >
+                        Annuler
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <Button onClick={handleSave}>Enregistrer</Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setEditingItem(null)}
-                    >
-                      Annuler
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-start space-x-4">
-                  {item.imageUrl && (
-                    <img
-                      src={item.imageUrl || '/placeholder.svg'}
-                      alt={item.title}
-                      className="w-20 h-20 object-cover rounded"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-semibold">{item.title}</h3>
-                      <Badge variant="secondary">{item.category}</Badge>
-                      {item.featured && (
-                        <Badge className="bg-yellow-400 text-black">
-                          À la une
-                        </Badge>
+                ) : (
+                  <div className="flex items-start gap-4">
+                    {actu.imageUrl && (
+                      <img
+                        src={actu.imageUrl}
+                        alt={actu.title}
+                        className="w-20 h-20 object-cover rounded"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <h4 className="font-semibold mb-1">{actu.title}</h4>
+                      <p className="text-sm text-gray-600 line-clamp-2 mb-1">
+                        {actu.content}
+                      </p>
+                      {actu.redirectUrl && (
+                        <a
+                          href={actu.redirectUrl}
+                          target="_blank"
+                          className="text-blue-600 text-xs underline"
+                          rel="noreferrer"
+                        >
+                          Voir le lien
+                        </a>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                      {item.content}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(item.date).toLocaleDateString('fr-FR')}
-                    </p>
+                    <div className="flex flex-col gap-2 items-end">
+                      <div className="flex gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => moveItem(index, 'up')}
+                          disabled={index === 0}
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => moveItem(index, 'down')}
+                          disabled={index === actualites.length - 1}
+                        >
+                          <ArrowDown className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => setEditingItem(actu)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="destructive"
+                          onClick={() => handleDelete(actu.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <Button size="sm" variant="outline">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEdit(item)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
