@@ -47,3 +47,30 @@
 .slick-dots {
     bottom: -30px;
 }
+
+.marquee-container {
+    display: flex;
+    overflow: hidden;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.marquee-content {
+    display: flex;
+    animation: marquee 20s linear infinite;
+}
+
+.marquee-content img {
+    width: 150px; /* Adjust logo width as needed */
+    height: auto;
+    margin: 0 20px; /* Adjust spacing between logos */
+}
+
+@keyframes marquee {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}

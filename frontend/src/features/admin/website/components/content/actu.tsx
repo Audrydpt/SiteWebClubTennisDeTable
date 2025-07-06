@@ -1,3 +1,4 @@
+/* eslint-disable no-console,no-alert */
 import { useEffect, useState } from 'react';
 import {
   Plus,
@@ -19,21 +20,21 @@ import {
   updateActualite,
   deleteActualite,
   fetchImages,
-  Actualite,
-  Image,
 } from '@/services/api';
+import { Image, ActualiteData } from '@/services/type.ts';
 
 export default function ActualitesManager() {
-  const [actualites, setActualites] = useState<Actualite[]>([]);
+  const [actualites, setActualites] = useState<ActualiteData[]>([]);
   const [images, setImages] = useState<Image[]>([]);
   const [loading, setLoading] = useState(true);
   const [showList, setShowList] = useState(false);
-  const [editingItem, setEditingItem] = useState<Actualite | null>(null);
+  const [editingItem, setEditingItem] = useState<ActualiteData | null>(null);
   const [newItem, setNewItem] = useState({
     title: '',
     content: '',
     imageUrl: '',
     redirectUrl: '',
+    order: 0,
   });
 
   const loadData = async () => {
@@ -42,7 +43,13 @@ export default function ActualitesManager() {
         fetchActualites(),
         fetchImages(),
       ]);
-      setActualites(actuRes);
+
+      // Trier les actualités par leur ordre ou id par défaut
+      const sortedActualites = [...actuRes].sort(
+        (a, b) => (a.order || Infinity) - (b.order || Infinity)
+      );
+
+      setActualites(sortedActualites);
       setImages(imgRes);
     } catch (err) {
       console.error('Erreur chargement des données', err);
@@ -65,7 +72,13 @@ export default function ActualitesManager() {
       ...newItem,
     };
     await createActualite(newActu);
-    setNewItem({ title: '', content: '', imageUrl: '', redirectUrl: '' });
+    setNewItem({
+      title: '',
+      content: '',
+      imageUrl: '',
+      redirectUrl: '',
+      order: 0,
+    });
     await loadData();
   };
 
@@ -88,15 +101,30 @@ export default function ActualitesManager() {
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= actualites.length) return;
 
+    // Échanger les positions
     [newOrder[index], newOrder[targetIndex]] = [
       newOrder[targetIndex],
       newOrder[index],
     ];
 
-    setActualites(newOrder);
-    await Promise.all(
-      newOrder.map((item) => updateActualite(item.id, { ...item }))
-    );
+    // Mettre à jour les numéros d'ordre
+    const updatedActualites = newOrder.map((item, idx) => ({
+      ...item,
+      order: idx + 1,
+    }));
+
+    setActualites(updatedActualites);
+
+    try {
+      await Promise.all(
+        updatedActualites.map(
+          (item) => updateActualite(item.id, item) // Envoyer l'objet entier
+        )
+      );
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour de l'ordre:", error);
+      await loadData();
+    }
   };
 
   if (loading) {
@@ -116,7 +144,7 @@ export default function ActualitesManager() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-4">
               <Input
-                placeholder="Titre"
+                placeholder="Titre *"
                 value={newItem.title}
                 onChange={(e) =>
                   setNewItem({ ...newItem, title: e.target.value })
@@ -147,7 +175,7 @@ export default function ActualitesManager() {
                 }
                 className="w-full border rounded p-2"
               >
-                <option value="">-- Choisir une image --</option>
+                <option value="">-- Choisir une image -- *</option>
                 {images.map((img) => (
                   <option key={img.id} value={img.url}>
                     {img.label}
@@ -188,9 +216,12 @@ export default function ActualitesManager() {
           )}
         </Button>
       </div>
-
       {showList && (
         <div className="space-y-4">
+          <p>
+            Premier slide <ArrowDown className="h-4 w-4" />
+          </p>
+
           {actualites.map((actu, index) => (
             <Card key={actu.id}>
               <CardContent className="p-4">

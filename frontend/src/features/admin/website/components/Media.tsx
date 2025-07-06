@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { fetchImages, createImage, deleteImage, Image } from '@/services/api';
+import { fetchImages, createImage, deleteImage } from '@/services/api';
+import {Image} from '@/services/type.ts';
 
 export default function AdminMedia() {
   const [images, setImages] = useState<Image[]>([]);

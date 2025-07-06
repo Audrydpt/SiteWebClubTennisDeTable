@@ -25,7 +25,7 @@ import {
 import ActualitesManager from '@/features/admin/website/components/content/actu.tsx';
 import TournoisManager from '@/features/admin/website/components/content/tournament.tsx';
 import ResultatsManager from '@/features/admin/website/components/content/result.tsx';
-// import SponsorsManager from '@/features/admin/website/components/content/sponsor.tsx';
+import SponsorsManager from '@/features/admin/website/components/content/sponsor.tsx';
 
 interface ContentSection {
   id: string;
@@ -56,21 +56,31 @@ export default function AdminContent() {
       component: <ActualitesManager />,
       color: 'bg-green-100',
     },
+
     {
-      id: 'tournois',
-      title: 'Gestion des Tournois',
-      description: 'Organiser et gérer les tournois et compétitions',
-      icon: <Trophy className="h-5 w-5 text-yellow-600" />,
-      component: <TournoisManager />,
-      color: 'bg-yellow-100',
+      id: 'sponsors',
+      title: 'Gestion des Sponsors',
+      description: 'Créer, modifier et supprimer les sponsors',
+      icon: <FileText className="h-5 w-5 text-purple-600" />,
+      component: <SponsorsManager />,
+      color: 'bg-purple-100',
     },
+
     {
       id: 'resultats',
       title: 'Gestion des Résultats',
-      description: 'Ajouter et modifier les résultats des matchs',
+      description: 'Créer, modifier et supprimer les matchs',
       icon: <Calendar className="h-5 w-5 text-blue-600" />,
       component: <ResultatsManager />,
       color: 'bg-blue-100',
+    },
+    {
+      id: 'tournois',
+      title: 'Gestion des Tournois',
+      description: 'Créer, modifier et supprimer les tournois',
+      icon: <Trophy className="h-5 w-5 text-yellow-600" />,
+      component: <TournoisManager />,
+      color: 'bg-yellow-100',
     },
   ];
 

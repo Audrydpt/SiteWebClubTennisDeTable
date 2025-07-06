@@ -1,24 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/api.ts
 import axios from 'axios';
+import { Image } from '@/services/type.ts';
 
 const API_URL = import.meta.env.VITE_API_URL;
-
-export interface Image {
-  id: string;
-  label: string;
-  url: string;
-  uploadDate: string;
-}
-
-export interface Actualite {
-  imageUrl: string | undefined;
-  id: string;
-  title: string;
-  content: string;
-  imageUrl: string;
-  redirectUrl: string;
-}
 
 export const fetchActualites = async () => {
   const response = await axios.get(`${API_URL}/actualite`);

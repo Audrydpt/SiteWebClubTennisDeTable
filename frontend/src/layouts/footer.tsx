@@ -64,7 +64,10 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-gray-600 mt-8 pt-4 text-center text-sm">
-          <p>&copy; 2025 CTT Frameries - Tous droits réservés - Made by </p>
+          <p>
+            &copy; 2025 CTT Frameries - Tous droits réservés - Made by CTT
+            Frameries{' '}
+          </p>
         </div>
       </div>
     </footer>

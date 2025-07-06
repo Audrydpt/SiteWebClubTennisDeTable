@@ -9,29 +9,8 @@ import 'slick-carousel/slick/slick-theme.css';
 import { Calendar, Trophy } from 'lucide-react';
 
 import { fetchActualites } from '../services/api';
+import { ActualiteData, ResultatData, SponsorData } from '../services/type';
 import '../lib/styles/home.css';
-
-interface ActualiteData {
-  id: string;
-  title: string;
-  content: string;
-  imageUrl: string; // Modifié pour correspondre à db.json
-}
-
-interface ResultatData {
-  id: string;
-  equipe: string;
-  adversaire: string;
-  score: string;
-  division: string;
-  domicile: boolean;
-}
-
-interface SponsorData {
-  id: string;
-  name: string;
-  logo: string;
-}
 
 // Interface pour les props des flèches
 interface ArrowProps {
@@ -76,16 +55,23 @@ export default function HomePage() {
         const data = await fetchActualites();
         console.log('Actualités récupérées:', data);
 
+        let actualitesData = [];
+
         // Si data est directement un tableau, c'est notre tableau d'actualités
         if (Array.isArray(data)) {
-          setActualites(data);
+          actualitesData = data;
         } else if (data && data.actualites && Array.isArray(data.actualites)) {
           // Si data est un objet avec une propriété actualites
-          setActualites(data.actualites);
-        } else {
-          // Format non reconnu
-          setActualites([]);
+          actualitesData = data.actualites;
         }
+
+        // Trier les actualités par ordre
+        const sortedActualites = actualitesData.sort(
+          (a: ActualiteData, b: ActualiteData) =>
+            (a.order || Infinity) - (b.order || Infinity)
+        );
+
+        setActualites(sortedActualites);
 
         // Dans une application réelle, vous récupéreriez ces données depuis l'API
         setResultats([
@@ -368,19 +354,27 @@ export default function HomePage() {
           {loading ? (
             <p className="text-center">Chargement des partenaires...</p>
           ) : (
-            <Slider {...sponsorCarouselSettings}>
-              {sponsors.map((sponsor) => (
-                <div key={sponsor.id} className="px-4">
-                  <div className="flex justify-center items-center h-20">
-                    <img
-                      src={sponsor.logo || '/placeholder.svg'}
-                      alt={sponsor.name}
-                      className="max-h-12 max-w-full object-contain grayscale transition-all duration-300 hover:grayscale-0"
-                    />
-                  </div>
-                </div>
-              ))}
-            </Slider>
+            <div className="marquee-container">
+              <div className="marquee-content">
+                {sponsors.map((sponsor) => (
+                  <img
+                    key={sponsor.id}
+                    src={sponsor.logo || '/placeholder.svg'}
+                    alt={sponsor.name}
+                    className="max-h-12 object-contain grayscale transition-all duration-300 hover:grayscale-0"
+                  />
+                ))}
+                {/* Dupliquer les logos pour créer l'illusion d'un défilement infini */}
+                {sponsors.map((sponsor) => (
+                  <img
+                    key={`duplicate-${sponsor.id}`}
+                    src={sponsor.logo || '/placeholder.svg'}
+                    alt={sponsor.name}
+                    className="max-h-12 object-contain grayscale transition-all duration-300 hover:grayscale-0"
+                  />
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </section>
