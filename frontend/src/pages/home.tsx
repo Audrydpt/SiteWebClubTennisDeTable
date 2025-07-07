@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,no-console */
+/* eslint-disable @typescript-eslint/no-unused-vars,no-console,jsx-a11y/no-noninteractive-element-interactions,jsx-a11y/click-events-have-key-events,no-nested-ternary */
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Slider from 'react-slick';
@@ -8,7 +8,7 @@ import 'slick-carousel/slick/slick-theme.css';
 
 import { Calendar, Trophy } from 'lucide-react';
 
-import { fetchActualites } from '../services/api';
+import { fetchActualites, fetchSponsors } from '../services/api';
 import { ActualiteData, ResultatData, SponsorData } from '../services/type';
 import '../lib/styles/home.css';
 
@@ -101,12 +101,12 @@ export default function HomePage() {
           },
         ]);
 
-        setSponsors([
-          { id: '1', name: 'Sponsor 1', logo: '/images/sponsor1.png' },
-          { id: '2', name: 'Sponsor 2', logo: '/images/sponsor2.png' },
-          { id: '3', name: 'Sponsor 3', logo: '/images/sponsor3.png' },
-          { id: '4', name: 'Sponsor 4', logo: '/images/sponsor4.png' },
-        ]);
+        const sponsorsData = await fetchSponsors();
+        // Tri par ordre
+        const sortedSponsors = sponsorsData.sort(
+          (a: SponsorData, b: SponsorData) => a.order - b.order
+        );
+        setSponsors(sortedSponsors);
       } catch (error) {
         console.error('Erreur lors du chargement des actualités:', error);
         setActualites([]);
@@ -132,32 +132,6 @@ export default function HomePage() {
     nextArrow: <NextArrow />,
   };
 
-  // Configuration du carrousel de sponsors
-  const sponsorCarouselSettings = {
-    dots: false,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 5,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 2000,
-    arrows: false,
-    responsive: [
-      {
-        breakpoint: 1024,
-        settings: {
-          slidesToShow: 3,
-        },
-      },
-      {
-        breakpoint: 640,
-        settings: {
-          slidesToShow: 2,
-        },
-      },
-    ],
-  };
-
   // Fonction pour déterminer la classe de couleur du score
   const getScoreColorClass = (score: string): string => {
     const parts = score.split('-');
@@ -167,6 +141,16 @@ export default function HomePage() {
     if (home > away) return 'text-green-600';
     if (home < away) return 'text-red-600';
     return 'text-gray-700';
+  };
+
+  const handleActualiteClick = (redirectUrl: string | undefined | null) => {
+    // Vérifie si l'URL existe et n'est pas une chaîne vide
+    if (redirectUrl && redirectUrl.trim() !== '') {
+      console.log('Redirection vers:', redirectUrl);
+      window.open(redirectUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      console.log('Pas de redirection: URL manquante ou vide');
+    }
   };
 
   const renderCarouselContent = () => {
@@ -223,7 +207,17 @@ export default function HomePage() {
                 {/* Gradient + Texte */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-20" />
                 <div className="absolute bottom-0 left-0 right-0 p-6 text-white z-30">
-                  <h3 className="text-2xl md:text-3xl font-bold leading-tight mb-2 drop-shadow-lg">
+                  <h3
+                    className={`text-2xl md:text-3xl font-bold leading-tight mb-2 drop-shadow-lg ${
+                      actualite.redirectUrl
+                        ? 'cursor-pointer hover:underline'
+                        : ''
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleActualiteClick(actualite.redirectUrl);
+                    }}
+                  >
                     {actualite.title}
                   </h3>
                   <p className="text-sm md:text-base text-white/90 leading-relaxed drop-shadow-md">
@@ -353,28 +347,172 @@ export default function HomePage() {
           </h3>
           {loading ? (
             <p className="text-center">Chargement des partenaires...</p>
-          ) : (
-            <div className="marquee-container">
-              <div className="marquee-content">
+          ) : sponsors.length > 0 ? (
+            <div
+              className={
+                sponsors.length >= 6 ? 'marquee-container' : 'static-sponsors'
+              }
+            >
+              <div
+                className={
+                  sponsors.length >= 6
+                    ? 'marquee-content'
+                    : 'flex justify-center'
+                }
+              >
+                {/* Logos des sponsors */}
                 {sponsors.map((sponsor) => (
-                  <img
+                  <div
                     key={sponsor.id}
-                    src={sponsor.logo || '/placeholder.svg'}
-                    alt={sponsor.name}
-                    className="max-h-12 object-contain grayscale transition-all duration-300 hover:grayscale-0"
-                  />
+                    className={sponsors.length >= 6 ? 'mx-8' : 'mx-8 mb-8'}
+                  >
+                    {sponsor.redirectUrl ? (
+                      <a
+                        href={sponsor.redirectUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block"
+                      >
+                        <img
+                          src={sponsor.logoUrl || '/placeholder.svg'}
+                          alt={sponsor.name}
+                          className="hover:grayscale"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              '/placeholder.svg';
+                          }}
+                        />
+                      </a>
+                    ) : (
+                      <Link to="/sponsors" className="block">
+                        <img
+                          src={sponsor.logoUrl || '/placeholder.svg'}
+                          alt={sponsor.name}
+                          className="hover:grayscale"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              '/placeholder.svg';
+                          }}
+                        />
+                      </Link>
+                    )}
+                  </div>
                 ))}
-                {/* Dupliquer les logos pour créer l'illusion d'un défilement infini */}
-                {sponsors.map((sponsor) => (
-                  <img
-                    key={`duplicate-${sponsor.id}`}
-                    src={sponsor.logo || '/placeholder.svg'}
-                    alt={sponsor.name}
-                    className="max-h-12 object-contain grayscale transition-all duration-300 hover:grayscale-0"
-                  />
-                ))}
+
+                {/* Première duplication (existante) */}
+                {sponsors.length >= 6 &&
+                  sponsors.map((sponsor) => (
+                    <div key={`${sponsor.id}-duplicate-1`} className="mx-8">
+                      {sponsor.redirectUrl ? (
+                        <a
+                          href={sponsor.redirectUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block"
+                        >
+                          <img
+                            src={sponsor.logoUrl || '/placeholder.svg'}
+                            alt={sponsor.name}
+                            className="hover:grayscale"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                '/placeholder.svg';
+                            }}
+                          />
+                        </a>
+                      ) : (
+                        <Link to="/sponsors" className="block">
+                          <img
+                            src={sponsor.logoUrl || '/placeholder.svg'}
+                            alt={sponsor.name}
+                            className="hover:grayscale"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                '/placeholder.svg';
+                            }}
+                          />
+                        </Link>
+                      )}
+                    </div>
+                  ))}
+
+                {/* Deuxième duplication (nouvelle) */}
+                {sponsors.length >= 6 &&
+                  sponsors.map((sponsor) => (
+                    <div key={`${sponsor.id}-duplicate-2`} className="mx-8">
+                      {sponsor.redirectUrl ? (
+                        <a
+                          href={sponsor.redirectUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block"
+                        >
+                          <img
+                            src={sponsor.logoUrl || '/placeholder.svg'}
+                            alt={sponsor.name}
+                            className="hover:grayscale"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                '/placeholder.svg';
+                            }}
+                          />
+                        </a>
+                      ) : (
+                        <Link to="/sponsors" className="block">
+                          <img
+                            src={sponsor.logoUrl || '/placeholder.svg'}
+                            alt={sponsor.name}
+                            className="hover:grayscale"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                '/placeholder.svg';
+                            }}
+                          />
+                        </Link>
+                      )}
+                    </div>
+                  ))}
+
+                {/* Troisième duplication (nouvelle) */}
+                {sponsors.length >= 6 &&
+                  sponsors.map((sponsor) => (
+                    <div key={`${sponsor.id}-duplicate-3`} className="mx-8">
+                      {sponsor.redirectUrl ? (
+                        <a
+                          href={sponsor.redirectUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block"
+                        >
+                          <img
+                            src={sponsor.logoUrl || '/placeholder.svg'}
+                            alt={sponsor.name}
+                            className="hover:grayscale"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                '/placeholder.svg';
+                            }}
+                          />
+                        </a>
+                      ) : (
+                        <Link to="/sponsors" className="block">
+                          <img
+                            src={sponsor.logoUrl || '/placeholder.svg'}
+                            alt={sponsor.name}
+                            className="hover:grayscale"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                '/placeholder.svg';
+                            }}
+                          />
+                        </Link>
+                      )}
+                    </div>
+                  ))}
               </div>
             </div>
+          ) : (
+            <p className="text-center">Aucun sponsor à afficher.</p>
           )}
         </div>
       </section>

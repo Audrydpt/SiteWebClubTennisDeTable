@@ -48,16 +48,23 @@
     bottom: -30px;
 }
 
+/* Pour les sponsors fixes */
+.static-sponsors img {
+    width: 100px; /* Même taille que pour le défilement */
+    height: auto;
+    margin: 0 20px;
+}
+
+/* Styles existants pour le défilement */
 .marquee-container {
-    display: flex;
     overflow: hidden;
-    white-space: nowrap;
+    position: relative;
     width: 100%;
 }
 
 .marquee-content {
     display: flex;
-    animation: marquee 20s linear infinite;
+    animation: marquee 30s linear infinite;
 }
 
 .marquee-content img {

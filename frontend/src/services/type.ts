@@ -10,7 +10,10 @@ export interface ResultatData {
 export interface SponsorData {
   id: string;
   name: string;
-  logo: string;
+  texte: string;
+  logoUrl: string;
+  redirectUrl: string;
+  order: number;
 }
 
 export interface TournoiData {

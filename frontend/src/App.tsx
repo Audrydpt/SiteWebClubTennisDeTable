@@ -5,8 +5,9 @@ import Header from './layouts/header.tsx';
 import Footer from './layouts/footer.tsx';
 import LoadingSpinner from './components/loading';
 import ProtectedRoute from './lib/protectedRoutes';
-import HomePage from './pages/home';
-import AboutPage from './pages/about';
+import HomePage from '@/pages/home';
+import AboutPage from '@/pages/about';
+import Sponsors from '@/pages/sponsors.tsx';
 import AdminPage from '@/features/admin/website/AdminPage.tsx';
 
 export default function App() {
@@ -20,6 +21,9 @@ export default function App() {
             {/* Routes publiques */}
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/sponsors" element={<Sponsors />} />
+
+            {/* Route pour la page 404 */}
 
             {/* Routes admin protégées */}
             <Route
