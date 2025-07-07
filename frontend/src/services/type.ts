@@ -39,3 +39,33 @@ export interface ActualiteData {
   redirectUrl: string;
   order: number;
 }
+
+export interface Equipe {
+  id: string;
+  nom: string;
+  serieId: string;
+}
+
+export interface Serie {
+  id: string;
+  nom: string;
+  equipes: Equipe[];
+}
+
+export interface Match {
+  id: string;
+  serieId: string;
+  semaine: number;
+  domicile: string;
+  exterieur: string;
+  score: string;
+  date: string;
+}
+
+export interface Saison {
+  id: string;
+  label: string;
+  equipesClub: Equipe[];
+  series: Serie[];
+  calendrier: Match[];
+}

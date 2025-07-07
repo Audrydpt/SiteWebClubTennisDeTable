@@ -70,3 +70,24 @@ export const createSponsor = async (data: any) => {
 export const deleteSponsor = async (id: string) => {
   await axios.delete(`${API_URL}/sponsors/${id}`);
 };
+
+/* Saisons API Endpoints */
+
+export const fetchSaisons = async () => {
+  const response = await axios.get(`${API_URL}/saisons`);
+  return response.data;
+};
+
+export const updateSaison = async (id: string, data: any) => {
+  const response = await axios.put(`${API_URL}/saisons/${id}`, data);
+  return response.data;
+};
+
+export const createSaison = async (data: any) => {
+  const response = await axios.post(`${API_URL}/saisons`, data);
+  return response.data;
+};
+
+export const deleteSaison = async (id: string) => {
+  await axios.delete(`${API_URL}/saisons/${id}`);
+};
