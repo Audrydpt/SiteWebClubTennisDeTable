@@ -1,15 +1,14 @@
-'use client';
-
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+
 import CreateSaison from '@/features/admin/website/components/content/saison/createSaison.tsx';
 import UpdateSaison from '@/features/admin/website/components/content/saison/updateSaison.tsx';
 import UpdateResults from '@/features/admin/website/components/content/saison/updateResults.tsx';
@@ -29,65 +28,81 @@ export default function ResultatsAdminPage() {
         return <UpdateResults />;
       default:
         return (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in-50">
-            <Card
-              className="cursor-pointer hover:shadow-lg hover:border-primary transition-all duration-300"
-              onClick={() => setSection('create')}
-            >
-              <CardHeader>
-                <CardTitle>Créer une saison</CardTitle>
-                <CardDescription>
-                  Définir une nouvelle saison, ses séries, équipes et créer le
-                  calendrier manuellement.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full">Commencer la création</Button>
-              </CardContent>
-            </Card>
+          <Accordion
+            type="single"
+            collapsible
+            className="w-full space-y-3 animate-in fade-in-50"
+          >
+            <AccordionItem value="create" className="border-none">
+              <Card className="overflow-hidden rounded-lg shadow-sm">
+                <AccordionTrigger className="p-4 hover:no-underline hover:bg-gray-50/50 flex justify-between w-full items-center">
+                  <CardTitle className="text-lg">Créer une saison</CardTitle>
+                </AccordionTrigger>
+                <AccordionContent className="p-4 pt-0">
+                  <CardDescription className="mb-4">
+                    Définir une nouvelle saison, ses séries, équipes et créer le
+                    calendrier manuellement.
+                  </CardDescription>
+                  <Button
+                    className="w-full"
+                    onClick={() => setSection('create')}
+                  >
+                    Commencer la création
+                  </Button>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
 
-            <Card
-              className="cursor-pointer hover:shadow-lg hover:border-primary transition-all duration-300"
-              onClick={() => setSection('update')}
-            >
-              <CardHeader>
-                <CardTitle>Modifier une saison</CardTitle>
-                <CardDescription>
-                  Éditer les informations, équipes, séries et calendrier
-                  d&#39;une saison existante.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full" variant="secondary">
-                  Modifier
-                </Button>
-              </CardContent>
-            </Card>
+            <AccordionItem value="update" className="border-none">
+              <Card className="overflow-hidden rounded-lg shadow-sm">
+                <AccordionTrigger className="p-4 hover:no-underline hover:bg-gray-50/50 flex justify-between w-full items-center">
+                  <CardTitle className="text-lg">Modifier une saison</CardTitle>
+                </AccordionTrigger>
+                <AccordionContent className="p-4 pt-0">
+                  <CardDescription className="mb-4">
+                    Éditer les informations, équipes, séries et calendrier
+                    d&#39;une saison existante.
+                  </CardDescription>
+                  <Button
+                    className="w-full"
+                    variant="secondary"
+                    onClick={() => setSection('update')}
+                  >
+                    Modifier
+                  </Button>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
 
-            <Card
-              className="cursor-pointer hover:shadow-lg hover:border-primary transition-all duration-300"
-              onClick={() => setSection('results')}
-            >
-              <CardHeader>
-                <CardTitle>Mettre à jour les résultats</CardTitle>
-                <CardDescription>
-                  Saisir les scores des matchs pour chaque journée de
-                  championnat.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full" variant="secondary">
-                  Gérer les scores
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+            <AccordionItem value="results" className="border-none">
+              <Card className="overflow-hidden rounded-lg shadow-sm">
+                <AccordionTrigger className="p-4 hover:no-underline hover:bg-gray-50/50 flex justify-between w-full items-center">
+                  <CardTitle className="text-lg">
+                    Mettre à jour les résultats
+                  </CardTitle>
+                </AccordionTrigger>
+                <AccordionContent className="p-4 pt-0">
+                  <CardDescription className="mb-4">
+                    Saisir les scores des matchs pour chaque journée de
+                    championnat.
+                  </CardDescription>
+                  <Button
+                    className="w-full"
+                    variant="secondary"
+                    onClick={() => setSection('results')}
+                  >
+                    Gérer les scores
+                  </Button>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+          </Accordion>
         );
     }
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800">

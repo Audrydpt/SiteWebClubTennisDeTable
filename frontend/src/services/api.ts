@@ -78,9 +78,37 @@ export const fetchSaisons = async () => {
   return response.data;
 };
 
+export const fetchSaisonById = async (id: string) => {
+  const response = await axios.get(`${API_URL}/saisons/${id}`);
+  return response.data;
+};
+
+export const fetchSaisonEnCours = async () => {
+  const response = await axios.get(`${API_URL}/saisons?statut=En%20cours`);
+  return response.data[0] || null; // Retourne la première saison en cours ou null
+};
+
 export const updateSaison = async (id: string, data: any) => {
   const response = await axios.put(`${API_URL}/saisons/${id}`, data);
   return response.data;
+};
+
+export const updateSaisonCalendrier = async (id: string, calendrier: any[]) => {
+  const saison = await fetchSaisonById(id);
+  saison.calendrier = calendrier;
+  return updateSaison(id, saison);
+};
+
+export const updateSaisonResults = async (
+  id: string,
+  matchesWithScores: any[]
+) => {
+  const saison = await fetchSaisonById(id);
+  saison.calendrier = saison.calendrier.map((match: { id: any }) => {
+    const updatedMatch = matchesWithScores.find((m) => m.id === match.id);
+    return updatedMatch ? { ...match, score: updatedMatch.score } : match;
+  });
+  return updateSaison(id, saison);
 };
 
 export const createSaison = async (data: any) => {

@@ -1,7 +1,7 @@
-/* eslint-disable prettier/prettier */
+/* eslint-disable prettier/prettier,no-console */
 
 import { useState, useEffect } from 'react';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -12,38 +12,47 @@ import {
   SelectItem,
   SelectValue,
 } from '@/components/ui/select';
-import { fetchSaisons, updateSaison } from '@/services/api';
+import { fetchSaisons, updateSaisonResults } from '@/services/api';
 import { Saison } from '@/services/type.ts';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function UpdateResults() {
-  const [saisons, setSaisons] = useState<Saison[]>([]);
-  const [saisonSelectionneeId, setSaisonSelectionneeId] = useState<string>('');
+  const [allSaisons, setAllSaisons] = useState<Saison[]>([]);
   const [saison, setSaison] = useState<Saison | null>(null);
   const [serieSelectionnee, setSerieSelectionnee] = useState<string>('');
   const [semaineSelectionnee, setSemaineSelectionnee] = useState<number>(1);
   const [message, setMessage] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSelecting, setIsSelecting] = useState(false);
 
   useEffect(() => {
-    const chargerSaisons = async () => {
+    const chargerDonneesInitiales = async () => {
+      setIsLoading(true);
       const data = await fetchSaisons();
-      setSaisons(data);
+      setAllSaisons(data);
+      const saisonEnCours = data.find(
+        (s: { statut: string }) => s.statut === 'En cours'
+      );
+
+      if (saisonEnCours) {
+        setSaison(JSON.parse(JSON.stringify(saisonEnCours)));
+        setIsSelecting(false);
+      } else {
+        setIsSelecting(true); // Aucune saison en cours, on doit en choisir une
+      }
+      setIsLoading(false);
     };
-    chargerSaisons();
+    chargerDonneesInitiales();
   }, []);
 
-  const chargerSaison = (id: string) => {
-    const saisonTrouvee = saisons.find((s) => s.id === id);
+  const handleSelectSaison = (id: string) => {
+    const saisonTrouvee = allSaisons.find((s) => s.id === id);
     if (saisonTrouvee) {
-      setSaison(JSON.parse(JSON.stringify(saisonTrouvee))); // Deep copy
+      setSaison(JSON.parse(JSON.stringify(saisonTrouvee)));
       setSerieSelectionnee('');
       setSemaineSelectionnee(1);
+      setIsSelecting(false);
     }
-  };
-
-  const handleSelectSaison = (id: string) => {
-    setSaisonSelectionneeId(id);
-    chargerSaison(id);
   };
 
   const mettreAJourScoreMatch = (matchId: string, score: string) => {
@@ -59,7 +68,12 @@ export default function UpdateResults() {
   const enregistrerResultats = async () => {
     if (!saison) return;
     try {
-      await updateSaison(saison.id, saison);
+      // On récupère seulement les matchs modifiés avec leurs scores
+      const matchsAvecScores = saison.calendrier.filter(
+        m => m.serieId === serieSelectionnee && m.semaine === semaineSelectionnee
+      );
+
+      await updateSaisonResults(saison.id, matchsAvecScores);
       setMessage('Résultats enregistrés avec succès !');
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
@@ -68,12 +82,23 @@ export default function UpdateResults() {
     }
   };
 
-  const semaines = Array.from({ length: 22 }, (_, i) => i + 1);
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-10">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-3 text-lg">Chargement des données...</span>
+      </div>
+    );
+  }
 
-  if (!saisonSelectionneeId) {
+  if (isSelecting || !saison) {
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-bold">Mise à jour des résultats</h2>
+        <p className="text-muted-foreground">
+          Aucune saison n&#39;est actuellement &#34;En cours&#34;. Veuillez
+          sélectionner une saison à modifier.
+        </p>
         <div className="max-w-md">
           <Label>Sélectionnez une saison</Label>
           <Select onValueChange={handleSelectSaison}>
@@ -81,9 +106,9 @@ export default function UpdateResults() {
               <SelectValue placeholder="Choisir une saison" />
             </SelectTrigger>
             <SelectContent>
-              {saisons.map((s) => (
+              {allSaisons.map((s) => (
                 <SelectItem key={s.id} value={s.id}>
-                  {s.label}
+                  {s.label} ({s.statut})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -93,13 +118,21 @@ export default function UpdateResults() {
     );
   }
 
-  if (!saison) return <div>Chargement...</div>;
+  const semaines = Array.from({ length: 22 }, (_, i) => i + 1);
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">
-        Mise à jour des résultats: {saison.label}
-      </h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">
+          Résultats: {saison.label}{' '}
+          <span className="text-sm font-medium text-primary">
+            ({saison.statut})
+          </span>
+        </h2>
+        <Button variant="outline" onClick={() => setIsSelecting(true)}>
+          Changer de saison
+        </Button>
+      </div>
 
       {message && (
         <Alert variant="default" className="bg-green-50 border-green-200">

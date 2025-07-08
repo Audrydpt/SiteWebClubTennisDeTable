@@ -40,6 +40,8 @@ export interface ActualiteData {
   order: number;
 }
 
+export type SaisonStatut = 'En cours' | 'Terminée' | 'Archivée';
+
 export interface Equipe {
   id: string;
   nom: string;
@@ -65,6 +67,7 @@ export interface Match {
 export interface Saison {
   id: string;
   label: string;
+  statut: SaisonStatut;
   equipesClub: Equipe[];
   series: Serie[];
   calendrier: Match[];

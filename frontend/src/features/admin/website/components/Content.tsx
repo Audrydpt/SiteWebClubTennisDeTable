@@ -119,7 +119,9 @@ export default function AdminContent() {
               </CardHeader>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <CardContent className="pt-0">{section.component}</CardContent>
+              <CardContent className="pt-0 max-h-[600px] overflow-y-auto">
+                {section.component}
+              </CardContent>
             </CollapsibleContent>
           </Collapsible>
         </Card>
