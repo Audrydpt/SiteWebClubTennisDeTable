@@ -36,9 +36,11 @@ export default function Sponsors() {
   return (
     <div className="container mx-auto py-16 px-4">
       <div className="bg-white rounded-xl shadow-xl p-8">
-        <h1 className="text-4xl font-bold text-center mb-12">Nos Sponsors</h1>
+        <h1 className="text-4xl font-bold text-center mb-12">
+          Nos Sponsors/Partenaires
+        </h1>
         <p className="text-lg text-center mb-16 max-w-3xl mx-auto text-gray-600">
-          Nous remercions chaleureusement nos sponsors pour leur confiance.
+          Nous remercions chaleureusement nos partenaires pour leur confiance.
         </p>
         <div className="w-300 h-1 bg-gray-300 mx-auto mb-12 rounded-full" />
 
