@@ -83,8 +83,9 @@ export default function Header({ title, className, ...props }: HeaderProps) {
   };
 
   const competitionItems = [
-    { path: '/competition/calendrier', label: 'Calendrier' },
     { path: '/competition/equipes', label: 'Équipes' },
+    { path: '/competition/calendrier', label: 'Calendrier' },
+
   ];
 
   const historiqueItems = [
@@ -122,7 +123,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
             onClick={(e) => isAuthenticated && e.preventDefault()}
           >
             <img
-              src="./logo-removebg.jpg"
+              src="https://res.cloudinary.com/dsrrxx5yx/image/upload/v1751736862/cwtcapgd9s25y02mlhhi.png"
               alt="CTT Frameries Logo"
               className="h-16 w-16 object-contain"
             />

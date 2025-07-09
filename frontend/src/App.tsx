@@ -9,6 +9,8 @@ import HomePage from '@/pages/home';
 import AboutPage from '@/pages/about';
 import Sponsors from '@/pages/sponsors.tsx';
 import AdminPage from '@/features/admin/website/AdminPage.tsx';
+import EquipesPage from '@/pages/teams.tsx';
+import CalendrierPage from '@/pages/calendarTeam.tsx';
 
 export default function App() {
   return (
@@ -22,6 +24,11 @@ export default function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/sponsors" element={<Sponsors />} />
+            <Route path="/competition/equipes" element={<EquipesPage />} />
+            <Route
+              path="/competition/calendrier"
+              element={<CalendrierPage />}
+            />
 
             {/* Route pour la page 404 */}
 

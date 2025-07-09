@@ -72,3 +72,13 @@ export interface Saison {
   series: Serie[];
   calendrier: Match[];
 }
+
+export interface ClassementEntry {
+  position: number;
+  nom: string;
+  joues: number;
+  victoires: number;
+  nuls: number;
+  defaites: number;
+  points: number;
+}
