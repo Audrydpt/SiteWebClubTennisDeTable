@@ -1,3 +1,4 @@
+/* eslint-disable no-nested-ternary,prettier/prettier,no-console */
 import { useState, useEffect } from 'react';
 import { Loader2, Calendar, Home, Plane, Trophy, Filter } from 'lucide-react';
 import { fetchSaisonEnCours } from '@/services/api';
