@@ -29,6 +29,7 @@ export interface Image {
   label: string;
   url: string;
   uploadDate: string;
+  type: 'image' | 'video';
 }
 
 export interface ActualiteData {
@@ -81,4 +82,36 @@ export interface ClassementEntry {
   nuls: number;
   defaites: number;
   points: number;
+}
+
+export interface Mousse {
+  marque: string;
+  nom: string;
+  epaisseur: string;
+  type: string;
+  couleur: string;
+  prix?: number;
+}
+
+export interface Bois {
+  marque: string;
+  nom: string;
+  type: string;
+  prix?: number;
+}
+
+export interface Autre {
+  nom: string;
+  description?: string;
+  prix?: number;
+}
+
+export interface SelectionData {
+  id: string;
+  membre: string;
+  mousses: Mousse[];
+  bois: Bois[];
+  autres: Autre[];
+  totalEstime: number;
+  dateEnregistrement: string;
 }

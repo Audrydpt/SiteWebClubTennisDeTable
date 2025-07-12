@@ -1,4 +1,4 @@
-/* eslint-disable no-nested-ternary,prettier/prettier,no-console */
+/* eslint-disable */
 import { useState, useEffect } from 'react';
 import { Loader2, Calendar, Home, Plane, Trophy, Filter } from 'lucide-react';
 import { fetchSaisonEnCours } from '@/services/api';
@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table.tsx';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.tsx';
 
 export default function CalendrierPage() {
   const [saison, setSaison] = useState<Saison | null>(null);
@@ -63,14 +64,28 @@ export default function CalendrierPage() {
 
     const aujourdhui = new Date();
 
+    // Vérifie si un match a un score valide (terminé)
+    const hasValidScore = (match: Match) =>
+      match.score &&
+      (match.score === 'ff-d' ||
+        match.score === 'ff-e' ||
+        match.score === 'fg-d' ||
+        match.score === 'fg-e' ||
+        (match.score.includes('-') &&
+          match.score.split('-').every((s) => !isNaN(parseInt(s, 10)))));
+
     switch (filtre) {
       case 'passes':
         return allMatches.filter(
-          (match) => match.date && new Date(match.date) < aujourdhui
+          (match) =>
+            hasValidScore(match) || // Match avec un score (terminé)
+            (match.date && new Date(match.date) < aujourdhui) // Match avec date passée
         );
       case 'futurs':
         return allMatches.filter(
-          (match) => !match.date || new Date(match.date) >= aujourdhui
+          (match) =>
+            !hasValidScore(match) && // Match sans score (non terminé)
+            (!match.date || new Date(match.date) >= aujourdhui) // Match sans date ou date future
         );
       default:
         return allMatches;
@@ -99,6 +114,29 @@ export default function CalendrierPage() {
 
     matchsTermines.forEach((match) => {
       const isDomicile = match.domicile === equipeSelectionnee.nom;
+
+      // Cas de forfait
+      if (match.score === 'ff-d') {
+        // Forfait de l'équipe à domicile
+        if (isDomicile) {
+          defaites += 1;
+        } else {
+          victoires += 1;
+        }
+        return;
+      }
+
+      if (match.score === 'ff-e') {
+        // Forfait de l'équipe à l'extérieur
+        if (isDomicile) {
+          victoires += 1;
+        } else {
+          defaites += 1;
+        }
+        return;
+      }
+
+      // Cas normal avec score numérique
       const [scoreDomicile, scoreExterieur] = match.score
         .split('-')
         .map((s) => parseInt(s, 10));
@@ -140,8 +178,13 @@ export default function CalendrierPage() {
 
   if (!saison) {
     return (
-      <div className="text-center p-10">
-        Impossible de charger les données de la saison.
+      <div className="container mx-auto px-4 py-8">
+        <Alert variant="destructive">
+          <AlertTitle>Erreur</AlertTitle>
+          <AlertDescription>
+            Impossible de charger les données de la saison en cours.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -276,28 +319,28 @@ export default function CalendrierPage() {
                               ? match.exterieur
                               : match.domicile;
 
-                            const scoreInfo = match.score
-                              ? match.score
-                                .split('-')
-                                .map((s) => parseInt(s, 10))
-                              : null;
-
+                            let resultat = null;
                             let scoreEquipe = null;
                             let scoreAdversaire = null;
-                            if (scoreInfo) {
+
+                            // Gestion des forfaits
+                            if (match.score === 'ff-d') {
+                              resultat = isDomicile ? 'defaite' : 'victoire';
+                            } else if (match.score === 'ff-e') {
+                              resultat = !isDomicile ? 'defaite' : 'victoire';
+                            } else if (match.score) {
+                              // Cas normal avec score numérique
+                              const scoreInfo = match.score
+                                .split('-')
+                                .map((s) => parseInt(s, 10));
+
                               scoreEquipe = isDomicile
                                 ? scoreInfo[0]
                                 : scoreInfo[1];
                               scoreAdversaire = isDomicile
                                 ? scoreInfo[1]
                                 : scoreInfo[0];
-                            }
 
-                            let resultat = null;
-                            if (
-                              scoreEquipe !== null &&
-                              scoreAdversaire !== null
-                            ) {
                               if (scoreEquipe > scoreAdversaire) {
                                 resultat = 'victoire';
                               } else if (scoreEquipe < scoreAdversaire) {
@@ -329,35 +372,110 @@ export default function CalendrierPage() {
                                 <TableCell className="w-32 text-center">
                                   {match.score ? (
                                     <div className="flex items-center justify-center gap-2">
-                                      <div className="text-xl font-bold font-mono">
-                                        <span
-                                          className={getScoreStyle(
-                                            resultat,
-                                            false
-                                          )}
-                                        >
-                                          {scoreEquipe}
-                                        </span>
-                                        <span className="text-gray-400">-</span>
-                                        <span
-                                          className={getScoreStyle(
-                                            resultat,
-                                            true
-                                          )}
-                                        >
-                                          {scoreAdversaire}
-                                        </span>
-                                      </div>
+                                      {match.score === 'ff-d' ? (
+                                        <div className="text-base font-bold">
+                                          <span
+                                            className={
+                                              isDomicile
+                                                ? 'text-red-600'
+                                                : 'text-green-600'
+                                            }
+                                          >
+                                            {isDomicile
+                                              ? 'Forfait'
+                                              : 'Forfait adverse'}
+                                          </span>
+                                        </div>
+                                      ) : match.score === 'ff-e' ? (
+                                        <div className="text-base font-bold">
+                                          <span
+                                            className={
+                                              !isDomicile
+                                                ? 'text-red-600'
+                                                : 'text-green-600'
+                                            }
+                                          >
+                                            {!isDomicile
+                                              ? 'Forfait'
+                                              : 'Forfait adverse'}
+                                          </span>
+                                        </div>
+                                      ) : match.score === 'fg-d' ? (
+                                        <div className="text-base font-bold">
+                                          <span className="text-purple-600">
+                                            {isDomicile
+                                              ? 'Forfait général'
+                                              : 'Forfait général adverse'}
+                                          </span>
+                                        </div>
+                                      ) : match.score === 'fg-e' ? (
+                                        <div className="text-base font-bold">
+                                          <span className="text-purple-600">
+                                            {!isDomicile
+                                              ? 'Forfait général'
+                                              : 'Forfait général adverse'}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <div className="text-xl font-bold font-mono">
+                                          <span
+                                            className={getScoreStyle(
+                                              resultat,
+                                              false
+                                            )}
+                                          >
+                                            {scoreEquipe}
+                                          </span>
+                                          <span className="text-gray-400">
+                                            -
+                                          </span>
+                                          <span
+                                            className={getScoreStyle(
+                                              resultat,
+                                              true
+                                            )}
+                                          >
+                                            {scoreAdversaire}
+                                          </span>
+                                        </div>
+                                      )}
 
-                                      {resultat && (
+                                      {resultat &&
+                                        match.score !== 'ff-d' &&
+                                        match.score !== 'ff-e' &&
+                                        match.score !== 'fg-d' &&
+                                        match.score !== 'fg-e' && (
+                                          <Badge
+                                            className={getBadgeStyle(resultat)}
+                                          >
+                                            {resultat === 'victoire'
+                                              ? 'V'
+                                              : resultat === 'defaite'
+                                                ? 'D'
+                                                : 'N'}
+                                          </Badge>
+                                      )}
+
+                                      {(match.score === 'ff-d' ||
+                                        match.score === 'ff-e') && (
                                         <Badge
-                                          className={getBadgeStyle(resultat)}
+                                          className={
+                                            (isDomicile &&
+                                              match.score === 'ff-d') ||
+                                            (!isDomicile &&
+                                              match.score === 'ff-e')
+                                              ? 'bg-red-100 text-red-800 ml-2'
+                                              : 'bg-green-100 text-green-800 ml-2'
+                                          }
                                         >
-                                          {resultat === 'victoire'
-                                            ? 'V'
-                                            : resultat === 'defaite'
-                                              ? 'D'
-                                              : 'N'}
+                                          FF
+                                        </Badge>
+                                      )}
+
+                                      {(match.score === 'fg-d' ||
+                                        match.score === 'fg-e') && (
+                                        <Badge className="bg-purple-100 text-purple-800 ml-2">
+                                          FG
                                         </Badge>
                                       )}
                                     </div>

@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
@@ -11,6 +12,7 @@ import Sponsors from '@/pages/sponsors.tsx';
 import AdminPage from '@/features/admin/website/AdminPage.tsx';
 import EquipesPage from '@/pages/teams.tsx';
 import CalendrierPage from '@/pages/calendarTeam.tsx';
+import CommandePage from '@/features/public/CommandeForm.tsx';
 
 export default function App() {
   return (
@@ -25,10 +27,8 @@ export default function App() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/sponsors" element={<Sponsors />} />
             <Route path="/competition/equipes" element={<EquipesPage />} />
-            <Route
-              path="/competition/calendrier"
-              element={<CalendrierPage />}
-            />
+            <Route path="/competition/calendrier" element={<CalendrierPage />} />
+            <Route path="/commande" element={<CommandePage />} />
 
             {/* Route pour la page 404 */}
 

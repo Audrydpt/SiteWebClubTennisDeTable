@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,no-console */
 
 import { useState, useEffect } from 'react';
-import { Trophy } from 'lucide-react';
+import { Loader2, Trophy } from 'lucide-react';
 import { fetchSaisonEnCours } from '@/services/api';
 import calculerClassement from '@/services/classements';
 import { Saison, Serie, ClassementEntry } from '@/services/type.ts';
@@ -50,8 +50,8 @@ export default function EquipesPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <p className="text-gray-600 text-center">Chargement en cours...</p>
+      <div className="flex items-center justify-center p-10 min-h-[60vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }

@@ -6,11 +6,12 @@ import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 
-import { Calendar, Trophy } from 'lucide-react';
+import { Calendar, Loader2, Trophy } from 'lucide-react';
 
 import { fetchActualites, fetchSponsors } from '../services/api';
 import { ActualiteData, ResultatData, SponsorData } from '../services/type';
 import '../lib/styles/home.css';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.tsx';
 
 // Interface pour les props des flèches
 interface ArrowProps {
@@ -156,16 +157,22 @@ export default function HomePage() {
   const renderCarouselContent = () => {
     if (loading) {
       return (
-        <div className="text-center py-8">
-          <p>Chargement des actualités...</p>
+        <div className="flex items-center justify-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
         </div>
       );
     }
 
     if (!actualites || actualites.length === 0) {
       return (
-        <div className="text-center py-8">
-          <p>Aucune actualité disponible.</p>
+        <div className="container mx-auto px-4 py-8">
+          <Alert variant="destructive">
+            <AlertTitle>Erreur</AlertTitle>
+            <AlertDescription>
+              Impossible de charger les actualités. Veuillez réessayer plus
+              tard.
+            </AlertDescription>
+          </Alert>
         </div>
       );
     }
@@ -285,7 +292,9 @@ export default function HomePage() {
               </h2>
               <div className="space-y-4">
                 {loading ? (
-                  <p>Chargement...</p>
+                  <div className="flex items-center justify-center">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                  </div>
                 ) : (
                   <>
                     {resultats.map((res) => (
@@ -346,7 +355,9 @@ export default function HomePage() {
             Ils nous soutiennent
           </h3>
           {loading ? (
-            <p className="text-center">Chargement des partenaires...</p>
+            <div className="flex items-center justify-center">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </div>
           ) : sponsors.length > 0 ? (
             <div
               className={

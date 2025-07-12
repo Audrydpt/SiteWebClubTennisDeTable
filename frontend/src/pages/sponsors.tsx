@@ -1,7 +1,9 @@
 /* eslint-disable no-console */
 import { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { fetchSponsors } from '@/services/api';
 import { SponsorData } from '@/services/type';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.tsx';
 
 export default function Sponsors() {
   const [sponsors, setSponsors] = useState<SponsorData[]>([]);
@@ -27,8 +29,21 @@ export default function Sponsors() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-16 px-4">
-        <div className="text-center">Chargement des sponsors...</div>
+      <div className="flex items-center justify-center p-10 min-h-[60vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (sponsors.length === 0 || null) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Alert variant="destructive">
+          <AlertTitle>Erreur</AlertTitle>
+          <AlertDescription>
+            Impossible de charger les données des sponsors.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }

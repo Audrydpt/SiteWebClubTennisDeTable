@@ -49,6 +49,14 @@ export default function AdminContent() {
 
   const contentSections: ContentSection[] = [
     {
+      id: 'resultats',
+      title: 'Gestion des Résultats',
+      description: 'Créer, modifier et supprimer les matchs',
+      icon: <Calendar className="h-5 w-5 text-blue-600" />,
+      component: <ResultatsManager />,
+      color: 'bg-blue-100',
+    },
+    {
       id: 'actualites',
       title: 'Gestion des Actualités',
       description: 'Créer, modifier et supprimer les actualités',
@@ -66,14 +74,6 @@ export default function AdminContent() {
       color: 'bg-purple-100',
     },
 
-    {
-      id: 'resultats',
-      title: 'Gestion des Résultats',
-      description: 'Créer, modifier et supprimer les matchs',
-      icon: <Calendar className="h-5 w-5 text-blue-600" />,
-      component: <ResultatsManager />,
-      color: 'bg-blue-100',
-    },
     {
       id: 'tournois',
       title: 'Gestion des Tournois',
