@@ -120,6 +120,13 @@ export const deleteSaison = async (id: string) => {
   await axios.delete(`${API_URL}/saisons/${id}`);
 };
 
+/* membres API Endpoints */
+
+export const fetchMembres = async () => {
+  const response = await axios.get(`${API_URL}/membres`);
+  return response.data;
+};
+
 /* Commandes API Endpoints */
 
 export const fetchSelectionByMembre = async (

@@ -115,3 +115,14 @@ export interface SelectionData {
   totalEstime: number;
   dateEnregistrement: string;
 }
+
+export interface SelectMembreProps {
+  membres: string[];
+  onSelect: (membre: string) => void;
+}
+
+export interface MembreData {
+  id: string;
+  nom: string;
+  telephone?: string;
+}

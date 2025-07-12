@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,17 +18,10 @@ import { FormAutre } from '@/features/public/comps/autre.tsx';
 import { Mousse, Bois, Autre } from '@/services/type.ts';
 import {
   createSelection,
+  fetchMembres,
   fetchSelectionByMembre,
   updateSelection,
 } from '@/services/api.ts';
-
-const MEMBRES_DU_CLUB = [
-  'Alice Dupont',
-  'Bob Martin',
-  'Charlie Durand',
-  'Diana Petit',
-  'Éric Fournier',
-];
 
 export default function CommandePage() {
   const [membreSelectionne, setMembreSelectionne] = useState<string | null>(
@@ -39,6 +32,24 @@ export default function CommandePage() {
   const [bois, setBois] = useState<Bois[]>([]);
   const [autres, setAutres] = useState<Autre[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [membres, setMembres] = useState<string[]>([]);
+  const [isLoadingMembres, setIsLoadingMembres] = useState(true);
+
+  useEffect(() => {
+    const chargerMembres = async () => {
+      try {
+        const donneesMembers = await fetchMembres();
+        setMembres(donneesMembers);
+      } catch (error) {
+        console.error('Erreur lors du chargement des membres:', error);
+        alert('Impossible de charger la liste des membres.');
+      } finally {
+        setIsLoadingMembres(false);
+      }
+    };
+
+    chargerMembres();
+  }, []);
 
   const handleSelectMembre = async (membre: string) => {
     setIsLoading(true);
@@ -122,6 +133,14 @@ export default function CommandePage() {
     }
   };
 
+  if (isLoadingMembres) {
+    return (
+      <div className="flex items-center justify-center p-10 min-h-[60vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   if (isLoading && !membreSelectionne) {
     return (
       <div className="flex items-center justify-center p-10 min-h-[60vh]">
@@ -131,9 +150,7 @@ export default function CommandePage() {
   }
 
   if (!membreSelectionne) {
-    return (
-      <SelectMembre membres={MEMBRES_DU_CLUB} onSelect={handleSelectMembre} />
-    );
+    return <SelectMembre membres={membres} onSelect={handleSelectMembre} />;
   }
 
   return (

@@ -15,11 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Membre, SelectMembreProps } from '@/services/type.ts';
 
-interface SelectMembreProps {
-  membres: string[];
-  onSelect: (membre: string) => void;
-}
 
 export function SelectMembre({ membres, onSelect }: SelectMembreProps) {
   const [selection, setSelection] = useState<string>('');
@@ -30,8 +27,7 @@ export function SelectMembre({ membres, onSelect }: SelectMembreProps) {
         <CardHeader>
           <CardTitle>Identification</CardTitle>
           <CardDescription>
-            Qui passe la commande ? Veuillez sélectionner votre nom dans la
-            liste.
+            Qui passe la commande ? Veuillez sélectionner votre nom dans la liste.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -41,8 +37,8 @@ export function SelectMembre({ membres, onSelect }: SelectMembreProps) {
             </SelectTrigger>
             <SelectContent>
               {membres.map((membre) => (
-                <SelectItem key={membre} value={membre}>
-                  {membre}
+                <SelectItem key={membre.id} value={membre.id}>
+                  {membre.nom}
                 </SelectItem>
               ))}
             </SelectContent>
