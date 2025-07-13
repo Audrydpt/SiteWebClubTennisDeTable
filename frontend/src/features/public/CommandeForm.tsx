@@ -15,7 +15,7 @@ import { SelectMembre } from '@/features/public/comps/membres.tsx';
 import { FormMousses } from '@/features/public/comps/mousse.tsx';
 import { FormBois } from '@/features/public/comps/bois.tsx';
 import { FormAutre } from '@/features/public/comps/autre.tsx';
-import { Mousse, Bois, Autre } from '@/services/type.ts';
+import { Mousse, Bois, Autre, Membre } from '@/services/type.ts';
 import {
   createSelection,
   fetchMembres,
@@ -32,7 +32,7 @@ export default function CommandePage() {
   const [bois, setBois] = useState<Bois[]>([]);
   const [autres, setAutres] = useState<Autre[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [membres, setMembres] = useState<string[]>([]);
+  const [membres, setMembres] = useState<Membre[]>([]);
   const [isLoadingMembres, setIsLoadingMembres] = useState(true);
 
   useEffect(() => {
@@ -51,10 +51,10 @@ export default function CommandePage() {
     chargerMembres();
   }, []);
 
-  const handleSelectMembre = async (membre: string) => {
+  const handleSelectMembre = async (membreNom: string) => {
     setIsLoading(true);
     try {
-      const existingSelection = await fetchSelectionByMembre(membre);
+      const existingSelection = await fetchSelectionByMembre(membreNom);
       if (existingSelection) {
         setSelectionId(existingSelection.id);
         setMousses(existingSelection.mousses || []);
@@ -66,13 +66,13 @@ export default function CommandePage() {
         setBois([]);
         setAutres([]);
       }
-      setMembreSelectionne(membre);
+      setMembreSelectionne(membreNom);
     } catch (error) {
       console.error('Erreur lors de la récupération de la sélection:', error);
       alert(
         'Impossible de charger les données existantes. Une nouvelle sélection sera créée.'
       );
-      setMembreSelectionne(membre);
+      setMembreSelectionne(membreNom);
       setSelectionId(null);
     } finally {
       setIsLoading(false);
@@ -207,7 +207,7 @@ export default function CommandePage() {
               <p className="text-sm text-muted-foreground">
                 Aucun article dans la sélection.
               </p>
-              ) : (
+            ) : (
               <ul className="text-sm text-muted-foreground space-y-1">
                 {mousses.map((m, i) => (
                   <li
@@ -284,10 +284,8 @@ export default function CommandePage() {
               </ul>
             )}
           </div>
-          <div className="border-t pt-4 flex justify-end items-center">
-            <span className="text-lg font-bold">
+          <div className="border-t pt-4 flex justify-end items-center text-lg font-bold">
               Total estimé : {calculerTotal().toFixed(2)} €
-            </span>
           </div>
           <Button
             onClick={handleSaveSelection}

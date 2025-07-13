@@ -27,7 +27,8 @@ export function SelectMembre({ membres, onSelect }: SelectMembreProps) {
         <CardHeader>
           <CardTitle>Identification</CardTitle>
           <CardDescription>
-            Qui passe la commande ? Veuillez sélectionner votre nom dans la liste.
+            Qui passe la commande ? Veuillez sélectionner votre nom dans la
+            liste.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -37,7 +38,7 @@ export function SelectMembre({ membres, onSelect }: SelectMembreProps) {
             </SelectTrigger>
             <SelectContent>
               {membres.map((membre) => (
-                <SelectItem key={membre.id} value={membre.id}>
+                <SelectItem key={membre.id} value={membre.nom}>
                   {membre.nom}
                 </SelectItem>
               ))}

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/api.ts
 import axios from 'axios';
-import { Image, SelectionData } from '@/services/type.ts';
+import { Image, Commande } from '@/services/type.ts';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -131,24 +131,24 @@ export const fetchMembres = async () => {
 
 export const fetchSelectionByMembre = async (
   membre: string
-): Promise<SelectionData | null> => {
+): Promise<Commande | null> => {
   const response = await axios.get(
-    `${API_URL}/selections?membre=${encodeURIComponent(membre)}`
+    `${API_URL}/commande?membre=${encodeURIComponent(membre)}`
   );
   return response.data[0] || null;
 };
 
 export const createSelection = async (
-  data: Omit<SelectionData, 'id'>
-): Promise<SelectionData> => {
-  const response = await axios.post(`${API_URL}/selections`, data);
+  data: Omit<Commande, 'id'>
+): Promise<Commande> => {
+  const response = await axios.post(`${API_URL}/commande`, data);
   return response.data;
 };
 
 export const updateSelection = async (
   id: string,
-  data: Partial<Omit<SelectionData, 'id'>>
-): Promise<SelectionData> => {
-  const response = await axios.put(`${API_URL}/selections/${id}`, data);
+  data: Partial<Omit<Commande, 'id'>>
+): Promise<Commande> => {
+  const response = await axios.put(`${API_URL}/commande/${id}`, data);
   return response.data;
 };

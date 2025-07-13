@@ -20,10 +20,10 @@ interface FormMoussesProps {
 }
 
 export function FormMousses({
-  mousses,
-  onAddMousse,
-  onRemoveMousse,
-}: FormMoussesProps) {
+                              mousses,
+                              onAddMousse,
+                              onRemoveMousse,
+                            }: FormMoussesProps) {
   const [marque, setMarque] = useState('');
   const [nom, setNom] = useState('');
   const [epaisseur, setEpaisseur] = useState('');
@@ -32,12 +32,16 @@ export function FormMousses({
   const [prix, setPrix] = useState('');
 
   const handleAjouter = () => {
-    if (!marque || !nom || !epaisseur || !type || !couleur) {
-      alert('Veuillez remplir tous les champs pour la mousse.');
+    if (!marque || !nom || !epaisseur || !couleur || !prix) {
+      alert('Veuillez remplir tous les champs obligatoires pour la mousse.');
       return;
     }
-    const prixNum = prix ? Number.parseFloat(prix) : undefined;
-    onAddMousse({ marque, nom, epaisseur, type, couleur, prix: prixNum });
+    const prixNum = Number.parseFloat(prix);
+    if (isNaN(prixNum)) {
+      alert('Le prix doit être un nombre valide.');
+      return;
+    }
+    onAddMousse({ marque, nom, epaisseur, type: type || undefined, couleur, prix: prixNum });
     setMarque('');
     setNom('');
     setEpaisseur('');
@@ -84,15 +88,6 @@ export function FormMousses({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="mousse-type">Type</Label>
-            <Input
-              id="mousse-type"
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              placeholder="Ex: Backside, Soft..."
-            />
-          </div>
-          <div className="space-y-2">
             <Label htmlFor="mousse-couleur">Couleur</Label>
             <Input
               id="mousse-couleur"
@@ -102,7 +97,7 @@ export function FormMousses({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="mousse-prix">Prix (Optionnel)</Label>
+            <Label htmlFor="mousse-prix">Prix</Label>
             <Input
               id="mousse-prix"
               type="number"
@@ -111,6 +106,7 @@ export function FormMousses({
               placeholder="Ex: 45.90"
               min="0"
               step="0.01"
+              required
             />
           </div>
         </div>
@@ -129,12 +125,11 @@ export function FormMousses({
                 >
                   <span className="text-sm text-muted-foreground">
                     {`${m.marque} ${m.nom} - ${m.epaisseur}, ${m.couleur}`}
-                    {m.prix && (
-                      <span className="font-semibold">
-                        {' '}
-                        - {m.prix.toFixed(2)} €
-                      </span>
-                    )}
+                    {m.type && ` (${m.type})`}
+                    <span className="font-semibold">
+                      {' '}
+                      - {m.prix.toFixed(2)} €
+                    </span>
                   </span>
                   <Button
                     variant="ghost"

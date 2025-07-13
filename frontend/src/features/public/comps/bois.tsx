@@ -78,15 +78,16 @@ export function FormBois({ bois, onAddBois, onRemoveBois }: FormBoisProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="bois-prix">Prix (Optionnel)</Label>
+            <Label htmlFor="mousse-prix">Prix</Label>
             <Input
-              id="bois-prix"
+              id="mousse-prix"
               type="number"
               value={prix}
               onChange={(e) => setPrix(e.target.value)}
-              placeholder="Ex: 150.00"
+              placeholder="Ex: 40.00"
               min="0"
               step="0.01"
+              required
             />
           </div>
         </div>

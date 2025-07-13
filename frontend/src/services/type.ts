@@ -88,9 +88,9 @@ export interface Mousse {
   marque: string;
   nom: string;
   epaisseur: string;
-  type: string;
+  type?: string;
   couleur: string;
-  prix?: number;
+  prix: number;
 }
 
 export interface Bois {
@@ -106,7 +106,7 @@ export interface Autre {
   prix?: number;
 }
 
-export interface SelectionData {
+export interface Commande {
   id: string;
   membre: string;
   mousses: Mousse[];
@@ -117,11 +117,11 @@ export interface SelectionData {
 }
 
 export interface SelectMembreProps {
-  membres: string[];
+  membres: Membre[];
   onSelect: (membre: string) => void;
 }
 
-export interface MembreData {
+export interface Membre {
   id: string;
   nom: string;
   telephone?: string;

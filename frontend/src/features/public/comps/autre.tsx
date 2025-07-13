@@ -71,15 +71,16 @@ export function FormAutre({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="autre-prix">Prix (Optionnel)</Label>
+          <Label htmlFor="mousse-prix">Prix</Label>
           <Input
-            id="autre-prix"
+            id="mousse-prix"
             type="number"
             value={prix}
             onChange={(e) => setPrix(e.target.value)}
-            placeholder="Ex: 8.50"
+            placeholder="Ex: 45.90"
             min="0"
             step="0.01"
+            required
           />
         </div>
         <Button onClick={handleAjouter} className="w-full md:w-auto">
