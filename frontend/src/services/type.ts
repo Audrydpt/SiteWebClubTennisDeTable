@@ -124,5 +124,10 @@ export interface SelectMembreProps {
 export interface Membre {
   id: string;
   nom: string;
+  prenom: string;
+  email: string;
+  password?: string;
+  role: 'admin' | 'membre';
+  classement?: string;
   telephone?: string;
 }

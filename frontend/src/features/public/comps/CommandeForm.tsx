@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { useEffect, useState } from 'react';
 import { Loader2, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button.tsx';
 import {
   Card,
   CardContent,
@@ -9,12 +9,12 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { SelectMembre } from '@/features/public/comps/membres.tsx';
-import { FormMousses } from '@/features/public/comps/mousse.tsx';
-import { FormBois } from '@/features/public/comps/bois.tsx';
-import { FormAutre } from '@/features/public/comps/autre.tsx';
+} from '@/components/ui/card.tsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.tsx';
+import { SelectMembre } from '@/features/public/comps/commande/membres.tsx';
+import { FormMousses } from '@/features/public/comps/commande/mousse.tsx';
+import { FormBois } from '@/features/public/comps/commande/bois.tsx';
+import { FormAutre } from '@/features/public/comps/commande/autre.tsx';
 import { Mousse, Bois, Autre, Membre } from '@/services/type.ts';
 import {
   createSelection,

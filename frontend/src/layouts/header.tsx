@@ -1,7 +1,7 @@
 /* eslint-disable */
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogIn } from 'lucide-react';
+import { LogIn, UserCircle, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils.ts';
 import { useAuth } from '@/lib/authContext.tsx';
 import {
@@ -17,13 +17,17 @@ type HeaderProps = {
 
 export default function Header({ title, className, ...props }: HeaderProps) {
   const location = useLocation();
-  const { isAuthenticated, login, logout } = useAuth();
+  const { isAuthenticated, user, loginMember, loginAdmin, logout, isAdmin } =
+    useAuth();
+
+  // États pour le formulaire de connexion
+  const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // États pour suivre les menus ouverts
+  // États pour la gestion des menus
   const [competitionOpen, setCompetitionOpen] = useState(false);
   const [historiqueOpen, setHistoriqueOpen] = useState(false);
   const [evenementsOpen, setEvenementsOpen] = useState(false);
@@ -33,39 +37,56 @@ export default function Header({ title, className, ...props }: HeaderProps) {
   const [mobileEvenementsOpen, setMobileEvenementsOpen] = useState(false);
   const [mobileLoginFormOpen, setMobileLoginFormOpen] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const success = login(username, password);
-    if (!success) {
-      setError('Identifiants incorrects');
-    } else {
-      setUsername('');
-      setPassword('');
-      setError('');
-      navigate('/admin');
-      setMobileMenuOpen(false);
-      setMobileLoginFormOpen(false);
+  // État pour le mode de connexion admin (discret)
+  const [isAdminLogin, setIsAdminLogin] = useState(false);
+  const [adminModeVisible, setAdminModeVisible] = useState(false);
+
+  // Activer le mode admin discrètement avec un triple clic
+  const activateAdminMode = (e: React.MouseEvent) => {
+    if (e.detail === 3) {
+      setIsAdminLogin(true);
+      setAdminModeVisible(true);
+      setTimeout(() => setAdminModeVisible(false), 2000);
     }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    let success;
+
+    try {
+      if (isAdminLogin) {
+        success = loginAdmin(username, password);
+        if (success) navigate('/admin');
+      } else {
+        success = await loginMember(email, password);
+        if (success) navigate('/espace-membre');
+      }
+
+      if (success) {
+        resetForm();
+      } else {
+        setError('Identifiants incorrects');
+      }
+    } catch (error) {
+      setError('Erreur de connexion');
+    }
+  };
+
+  const resetForm = () => {
+    setEmail('');
+    setUsername('');
+    setPassword('');
+    setError('');
+    setMobileMenuOpen(false);
+    setMobileLoginFormOpen(false);
+    setIsAdminLogin(false);
   };
 
   const handleLogout = () => {
     logout();
-    setUsername('');
-    setPassword('');
-    setError('');
+    resetForm();
     navigate('/');
-    setMobileMenuOpen(false);
-    setMobileLoginFormOpen(false);
-  };
-
-  // Fonction pour gérer les clics sur les liens quand l'utilisateur est authentifié
-  const handleLinkClick = (e: React.MouseEvent, path: string) => {
-    if (isAuthenticated) {
-      e.preventDefault(); // Empêcher la navigation si authentifié
-      return;
-    }
-    navigate(path);
-    setMobileMenuOpen(false);
   };
 
   // Ferme tous les sous-menus quand le menu principal est fermé
@@ -74,7 +95,6 @@ export default function Header({ title, className, ...props }: HeaderProps) {
     setMobileMenuOpen(newState);
 
     if (!newState) {
-      // Réinitialiser tous les sous-menus si on ferme le menu principal
       setMobileCompetitionOpen(false);
       setMobileHistoriqueOpen(false);
       setMobileEvenementsOpen(false);
@@ -85,28 +105,17 @@ export default function Header({ title, className, ...props }: HeaderProps) {
   const competitionItems = [
     { path: '/competition/equipes', label: 'Équipes' },
     { path: '/competition/calendrier', label: 'Calendrier' },
-
   ];
 
   const historiqueItems = [
-    { path: '/historique/a-propos', label: 'À propos de nous' },
-    { path: '/historique/croissance', label: 'Croissance' },
+    { path: '/infos/a-propos', label: 'À propos de nous' },
+    { path: '/infos/croissance', label: 'Palmarès' },
   ];
 
   const evenementsItems = [
     { path: '/evenements/calendrier', label: 'Calendrier' },
     { path: '/evenements/galerie', label: 'Galerie' },
   ];
-
-  // Style des liens selon l'état d'authentification
-  const getLinkStyles = (isActive: boolean) => {
-    if (isAuthenticated) {
-      return 'text-[#3A3A3A] cursor-not-allowed'; // Style grisé et non cliquable
-    }
-    return isActive
-      ? 'text-[#F1C40F]'
-      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]';
-  };
 
   return (
     <header
@@ -117,20 +126,24 @@ export default function Header({ title, className, ...props }: HeaderProps) {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo et titre */}
-          <Link
-            to="/"
-            className="flex items-center space-x-2"
-            onClick={(e) => isAuthenticated && e.preventDefault()}
-          >
+          <Link to="/" className="flex items-center space-x-2">
             <img
               src="https://res.cloudinary.com/dsrrxx5yx/image/upload/v1751736862/cwtcapgd9s25y02mlhhi.png"
               alt="CTT Frameries Logo"
               className="h-16 w-16 object-contain"
+              onClick={activateAdminMode}
             />
             <span className="text-lg font-semibold text-white">{title}</span>
           </Link>
 
-          {/* Navigation principale - Version sans NavigationMenu */}
+          {/* Indicateur discret de mode admin */}
+          {adminModeVisible && (
+            <div className="absolute top-16 left-16 bg-black/70 text-yellow-400 text-xs px-2 py-1 rounded">
+              Mode admin activé
+            </div>
+          )}
+
+          {/* Navigation principale - Desktop */}
           <div className="hidden md:block">
             <ul className="flex items-center space-x-1">
               <li>
@@ -138,30 +151,30 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   to="/"
                   className={cn(
                     'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
-                    getLinkStyles(location.pathname === '/')
+                    location.pathname === '/'
+                      ? 'text-[#F1C40F]'
+                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                   )}
-                  onClick={(e) => handleLinkClick(e, '/')}
                 >
                   Accueil
                 </Link>
               </li>
 
+              {/* Menu Compétition */}
               <li>
                 <HoverCard
                   openDelay={0}
                   closeDelay={150}
-                  open={!isAuthenticated && competitionOpen}
+                  open={competitionOpen}
                   onOpenChange={setCompetitionOpen}
                 >
                   <HoverCardTrigger asChild>
                     <span
                       className={cn(
-                        'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1',
-                        isAuthenticated
-                          ? 'text-[#3A3A3A] cursor-not-allowed'
-                          : location.pathname.includes('/competition')
-                            ? 'text-[#F1C40F] cursor-pointer'
-                            : 'text-white cursor-pointer hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                        'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center cursor-pointer',
+                        location.pathname.includes('/competition')
+                          ? 'text-[#F1C40F]'
+                          : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                       )}
                     >
                       Compétition
@@ -175,65 +188,54 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
+                        className="ml-1"
                       >
                         <path d="m6 9 6 6 6-6" />
                       </svg>
                     </span>
                   </HoverCardTrigger>
-                  {!isAuthenticated && (
-                    <HoverCardContent
-                      className="w-[200px] p-0"
-                      style={{ backgroundColor: '#3A3A3A' }}
-                    >
-                      <div className="grid gap-2 p-2">
-                        {competitionItems.map((item) => (
-                          <Link
-                            key={item.path}
-                            to={item.path}
-                            className="text-sm text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A] p-2 rounded-md"
-                            onClick={(e) => handleLinkClick(e, item.path)}
-                          >
-                            {item.label}
-                          </Link>
-                        ))}
-                      </div>
-                    </HoverCardContent>
-                  )}
+                  <HoverCardContent
+                    className="w-[200px] p-0"
+                    style={{ backgroundColor: '#3A3A3A' }}
+                  >
+                    <div className="grid gap-2 p-2">
+                      {competitionItems.map((item) => (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          className={cn(
+                            'text-sm transition-colors px-3 py-2 rounded-md',
+                            location.pathname === item.path
+                              ? 'text-[#F1C40F]'
+                              : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                          )}
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </HoverCardContent>
                 </HoverCard>
               </li>
 
-              <li>
-                <Link
-                  to="/sponsors"
-                  className={cn(
-                    'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
-                    getLinkStyles(location.pathname === '/sponsors')
-                  )}
-                  onClick={(e) => handleLinkClick(e, '/sponsors')}
-                >
-                  Sponsors
-                </Link>
-              </li>
-
+              {/* Menu Historique */}
               <li>
                 <HoverCard
                   openDelay={0}
                   closeDelay={150}
-                  open={!isAuthenticated && historiqueOpen}
+                  open={historiqueOpen}
                   onOpenChange={setHistoriqueOpen}
                 >
                   <HoverCardTrigger asChild>
                     <span
                       className={cn(
-                        'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1',
-                        isAuthenticated
-                          ? 'text-[#3A3A3A] cursor-not-allowed'
-                          : location.pathname.includes('/historique')
-                            ? 'text-[#F1C40F] cursor-pointer'
-                            : 'text-white cursor-pointer hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                        'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center cursor-pointer',
+                        location.pathname.includes('/historique')
+                          ? 'text-[#F1C40F]'
+                          : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                       )}
                     >
-                      Historique
+                      Infos
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
@@ -244,52 +246,54 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
+                        className="ml-1"
                       >
                         <path d="m6 9 6 6 6-6" />
                       </svg>
                     </span>
                   </HoverCardTrigger>
-                  {!isAuthenticated && (
-                    <HoverCardContent
-                      className="w-[200px] p-0"
-                      style={{ backgroundColor: '#3A3A3A' }}
-                    >
-                      <div className="grid gap-2 p-2">
-                        {historiqueItems.map((item) => (
-                          <Link
-                            key={item.path}
-                            to={item.path}
-                            className="text-sm text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A] p-2 rounded-md"
-                            onClick={(e) => handleLinkClick(e, item.path)}
-                          >
-                            {item.label}
-                          </Link>
-                        ))}
-                      </div>
-                    </HoverCardContent>
-                  )}
+                  <HoverCardContent
+                    className="w-[200px] p-0"
+                    style={{ backgroundColor: '#3A3A3A' }}
+                  >
+                    <div className="grid gap-2 p-2">
+                      {historiqueItems.map((item) => (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          className={cn(
+                            'text-sm transition-colors px-3 py-2 rounded-md',
+                            location.pathname === item.path
+                              ? 'text-[#F1C40F]'
+                              : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                          )}
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </HoverCardContent>
                 </HoverCard>
               </li>
 
+              {/* Menu Événements */}
               <li>
                 <HoverCard
                   openDelay={0}
                   closeDelay={150}
-                  open={!isAuthenticated && evenementsOpen}
+                  open={evenementsOpen}
                   onOpenChange={setEvenementsOpen}
                 >
                   <HoverCardTrigger asChild>
                     <span
                       className={cn(
-                        'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center gap-1',
-                        isAuthenticated
-                          ? 'text-[#3A3A3A] cursor-not-allowed'
-                          : location.pathname.includes('/evenements')
-                            ? 'text-[#F1C40F] cursor-pointer'
-                            : 'text-white cursor-pointer hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                        'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center cursor-pointer',
+                        location.pathname.includes('/evenements')
+                          ? 'text-[#F1C40F]'
+                          : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                       )}
                     >
-                      Evénements
+                      Événements
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
@@ -300,70 +304,174 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
+                        className="ml-1"
                       >
                         <path d="m6 9 6 6 6-6" />
                       </svg>
                     </span>
                   </HoverCardTrigger>
-                  {!isAuthenticated && (
-                    <HoverCardContent
-                      className="w-[200px] p-0"
-                      style={{ backgroundColor: '#3A3A3A' }}
-                    >
-                      <div className="grid gap-2 p-2">
-                        {evenementsItems.map((item) => (
-                          <Link
-                            key={item.path}
-                            to={item.path}
-                            className="text-sm text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A] p-2 rounded-md"
-                            onClick={(e) => handleLinkClick(e, item.path)}
-                          >
-                            {item.label}
-                          </Link>
-                        ))}
-                      </div>
-                    </HoverCardContent>
-                  )}
+                  <HoverCardContent
+                    className="w-[200px] p-0"
+                    style={{ backgroundColor: '#3A3A3A' }}
+                  >
+                    <div className="grid gap-2 p-2">
+                      {evenementsItems.map((item) => (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          className={cn(
+                            'text-sm transition-colors px-3 py-2 rounded-md',
+                            location.pathname === item.path
+                              ? 'text-[#F1C40F]'
+                              : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                          )}
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </HoverCardContent>
                 </HoverCard>
               </li>
 
+              {/* Page Sponsors */}
+              <li>
+                <Link
+                  to="/sponsors"
+                  className={cn(
+                    'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
+                    location.pathname === '/sponsors'
+                      ? 'text-[#F1C40F]'
+                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                  )}
+                >
+                  Sponsors
+                </Link>
+              </li>
+
+              {/* Page Contact */}
               <li>
                 <Link
                   to="/contact"
                   className={cn(
                     'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
-                    getLinkStyles(location.pathname === '/contact')
+                    location.pathname === '/contact'
+                      ? 'text-[#F1C40F]'
+                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                   )}
-                  onClick={(e) => handleLinkClick(e, '/contact')}
                 >
                   Contact
                 </Link>
               </li>
+
+              {/* Espace membre (uniquement visible si connecté comme membre) */}
+              {isAuthenticated && !isAdmin() && (
+                <li>
+                  <Link
+                    to="/espace-membre"
+                    className={cn(
+                      'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
+                      location.pathname.includes('/espace-membre')
+                        ? 'text-[#F1C40F]'
+                        : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                    )}
+                  >
+                    Mon espace
+                  </Link>
+                </li>
+              )}
+
+              {/* Lien admin (uniquement visible si connecté comme admin) */}
+              {isAuthenticated && isAdmin() && (
+                <li>
+                  <Link
+                    to="/admin"
+                    className={cn(
+                      'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
+                      location.pathname.includes('/admin')
+                        ? 'text-[#F1C40F]'
+                        : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                    )}
+                  >
+                    Administration
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
 
           {/* Actions */}
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
-              <button
-                onClick={handleLogout}
-                className="hidden md:block bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
-              >
-                Déconnexion
-              </button>
+              <HoverCard openDelay={0} closeDelay={500}>
+                <HoverCardTrigger asChild>
+                  <button className="hidden md:flex items-center justify-center text-white p-2 rounded-md text-sm font-medium transition-colors">
+                    <UserCircle className="h-5 w-5 mr-1" />
+                    <span>
+                      {isAdmin()
+                        ? 'Admin'
+                        : `${user?.prenom || ''} ${user?.nom || ''}`}
+                    </span>
+                  </button>
+                </HoverCardTrigger>
+                <HoverCardContent
+                  className="w-60"
+                  style={{
+                    backgroundColor: '#3A3A3A',
+                    border: '1px solid #4A4A4A',
+                  }}
+                >
+                  <div className="p-2">
+                    <div className="mb-4">
+                      <div className="font-medium text-white">
+                        {isAdmin()
+                          ? 'Administrateur'
+                          : `${user?.prenom || ''} ${user?.nom || ''}`}
+                      </div>
+                      <p className="text-sm text-gray-300">
+                        {isAdmin() ? 'Accès complet' : user?.email}
+                      </p>
+                      {!isAdmin() && user?.classement && (
+                        <p className="text-xs text-yellow-400 mt-1">
+                          Classement: {user.classement}
+                        </p>
+                      )}
+                    </div>
+
+                    {!isAdmin() && (
+                      <Link
+                        to="/espace-membre"
+                        className="block w-full text-left px-3 py-2 text-sm rounded-md text-white hover:bg-[#4A4A4A] hover:text-[#F1C40F]"
+                      >
+                        Mon espace
+                      </Link>
+                    )}
+
+                    {isAdmin() && (
+                      <Link
+                        to="/admin"
+                        className="flex items-center px-3 py-2 text-sm rounded-md text-white hover:bg-[#4A4A4A] hover:text-[#F1C40F]"
+                      >
+                        <Settings className="h-4 w-4 mr-2" />
+                        Administration
+                      </Link>
+                    )}
+
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-3 py-2 text-sm rounded-md text-red-400 hover:bg-[#4A4A4A]"
+                    >
+                      Déconnexion
+                    </button>
+                  </div>
+                </HoverCardContent>
+              </HoverCard>
             ) : (
               <HoverCard>
                 <HoverCardTrigger asChild>
-                  <button
-                    className="hidden md:flex items-center justify-center text-white p-2 rounded-md text-sm font-medium transition-colors"
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#4A4A4A';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '';
-                    }}
-                  >
-                    <LogIn size={24} strokeWidth={2} />
+                  <button className="hidden md:flex items-center justify-center text-white hover:text-[#F1C40F] p-2 rounded-md hover:bg-[#4A4A4A] text-sm font-medium transition-colors">
+                    <LogIn className="h-4 w-4 mr-2" />
+                    <span>{isAdminLogin ? 'Admin' : 'Connexion'}</span>
                   </button>
                 </HoverCardTrigger>
                 <HoverCardContent
@@ -374,27 +482,64 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   }}
                 >
                   <form onSubmit={handleLogin} className="space-y-4">
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="username"
-                        className="text-sm font-medium text-white"
-                      >
-                        Nom d'utilisateur
-                      </label>
-                      <input
-                        id="username"
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-600 rounded-md text-sm bg-gray-700 text-white"
-                        required
-                      />
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-lg font-medium text-white">
+                        {isAdminLogin ? 'Administration' : 'Espace membre'}
+                      </h3>
+
+                      {isAdminLogin && (
+                        <button
+                          type="button"
+                          className="text-xs text-gray-400 hover:text-white"
+                          onClick={() => setIsAdminLogin(false)}
+                        >
+                          Retour connexion membre
+                        </button>
+                      )}
                     </div>
 
-                    <div className="space-y-2">
+                    {isAdminLogin ? (
+                      <div>
+                        <label
+                          htmlFor="admin-username"
+                          className="block text-sm font-medium text-gray-300 mb-1"
+                        >
+                          Identifiant
+                        </label>
+                        <input
+                          id="admin-username"
+                          type="text"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#4A4A4A] border border-[#555] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#F1C40F] focus:border-transparent"
+                          placeholder="Identifiant administrateur"
+                          required
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <label
+                          htmlFor="email"
+                          className="block text-sm font-medium text-gray-300 mb-1"
+                        >
+                          Email
+                        </label>
+                        <input
+                          id="email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#4A4A4A] border border-[#555] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#F1C40F] focus:border-transparent"
+                          placeholder="votre@email.com"
+                          required
+                        />
+                      </div>
+                    )}
+
+                    <div>
                       <label
                         htmlFor="password"
-                        className="text-sm font-medium text-white"
+                        className="block text-sm font-medium text-gray-300 mb-1"
                       >
                         Mot de passe
                       </label>
@@ -403,22 +548,31 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-600 rounded-md text-sm bg-gray-700 text-white"
+                        className="w-full px-3 py-2 bg-[#4A4A4A] border border-[#555] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#F1C40F] focus:border-transparent"
+                        placeholder="••••••••"
                         required
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      {error && <p className="text-sm text-red-400">{error}</p>}
-                    </div>
+                    {error && <p className="text-sm text-red-400">{error}</p>}
 
                     <button
                       type="submit"
-                      className="w-full text-black py-2 rounded-md text-sm font-medium"
-                      style={{ backgroundColor: '#F1C40F' }}
+                      className="w-full bg-[#F1C40F] hover:bg-[#E5B90F] text-black font-medium py-2 px-4 rounded-md transition-colors"
                     >
-                      Se connecter
+                      {isAdminLogin
+                        ? "Accéder à l'administration"
+                        : 'Se connecter'}
                     </button>
+
+                    {!isAdminLogin && (
+                      <div className="text-xs text-gray-400 text-center">
+                        <p>
+                          Veuillez utiliser l'email et le mot de passe fournis
+                          par le club
+                        </p>
+                      </div>
+                    )}
                   </form>
                 </HoverCardContent>
               </HoverCard>
@@ -447,7 +601,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
         </div>
       </div>
 
-      {/* Menu mobile - Contenu */}
+      {/* Menu mobile */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-[#3A3A3A] border-t border-gray-700 shadow-lg">
           <div className="py-2 space-y-1">
@@ -455,27 +609,25 @@ export default function Header({ title, className, ...props }: HeaderProps) {
               to="/"
               className={cn(
                 'block px-4 py-2 text-base font-medium',
-                getLinkStyles(location.pathname === '/')
+                location.pathname === '/'
+                  ? 'text-[#F1C40F]'
+                  : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
               )}
-              onClick={(e) => handleLinkClick(e, '/')}
+              onClick={() => setMobileMenuOpen(false)}
             >
               Accueil
             </Link>
 
-            {/* Menu Compétition mobile */}
+            {/* Menu mobile Compétition */}
             <div>
               <button
-                onClick={() =>
-                  !isAuthenticated &&
-                  setMobileCompetitionOpen(!mobileCompetitionOpen)
-                }
+                onClick={() => setMobileCompetitionOpen(!mobileCompetitionOpen)}
                 className={cn(
                   'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
-                  isAuthenticated
-                    ? 'text-[#3A3A3A] cursor-not-allowed'
-                    : location.pathname.includes('/competition')
-                      ? 'text-[#F1C40F]'
-                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                  location.pathname.includes('/competition') ||
+                    mobileCompetitionOpen
+                    ? 'text-[#F1C40F]'
+                    : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                 )}
               >
                 <span>Compétition</span>
@@ -494,15 +646,19 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   <path d="m6 9 6 6 6-6" />
                 </svg>
               </button>
-
-              {mobileCompetitionOpen && !isAuthenticated && (
-                <div className="pl-6 bg-[#444444]">
+              {mobileCompetitionOpen && (
+                <div className="pl-6 py-2 space-y-1 bg-[#444444]">
                   {competitionItems.map((item) => (
                     <Link
                       key={item.path}
                       to={item.path}
-                      className="block px-4 py-2 text-base text-white hover:text-[#F1C40F]"
-                      onClick={(e) => handleLinkClick(e, item.path)}
+                      className={cn(
+                        'block px-4 py-2 text-sm font-medium',
+                        location.pathname === item.path
+                          ? 'text-[#F1C40F]'
+                          : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                      )}
+                      onClick={() => setMobileMenuOpen(false)}
                     >
                       {item.label}
                     </Link>
@@ -511,35 +667,19 @@ export default function Header({ title, className, ...props }: HeaderProps) {
               )}
             </div>
 
-            {/* Sponsors */}
-            <Link
-              to="/sponsors"
-              className={cn(
-                'block px-4 py-2 text-base font-medium',
-                getLinkStyles(location.pathname === '/sponsors')
-              )}
-              onClick={(e) => handleLinkClick(e, '/sponsors')}
-            >
-              Sponsors
-            </Link>
-
-            {/* Menu Historique mobile */}
+            {/* Menu mobile Historique */}
             <div>
               <button
-                onClick={() =>
-                  !isAuthenticated &&
-                  setMobileHistoriqueOpen(!mobileHistoriqueOpen)
-                }
+                onClick={() => setMobileHistoriqueOpen(!mobileHistoriqueOpen)}
                 className={cn(
                   'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
-                  isAuthenticated
-                    ? 'text-[#3A3A3A] cursor-not-allowed'
-                    : location.pathname.includes('/historique')
-                      ? 'text-[#F1C40F]'
-                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                  location.pathname.includes('/historique') ||
+                    mobileHistoriqueOpen
+                    ? 'text-[#F1C40F]'
+                    : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                 )}
               >
-                <span>Historique</span>
+                <span>Infos</span>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="16"
@@ -555,15 +695,19 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   <path d="m6 9 6 6 6-6" />
                 </svg>
               </button>
-
-              {mobileHistoriqueOpen && !isAuthenticated && (
-                <div className="pl-6 bg-[#444444]">
+              {mobileHistoriqueOpen && (
+                <div className="pl-6 py-2 space-y-1 bg-[#444444]">
                   {historiqueItems.map((item) => (
                     <Link
                       key={item.path}
                       to={item.path}
-                      className="block px-4 py-2 text-base text-white hover:text-[#F1C40F]"
-                      onClick={(e) => handleLinkClick(e, item.path)}
+                      className={cn(
+                        'block px-4 py-2 text-sm font-medium',
+                        location.pathname === item.path
+                          ? 'text-[#F1C40F]'
+                          : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                      )}
+                      onClick={() => setMobileMenuOpen(false)}
                     >
                       {item.label}
                     </Link>
@@ -572,20 +716,16 @@ export default function Header({ title, className, ...props }: HeaderProps) {
               )}
             </div>
 
-            {/* Menu Événements mobile */}
+            {/* Menu mobile Événements */}
             <div>
               <button
-                onClick={() =>
-                  !isAuthenticated &&
-                  setMobileEvenementsOpen(!mobileEvenementsOpen)
-                }
+                onClick={() => setMobileEvenementsOpen(!mobileEvenementsOpen)}
                 className={cn(
                   'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
-                  isAuthenticated
-                    ? 'text-[#3A3A3A] cursor-not-allowed'
-                    : location.pathname.includes('/evenements')
-                      ? 'text-[#F1C40F]'
-                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                  location.pathname.includes('/evenements') ||
+                    mobileEvenementsOpen
+                    ? 'text-[#F1C40F]'
+                    : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                 )}
               >
                 <span>Événements</span>
@@ -604,15 +744,19 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   <path d="m6 9 6 6 6-6" />
                 </svg>
               </button>
-
-              {mobileEvenementsOpen && !isAuthenticated && (
-                <div className="pl-6 bg-[#444444]">
+              {mobileEvenementsOpen && (
+                <div className="pl-6 py-2 space-y-1 bg-[#444444]">
                   {evenementsItems.map((item) => (
                     <Link
                       key={item.path}
                       to={item.path}
-                      className="block px-4 py-2 text-base text-white hover:text-[#F1C40F]"
-                      onClick={(e) => handleLinkClick(e, item.path)}
+                      className={cn(
+                        'block px-4 py-2 text-sm font-medium',
+                        location.pathname === item.path
+                          ? 'text-[#F1C40F]'
+                          : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                      )}
+                      onClick={() => setMobileMenuOpen(false)}
                     >
                       {item.label}
                     </Link>
@@ -621,37 +765,80 @@ export default function Header({ title, className, ...props }: HeaderProps) {
               )}
             </div>
 
-            {/* Contact */}
+            {/* Page Sponsors sur mobile */}
+            <Link
+              to="/sponsors"
+              className={cn(
+                'block px-4 py-2 text-base font-medium',
+                location.pathname === '/sponsors'
+                  ? 'text-[#F1C40F]'
+                  : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+              )}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Sponsors
+            </Link>
+
+            {/* Contact sur mobile */}
             <Link
               to="/contact"
               className={cn(
                 'block px-4 py-2 text-base font-medium',
-                getLinkStyles(location.pathname === '/contact')
+                location.pathname === '/contact'
+                  ? 'text-[#F1C40F]'
+                  : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
               )}
-              onClick={(e) => handleLinkClick(e, '/contact')}
+              onClick={() => setMobileMenuOpen(false)}
             >
               Contact
             </Link>
 
-            {/* Connexion/Déconnexion mobile */}
-            {isAuthenticated ? (
-              <button
-                onClick={handleLogout}
-                className="block w-full text-left px-4 py-2 text-base font-medium text-white bg-red-600 hover:bg-red-700"
-              >
-                Déconnexion
-              </button>
-            ) : (
-              <div>
-                {/* Bouton Espace Admin qui affiche le formulaire */}
+            {/* Section Espace membre/admin sur mobile (si connecté) */}
+            {isAuthenticated && (
+              <div className="border-t border-gray-600 pt-2">
+                <div className="px-4 py-2 text-[#F1C40F] font-medium">
+                  {isAdmin()
+                    ? 'Administrateur'
+                    : `${user?.prenom || ''} ${user?.nom || ''}`}
+                </div>
+
+                {isAdmin() ? (
+                  <Link
+                    to="/admin"
+                    className="block px-4 py-2 text-base text-white hover:text-[#F1C40F]"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Administration
+                  </Link>
+                ) : (
+                  <Link
+                    to="/espace-membre"
+                    className="block px-4 py-2 text-base text-white hover:text-[#F1C40F]"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Mon espace membre
+                  </Link>
+                )}
+
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left px-4 py-2 text-base font-medium text-red-400 hover:text-red-300"
+                >
+                  Déconnexion
+                </button>
+              </div>
+            )}
+
+            {/* Section de connexion mobile (si non connecté) */}
+            {!isAuthenticated && (
+              <div className="border-t border-gray-600 pt-2">
                 <button
                   onClick={() => setMobileLoginFormOpen(!mobileLoginFormOpen)}
-                  className={cn(
-                    'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
-                    'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-                  )}
+                  className="flex justify-between items-center w-full px-4 py-2 text-base font-medium text-white hover:text-[#F1C40F]"
                 >
-                  <span>Espace admin</span>
+                  <span>
+                    {isAdminLogin ? 'Espace administrateur' : 'Espace membre'}
+                  </span>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="16"
@@ -668,30 +855,66 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   </svg>
                 </button>
 
-                {/* Formulaire de connexion mobile affiché conditionnellement */}
                 {mobileLoginFormOpen && (
                   <div className="pl-6 py-4 bg-[#444444]">
                     <form onSubmit={handleLogin} className="space-y-3">
-                      <div>
-                        <label
-                          htmlFor="mobile-username"
-                          className="text-sm font-medium text-white"
-                        >
-                          Nom d'utilisateur
-                        </label>
-                        <input
-                          id="mobile-username"
-                          type="text"
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
-                          className="w-full px-3 py-2 mt-1 border border-gray-600 rounded-md text-sm bg-gray-700 text-white"
-                          required
-                        />
-                      </div>
+                      {isAdminLogin && (
+                        <div className="flex justify-between items-center mb-2">
+                          <h3 className="text-sm font-medium text-white">
+                            Mode administrateur
+                          </h3>
+                          <button
+                            type="button"
+                            className="text-xs text-gray-400 hover:text-white"
+                            onClick={() => setIsAdminLogin(false)}
+                          >
+                            Retour
+                          </button>
+                        </div>
+                      )}
+
+                      {isAdminLogin ? (
+                        <div>
+                          <label
+                            htmlFor="mobile-username"
+                            className="block text-sm font-medium text-gray-300 mb-1"
+                          >
+                            Identifiant
+                          </label>
+                          <input
+                            id="mobile-username"
+                            type="text"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            className="w-full px-3 py-2 bg-[#555] border border-[#666] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#F1C40F] focus:border-transparent"
+                            placeholder="Identifiant admin"
+                            required
+                          />
+                        </div>
+                      ) : (
+                        <div>
+                          <label
+                            htmlFor="mobile-email"
+                            className="block text-sm font-medium text-gray-300 mb-1"
+                          >
+                            Email
+                          </label>
+                          <input
+                            id="mobile-email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full px-3 py-2 bg-[#555] border border-[#666] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#F1C40F] focus:border-transparent"
+                            placeholder="votre@email.com"
+                            required
+                          />
+                        </div>
+                      )}
+
                       <div>
                         <label
                           htmlFor="mobile-password"
-                          className="text-sm font-medium text-white"
+                          className="block text-sm font-medium text-gray-300 mb-1"
                         >
                           Mot de passe
                         </label>
@@ -700,18 +923,30 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                           type="password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="w-full px-3 py-2 mt-1 border border-gray-600 rounded-md text-sm bg-gray-700 text-white"
+                          className="w-full px-3 py-2 bg-[#555] border border-[#666] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#F1C40F] focus:border-transparent"
+                          placeholder="••••••••"
                           required
                         />
                       </div>
+
                       {error && <p className="text-sm text-red-400">{error}</p>}
+
                       <button
                         type="submit"
-                        className="w-full text-black py-2 rounded-md text-base font-medium"
-                        style={{ backgroundColor: '#F1C40F' }}
+                        className="w-full bg-[#F1C40F] hover:bg-[#E5B90F] text-black font-medium py-2 px-4 rounded-md transition-colors"
                       >
-                        Se connecter
+                        {isAdminLogin
+                          ? "Accéder à l'administration"
+                          : 'Se connecter'}
                       </button>
+
+                      {!isAdminLogin && (
+                        <div className="text-xs text-gray-400 text-center">
+                          <p>
+                            Utilisez l'email et mot de passe fournis par le club
+                          </p>
+                        </div>
+                      )}
                     </form>
                   </div>
                 )}

@@ -3,16 +3,16 @@ import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
 import Header from './layouts/header.tsx';
-import Footer from './layouts/footer.tsx';
 import LoadingSpinner from './components/loading';
-import ProtectedRoute from './lib/protectedRoutes';
 import HomePage from '@/pages/home';
 import AboutPage from '@/pages/about';
 import Sponsors from '@/pages/sponsors.tsx';
 import AdminPage from '@/features/admin/website/AdminPage.tsx';
 import EquipesPage from '@/pages/teams.tsx';
 import CalendrierPage from '@/pages/calendarTeam.tsx';
-import CommandePage from '@/features/public/CommandeForm.tsx';
+import { MemberRoute, AdminRoute } from './lib/protectedRoutes';
+import HomeLogged from '@/features/public/HomeLogged.tsx';
+import Footer from './layouts/footer.tsx';
 
 export default function App() {
   return (
@@ -28,17 +28,26 @@ export default function App() {
             <Route path="/sponsors" element={<Sponsors />} />
             <Route path="/competition/equipes" element={<EquipesPage />} />
             <Route path="/competition/calendrier" element={<CalendrierPage />} />
-            <Route path="/commande" element={<CommandePage />} />
 
             {/* Route pour la page 404 */}
+
+            {/* Routes membres protégées */}
+            <Route
+              path="/espace-membre"
+              element={
+                <MemberRoute>
+                  <HomeLogged />
+                </MemberRoute>
+              }
+            />
 
             {/* Routes admin protégées */}
             <Route
               path="/admin"
               element={
-                <ProtectedRoute>
+                <AdminRoute>
                   <AdminPage />
-                </ProtectedRoute>
+                </AdminRoute>
               }
             />
           </Routes>
