@@ -49,6 +49,7 @@ export default function HomePage() {
   const [resultats, setResultats] = useState<ResultatData[]>([]);
   const [sponsors, setSponsors] = useState<SponsorData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saison, setSaison] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -75,32 +76,7 @@ export default function HomePage() {
         setActualites(sortedActualites);
 
         // Dans une application réelle, vous récupéreriez ces données depuis l'API
-        setResultats([
-          {
-            id: '1',
-            equipe: 'CTT Frameries A',
-            adversaire: 'Caj-mir',
-            score: '9-7',
-            division: 'Division 2 - Semaine 12',
-            domicile: true,
-          },
-          {
-            id: '2',
-            equipe: 'CTT Frameries B',
-            adversaire: 'CTT Baudour',
-            score: '5-11',
-            division: 'Division 3 - Semaine 12',
-            domicile: false,
-          },
-          {
-            id: '3',
-            equipe: 'CTT Frameries C',
-            adversaire: 'CTT Quaregnon',
-            score: '10-6',
-            division: 'Division 4 - Semaine 12',
-            domicile: true,
-          },
-        ]);
+        setResultats([]);
 
         const sponsorsData = await fetchSponsors();
         // Tri par ordre
@@ -294,6 +270,15 @@ export default function HomePage() {
                 {loading ? (
                   <div className="flex items-center justify-center">
                     <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                  </div>
+                ) : !saison ? (
+                  <div className="container mx-auto">
+                    <Alert variant="destructive">
+                      <AlertTitle>Information</AlertTitle>
+                      <AlertDescription>
+                        Pas de saison en cours actuellement.
+                      </AlertDescription>
+                    </Alert>
                   </div>
                 ) : (
                   <>
