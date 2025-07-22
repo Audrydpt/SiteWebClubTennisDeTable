@@ -276,7 +276,7 @@ export default function HomePage() {
                     <Alert variant="destructive">
                       <AlertTitle>Information</AlertTitle>
                       <AlertDescription>
-                        Pas de saison en cours actuellement.
+                        Pas de saison en cours actuellement
                       </AlertDescription>
                     </Alert>
                   </div>
