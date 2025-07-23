@@ -114,7 +114,15 @@ export const updateSaisonResults = async (
   const saison = await fetchSaisonById(id);
   saison.calendrier = saison.calendrier.map((match: { id: any }) => {
     const updatedMatch = matchesWithScores.find((m) => m.id === match.id);
-    return updatedMatch ? { ...match, score: updatedMatch.score } : match;
+    if (!updatedMatch) return match;
+
+    return {
+      ...match,
+      score: updatedMatch.score,
+      joueur_dom: updatedMatch.joueursDomicile || updatedMatch.joueur_dom || [],
+      joueur_ext:
+        updatedMatch.joueursExterieur || updatedMatch.joueur_ext || [],
+    };
   });
   return updateSaison(id, saison);
 };

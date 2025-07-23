@@ -1,4 +1,4 @@
-/* eslint-disable prettier/prettier,no-console */
+/* eslint-disable prettier/prettier,no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars */
 
 import { useState, useEffect } from 'react';
 import { CheckCircle, Loader2, PlusCircle, X } from 'lucide-react';
@@ -41,11 +41,14 @@ export default function UpdateResults() {
         // S'assurer que les joueurs sont initialisés pour tous les matchs
         const saisonMiseAJour = {
           ...saisonEnCours,
-          calendrier: saisonEnCours.calendrier.map(match => ({
-            ...match,
-            joueursDomicile: match.joueursDomicile || [],
-            joueursExterieur: match.joueursExterieur || []
-          }))
+          calendrier: saisonEnCours.calendrier.map(
+            (match: { joueur_dom: any; joueur_ext: any }) => ({
+              ...match,
+              // Convertir les noms des propriétés pour la cohérence
+              joueursDomicile: match.joueur_dom || [],
+              joueursExterieur: match.joueur_ext || [],
+            })
+          ),
         };
         setSaison(JSON.parse(JSON.stringify(saisonMiseAJour)));
         setIsSelecting(false);
@@ -143,10 +146,18 @@ export default function UpdateResults() {
   const enregistrerResultats = async () => {
     if (!saison) return;
     try {
-      // On récupère seulement les matchs modifiés avec leurs scores et joueurs
-      const matchsAvecScores = saison.calendrier.filter(
-        m => m.serieId === serieSelectionnee && m.semaine === semaineSelectionnee
-      );
+      // Récupérer les matchs de la série et semaine sélectionnées
+      const matchsAvecScores = saison.calendrier
+        .filter(m => m.serieId === serieSelectionnee && m.semaine === semaineSelectionnee)
+        .map(match => ({
+          ...match,
+          // Convertir les noms des propriétés pour le format db.json
+          joueur_dom: match.joueursDomicile,
+          joueur_ext: match.joueursExterieur,
+          // Supprimer les anciennes propriétés pour éviter la duplication
+          joueursDomicile: undefined,
+          joueursExterieur: undefined
+        }));
 
       await updateSaisonResults(saison.id, matchsAvecScores);
       setMessage('Résultats et joueurs enregistrés avec succès !');
@@ -355,7 +366,7 @@ export default function UpdateResults() {
                       {estEquipeDeFrameries(match.domicile) ? (
                         renderJoueursList(match, true)
                       ) : (
-                        <p className="text-center text-sm text-gray-500">L'encodage des joueurs n'est disponible que pour les équipes de CTT Frameries</p>
+                        <p className="text-center text-sm text-gray-500">L&#39;encodage des joueurs n&#39;est disponible que pour les équipes de CTT Frameries</p>
                       )}
                     </TabsContent>
 
@@ -363,7 +374,7 @@ export default function UpdateResults() {
                       {estEquipeDeFrameries(match.exterieur) ? (
                         renderJoueursList(match, false)
                       ) : (
-                        <p className="text-center text-sm text-gray-500">L'encodage des joueurs n'est disponible que pour les équipes de CTT Frameries</p>
+                        <p className="text-center text-sm text-gray-500">L&#39;encodage des joueurs n&#39;est disponible que pour les équipes de CTT Frameries</p>
                       )}
                     </TabsContent>
                   </Tabs>
