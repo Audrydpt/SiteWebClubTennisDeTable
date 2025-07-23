@@ -15,6 +15,16 @@ type HeaderProps = {
   className?: string;
 } & React.ComponentProps<'header'>;
 
+// Fonction de type guard pour vérifier si l'utilisateur est un Member
+const isMember = (user: any): user is {
+  prenom: string;
+  nom: string;
+  email?: string;
+  classement?: string;
+} => {
+  return user !== null && 'prenom' in user && 'nom' in user;
+};
+
 export default function Header({ title, className, ...props }: HeaderProps) {
   const location = useLocation();
   const { isAuthenticated, user, loginMember, loginAdmin, logout, isAdmin } =
@@ -52,24 +62,44 @@ export default function Header({ title, className, ...props }: HeaderProps) {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    let success;
+    setError('');
+    console.log("Formulaire soumis:", isAdminLogin ? "Admin" : "Membre");
 
     try {
       if (isAdminLogin) {
-        success = loginAdmin(username, password);
-        if (success) navigate('/admin');
-      } else {
-        success = await loginMember(email, password);
-        if (success) navigate('/espace-membre');
-      }
+        console.log("Tentative connexion admin:", username);
+        const success = loginAdmin(username, password);
+        console.log("Résultat connexion admin:", success);
 
-      if (success) {
-        resetForm();
+        if (success) {
+          console.log("Redirection vers /admin");
+          resetForm();
+          navigate('/admin');
+        } else {
+          setError('Identifiants administrateur incorrects');
+        }
       } else {
-        setError('Identifiants incorrects');
+        console.log("Tentative connexion membre:", email);
+        const success = await loginMember(email, password);
+        console.log("Résultat connexion membre:", success);
+
+        if (success) {
+          console.log("Redirection vers /espace-membre");
+          resetForm();
+          navigate('/espace-membre');
+
+          // Vérifier l'état d'authentification après connexion réussie
+          console.log("État après connexion:", {
+            isAuthenticated: true,
+            user: 'objet utilisateur présent'
+          });
+        } else {
+          setError('Email ou mot de passe incorrect');
+        }
       }
     } catch (error) {
-      setError('Erreur de connexion');
+      console.error('Erreur de connexion:', error);
+      setError('Erreur lors de la connexion');
     }
   };
 
@@ -108,8 +138,8 @@ export default function Header({ title, className, ...props }: HeaderProps) {
   ];
 
   const historiqueItems = [
-    { path: '/infos/a-propos', label: 'À propos de nous' },
-    { path: '/infos/croissance', label: 'Palmarès' },
+    { path: '/infos/about', label: 'À propos de nous' },
+    { path: '/infos/palmares', label: 'Palmarès' },
   ];
 
   const evenementsItems = [
@@ -376,7 +406,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                     )}
                   >
-                    Mon espace
+                    Sélections
                   </Link>
                 </li>
               )}
@@ -410,7 +440,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                     <span>
                       {isAdmin()
                         ? 'Admin'
-                        : `${user?.prenom || ''} ${user?.nom || ''}`}
+                        : `${isMember(user) ? user.prenom : ''} ${isMember(user) ? user.nom : ''}`}
                     </span>
                   </button>
                 </HoverCardTrigger>
@@ -426,12 +456,12 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                       <div className="font-medium text-white">
                         {isAdmin()
                           ? 'Administrateur'
-                          : `${user?.prenom || ''} ${user?.nom || ''}`}
+                          : `${isMember(user) ? user.prenom : ''} ${isMember(user) ? user.nom : ''}`}
                       </div>
                       <p className="text-sm text-gray-300">
-                        {isAdmin() ? 'Accès complet' : user?.email}
+                        {isAdmin() ? 'Accès complet' : (isMember(user) ? user.email : '')}
                       </p>
-                      {!isAdmin() && user?.classement && (
+                      {!isAdmin() && isMember(user) && user.classement && (
                         <p className="text-xs text-yellow-400 mt-1">
                           Classement: {user.classement}
                         </p>
@@ -443,7 +473,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         to="/espace-membre"
                         className="block w-full text-left px-3 py-2 text-sm rounded-md text-white hover:bg-[#4A4A4A] hover:text-[#F1C40F]"
                       >
-                        Mon espace
+                        Sélections
                       </Link>
                     )}
 
@@ -625,7 +655,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 className={cn(
                   'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
                   location.pathname.includes('/competition') ||
-                    mobileCompetitionOpen
+                  mobileCompetitionOpen
                     ? 'text-[#F1C40F]'
                     : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                 )}
@@ -674,7 +704,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 className={cn(
                   'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
                   location.pathname.includes('/historique') ||
-                    mobileHistoriqueOpen
+                  mobileHistoriqueOpen
                     ? 'text-[#F1C40F]'
                     : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                 )}
@@ -723,7 +753,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 className={cn(
                   'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
                   location.pathname.includes('/evenements') ||
-                    mobileEvenementsOpen
+                  mobileEvenementsOpen
                     ? 'text-[#F1C40F]'
                     : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                 )}
@@ -799,7 +829,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 <div className="px-4 py-2 text-[#F1C40F] font-medium">
                   {isAdmin()
                     ? 'Administrateur'
-                    : `${user?.prenom || ''} ${user?.nom || ''}`}
+                    : `${isMember(user) ? user.prenom : ''} ${isMember(user) ? user.nom : ''}`}
                 </div>
 
                 {isAdmin() ? (

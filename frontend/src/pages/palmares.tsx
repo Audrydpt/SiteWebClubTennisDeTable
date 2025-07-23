@@ -6,7 +6,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
-export default function Contact() {
+export default function Palmares() {
   return (
     <div className="space-y-6">
       <Card>

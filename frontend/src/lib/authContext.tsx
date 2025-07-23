@@ -1,167 +1,181 @@
 /* eslint-disable */
-// lib/authContext.tsx
 import React, {
   createContext,
   useContext,
   useState,
-  ReactNode,
   useEffect,
   useMemo,
 } from 'react';
-import Cookies from 'js-cookie';
-import axios from 'axios';
+import supabase from './supabaseClient';
 
-// Types pour les utilisateurs
-export type UserRole = 'member' | 'admin';
-
-interface User {
-  id?: string;
-  nom?: string;
-  prenom?: string;
+// Type pour l'utilisateur membre
+type Member = {
+  id: string;
+  supabase_uid: string;
+  nom: string;
+  prenom: string;
+  role: string;
+  classement: string;
+  telephone: string;
   email?: string;
-  role: UserRole;
-  classement?: string;
-}
+};
 
-interface AuthContextType {
+// Type pour l'admin
+type Admin = {
+  id: string;
+  username: string;
+  role: 'admin';
+};
+
+type User = Member | Admin | null;
+
+interface AuthContextProps {
   isAuthenticated: boolean;
-  user: User | null;
+  user: User;
   loginMember: (email: string, password: string) => Promise<boolean>;
   loginAdmin: (username: string, password: string) => boolean;
   logout: () => void;
   isAdmin: () => boolean;
 }
 
-// Type pour les membres retournés par l'API
-interface MembreAPI {
-  id: string;
-  nom: string;
-  prenom: string;
-  email: string;
-  password: string;
-  classement?: string;
-}
+const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const SESSION_DURATION = 60;
-const API_URL = import.meta.env.VITE_API_URL;
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<User | null>(null);
-
-  // Définir setupAuthCookie avant son utilisation
-  const setupAuthCookie = (userData: User | null) => {
-    const expiry = new Date();
-    expiry.setMinutes(expiry.getMinutes() + SESSION_DURATION);
-
-    const authData = {
-      authenticated: true,
-      user: userData,
-      expiry: expiry.toISOString(),
-    };
-
-    const authCookie = btoa(JSON.stringify(authData));
-    Cookies.set('auth_session', authCookie, {
-      expires: SESSION_DURATION / (60 * 24),
-      sameSite: 'strict',
-      secure: window.location.protocol === 'https:',
-    });
-  };
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const authCookie = Cookies.get('auth_session');
-      if (authCookie) {
-        try {
-          const authData = JSON.parse(atob(authCookie));
-          if (
-            authData &&
-            authData.expiry &&
-            new Date(authData.expiry) > new Date()
-          ) {
-            setIsAuthenticated(true);
-            setUser(authData.user || null);
-            setupAuthCookie(authData.user);
-            return;
-          }
-        } catch (error) {
-
-        }
-      }
-      setIsAuthenticated(false);
-      setUser(null);
-      Cookies.remove('auth_session');
-    };
-
-    checkAuth();
-    const interval = setInterval(checkAuth, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const loginMember = async (
-    email: string,
-    password: string
-  ): Promise<boolean> => {
-    try {
-      // Récupérer les membres depuis l'API
-      const response = await axios.get(`${API_URL}/membres`);
-      const membres: MembreAPI[] = response.data;
-
-      // Vérifier si les identifiants correspondent
-      const membre = membres.find(
-        (m) => m.email === email && m.password === password
-      );
-
-      if (membre) {
-        const userData: User = {
-          id: membre.id,
-          nom: membre.nom,
-          prenom: membre.prenom,
-          email: membre.email,
-          role: 'member',
-          classement: membre.classement,
-        };
-
-        setIsAuthenticated(true);
-        setUser(userData);
-        setupAuthCookie(userData);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error("Erreur lors de l'authentification membre:", error);
-      return false;
-    }
-  };
-
+  // Authentification admin simple via .env
   const loginAdmin = (username: string, password: string): boolean => {
-    if (
-      username === import.meta.env.VITE_USERNAME &&
-      password === import.meta.env.VITE_PASSWORD
-    ) {
-      const adminData: User = {
-        nom: 'Administrateur',
-        role: 'admin',
-      };
+    const adminUsername = import.meta.env.VITE_USERNAME;
+    const adminPassword = import.meta.env.VITE_PASSWORD;
 
+    if (username === adminUsername && password === adminPassword) {
+      setUser({ id: '0', username, role: 'admin' });
       setIsAuthenticated(true);
-      setUser(adminData);
-      setupAuthCookie(adminData);
       return true;
     }
     return false;
   };
 
-  const logout = () => {
-    setIsAuthenticated(false);
-    setUser(null);
-    Cookies.remove('auth_session');
+  // Connexion membre via Supabase + récupération json-server
+  const loginMember = async (
+    email: string,
+    password: string
+  ): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error || !data.session || !data.user) {
+        console.error('Erreur Supabase :', error?.message);
+        return false;
+      }
+
+      const supabase_uid = data.user.id;
+
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/membres?supabase_uid=${supabase_uid}`
+      );
+      const membres = await res.json();
+
+      if (membres.length === 0) {
+        console.warn('Aucun membre trouvé dans json-server');
+        return false;
+      }
+
+      const membre = membres[0];
+
+      setUser({
+        ...membre,
+        email: data.user.email,
+      });
+      setIsAuthenticated(true);
+      return true;
+    } catch (err) {
+      console.error('Erreur login membre :', err);
+      return false;
+    }
   };
 
-  const isAdmin = (): boolean => user?.role === 'admin';
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setIsAuthenticated(false);
+  };
 
-  // Utilisation de useMemo pour éviter de recréer l'objet à chaque rendu
+  const isAdmin = () =>
+    user !== null && 'role' in user && user.role === 'admin';
+
+  // Session persistée + écoute des changements
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      const session = data?.session;
+
+      if (session?.user) {
+        const supabase_uid = session.user.id;
+
+        try {
+          const res = await fetch(
+            `${import.meta.env.VITE_API_URL}/membres?supabase_uid=${supabase_uid}`
+          );
+          const membres = await res.json();
+
+          if (membres.length > 0) {
+            const membre = membres[0];
+            setUser({
+              ...membre,
+              email: session.user.email,
+            });
+            setIsAuthenticated(true);
+          }
+        } catch (err) {
+          console.error(
+            'Erreur lors du chargement de la session persistée :',
+            err
+          );
+        }
+      }
+    };
+
+    checkSession();
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setIsAuthenticated(false);
+        } else if (event === 'SIGNED_IN' && session?.user) {
+          const supabase_uid = session.user.id;
+
+          try {
+            const res = await fetch(
+              `${import.meta.env.VITE_API_URL}/membres?supabase_uid=${supabase_uid}`
+            );
+            const membres = await res.json();
+
+            if (membres.length > 0) {
+              const membre = membres[0];
+              setUser({
+                ...membre,
+                email: session.user.email,
+              });
+              setIsAuthenticated(true);
+            }
+          } catch (err) {
+            console.error('Erreur onAuthStateChange :', err);
+          }
+        }
+      }
+    );
+
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, []);
+
   const contextValue = useMemo(
     () => ({
       isAuthenticated,
@@ -179,10 +193,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
+};

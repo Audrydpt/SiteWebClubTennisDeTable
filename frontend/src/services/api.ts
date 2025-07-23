@@ -5,6 +5,14 @@ import { Image, Commande } from '@/services/type.ts';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+/* membres API Endpoints */
+
+// Fonction pour récupérer les membres (protégée)
+export const fetchMembres = async () => {
+  const response = await axios.get(`${API_URL}/membres`);
+  return response.data;
+};
+
 /* Actualités API Endpoints */
 
 export const fetchActualites = async () => {
@@ -118,13 +126,6 @@ export const createSaison = async (data: any) => {
 
 export const deleteSaison = async (id: string) => {
   await axios.delete(`${API_URL}/saisons/${id}`);
-};
-
-/* membres API Endpoints */
-
-export const fetchMembres = async () => {
-  const response = await axios.get(`${API_URL}/membres`);
-  return response.data;
 };
 
 /* Commandes API Endpoints */
