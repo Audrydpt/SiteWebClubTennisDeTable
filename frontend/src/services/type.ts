@@ -70,6 +70,8 @@ export interface Match {
   date: string;
   joueursDomicile?: Joueur[];
   joueursExterieur?: Joueur[];
+  joueur_dom?: Joueur[];
+  joueur_ext?: Joueur[];
 }
 
 export interface Saison {
