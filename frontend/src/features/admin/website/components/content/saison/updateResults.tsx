@@ -1,7 +1,13 @@
-/* eslint-disable prettier/prettier,no-console,@typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars */
-
-import { useState, useEffect } from 'react';
-import { CheckCircle, Loader2, PlusCircle, X } from 'lucide-react';
+/* eslint-disable */
+import { useState, useEffect, useRef } from 'react';
+import {
+  CheckCircle,
+  Loader2,
+  PlusCircle,
+  X,
+  ClipboardCopy,
+  Save,
+} from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -13,10 +19,22 @@ import {
   SelectItem,
   SelectValue,
 } from '@/components/ui/select';
-import { fetchSaisons, updateSaisonResults } from '@/services/api';
-import { Joueur, Match, Saison } from '@/services/type.ts';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+import {
+  fetchJoueursBySemaineAndEquipe,
+  fetchSaisons,
+  updateSaisonResults,
+} from '@/services/api';
+import { Joueur, Match, Saison } from '@/services/type.ts';
+
+interface MatchWithExtraFields extends Match {
+  joueur_dom?: Joueur[];
+  joueur_ext?: Joueur[];
+  joueursDomicile?: Joueur[];
+  joueursExterieur?: Joueur[];
+}
 
 export default function UpdateResults() {
   const [allSaisons, setAllSaisons] = useState<Saison[]>([]);
@@ -27,24 +45,21 @@ export default function UpdateResults() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSelecting, setIsSelecting] = useState(false);
   const [nouveauJoueurNom, setNouveauJoueurNom] = useState<string>('');
+  const scoreRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     const chargerDonneesInitiales = async () => {
       setIsLoading(true);
       const data = await fetchSaisons();
       setAllSaisons(data);
-      const saisonEnCours = data.find(
-        (s: { statut: string }) => s.statut === 'En cours'
-      );
+      const saisonEnCours = data.find((s: Saison) => s.statut === 'En cours');
 
       if (saisonEnCours) {
-        // S'assurer que les joueurs sont initialisés pour tous les matchs
         const saisonMiseAJour = {
           ...saisonEnCours,
           calendrier: saisonEnCours.calendrier.map(
-            (match: { joueur_dom: any; joueur_ext: any }) => ({
+            (match: MatchWithExtraFields) => ({
               ...match,
-              // Convertir les noms des propriétés pour la cohérence
               joueursDomicile: match.joueur_dom || [],
               joueursExterieur: match.joueur_ext || [],
             })
@@ -53,7 +68,7 @@ export default function UpdateResults() {
         setSaison(JSON.parse(JSON.stringify(saisonMiseAJour)));
         setIsSelecting(false);
       } else {
-        setIsSelecting(true); // Aucune saison en cours, on doit en choisir une
+        setIsSelecting(true);
       }
       setIsLoading(false);
     };
@@ -61,16 +76,17 @@ export default function UpdateResults() {
   }, []);
 
   const handleSelectSaison = (id: string) => {
-    const saisonTrouvee = allSaisons.find((s) => s.id === id);
+    const saisonTrouvee = allSaisons.find((s: Saison) => s.id === id);
     if (saisonTrouvee) {
-      // S'assurer que les joueurs sont initialisés pour tous les matchs
       const saisonMiseAJour = {
         ...saisonTrouvee,
-        calendrier: saisonTrouvee.calendrier.map(match => ({
-          ...match,
-          joueursDomicile: match.joueursDomicile || [],
-          joueursExterieur: match.joueursExterieur || []
-        }))
+        calendrier: saisonTrouvee.calendrier.map(
+          (match: MatchWithExtraFields) => ({
+            ...match,
+            joueursDomicile: match.joueur_dom || [],
+            joueursExterieur: match.joueur_ext || [],
+          })
+        ),
       };
       setSaison(JSON.parse(JSON.stringify(saisonMiseAJour)));
       setSerieSelectionnee('');
@@ -89,39 +105,39 @@ export default function UpdateResults() {
     });
   };
 
-  const estEquipeDeFrameries = (nomEquipe: string) => nomEquipe.includes('CTT Frameries');
+  const estEquipeDeFrameries = (nomEquipe: string) =>
+    nomEquipe.includes('CTT Frameries');
 
   const ajouterJoueur = (matchId: string, estDomicile: boolean) => {
     if (!saison || !nouveauJoueurNom.trim()) return;
-
     setSaison({
       ...saison,
       calendrier: saison.calendrier.map((match) => {
         if (match.id === matchId) {
           const newJoueur = { id: uuidv4(), nom: nouveauJoueurNom };
-
           if (estDomicile) {
             return {
               ...match,
-              joueursDomicile: [...(match.joueursDomicile || []), newJoueur]
+              joueursDomicile: [...(match.joueursDomicile || []), newJoueur],
             };
-          } 
+          }
           return {
             ...match,
-            joueursExterieur: [...(match.joueursExterieur || []), newJoueur]
+            joueursExterieur: [...(match.joueursExterieur || []), newJoueur],
           };
-          
         }
         return match;
-      })
+      }),
     });
-
     setNouveauJoueurNom('');
   };
 
-  const supprimerJoueur = (matchId: string, joueurId: string, estDomicile: boolean) => {
+  const supprimerJoueur = (
+    matchId: string,
+    joueurId: string,
+    estDomicile: boolean
+  ) => {
     if (!saison) return;
-
     setSaison({
       ...saison,
       calendrier: saison.calendrier.map((match) => {
@@ -129,36 +145,104 @@ export default function UpdateResults() {
           if (estDomicile) {
             return {
               ...match,
-              joueursDomicile: (match.joueursDomicile || []).filter(j => j.id !== joueurId)
+              joueursDomicile:
+                match.joueursDomicile?.filter((j) => j.id !== joueurId) || [],
             };
-          } 
+          }
           return {
             ...match,
-            joueursExterieur: (match.joueursExterieur || []).filter(j => j.id !== joueurId)
+            joueursExterieur:
+              match.joueursExterieur?.filter((j) => j.id !== joueurId) || [],
           };
-          
         }
         return match;
-      })
+      }),
     });
+  };
+
+  const copierCompoSemainePrecedente = async () => {
+    if (!saison || semaineSelectionnee <= 1) {
+      setMessage("Impossible de copier : c'est la première semaine");
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const matchsSemaine = saison.calendrier.filter(
+        (m) =>
+          m.serieId === serieSelectionnee && m.semaine === semaineSelectionnee
+      );
+
+      // Pour chaque match de la semaine actuelle
+      const matchsAvecJoueurs = await Promise.all(
+        matchsSemaine.map(async (match) => {
+          // Équipes concernées dans ce match
+          const equipesDomicile = estEquipeDeFrameries(match.domicile)
+            ? match.domicile
+            : null;
+          const equipesExterieur = estEquipeDeFrameries(match.exterieur)
+            ? match.exterieur
+            : null;
+
+          // Récupérer les joueurs de la semaine précédente pour chaque équipe
+          const joueursDomicile = equipesDomicile
+            ? await fetchJoueursBySemaineAndEquipe(
+              saison.id,
+              serieSelectionnee,
+              semaineSelectionnee - 1,
+              equipesDomicile
+            )
+            : [];
+
+          const joueursExterieur = equipesExterieur
+            ? await fetchJoueursBySemaineAndEquipe(
+              saison.id,
+              serieSelectionnee,
+              semaineSelectionnee - 1,
+              equipesExterieur
+            )
+            : [];
+
+          return {
+            ...match,
+            joueursDomicile,
+            joueursExterieur,
+          };
+        })
+      );
+
+      // Mise à jour du state avec les nouvelles compositions
+      setSaison({
+        ...saison,
+        calendrier: saison.calendrier.map(
+          (match) => matchsAvecJoueurs.find((m) => m.id === match.id) || match
+        ),
+      });
+
+      setMessage('Compositions de la semaine précédente copiées avec succès !');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des joueurs:', error);
+      setMessage('Erreur lors de la récupération des compositions précédentes');
+      setTimeout(() => setMessage(''), 3000);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const enregistrerResultats = async () => {
     if (!saison) return;
     try {
-      // Récupérer les matchs de la série et semaine sélectionnées
-      const matchsAvecScores = saison.calendrier
-        .filter(m => m.serieId === serieSelectionnee && m.semaine === semaineSelectionnee)
-        .map(match => ({
-          ...match,
-          // Convertir les noms des propriétés pour le format db.json
-          joueur_dom: match.joueursDomicile,
-          joueur_ext: match.joueursExterieur,
-          // Supprimer les anciennes propriétés pour éviter la duplication
-          joueursDomicile: undefined,
-          joueursExterieur: undefined
-        }));
-
+      const matchsFiltres = saison.calendrier.filter(
+        (m) =>
+          m.serieId === serieSelectionnee && m.semaine === semaineSelectionnee
+      );
+      const matchsAvecScores = matchsFiltres.map((match) => ({
+        ...match,
+        joueur_dom: match.joueursDomicile || [],
+        joueur_ext: match.joueursExterieur || [],
+      }));
       await updateSaisonResults(saison.id, matchsAvecScores);
       setMessage('Résultats et joueurs enregistrés avec succès !');
       setTimeout(() => setMessage(''), 3000);
@@ -168,13 +252,14 @@ export default function UpdateResults() {
     }
   };
 
-  // Rendu de la liste des joueurs pour une équipe donnée
-  const renderJoueursList = (match: Match, estDomicile: boolean) => {
-    const joueurs = estDomicile ? match.joueursDomicile : match.joueursExterieur;
+  const renderJoueursList = (
+    match: MatchWithExtraFields,
+    estDomicile: boolean
+  ) => {
+    const joueurs = estDomicile
+      ? match.joueursDomicile || []
+      : match.joueursExterieur || [];
     const equipe = estDomicile ? match.domicile : match.exterieur;
-    const estFrameries = estEquipeDeFrameries(equipe);
-
-    if (!estFrameries) return null;
 
     return (
       <div className="mt-2 border-t pt-2">
@@ -198,24 +283,39 @@ export default function UpdateResults() {
           <div className="space-y-1">
             {joueurs && joueurs.length > 0 ? (
               joueurs.map((joueur) => (
-                <div key={joueur.id} className="flex items-center justify-between bg-gray-50 py-1 px-2 rounded">
+                <div
+                  key={joueur.id}
+                  className="flex items-center justify-between bg-gray-50 py-1 px-2 rounded"
+                >
                   <span>{joueur.nom}</span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => supprimerJoueur(match.id, joueur.id, estDomicile)}
+                    onClick={() =>
+                      supprimerJoueur(match.id, joueur.id, estDomicile)
+                    }
                   >
                     <X className="h-4 w-4 text-red-500" />
                   </Button>
                 </div>
               ))
             ) : (
-              <p className="text-gray-400 text-sm italic">Aucun joueur encodé</p>
+              <p className="text-gray-400 text-sm italic">
+                Aucun joueur encodé
+              </p>
             )}
           </div>
         </div>
       </div>
     );
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === 'ArrowDown' && scoreRefs.current[index + 1]) {
+      scoreRefs.current[index + 1]?.focus();
+    } else if (e.key === 'ArrowUp' && scoreRefs.current[index - 1]) {
+      scoreRefs.current[index - 1]?.focus();
+    }
   };
 
   if (isLoading) {
@@ -228,34 +328,10 @@ export default function UpdateResults() {
   }
 
   if (isSelecting || !saison) {
-    return (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold">Mise à jour des résultats</h2>
-        <p className="text-muted-foreground">
-          Aucune saison n&#39;est actuellement &#34;En cours&#34;. Veuillez
-          sélectionner une saison à modifier.
-        </p>
-        <div className="max-w-md">
-          <Label>Sélectionnez une saison</Label>
-          <Select onValueChange={handleSelectSaison}>
-            <SelectTrigger>
-              <SelectValue placeholder="Choisir une saison" />
-            </SelectTrigger>
-            <SelectContent>
-              {allSaisons.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.label} ({s.statut})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-    );
+    return <div>Pas de saison en cours</div>;
   }
 
   const semaines = Array.from({ length: 22 }, (_, i) => i + 1);
-
   const matchsSemaine = saison.calendrier.filter(
     (m) => m.serieId === serieSelectionnee && m.semaine === semaineSelectionnee
   );
@@ -269,9 +345,6 @@ export default function UpdateResults() {
             ({saison.statut})
           </span>
         </h2>
-        <Button variant="outline" onClick={() => setIsSelecting(true)}>
-          Changer de saison
-        </Button>
       </div>
 
       {message && (
@@ -285,6 +358,7 @@ export default function UpdateResults() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Colonne 1 : Série */}
         <div>
           <Label>Série</Label>
           <Select
@@ -303,87 +377,120 @@ export default function UpdateResults() {
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <Label>Semaine</Label>
-          <Select
-            value={semaineSelectionnee.toString()}
-            onValueChange={(v) =>
-              setSemaineSelectionnee(Number.parseInt(v, 10))
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Choisir une semaine" />
-            </SelectTrigger>
-            <SelectContent>
-              {semaines.map((s) => (
-                <SelectItem key={s} value={s.toString()}>
-                  Semaine {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+        {/* Colonne 2 : Semaine + Bouton aligné à droite */}
+        <div className="flex items-end gap-4">
+          <div className="flex-1">
+            <Label>Semaine</Label>
+            <Select
+              value={semaineSelectionnee.toString()}
+              onValueChange={(v) => setSemaineSelectionnee(parseInt(v, 10))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Choisir une semaine" />
+              </SelectTrigger>
+              <SelectContent>
+                {semaines.map((s) => (
+                  <SelectItem key={s} value={s.toString()}>
+                    Semaine {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Bouton à droite du champ Semaine */}
+          <Button onClick={enregistrerResultats}>
+            <Save className="mr-2 h-4 w-4" />
+            Sauvegarder
+          </Button>
         </div>
       </div>
 
       {serieSelectionnee && (
         <div className="border p-4 rounded-lg">
-          <h3 className="font-medium mb-4">
-            Matchs de la semaine {semaineSelectionnee}
-          </h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-medium">
+              Matchs de la semaine {semaineSelectionnee}
+            </h3>
+            <Button
+              size="sm"
+              onClick={copierCompoSemainePrecedente}
+              disabled={semaineSelectionnee === 1}
+            >
+              <ClipboardCopy className="w-4 h-4 mr-2" /> Copier la compo
+              précédente
+            </Button>
+          </div>
 
           {matchsSemaine.length > 0 ? (
             <div className="space-y-6">
-              {matchsSemaine.map((match) => (
-                <div key={match.id} className="border-b pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
-                  <div className="grid grid-cols-3 items-center gap-2 text-center mb-4">
-                    <span className="text-right font-medium">
-                      {match.domicile}
-                    </span>
-                    <Input
-                      value={match.score}
-                      onChange={(e) =>
-                        mettreAJourScoreMatch(match.id, e.target.value)
+              {matchsSemaine.map((match, index) => {
+                const domicileIsFrameries = estEquipeDeFrameries(
+                  match.domicile
+                );
+                const exterieurIsFrameries = estEquipeDeFrameries(
+                  match.exterieur
+                );
+
+                return (
+                  <div
+                    key={match.id}
+                    className="border-b pb-6 mb-6 last:border-0 last:mb-0 last:pb-0"
+                  >
+                    <div className="grid grid-cols-3 items-center gap-2 text-center mb-4">
+                      <span className="text-right font-medium">
+                        {match.domicile}
+                      </span>
+                      <Input
+                        value={match.score}
+                        onChange={(e) =>
+                          mettreAJourScoreMatch(match.id, e.target.value)
+                        }
+                        placeholder="0-0"
+                        className="max-w-24 mx-auto text-center"
+                        ref={(el) => {
+                          scoreRefs.current[index] = el;
+                        }}
+                        onKeyDown={(e) => handleKeyDown(e, index)}
+                      />
+                      <span className="text-left font-medium">
+                        {match.exterieur}
+                      </span>
+                    </div>
+
+                    {(() => {
+                      if (domicileIsFrameries && exterieurIsFrameries) {
+                        return (
+                          <Tabs defaultValue="domicile">
+                            <TabsList className="w-full grid grid-cols-2 mb-2">
+                              <TabsTrigger value="domicile">
+                                Joueurs {match.domicile}
+                              </TabsTrigger>
+                              <TabsTrigger value="exterieur">
+                                Joueurs {match.exterieur}
+                              </TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="domicile">
+                              {renderJoueursList(match, true)}
+                            </TabsContent>
+                            <TabsContent value="exterieur">
+                              {renderJoueursList(match, false)}
+                            </TabsContent>
+                          </Tabs>
+                        );
                       }
-                      placeholder="0-0"
-                      className="max-w-24 mx-auto text-center"
-                    />
-                    <span className="text-left font-medium">
-                      {match.exterieur}
-                    </span>
+                      if (domicileIsFrameries) {
+                        return renderJoueursList(match, true);
+                      }
+                      if (exterieurIsFrameries) {
+                        return renderJoueursList(match, false);
+                      }
+                      return null;
+                    })()}
                   </div>
-
-                  <Tabs defaultValue="domicile" className="mt-4">
-                    <TabsList className="w-full grid grid-cols-2">
-                      <TabsTrigger value="domicile">
-                        {estEquipeDeFrameries(match.domicile) ? `Joueurs ${  match.domicile}` : match.domicile}
-                      </TabsTrigger>
-                      <TabsTrigger value="exterieur">
-                        {estEquipeDeFrameries(match.exterieur) ? `Joueurs ${  match.exterieur}` : match.exterieur}
-                      </TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="domicile" className="py-2">
-                      {estEquipeDeFrameries(match.domicile) ? (
-                        renderJoueursList(match, true)
-                      ) : (
-                        <p className="text-center text-sm text-gray-500">L&#39;encodage des joueurs n&#39;est disponible que pour les équipes de CTT Frameries</p>
-                      )}
-                    </TabsContent>
-
-                    <TabsContent value="exterieur" className="py-2">
-                      {estEquipeDeFrameries(match.exterieur) ? (
-                        renderJoueursList(match, false)
-                      ) : (
-                        <p className="text-center text-sm text-gray-500">L&#39;encodage des joueurs n&#39;est disponible que pour les équipes de CTT Frameries</p>
-                      )}
-                    </TabsContent>
-                  </Tabs>
-                </div>
-              ))}
-
-              <Button onClick={enregistrerResultats} className="mt-6">
-                Enregistrer les résultats et joueurs
-              </Button>
+                );
+              })}
             </div>
           ) : (
             <p className="text-gray-500 italic mt-4 text-center">

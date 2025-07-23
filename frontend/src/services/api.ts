@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/api.ts
 import axios from 'axios';
-import { Image, Commande } from '@/services/type.ts';
+import { Image, Commande, Joueur, Match } from '@/services/type.ts';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -125,6 +125,49 @@ export const updateSaisonResults = async (
     };
   });
   return updateSaison(id, saison);
+};
+
+/* Joueurs par équipe et semaine API Endpoint */
+
+/**
+ * Récupère les joueurs d'une équipe pour une semaine spécifique
+ * @param saisonId ID de la saison
+ * @param serieId ID de la série
+ * @param semaine Numéro de la semaine
+ * @param equipe Nom de l'équipe (utilisé pour filtrer)
+ * @returns Les joueurs ayant participé aux matchs de cette équipe
+ */
+export const fetchJoueursBySemaineAndEquipe = async (
+  saisonId: string,
+  serieId: string,
+  semaine: number,
+  equipe: string
+): Promise<Joueur[]> => {
+  // Récupérer la saison complète
+  const saison = await fetchSaisonById(saisonId);
+
+  // Filtrer les matchs par série et semaine
+  const matchs = saison.calendrier.filter(
+    (match: Match) => match.serieId === serieId && match.semaine === semaine
+  );
+
+  // Récupérer tous les joueurs des matchs où l'équipe joue
+  const joueurs: Joueur[] = [];
+
+  matchs.forEach((match: Match) => {
+    if (match.domicile === equipe && match.joueursDomicile) {
+      joueurs.push(...match.joueursDomicile);
+    } else if (match.exterieur === equipe && match.joueursExterieur) {
+      joueurs.push(...match.joueursExterieur);
+    } else if (match.domicile === equipe && match.joueur_dom) {
+      joueurs.push(...match.joueur_dom);
+    } else if (match.exterieur === equipe && match.joueur_ext) {
+      joueurs.push(...match.joueur_ext);
+    }
+  });
+
+  // Éliminer les doublons par ID
+  return [...new Map(joueurs.map((j) => [j.id, j])).values()];
 };
 
 export const createSaison = async (data: any) => {
