@@ -46,6 +46,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
   const [mobileHistoriqueOpen, setMobileHistoriqueOpen] = useState(false);
   const [mobileEvenementsOpen, setMobileEvenementsOpen] = useState(false);
   const [mobileLoginFormOpen, setMobileLoginFormOpen] = useState(false);
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
 
   // État pour le mode de connexion admin (discret)
   const [isAdminLogin, setIsAdminLogin] = useState(false);
@@ -57,6 +58,22 @@ export default function Header({ title, className, ...props }: HeaderProps) {
       setIsAdminLogin(true);
       setAdminModeVisible(true);
       setTimeout(() => setAdminModeVisible(false), 2000);
+    }
+  };
+
+  const handleLogoTouchStart = () => {
+    const timer = setTimeout(() => {
+      setIsAdminLogin(true);
+      setAdminModeVisible(true);
+      setTimeout(() => setAdminModeVisible(false), 2000);
+    }, 1000); // 1 seconde d'appui long
+    setLongPressTimer(timer);
+  };
+
+  const handleLogoTouchEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
     }
   };
 
@@ -158,10 +175,13 @@ export default function Header({ title, className, ...props }: HeaderProps) {
           {/* Logo et titre */}
           <Link to="/" className="flex items-center space-x-2">
             <img
-              src="https://res.cloudinary.com/dsrrxx5yx/image/upload/v1751736862/cwtcapgd9s25y02mlhhi.png"
+              src="..."
               alt="CTT Frameries Logo"
               className="h-16 w-16 object-contain"
               onClick={activateAdminMode}
+              onTouchStart={handleLogoTouchStart}
+              onTouchEnd={handleLogoTouchEnd}
+              onTouchCancel={handleLogoTouchEnd}
             />
             <span className="text-lg font-semibold text-white">{title}</span>
           </Link>
