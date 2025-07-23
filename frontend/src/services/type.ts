@@ -55,6 +55,11 @@ export interface Serie {
   equipes: Equipe[];
 }
 
+export interface Joueur {
+  id: string;
+  nom: string;
+}
+
 export interface Match {
   id: string;
   serieId: string;
@@ -63,6 +68,8 @@ export interface Match {
   exterieur: string;
   score: string;
   date: string;
+  joueursDomicile?: Joueur[];
+  joueursExterieur?: Joueur[];
 }
 
 export interface Saison {

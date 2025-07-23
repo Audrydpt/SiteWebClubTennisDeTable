@@ -83,15 +83,16 @@ export default function ResultatsAdminPage() {
                 </AccordionTrigger>
                 <AccordionContent className="p-4 pt-0">
                   <CardDescription className="mb-4">
-                    Saisir les scores des matchs pour chaque journée de
-                    championnat.
+                    Saisir les scores des matchs et encoder les joueurs de CTT
+                    Frameries ayant participé à chaque rencontre (y compris lors
+                    des derbys).
                   </CardDescription>
                   <Button
                     className="w-full"
                     variant="secondary"
                     onClick={() => setSection('results')}
                   >
-                    Gérer les scores
+                    Gérer les scores et joueurs
                   </Button>
                 </AccordionContent>
               </Card>
