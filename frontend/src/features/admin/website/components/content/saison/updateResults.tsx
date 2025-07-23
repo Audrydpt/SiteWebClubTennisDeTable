@@ -417,9 +417,10 @@ export default function UpdateResults() {
               size="sm"
               onClick={copierCompoSemainePrecedente}
               disabled={semaineSelectionnee === 1}
+              className="flex items-center"
             >
-              <ClipboardCopy className="w-4 h-4 mr-2" /> Copier la compo
-              précédente
+              <ClipboardCopy className="w-4 h-4 mr-0 sm:mr-2" />
+              <span className="hidden sm:inline">Copier la compo précédente</span>
             </Button>
           </div>
 
@@ -439,7 +440,7 @@ export default function UpdateResults() {
                     className="border-b pb-6 mb-6 last:border-0 last:mb-0 last:pb-0"
                   >
                     <div className="grid grid-cols-3 items-center gap-2 text-center mb-4">
-                      <span className="text-right font-medium">
+                      <span className="text-right font-medium text-base sm:text-lg">
                         {match.domicile}
                       </span>
                       <Input
@@ -454,7 +455,7 @@ export default function UpdateResults() {
                         }}
                         onKeyDown={(e) => handleKeyDown(e, index)}
                       />
-                      <span className="text-left font-medium">
+                      <span className="text-left font-medium text-base sm:text-lg">
                         {match.exterieur}
                       </span>
                     </div>

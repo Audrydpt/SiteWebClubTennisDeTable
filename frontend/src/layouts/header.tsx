@@ -9,6 +9,11 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from '@/components/ui/hover-card.tsx';
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from '@/components/ui/popover.tsx';
 
 type HeaderProps = {
   title: string;
@@ -47,6 +52,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
   const [mobileEvenementsOpen, setMobileEvenementsOpen] = useState(false);
   const [mobileLoginFormOpen, setMobileLoginFormOpen] = useState(false);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [loginFormFocused, setLoginFormFocused] = useState(false);
 
   // État pour le mode de connexion admin (discret)
   const [isAdminLogin, setIsAdminLogin] = useState(false);
@@ -175,7 +181,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
           {/* Logo et titre */}
           <Link to="/" className="flex items-center space-x-2">
             <img
-              src="..."
+              src="https://res.cloudinary.com/dsrrxx5yx/image/upload/v1751736862/cwtcapgd9s25y02mlhhi.png"
               alt="CTT Frameries Logo"
               className="h-16 w-16 object-contain"
               onClick={activateAdminMode}
@@ -453,18 +459,18 @@ export default function Header({ title, className, ...props }: HeaderProps) {
           {/* Actions */}
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
-              <HoverCard openDelay={0} closeDelay={500}>
-                <HoverCardTrigger asChild>
+              <Popover>
+                <PopoverTrigger asChild>
                   <button className="hidden md:flex items-center justify-center text-white p-2 rounded-md text-sm font-medium transition-colors">
                     <UserCircle className="h-5 w-5 mr-1" />
                     <span>
-                      {isAdmin()
-                        ? 'Admin'
-                        : `${isMember(user) ? user.prenom : ''} ${isMember(user) ? user.nom : ''}`}
-                    </span>
+            {isAdmin()
+              ? 'Admin'
+              : `${isMember(user) ? user.prenom : ''} ${isMember(user) ? user.nom : ''}`}
+          </span>
                   </button>
-                </HoverCardTrigger>
-                <HoverCardContent
+                </PopoverTrigger>
+                <PopoverContent
                   className="w-60"
                   style={{
                     backgroundColor: '#3A3A3A',
@@ -514,24 +520,28 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                       Déconnexion
                     </button>
                   </div>
-                </HoverCardContent>
-              </HoverCard>
+                </PopoverContent>
+              </Popover>
             ) : (
-              <HoverCard>
-                <HoverCardTrigger asChild>
+              <Popover>
+                <PopoverTrigger asChild>
                   <button className="hidden md:flex items-center justify-center text-white hover:text-[#F1C40F] p-2 rounded-md hover:bg-[#4A4A4A] text-sm font-medium transition-colors">
                     <LogIn className="h-4 w-4 mr-2" />
                     <span>{isAdminLogin ? 'Admin' : 'Connexion'}</span>
                   </button>
-                </HoverCardTrigger>
-                <HoverCardContent
+                </PopoverTrigger>
+                <PopoverContent
                   className="w-80"
                   style={{
                     backgroundColor: '#3A3A3A',
                     border: '1px solid #4A4A4A',
                   }}
                 >
-                  <form onSubmit={handleLogin} className="space-y-4">
+                  <form
+                    onSubmit={handleLogin}
+                    className="space-y-4"
+                    autoComplete="on"
+                  >
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="text-lg font-medium text-white">
                         {isAdminLogin ? 'Administration' : 'Espace membre'}
@@ -564,6 +574,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                           className="w-full px-3 py-2 bg-[#4A4A4A] border border-[#555] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#F1C40F] focus:border-transparent"
                           placeholder="Identifiant administrateur"
                           required
+                          autoComplete="username"
                         />
                       </div>
                     ) : (
@@ -582,6 +593,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                           className="w-full px-3 py-2 bg-[#4A4A4A] border border-[#555] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#F1C40F] focus:border-transparent"
                           placeholder="votre@email.com"
                           required
+                          autoComplete="email"
                         />
                       </div>
                     )}
@@ -601,6 +613,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         className="w-full px-3 py-2 bg-[#4A4A4A] border border-[#555] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#F1C40F] focus:border-transparent"
                         placeholder="••••••••"
                         required
+                        autoComplete={isAdminLogin ? "current-password" : "password"}
                       />
                     </div>
 
@@ -624,9 +637,10 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                       </div>
                     )}
                   </form>
-                </HoverCardContent>
-              </HoverCard>
+                </PopoverContent>
+              </Popover>
             )}
+          </div>
 
             {/* Menu mobile - Bouton hamburger */}
             <button
@@ -649,7 +663,6 @@ export default function Header({ title, className, ...props }: HeaderProps) {
             </button>
           </div>
         </div>
-      </div>
 
       {/* Menu mobile */}
       {mobileMenuOpen && (
