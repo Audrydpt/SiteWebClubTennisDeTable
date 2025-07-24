@@ -29,6 +29,7 @@ export default function App() {
           <Routes>
             {/* Routes publiques */}
             <Route path="/" element={<HomePage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/infos/about" element={<AboutPage />} />
             <Route path="/infos/palmares" element={<Palmares />} />
             <Route path="/sponsors" element={<Sponsors />} />
@@ -61,10 +62,6 @@ export default function App() {
                   <Credentials />
                 </MemberRoute>
               }
-            />
-            <Route
-              path="/espace-membre/reset-password"
-              element={<ResetPasswordPage />}
             />
 
             {/* Routes admin protégées */}

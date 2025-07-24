@@ -1,66 +1,79 @@
 /* eslint-disable */
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import supabase from '@/lib/supabaseClient.ts';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import supabase from '@/lib/supabaseClient';
 
 export default function ResetPasswordPage() {
   const [newPassword, setNewPassword] = useState('');
-  const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [searchParams] = useSearchParams();
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // ➜ Récupère les tokens depuis l’URL et initialise la session Supabase
   useEffect(() => {
-    const access_token = searchParams.get('access_token');
-    const refresh_token = searchParams.get('refresh_token');
-
-    if (access_token && refresh_token) {
-      supabase.auth.setSession({ access_token, refresh_token }).then(({ error }) => {
-        if (error) {
-          setMessage("Erreur lors de la validation du lien. Veuillez réessayer.");
-        }
-      });
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token')) {
+      const params = new URLSearchParams(hash.replace('#', ''));
+      const access_token = params.get('access_token');
+      if (access_token) {
+        supabase.auth.setSession({ access_token, refresh_token: '' });
+      }
     }
-  }, [searchParams]);
+  }, []);
 
-  // ➜ Mise à jour du mot de passe
-  const handleUpdatePassword = async () => {
-    setLoading(true);
-    setMessage('');
+  const handleReset = async () => {
+    setError('');
+    if (newPassword !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas.');
+      return;
+    }
 
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setIsLoading(true);
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
 
-    if (error) {
-      setMessage(`Erreur : ${error.message}`);
+    if (updateError) {
+      setError(updateError.message);
     } else {
-      setMessage('Mot de passe modifié avec succès. Redirection...');
+      setSuccess(true);
       setTimeout(() => {
         navigate('/espace-membre');
-      }, 2000); // ⏱️ attend 2 secondes
+      }, 2000);
     }
 
-    setLoading(false);
+    setIsLoading(false);
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 space-y-4 p-4">
+    <div className="max-w-md mx-auto mt-10 p-6 border rounded-lg shadow-md space-y-4">
       <h2 className="text-xl font-bold">Réinitialiser mon mot de passe</h2>
 
-      <Input
-        type="password"
-        placeholder="Nouveau mot de passe"
-        value={newPassword}
-        onChange={(e) => setNewPassword(e.target.value)}
-      />
-
-      <Button onClick={handleUpdatePassword} disabled={loading || !newPassword}>
-        {loading ? 'Modification en cours…' : 'Valider le nouveau mot de passe'}
-      </Button>
-
-      {message && <p className="text-sm pt-2">{message}</p>}
+      {error && <p className="text-red-600">{error}</p>}
+      {success ? (
+        <p className="text-green-600">Mot de passe mis à jour avec succès. Redirection...</p>
+      ) : (
+        <>
+          <Input
+            type="password"
+            placeholder="Nouveau mot de passe"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+          <Input
+            type="password"
+            placeholder="Confirmer le mot de passe"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+          <Button onClick={handleReset} disabled={isLoading}>
+            {isLoading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
+          </Button>
+        </>
+      )}
     </div>
   );
 }
