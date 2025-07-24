@@ -97,7 +97,7 @@ export default function AdminSettings() {
       setUsers(data);
     } catch (error) {
       console.error('Erreur lors du chargement des utilisateurs:', error);
-      alert('Erreur lors du chargement des utilisateurs');
+      alert('Erreur lors du chargement des utilisateurs.');
     }
     setIsLoading(false);
   };
