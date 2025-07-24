@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
@@ -34,7 +33,10 @@ export default function App() {
             <Route path="/infos/palmares" element={<Palmares />} />
             <Route path="/sponsors" element={<Sponsors />} />
             <Route path="/competition/equipes" element={<EquipesPage />} />
-            <Route path="/competition/calendrier" element={<CalendrierPage />} />
+            <Route
+              path="/competition/calendrier"
+              element={<CalendrierPage />}
+            />
             <Route path="/evenements/galerie" element={<Galery />} />
             <Route path="/evenements/calendrier" element={<CalendarEvent />} />
             <Route path="/contact" element={<Contact />} />
@@ -52,17 +54,17 @@ export default function App() {
                 </MemberRoute>
               }
             />
-            <Route path="/espace-membre/credentials" element={
-              <MemberRoute>
-                <Credentials />
-              </MemberRoute>
-            }
+            <Route
+              path="/espace-membre/credentials"
+              element={
+                <MemberRoute>
+                  <Credentials />
+                </MemberRoute>
+              }
             />
-            <Route path="/espace-membre/reset-password" element={
-              <MemberRoute>
-                <ResetPasswordPage />
-              </MemberRoute>
-            }
+            <Route
+              path="/espace-membre/reset-password"
+              element={<ResetPasswordPage />}
             />
 
             {/* Routes admin protégées */}
