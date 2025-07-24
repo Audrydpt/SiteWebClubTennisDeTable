@@ -8,7 +8,6 @@ import {
   ClipboardCopy,
   Save,
 } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -26,8 +25,9 @@ import {
   fetchJoueursBySemaineAndEquipe,
   fetchSaisons,
   updateSaisonResults,
+  fetchUsers,
 } from '@/services/api';
-import { Joueur, Match, Saison } from '@/services/type.ts';
+import { Joueur, Match, Saison, Member } from '@/services/type';
 
 interface MatchWithExtraFields extends Match {
   joueur_dom?: Joueur[];
@@ -44,14 +44,20 @@ export default function UpdateResults() {
   const [message, setMessage] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSelecting, setIsSelecting] = useState(false);
-  const [nouveauJoueurNom, setNouveauJoueurNom] = useState<string>('');
+  const [joueurSelectionne, setJoueurSelectionne] = useState<string>('');
+  const [membres, setMembres] = useState<Member[]>([]);
   const scoreRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     const chargerDonneesInitiales = async () => {
       setIsLoading(true);
-      const data = await fetchSaisons();
+      const [data, membresData] = await Promise.all([
+        fetchSaisons(),
+        fetchUsers(),
+      ]);
       setAllSaisons(data);
+      setMembres(membresData);
+
       const saisonEnCours = data.find((s: Saison) => s.statut === 'En cours');
 
       if (saisonEnCours) {
@@ -109,12 +115,19 @@ export default function UpdateResults() {
     nomEquipe.includes('CTT Frameries');
 
   const ajouterJoueur = (matchId: string, estDomicile: boolean) => {
-    if (!saison || !nouveauJoueurNom.trim()) return;
+    if (!saison || !joueurSelectionne) return;
+    const membre = membres.find((m) => m.id === joueurSelectionne);
+    if (!membre) return;
+
+    const newJoueur = {
+      id: membre.id,
+      nom: `${membre.prenom} ${membre.nom}`,
+    };
+
     setSaison({
       ...saison,
       calendrier: saison.calendrier.map((match) => {
         if (match.id === matchId) {
-          const newJoueur = { id: uuidv4(), nom: nouveauJoueurNom };
           if (estDomicile) {
             return {
               ...match,
@@ -129,7 +142,7 @@ export default function UpdateResults() {
         return match;
       }),
     });
-    setNouveauJoueurNom('');
+    setJoueurSelectionne('');
   };
 
   const supprimerJoueur = (
@@ -174,10 +187,8 @@ export default function UpdateResults() {
           m.serieId === serieSelectionnee && m.semaine === semaineSelectionnee
       );
 
-      // Pour chaque match de la semaine actuelle
       const matchsAvecJoueurs = await Promise.all(
         matchsSemaine.map(async (match) => {
-          // Équipes concernées dans ce match
           const equipesDomicile = estEquipeDeFrameries(match.domicile)
             ? match.domicile
             : null;
@@ -185,7 +196,6 @@ export default function UpdateResults() {
             ? match.exterieur
             : null;
 
-          // Récupérer les joueurs de la semaine précédente pour chaque équipe
           const joueursDomicile = equipesDomicile
             ? await fetchJoueursBySemaineAndEquipe(
               saison.id,
@@ -212,7 +222,6 @@ export default function UpdateResults() {
         })
       );
 
-      // Mise à jour du state avec les nouvelles compositions
       setSaison({
         ...saison,
         calendrier: saison.calendrier.map(
@@ -266,22 +275,32 @@ export default function UpdateResults() {
         <p className="text-sm font-medium mb-2">Joueurs {equipe}</p>
         <div className="space-y-2">
           <div className="flex gap-2">
-            <Input
-              placeholder="Nom du joueur"
-              value={nouveauJoueurNom}
-              onChange={(e) => setNouveauJoueurNom(e.target.value)}
-              className="flex-grow"
-            />
+            <Select
+              value={joueurSelectionne}
+              onValueChange={setJoueurSelectionne}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Choisir un joueur" />
+              </SelectTrigger>
+              <SelectContent>
+                {membres.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.prenom} {m.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               size="sm"
               onClick={() => ajouterJoueur(match.id, estDomicile)}
+              disabled={!joueurSelectionne}
             >
               <PlusCircle className="h-4 w-4 mr-1" /> Ajouter
             </Button>
           </div>
 
           <div className="space-y-1">
-            {joueurs && joueurs.length > 0 ? (
+            {joueurs.length > 0 ? (
               joueurs.map((joueur) => (
                 <div
                   key={joueur.id}
@@ -336,7 +355,8 @@ export default function UpdateResults() {
     (m) => m.serieId === serieSelectionnee && m.semaine === semaineSelectionnee
   );
 
-  return (
+
+return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">
