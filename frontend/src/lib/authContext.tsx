@@ -176,6 +176,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Durée d'inactivité avant déconnexion (en ms)
+  const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+
+  useEffect(() => {
+    let inactivityTimer: NodeJS.Timeout;
+
+    const resetTimer = () => {
+      clearTimeout(inactivityTimer);
+      if (isAuthenticated) {
+        inactivityTimer = setTimeout(() => {
+          logout();
+        }, INACTIVITY_TIMEOUT);
+      }
+    };
+
+    // Événements à écouter pour détecter l'activité
+    const events = ['mousemove', 'keydown', 'mousedown', 'touchstart'];
+
+    if (isAuthenticated) {
+      events.forEach(event =>
+        window.addEventListener(event, resetTimer)
+      );
+      resetTimer();
+    }
+
+    return () => {
+      clearTimeout(inactivityTimer);
+      events.forEach(event =>
+        window.removeEventListener(event, resetTimer)
+      );
+    };
+    // On relance l'effet à chaque changement d'authentification
+  }, [isAuthenticated]);
+
   const contextValue = useMemo(
     () => ({
       isAuthenticated,

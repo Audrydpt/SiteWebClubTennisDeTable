@@ -16,6 +16,8 @@ import CalendarEvent from '@/pages/calendarEvent.tsx';
 import Galery from '@/pages/galery.tsx';
 import { MemberRoute, AdminRoute } from './lib/protectedRoutes';
 import HomeLogged from '@/features/public/HomeLogged.tsx';
+import ResetPasswordPage from '@/features/public/comps/credential/reset.tsx';
+import Credentials from '@/features/public/comps/Credentials.tsx';
 import Footer from './layouts/footer.tsx';
 
 export default function App() {
@@ -49,6 +51,18 @@ export default function App() {
                   <HomeLogged />
                 </MemberRoute>
               }
+            />
+            <Route path="/espace-membre/credentials" element={
+              <MemberRoute>
+                <Credentials />
+              </MemberRoute>
+            }
+            />
+            <Route path="/espace-membre/reset-password" element={
+              <MemberRoute>
+                <ResetPasswordPage />
+              </MemberRoute>
+            }
             />
 
             {/* Routes admin protégées */}

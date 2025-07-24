@@ -18,7 +18,7 @@ import { FormAutre } from '@/features/public/comps/commande/autre.tsx';
 import { Mousse, Bois, Autre, Membre } from '@/services/type.ts';
 import {
   createSelection,
-  fetchMembres,
+  fetchUsers,
   fetchSelectionByMembre,
   updateSelection,
 } from '@/services/api.ts';
@@ -38,7 +38,7 @@ export default function CommandePage() {
   useEffect(() => {
     const chargerMembres = async () => {
       try {
-        const donneesMembers = await fetchMembres();
+        const donneesMembers = await fetchUsers();
         setMembres(donneesMembers);
       } catch (error) {
         console.error('Erreur lors du chargement des membres:', error);

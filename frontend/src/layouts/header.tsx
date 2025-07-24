@@ -496,10 +496,10 @@ export default function Header({ title, className, ...props }: HeaderProps) {
 
                     {!isAdmin() && (
                       <Link
-                        to="/espace-membre"
+                        to="/espace-membre/credentials"
                         className="block w-full text-left px-3 py-2 text-sm rounded-md text-white hover:bg-[#4A4A4A] hover:text-[#F1C40F]"
                       >
-                        Sélections
+                        Mon compte
                       </Link>
                     )}
 

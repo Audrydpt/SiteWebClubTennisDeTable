@@ -5,12 +5,25 @@ import { Image, Commande, Joueur, Match } from '@/services/type.ts';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-/* membres API Endpoints */
+/* Utilisateurs (profil JSON Server) */
 
-// Fonction pour récupérer les membres (protégée)
-export const fetchMembres = async () => {
+export const fetchUsers = async () => {
   const response = await axios.get(`${API_URL}/membres`);
   return response.data;
+};
+
+export const createUserProfile = async (data: any) => {
+  const response = await axios.post(`${API_URL}/membres`, data);
+  return response.data;
+};
+
+export const updateUserProfile = async (id: string, data: any) => {
+  const response = await axios.put(`${API_URL}/membres/${id}`, data);
+  return response.data;
+};
+
+export const deleteUserProfile = async (id: string) => {
+  await axios.delete(`${API_URL}/membres/${id}`);
 };
 
 /* Actualités API Endpoints */
