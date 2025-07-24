@@ -4,15 +4,9 @@ import { Button } from '@/components/ui/button';
 import supabase from '@/lib/supabaseClient.ts';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Member } from '@/services/type.ts';
 
-type Member = {
-  id: string;
-  supabase_uid: string;
-  nom: string;
-  prenom: string;
-  telephone: string;
-  classement: string;
-};
+
 
 export default function Credentials() {
   const [member, setMember] = useState<Member | null>(null);

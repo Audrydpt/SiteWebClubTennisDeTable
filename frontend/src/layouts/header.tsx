@@ -170,6 +170,15 @@ export default function Header({ title, className, ...props }: HeaderProps) {
     { path: '/evenements/galerie', label: 'Galerie' },
   ];
 
+  const memberItems = [
+    { path : '/espace-membre', label: 'Dashboard' },
+    { path : '/espace-membre/selections', label: 'Sélections' },
+    { path : '/espace-membre/statistiques', label: 'Concours club' },
+    { path : '/espace-membre/commandes', label: 'Commande' },
+    { path : '/espace-membre/credentials', label: 'Mon compte' },
+
+  ];
+
   return (
     <header
       className={cn('sticky top-0 z-50 border-b shadow-sm', className)}
@@ -420,20 +429,61 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 </Link>
               </li>
 
-              {/* Espace membre (uniquement visible si connecté comme membre) */}
+              {/* Espace membre (menu déroulant pour membre connecté) */}
               {isAuthenticated && !isAdmin() && (
                 <li>
-                  <Link
-                    to="/espace-membre"
-                    className={cn(
-                      'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
-                      location.pathname.includes('/espace-membre')
-                        ? 'text-[#F1C40F]'
-                        : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-                    )}
+                  <HoverCard
+                    openDelay={0}
+                    closeDelay={150}
                   >
-                    Sélections
-                  </Link>
+                    <HoverCardTrigger asChild>
+                      <span
+                        className={cn(
+                          'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center cursor-pointer',
+                          location.pathname.includes('/espace-membre')
+                            ? 'text-[#F1C40F]'
+                            : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                        )}
+                      >
+                        Espace membre
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="ml-1"
+                        >
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                      </span>
+                    </HoverCardTrigger>
+                    <HoverCardContent
+                      className="w-[200px] p-0"
+                      style={{ backgroundColor: '#3A3A3A' }}
+                    >
+                      <div className="grid gap-2 p-2">
+                        {memberItems.map((item) => (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            className={cn(
+                              'text-sm transition-colors px-3 py-2 rounded-md',
+                              location.pathname === item.path
+                                ? 'text-[#F1C40F]'
+                                : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                            )}
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
                 </li>
               )}
 
@@ -874,13 +924,48 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                     Administration
                   </Link>
                 ) : (
-                  <Link
-                    to="/espace-membre"
-                    className="block px-4 py-2 text-base text-white hover:text-[#F1C40F]"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Mon espace membre
-                  </Link>
+                  // Affichage du menu déroulant memberItems pour les membres connectés
+                  <div>
+                    <button
+                      onClick={() => setMobileLoginFormOpen(!mobileLoginFormOpen)}
+                      className="flex justify-between items-center w-full px-4 py-2 text-base font-medium text-white hover:text-[#F1C40F]"
+                    >
+                      <span>Espace membre</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`transition-transform ${mobileLoginFormOpen ? 'rotate-180' : ''}`}
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </button>
+                    {mobileLoginFormOpen && (
+                      <div className="pl-6 py-2 space-y-1 bg-[#444444]">
+                        {memberItems.map((item) => (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            className={cn(
+                              'block px-4 py-2 text-sm font-medium',
+                              location.pathname === item.path
+                                ? 'text-[#F1C40F]'
+                                : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                            )}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 <button
@@ -1021,3 +1106,4 @@ export default function Header({ title, className, ...props }: HeaderProps) {
     </header>
   );
 }
+

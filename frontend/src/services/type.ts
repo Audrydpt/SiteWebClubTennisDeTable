@@ -126,17 +126,15 @@ export interface Commande {
 }
 
 export interface SelectMembreProps {
-  membres: Membre[];
+  membres: Member[];
   onSelect: (membre: string) => void;
 }
 
-export interface Membre {
+export type Member = {
   id: string;
+  supabase_uid: string;
   nom: string;
   prenom: string;
-  email: string;
-  password?: string;
-  role: 'admin' | 'membre';
-  classement?: string;
-  telephone?: string;
-}
+  telephone: string;
+  classement: string;
+};

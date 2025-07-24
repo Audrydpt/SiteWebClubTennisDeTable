@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.tsx';
-import { Membre, SelectMembreProps } from '@/services/type.ts';
+import { Member, SelectMembreProps } from '@/services/type.ts';
 
 
 export function SelectMembre({ membres, onSelect }: SelectMembreProps) {

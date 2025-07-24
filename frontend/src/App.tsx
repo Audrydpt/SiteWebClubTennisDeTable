@@ -17,6 +17,9 @@ import { MemberRoute, AdminRoute } from './lib/protectedRoutes';
 import HomeLogged from '@/features/public/HomeLogged.tsx';
 import ResetPasswordPage from '@/features/public/comps/credential/reset.tsx';
 import Credentials from '@/features/public/comps/Credentials.tsx';
+import CommandePage from '@/features/public/comps/CommandeForm.tsx';
+import Stats from '@/features/public/comps/Stats.tsx';
+import Selections from '@/features/public/comps/Selections.tsx';
 import Footer from './layouts/footer.tsx';
 
 export default function App() {
@@ -60,6 +63,30 @@ export default function App() {
               element={
                 <MemberRoute>
                   <Credentials />
+                </MemberRoute>
+              }
+            />
+            <Route
+              path="/espace-membre/statistiques"
+              element={
+                <MemberRoute>
+                  <Stats />
+                </MemberRoute>
+              }
+            />
+            <Route
+              path="/espace-membre/commandes"
+              element={
+                <MemberRoute>
+                  <CommandePage />
+                </MemberRoute>
+              }
+            />
+            <Route
+              path="/espace-membre/selections"
+              element={
+                <MemberRoute>
+                  <Selections />
                 </MemberRoute>
               }
             />
