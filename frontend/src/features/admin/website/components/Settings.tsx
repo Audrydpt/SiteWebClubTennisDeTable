@@ -65,6 +65,7 @@ function SettingsPage() {
       const { data, error } = await supabase.auth.admin.createUser({
         email: newUser.email,
         password: newUser.password,
+        email_confirm: true,
       });
 
       if (error || !data?.user?.id) {
