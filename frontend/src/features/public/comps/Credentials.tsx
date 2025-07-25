@@ -306,7 +306,7 @@ export default function Credentials() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Saison</span>
-                  <span className="font-medium">2024-2025</span>
+                  <span className="font-medium">2025-2026</span>
                 </div>
               </div>
             </CardContent>

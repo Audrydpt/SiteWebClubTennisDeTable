@@ -193,10 +193,12 @@ export default function Header({ title, className, ...props }: HeaderProps) {
               src="https://res.cloudinary.com/dsrrxx5yx/image/upload/v1751736862/cwtcapgd9s25y02mlhhi.png"
               alt="CTT Frameries Logo"
               className="h-16 w-16 object-contain"
+              draggable={false}
               onClick={activateAdminMode}
               onTouchStart={handleLogoTouchStart}
               onTouchEnd={handleLogoTouchEnd}
               onTouchCancel={handleLogoTouchEnd}
+              onContextMenu={(e) => e.preventDefault()}
             />
             <span className="text-lg font-semibold text-white">{title}</span>
           </Link>
