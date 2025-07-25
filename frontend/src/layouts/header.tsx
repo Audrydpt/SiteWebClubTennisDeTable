@@ -189,15 +189,20 @@ export default function Header({ title, className, ...props }: HeaderProps) {
         <div className="flex items-center justify-between h-16">
           {/* Logo et titre */}
           <Link to="/" className="flex items-center space-x-2">
-            <img
-              src="https://res.cloudinary.com/dsrrxx5yx/image/upload/v1751736862/cwtcapgd9s25y02mlhhi.png"
-              alt="" // alt vide
-              className="h-16 w-16 object-contain select-none" // select-none en Tailwind
-              draggable={false}
+            <div
+              style={{
+                backgroundImage: "url('https://res.cloudinary.com/dsrrxx5yx/image/upload/v1751736862/cwtcapgd9s25y02mlhhi.png')",
+                backgroundSize: "contain",
+                backgroundRepeat: "no-repeat",
+                width: "4rem",
+                height: "4rem",
+                userSelect: "none",
+                touchAction: "none"
+              }}
+              className="select-none"
               onClick={activateAdminMode}
-              onTouchStart={e => { e.preventDefault(); handleLogoTouchStart(); }}
-              onTouchEnd={e => { e.preventDefault(); handleLogoTouchEnd(); }}
-              onTouchCancel={handleLogoTouchEnd}
+              onTouchStart={handleLogoTouchStart}
+              onTouchEnd={handleLogoTouchEnd}
               onContextMenu={e => e.preventDefault()}
             />
             <span className="text-lg font-semibold text-white">{title}</span>
