@@ -81,24 +81,14 @@ export default function UpdateResults() {
     chargerDonneesInitiales();
   }, []);
 
-  const handleSelectSaison = (id: string) => {
-    const saisonTrouvee = allSaisons.find((s: Saison) => s.id === id);
-    if (saisonTrouvee) {
-      const saisonMiseAJour = {
-        ...saisonTrouvee,
-        calendrier: saisonTrouvee.calendrier.map(
-          (match: MatchWithExtraFields) => ({
-            ...match,
-            joueursDomicile: match.joueur_dom || [],
-            joueursExterieur: match.joueur_ext || [],
-          })
-        ),
-      };
-      setSaison(JSON.parse(JSON.stringify(saisonMiseAJour)));
-      setSerieSelectionnee('');
-      setSemaineSelectionnee(1);
-      setIsSelecting(false);
+  const trierClassements = (a: string, b: string) => {
+    const [lettreA, chiffreA] = [a[0], parseInt(a.slice(1)) || 0];
+    const [lettreB, chiffreB] = [b[0], parseInt(b.slice(1)) || 0];
+
+    if (lettreA !== lettreB) {
+      return lettreA.localeCompare(lettreB); // Tri par lettre
     }
+    return chiffreA - chiffreB; // Tri par chiffre
   };
 
   const mettreAJourScoreMatch = (matchId: string, score: string) => {
@@ -122,21 +112,43 @@ export default function UpdateResults() {
     const newJoueur = {
       id: membre.id,
       nom: `${membre.prenom} ${membre.nom}`,
+      classement: membre.classement || 'ZZ', // Valeur par défaut si classement est undefined
+    };
+
+    const trierClassements = (a: string, b: string) => {
+      const [lettreA, chiffreA] = [a[0], parseInt(a.slice(1)) || 0];
+      const [lettreB, chiffreB] = [b[0], parseInt(b.slice(1)) || 0];
+
+      if (lettreA !== lettreB) {
+        return lettreA.localeCompare(lettreB); // Tri par lettre
+      }
+      return chiffreA - chiffreB; // Tri par chiffre
     };
 
     setSaison({
       ...saison,
       calendrier: saison.calendrier.map((match) => {
         if (match.id === matchId) {
+          const joueurs = estDomicile
+            ? match.joueursDomicile || []
+            : match.joueursExterieur || [];
+
+          // Limiter à 4 joueurs
+          if (joueurs.length >= 4) return match;
+
+          const joueursMisAJour = [...joueurs, newJoueur].sort((a, b) =>
+            trierClassements(a.classement || 'ZZ', b.classement || 'ZZ')
+          );
+
           if (estDomicile) {
             return {
               ...match,
-              joueursDomicile: [...(match.joueursDomicile || []), newJoueur],
+              joueursDomicile: joueursMisAJour,
             };
           }
           return {
             ...match,
-            joueursExterieur: [...(match.joueursExterieur || []), newJoueur],
+            joueursExterieur: joueursMisAJour,
           };
         }
         return match;
@@ -283,11 +295,15 @@ export default function UpdateResults() {
                 <SelectValue placeholder="Choisir un joueur" />
               </SelectTrigger>
               <SelectContent>
-                {membres.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.prenom} {m.nom}
-                  </SelectItem>
-                ))}
+                {membres
+                  .sort((a, b) =>
+                    trierClassements(a.classement || 'ZZ', b.classement || 'ZZ')
+                  )
+                  .map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.prenom} {m.nom} ({m.classement})
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
             <Button
@@ -306,7 +322,9 @@ export default function UpdateResults() {
                   key={joueur.id}
                   className="flex items-center justify-between bg-gray-50 py-1 px-2 rounded"
                 >
-                  <span>{joueur.nom}</span>
+                <span>
+                  {joueur.nom} ({membres.find((m) => m.id === joueur.id)?.classement || 'N/A'})
+                </span>
                   <Button
                     variant="ghost"
                     size="sm"

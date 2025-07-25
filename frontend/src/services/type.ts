@@ -58,6 +58,8 @@ export interface Serie {
 export interface Joueur {
   id: string;
   nom: string;
+  prenom: string;
+  classement: string;
 }
 
 export interface Match {

@@ -57,9 +57,9 @@ export default function Sponsors() {
         <p className="text-lg text-center mb-16 max-w-3xl mx-auto text-gray-600">
           Nous remercions chaleureusement nos partenaires pour leur confiance.
         </p>
-        {/* Séparateur décoratif aligné à la card */}
-        <div className="w-full flex justify-center mb-12">
-          <div className="h-1 w-2/3 md:w-1/2 bg-gradient-to-r from-gray-200 via-gray-400 to-gray-200 rounded-full" />
+        {/* Séparateur décoratif pleine largeur */}
+        <div className="w-screen relative left-1/2 right-1/2 -mx-[50vw] mb-12">
+          <div className="h-2 bg-gradient-to-r from-gray-200 via-gray-400 to-gray-200 rounded-full w-full" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
