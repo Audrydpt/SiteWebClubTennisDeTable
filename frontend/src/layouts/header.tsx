@@ -191,14 +191,14 @@ export default function Header({ title, className, ...props }: HeaderProps) {
           <Link to="/" className="flex items-center space-x-2">
             <img
               src="https://res.cloudinary.com/dsrrxx5yx/image/upload/v1751736862/cwtcapgd9s25y02mlhhi.png"
-              alt="CTT Frameries Logo"
-              className="h-16 w-16 object-contain"
+              alt="" // alt vide
+              className="h-16 w-16 object-contain select-none" // select-none en Tailwind
               draggable={false}
               onClick={activateAdminMode}
-              onTouchStart={handleLogoTouchStart}
-              onTouchEnd={handleLogoTouchEnd}
+              onTouchStart={e => { e.preventDefault(); handleLogoTouchStart(); }}
+              onTouchEnd={e => { e.preventDefault(); handleLogoTouchEnd(); }}
               onTouchCancel={handleLogoTouchEnd}
-              onContextMenu={(e) => e.preventDefault()}
+              onContextMenu={e => e.preventDefault()}
             />
             <span className="text-lg font-semibold text-white">{title}</span>
           </Link>
