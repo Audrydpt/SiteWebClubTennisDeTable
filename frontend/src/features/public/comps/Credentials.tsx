@@ -284,7 +284,7 @@ export default function Credentials() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="text-center space-y-2">
-                <Badge variant="default" className="bg-green-500">
+                <Badge variant="secondary" className="bg-green-500">
                   {formatRole(member?.role)}
                 </Badge>
                 <p className="text-sm text-gray-600">
