@@ -162,6 +162,12 @@ export default function HomeLogged() {
                   </div>
                 </div>
               ))}
+
+              {mesMatchs.length === 0 && (
+                <div className="text-gray-500 text-center p-4">
+                  Aucun match prévu.
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -265,7 +271,9 @@ export default function HomeLogged() {
                   })}
               </div>
             ) : (
-              <p className="text-gray-500">Aucun match prévu.</p>
+              <div className="text-gray-500 text-center p-4">
+                Aucun match prévu.
+              </div>
             )}
           </CardContent>
         </Card>

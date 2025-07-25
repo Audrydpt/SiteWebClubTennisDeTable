@@ -63,13 +63,17 @@ export default function UpdateResults() {
       if (saisonEnCours) {
         const saisonMiseAJour = {
           ...saisonEnCours,
-          calendrier: saisonEnCours.calendrier.map(
-            (match: MatchWithExtraFields) => ({
-              ...match,
-              joueursDomicile: match.joueur_dom || [],
-              joueursExterieur: match.joueur_ext || [],
-            })
-          ),
+          calendrier: saisonEnCours.calendrier.map((match: MatchWithExtraFields) => ({
+            ...match,
+            joueursDomicile: (match.joueur_dom || []).map((joueur) => ({
+              ...joueur,
+              prenom: joueur.prenom || '', // Ajout d'une valeur par défaut pour 'prenom'
+            })),
+            joueursExterieur: (match.joueur_ext || []).map((joueur) => ({
+              ...joueur,
+              prenom: joueur.prenom || '', // Ajout d'une valeur par défaut pour 'prenom'
+            })),
+          })),
         };
         setSaison(JSON.parse(JSON.stringify(saisonMiseAJour)));
         setIsSelecting(false);
@@ -112,17 +116,8 @@ export default function UpdateResults() {
     const newJoueur = {
       id: membre.id,
       nom: `${membre.prenom} ${membre.nom}`,
-      classement: membre.classement || 'ZZ', // Valeur par défaut si classement est undefined
-    };
-
-    const trierClassements = (a: string, b: string) => {
-      const [lettreA, chiffreA] = [a[0], parseInt(a.slice(1)) || 0];
-      const [lettreB, chiffreB] = [b[0], parseInt(b.slice(1)) || 0];
-
-      if (lettreA !== lettreB) {
-        return lettreA.localeCompare(lettreB); // Tri par lettre
-      }
-      return chiffreA - chiffreB; // Tri par chiffre
+      prenom: membre.prenom || '',
+      classement: membre.classement || 'ZZ',
     };
 
     setSaison({
