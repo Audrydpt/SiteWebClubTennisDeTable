@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,no-nested-ternary,@typescript-eslint/no-unused-vars */
-import { useEffect, useState } from 'react';
-import { Calendar, Users, Trophy, MapPin } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Calendar, Users, Trophy, MapPin, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -89,7 +89,12 @@ export default function HomeLogged() {
     loadData();
   }, [member]);
 
-  if (loading) return <div>Chargement...</div>;
+  if (loading)
+    return (
+      <div className="flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
   if (error) return <div className="text-red-500">{error}</div>;
   if (!member) return <div>Aucun membre trouvé.</div>;
 
