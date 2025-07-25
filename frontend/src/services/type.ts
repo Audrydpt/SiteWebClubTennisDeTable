@@ -139,4 +139,7 @@ export type Member = {
   prenom: string;
   telephone: string;
   classement: string;
+  email?: string;
+  role?: string; // Optionnel pour les membres
+  dateInscription?: string; // Optionnel pour les membres
 };

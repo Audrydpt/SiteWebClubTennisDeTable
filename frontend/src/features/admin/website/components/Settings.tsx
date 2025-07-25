@@ -1,6 +1,4 @@
 /* eslint-disable */
-'use client';
-
 import type React from 'react';
 
 import {
@@ -21,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,6 +62,8 @@ type User = {
   email: string;
   telephone: string;
   classement: string;
+  role: 'joueur' | 'admin';
+  dateInscription: string;
 };
 
 export default function AdminSettings() {
@@ -76,6 +77,12 @@ export default function AdminSettings() {
   const [sortBy, setSortBy] = useState<'nom' | 'classement'>('nom');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
+  const formatDateFR = (dateString?: string) => {
+    if (!dateString) return 'Date à venir';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR');
+  };
+
   // Form states
   const [newUser, setNewUser] = useState({
     nom: '',
@@ -84,10 +91,12 @@ export default function AdminSettings() {
     password: '',
     telephone: '',
     classement: '',
+    role: 'joueur',
+    dateInscription: new Date().toISOString(),
   });
 
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [editForm, setEditForm] = useState<Partial<User>>({});
+  const [editForm, setEditForm] = useState<Partial<User & { role?: string; dateInscription?: string }>>({});
 
   // Fetch users from API
   const fetchUsersFromApi = async () => {
@@ -187,6 +196,8 @@ export default function AdminSettings() {
         email: newUser.email,
         telephone: newUser.telephone,
         classement: newUser.classement,
+        role: newUser.role || 'joueur',
+        dateInscription: new Date().toISOString(),
       };
 
       await createUserProfile(profil);
@@ -199,6 +210,8 @@ export default function AdminSettings() {
         password: '',
         telephone: '',
         classement: '',
+        role: 'joueur',
+        dateInscription: new Date().toISOString(),
       });
       setShowCreateDialog(false);
     } catch (err: any) {
@@ -241,7 +254,6 @@ export default function AdminSettings() {
       if (supabaseError) {
         throw new Error(`Erreur Supabase : ${supabaseError.message}`);
       }
-
       // 2. Supprimer dans JSON Server
       await deleteUserProfile(userToDelete.id);
 
@@ -375,8 +387,7 @@ export default function AdminSettings() {
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <Avatar className="h-10 w-10 md:h-12 md:w-12 flex-shrink-0">
                         <AvatarFallback className="text-sm md:text-base">
-                          {user.prenom[0]}
-                          {user.nom[0]}
+                          {(user.prenom?.[0] ?? '') + (user.nom?.[0] ?? '')}
                         </AvatarFallback>
                       </Avatar>
 
@@ -562,6 +573,28 @@ export default function AdminSettings() {
                   }
                 />
               </div>
+              <div>
+                <Label>Rôle</Label>
+                <Select
+                  value={newUser.role}
+                  onValueChange={(value) =>
+                    setNewUser({ ...newUser, role: value as 'joueur' | 'admin' })
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Rôle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="joueur">Joueur</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Date d'inscription</Label>
+                <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
+                  <span>Date d'inscription : {formatDateFR(newUser.dateInscription)}</span>
+                </div>
+              </div>
             </div>
             <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button
@@ -636,6 +669,33 @@ export default function AdminSettings() {
                   value={editForm.classement || ''}
                   onChange={(e) =>
                     setEditForm({ ...editForm, classement: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label>Rôle</Label>
+                <Select
+                  value={editForm.role || 'joueur'}
+                  onValueChange={(value) =>
+                    setEditForm({ ...editForm, role: value as 'joueur' | 'admin' })
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Rôle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="joueur">Joueur</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Date d'inscription</Label>
+                <Input
+                  type="date"
+                  value={editForm.dateInscription ? editForm.dateInscription.slice(0, 10) : ''}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, dateInscription: new Date(e.target.value).toISOString() })
                   }
                 />
               </div>
