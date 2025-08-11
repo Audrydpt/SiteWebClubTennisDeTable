@@ -177,7 +177,7 @@ export default function AdminMedia() {
                   </h3>
                   <ul className="list-disc list-inside space-y-1">
                     <li>
-                      Taille max : <strong>25 Mo</strong>
+                      Taille max : <strong>10 Mo</strong>
                     </li>
                     <li>Formats recommandés :</li>
                     <ul className="list-disc list-inside ml-4">

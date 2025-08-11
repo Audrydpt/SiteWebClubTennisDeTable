@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,no-console,jsx-a11y/no-noninteractive-element-interactions,jsx-a11y/click-events-have-key-events,no-nested-ternary */
+/* eslint-disable @typescript-eslint/no-unused-vars,no-console,jsx-a11y/no-noninteractive-element-interactions,jsx-a11y/click-events-have-key-events,no-nested-ternary,@typescript-eslint/no-explicit-any,prettier/prettier,jsx-a11y/no-static-element-interactions,react/button-has-type */
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Slider from 'react-slick';
@@ -6,12 +6,36 @@ import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 
-import { Calendar, Loader2, Trophy } from 'lucide-react';
+import { Calendar, Loader2, Award } from 'lucide-react';
 
-import { fetchActualites, fetchSponsors } from '../services/api';
-import { ActualiteData, ResultatData, SponsorData } from '../services/type';
+import {
+  fetchActualites,
+  fetchSponsors,
+  fetchSaisonEnCours,
+} from '../services/api';
+import { ActualiteData, SponsorData, ResultatData } from '../services/type';
 import '../lib/styles/home.css';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.tsx';
+
+// Ajout d'un type minimal pour la saison
+type Serie = { id: string; nom: string };
+type EquipeClub = { nom: string };
+type CalendrierMatch = {
+  id: string;
+  division?: string;
+  serie?: string;
+  serieId?: string;
+  domicile: string;
+  exterieur: string;
+  score?: string;
+  date: string;
+};
+type SaisonData = {
+  series?: Serie[];
+  equipesClub?: EquipeClub[];
+  calendrier?: CalendrierMatch[];
+
+};
 
 // Interface pour les props des flèches
 interface ArrowProps {
@@ -49,7 +73,9 @@ export default function HomePage() {
   const [resultats, setResultats] = useState<ResultatData[]>([]);
   const [sponsors, setSponsors] = useState<SponsorData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saison, setSaison] = useState(null);
+  const [saison, setSaison] = useState<SaisonData | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<ActualiteData | null>(null);
+
 
   useEffect(() => {
     const loadData = async () => {
@@ -75,8 +101,27 @@ export default function HomePage() {
 
         setActualites(sortedActualites);
 
-        // Dans une application réelle, vous récupéreriez ces données depuis l'API
-        setResultats([]);
+        // Récupération des résultats réels depuis l'API (saison en cours)
+        const saisonEnCours = await fetchSaisonEnCours();
+        setSaison(saisonEnCours);
+
+        // On extrait les résultats des matchs du calendrier de la saison en cours
+        let resultatsData: ResultatData[] = [];
+        if (saisonEnCours && Array.isArray(saisonEnCours.calendrier)) {
+          resultatsData = saisonEnCours.calendrier
+            .filter((match: any) => match.score) // On ne garde que les matchs avec un score
+            .map((match: any) => ({
+              id: match.id,
+              division: match.division || match.serie || '',
+              equipe: match.domicile,
+              adversaire: match.exterieur,
+              score: match.score,
+              date: match.date,
+              domicile: true, // Par défaut, on considère que l'équipe passée ici est à domicile
+              serieId: match.serieId || '',
+            }));
+        }
+        setResultats(resultatsData);
 
         const sponsorsData = await fetchSponsors();
         // Tri par ordre
@@ -110,13 +155,21 @@ export default function HomePage() {
   };
 
   // Fonction pour déterminer la classe de couleur du score
-  const getScoreColorClass = (score: string): string => {
+  // Prend en compte si l'équipe du club était à domicile ou à l'extérieur
+  const getScoreColorClass = (score: string, isDomicile: boolean): string => {
+    if (!score || score === '-') return 'text-gray-400';
     const parts = score.split('-');
+    if (parts.length !== 2) return 'text-gray-700';
     const home = parseInt(parts[0], 10);
     const away = parseInt(parts[1], 10);
 
-    if (home > away) return 'text-green-600';
-    if (home < away) return 'text-red-600';
+    // Si l'équipe du club est à domicile, home = club
+    // Si l'équipe du club est à l'extérieur, away = club
+    const clubScore = isDomicile ? home : away;
+    const advScore = isDomicile ? away : home;
+
+    if (clubScore > advScore) return 'text-green-600';
+    if (clubScore < advScore) return 'text-red-600';
     return 'text-gray-700';
   };
 
@@ -145,8 +198,7 @@ export default function HomePage() {
           <Alert variant="destructive">
             <AlertTitle>Erreur</AlertTitle>
             <AlertDescription>
-              Impossible de charger les actualités. Veuillez réessayer plus
-              tard.
+              Impossible de charger les actualités. Veuillez réessayer plus tard.
             </AlertDescription>
           </Alert>
         </div>
@@ -158,18 +210,17 @@ export default function HomePage() {
         <Slider {...mainCarouselSettings}>
           {actualites.map((actualite) => (
             <div key={actualite.id} className="px-2">
-              <div className="relative rounded-lg overflow-hidden h-[400px] bg-black">
+              <div
+                className="relative rounded-lg overflow-hidden h-[400px] bg-black cursor-pointer group"
+                onClick={() => setSelectedArticle(actualite)}
+              >
                 {/* Image floutée en fond */}
                 <div className="absolute inset-0">
                   <img
                     src={actualite.imageUrl || '/placeholder.svg'}
                     alt={actualite.title}
-                    className="w-full h-full object-cover blur-md opacity-50"
+                    className="w-full h-full object-cover blur-md opacity-50 transition-transform duration-500 group-hover:scale-105"
                     onError={(e) => {
-                      console.log(
-                        'Erreur chargement image:',
-                        actualite.imageUrl
-                      );
                       (e.target as HTMLImageElement).src = '/placeholder.svg';
                     }}
                   />
@@ -180,37 +231,82 @@ export default function HomePage() {
                   <img
                     src={actualite.imageUrl || '/placeholder.svg'}
                     alt={actualite.title}
-                    className="max-h-full max-w-full object-contain z-10"
+                    className="max-h-full max-w-full object-contain z-10 transition-transform duration-500 group-hover:scale-105"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/placeholder.svg';
                     }}
                   />
                 </div>
 
-                {/* Gradient + Texte */}
+                {/* Gradient */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-20" />
-                <div className="absolute bottom-0 left-0 right-0 p-6 text-white z-30">
-                  <h3
-                    className={`text-2xl md:text-3xl font-bold leading-tight mb-2 drop-shadow-lg ${
-                      actualite.redirectUrl
-                        ? 'cursor-pointer hover:underline'
-                        : ''
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleActualiteClick(actualite.redirectUrl);
-                    }}
-                  >
-                    {actualite.title}
-                  </h3>
-                  <p className="text-sm md:text-base text-white/90 leading-relaxed drop-shadow-md">
-                    {actualite.content}
-                  </p>
+
+                {/* Bloc texte global */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white z-30 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
+                  <div className="flex flex-col gap-2">
+                    {/* Titre */}
+                    <h3 className="text-lg md:text-2xl font-bold leading-tight drop-shadow-lg">
+                      {actualite.title}
+                    </h3>
+
+                    {/* Texte limité + scroll masqué */}
+                    <div className="relative">
+                      <div
+                        className="
+                        text-sm md:text-base text-white/90 leading-relaxed drop-shadow-md
+                        max-h-[4.5em] overflow-y-auto pr-1 scrollbar-hide
+                      "
+                        onClick={(e) => e.stopPropagation()} // évite d’ouvrir le plein écran lors du scroll
+                      >
+                        {actualite.content}
+                      </div>
+                      <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           ))}
         </Slider>
+
+        {/* MODAL PLEIN ÉCRAN */}
+        {selectedArticle && (
+          <div
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 animate-fadeIn"
+            onClick={(e) =>
+              e.target === e.currentTarget && setSelectedArticle(null)
+            }
+          >
+            <div className="relative max-w-4xl w-full bg-white rounded-lg overflow-hidden shadow-lg animate-slideUp">
+              {/* Bouton fermer */}
+              <button
+                className="absolute top-4 right-4 text-white text-3xl z-50"
+                onClick={() => setSelectedArticle(null)}
+              >
+                ✕
+              </button>
+
+              {/* Image zoom */}
+              <div className="w-full h-[500px] bg-black overflow-hidden flex items-center justify-center">
+                <img
+                  src={selectedArticle.imageUrl || '/placeholder.svg'}
+                  alt={selectedArticle.title}
+                  className="max-h-full max-w-full object-contain transition-transform duration-500"
+                />
+              </div>
+
+              {/* Contenu */}
+              <div className="p-6 text-black max-h-[300px] overflow-y-auto">
+                <h2 className="text-2xl font-bold mb-4">
+                  {selectedArticle.title}
+                </h2>
+                <p className="leading-relaxed whitespace-pre-line">
+                  {selectedArticle.content}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -263,7 +359,7 @@ export default function HomePage() {
           <div className="lg:col-span-2">
             <div className="bg-white p-6 rounded-xl shadow-lg h-full">
               <h2 className="text-3xl font-bold text-gray-800 mb-4 flex items-center gap-3">
-                <Trophy style={{ color: '#F1C40F' }} />
+                <Award style={{ color: '#F1C40F' }} />
                 Derniers Résultats
               </h2>
               <div className="space-y-4">
@@ -271,49 +367,190 @@ export default function HomePage() {
                   <div className="flex items-center justify-center">
                     <Loader2 className="h-12 w-12 animate-spin text-primary" />
                   </div>
-                ) : !saison ? (
-                  <div className="container mx-auto">
-                    <Alert variant="destructive">
-                      <AlertTitle>Information</AlertTitle>
-                      <AlertDescription>
-                        Pas de saison en cours actuellement
-                      </AlertDescription>
-                    </Alert>
-                  </div>
                 ) : (
                   <>
-                    {resultats.map((res) => (
-                      <div
-                        key={res.id}
-                        className="p-4 border rounded-lg transition-all hover:shadow-md hover:bg-[#F1F1F1]"
-                        style={{
-                          backgroundColor: '#F9F9F9',
-                          borderColor: '#E0E0E0',
-                        }}
-                      >
-                        <p className="text-xs text-gray-500 mb-1">
-                          {res.division}
-                        </p>
-                        <div className="flex justify-between items-center">
-                          <div className="font-semibold text-gray-800">
-                            <p>{res.equipe}</p>
-                            <p className="text-sm text-gray-600">
-                              vs {res.adversaire}
-                            </p>
+                    {(() => {
+                      // Récupère les noms complets des équipes du club
+                      const equipesClub =
+                        saison?.equipesClub?.map((e: { nom: string }) =>
+                          e.nom.trim()
+                        ) ?? [];
+
+                      // Fonction utilitaire pour obtenir le nom de la série à partir du serieId
+                      const getSerieNom = (serieId: string) => {
+                        if (!saison?.series) return '';
+                        const serie = saison.series.find(
+                          (s: any) => s.id === serieId
+                        );
+                        return serie ? serie.nom : '';
+                      };
+
+                      // Fonction utilitaire pour formater la date
+                      const formatDate = (dateStr: string) => {
+                        if (!dateStr) return '';
+                        const date = new Date(dateStr);
+                        return date.toLocaleDateString('fr-BE', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                        });
+                      };
+
+                      // Pour chaque équipe du club, on prend son dernier match joué ou la prochaine rencontre prévue
+                      const resultatsEquipes: ResultatData[] = equipesClub
+                        .map((nomEquipe: string) => {
+                          // Tous les matchs de l'équipe (domicile ou extérieur)
+                          const matchsEquipe = resultats
+                            .filter(
+                              (res) =>
+                                res.equipe?.trim() === nomEquipe ||
+                                res.adversaire?.trim() === nomEquipe
+                            )
+                            .sort(
+                              (a, b) =>
+                                new Date(b.date).getTime() -
+                                new Date(a.date).getTime()
+                            );
+
+                          // Matchs déjà joués (avec score)
+                          const matchsJoues = matchsEquipe.filter(
+                            (res) => res.score && res.score !== '-'
+                          );
+
+                          if (matchsJoues.length > 0) {
+                            // Dernier match joué
+                            const dernierMatch = matchsJoues[0];
+                            const domicile =
+                              dernierMatch.equipe?.trim() === nomEquipe;
+                            // Cherche le match dans le calendrier pour récupérer serieId et date
+                            const matchCalendrier = (
+                              saison?.calendrier ?? []
+                            ).find((m: any) => m.id === dernierMatch.id);
+                            return {
+                              ...dernierMatch,
+                              equipe: nomEquipe,
+                              adversaire: domicile
+                                ? dernierMatch.adversaire
+                                : dernierMatch.equipe,
+                              domicile,
+                              serieId: matchCalendrier?.serieId || dernierMatch.serieId || '',
+                              date: matchCalendrier?.date || dernierMatch.date,
+                            };
+                          }
+
+                          // Si pas de match joué, chercher la prochaine rencontre prévue (dans le calendrier de la saison)
+                          const calendrier = saison?.calendrier ?? [];
+                          const prochainsMatchs = calendrier
+                            .filter(
+                              (match: any) =>
+                                (match.domicile?.trim() === nomEquipe ||
+                                  match.exterieur?.trim() === nomEquipe) &&
+                                (!match.score || match.score === '-') &&
+                                new Date(match.date).getTime() >=
+                                  new Date().setHours(0, 0, 0, 0)
+                            )
+                            .sort(
+                              (a: any, b: any) =>
+                                new Date(a.date).getTime() -
+                                new Date(b.date).getTime()
+                            );
+
+                          if (prochainsMatchs.length > 0) {
+                            const prochain = prochainsMatchs[0];
+                            const domicile =
+                              prochain.domicile?.trim() === nomEquipe;
+                            return {
+                              id: prochain.id,
+                              division:
+                                prochain.division || prochain.serie || '',
+                              equipe: nomEquipe,
+                              adversaire: domicile
+                                ? prochain.exterieur
+                                : prochain.domicile,
+                              score: '-',
+                              date: prochain.date,
+                              domicile,
+                              serieId: prochain.serieId || '',
+                            };
+                          }
+
+                          // Si aucun match joué ni prévu, ne rien retourner
+                          return null;
+                        })
+                        .filter((r): r is ResultatData => !!r);
+
+                      if (resultatsEquipes.length === 0) {
+                        return (
+                          <div className="text-center text-gray-500 py-8">
+                            Aucun résultat ou match prévu pour les équipes du club.
                           </div>
-                          <div className="text-right">
-                            <p
-                              className={`text-2xl font-bold ${getScoreColorClass(res.score)}`}
-                            >
-                              {res.score}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {res.domicile ? '🏠 Domicile' : '✈️ Extérieur'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                        );
+                      }
+
+                      return (
+                        <>
+                          {resultatsEquipes.map(
+                            (res: {
+                              id: React.Key | null | undefined;
+                              division: any;
+                              equipe: any;
+                              adversaire: any;
+                              score: any;
+                              domicile: any;
+                              serieId?: string;
+                              date: string;
+                            }) => (
+                              <div
+                                key={res.id}
+                                className="p-4 border rounded-lg transition-all hover:shadow-md hover:bg-[#F1F1F1]"
+                                style={{
+                                  backgroundColor: '#F9F9F9',
+                                  borderColor: '#E0E0E0',
+                                }}
+                              >
+                                <div className="flex justify-between items-center mb-1">
+                                  <p className="text-xs text-gray-500">
+                                    {getSerieNom(res.serieId || '') ||
+                                      res.division ||
+                                      'Division inconnue'}
+                                  </p>
+                                  <p className="text-xs text-gray-400">
+                                    {formatDate(res.date)}
+                                  </p>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <div className="font-semibold text-gray-800">
+                                    <p>{res.equipe}</p>
+                                    <p className="text-sm text-gray-600">
+                                      vs {res.adversaire}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p
+                                      className={`text-2xl font-bold ${
+                                        res.score !== '-'
+                                          ? getScoreColorClass(
+                                            res.score,
+                                            res.domicile
+                                          )
+                                          : 'text-gray-400'
+                                      }`}
+                                    >
+                                      {res.score}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {res.domicile
+                                        ? '🏠 Domicile'
+                                        : '✈️ Extérieur'}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </>
+                      );
+                    })()}
                     <div className="text-center mt-6">
                       <Link
                         to="competition/equipes"

@@ -3,6 +3,13 @@ export interface ResultatData {
   equipe: string;
   adversaire: string;
   score: string;
+  date: string;
+  semaine: number;
+  joueursDomicile?: string[];
+  joueursExterieur?: string[];
+  joueur_dom?: string[];
+  joueur_ext?: string[];
+  serieId: string;
   division: string;
   domicile: boolean;
 }

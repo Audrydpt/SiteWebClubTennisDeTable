@@ -335,22 +335,45 @@ export default function UpdateSaison() {
                       <Button
                         onClick={() => {
                           if (nouvelleEquipeAdverse.trim() === '') return;
+
+                          const equipeClub = saison.equipesClub.find(
+                            (eq) => eq.nom === nouvelleEquipeAdverse
+                          );
+
+                          const nouvelleEquipe = {
+                            id: equipeClub ? equipeClub.id : uuidv4(),
+                            nom: nouvelleEquipeAdverse,
+                            serieId: serie.id,
+                          };
+
+                          const dejaDansSerie = serie.equipes.some(
+                            (eq) => eq.nom === nouvelleEquipeAdverse
+                          );
+
                           const seriesUpdated = saison.series.map((s) =>
                             s.id === serie.id
                               ? {
-                                  ...s,
-                                equipes: [
-                                  ...s.equipes,
-                                  {
-                                    id: uuidv4(),
-                                    nom: nouvelleEquipeAdverse,
-                                    serieId: serie.id,
-                                  },
-                                ],
+                                ...s,
+                                equipes: dejaDansSerie
+                                  ? s.equipes
+                                  : [...s.equipes, nouvelleEquipe],
                               }
                               : s
                           );
-                          handleUpdate('series', seriesUpdated);
+
+                          let equipesClubUpdated = saison.equipesClub;
+                          if (equipeClub) {
+                            equipesClubUpdated = saison.equipesClub.map((eq) =>
+                              eq.id === equipeClub.id ? { ...eq, serieId: serie.id } : eq
+                            );
+                          }
+
+                          // Un seul setSaison pour appliquer les deux modifications
+                          setSaison({
+                            ...saison,
+                            series: seriesUpdated,
+                            equipesClub: equipesClubUpdated,
+                          });
                           setNouvelleEquipeAdverse('');
                         }}
                       >

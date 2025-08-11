@@ -162,9 +162,6 @@ export default function HomeLogged() {
                     <MapPin className="h-4 w-4" />
                     <span>{match.domicile}</span>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {match.serieId}
-                  </div>
                 </div>
               ))}
 
