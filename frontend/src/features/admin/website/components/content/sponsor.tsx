@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,no-restricted-globals,no-alert */
+/* eslint-disable @typescript-eslint/no-unused-vars,no-restricted-globals,no-alert,@typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import { toast } from 'sonner';
@@ -39,9 +39,10 @@ export default function SponsorsManager() {
         fetchSponsors(),
         fetchImages(),
       ]);
-
       setSponsors(
-        sponsorsData.sort((a: SponsorData, b: SponsorData) => a.order - b.order)
+        sponsorsData.sort(
+          (a: { order: number }, b: { order: number }) => a.order - b.order
+        )
       );
       setImages(imagesData);
     } catch (error) {
@@ -63,8 +64,17 @@ export default function SponsorsManager() {
       setCurrentSponsor({
         name: '',
         texte: '',
+        description: '',
+        email: '',
+        telephone: '',
+        adresse: '',
         logoUrl: '',
         redirectUrl: '',
+        facebook: '',
+        instagram: '',
+        twitter: '',
+        youtube: '',
+        linkedin: '',
         order: sponsors.length + 1,
       });
       setIsEditing(false);
@@ -221,13 +231,15 @@ export default function SponsorsManager() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>
               {isEditing ? 'Modifier un sponsor' : 'Ajouter un sponsor'}
             </DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+
+          {/* Formulaire en grille responsive */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-h-[80vh] overflow-y-auto pr-2">
             <div className="grid gap-2">
               <Label htmlFor="name">Nom</Label>
               <Input
@@ -238,14 +250,65 @@ export default function SponsorsManager() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="texte">Description</Label>
-              <Textarea
+              <Label htmlFor="texte">Mini descriptif (2-3 mots)</Label>
+              <Input
                 id="texte"
                 name="texte"
                 value={currentSponsor.texte || ''}
                 onChange={handleChange}
               />
             </div>
+            <div className="grid gap-2 md:col-span-2">
+              <Label htmlFor="description">Description (À propos)</Label>
+              <Textarea
+                id="description"
+                name="description"
+                value={currentSponsor.description || ''}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                value={currentSponsor.email || ''}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="telephone">Téléphone</Label>
+              <Input
+                id="telephone"
+                name="telephone"
+                value={currentSponsor.telephone || ''}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="grid gap-2 md:col-span-2">
+              <Label htmlFor="adresse">Adresse</Label>
+              <Input
+                id="adresse"
+                name="adresse"
+                value={currentSponsor.adresse || ''}
+                onChange={handleChange}
+              />
+            </div>
+            {['facebook', 'instagram', 'twitter', 'youtube', 'linkedin'].map(
+              (field) => (
+                <div className="grid gap-2" key={field}>
+                  <Label htmlFor={field}>
+                    {field.charAt(0).toUpperCase() + field.slice(1)}
+                  </Label>
+                  <Input
+                    id={field}
+                    name={field}
+                    value={(currentSponsor as any)[field] || ''}
+                    onChange={handleChange}
+                  />
+                </div>
+              )
+            )}
             <div className="grid gap-2">
               <Label htmlFor="logoUrl">Logo</Label>
               <select
@@ -263,14 +326,11 @@ export default function SponsorsManager() {
                 ))}
               </select>
               {currentSponsor.logoUrl && (
-                <div className="mt-2 h-24 w-24">
+                <div className="mt-2 h-20 w-20">
                   <img
                     src={currentSponsor.logoUrl}
                     alt="Aperçu du logo"
                     className="max-h-full max-w-full object-contain border rounded"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder.svg';
-                    }}
                   />
                 </div>
               )}
@@ -295,6 +355,7 @@ export default function SponsorsManager() {
               />
             </div>
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={handleCloseDialog}>
               Annuler

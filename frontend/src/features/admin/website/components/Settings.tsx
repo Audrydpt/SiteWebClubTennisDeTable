@@ -88,7 +88,7 @@ export default function AdminSettings() {
     nom: '',
     prenom: '',
     email: '',
-    password: '',
+    password: 'cttframeries', // Mot de passe prérempli
     telephone: '',
     classement: '',
     role: 'joueur',
@@ -207,7 +207,7 @@ export default function AdminSettings() {
         nom: '',
         prenom: '',
         email: '',
-        password: '',
+        password: 'cttframeries', // Remettre le mdp prérempli après création
         telephone: '',
         classement: '',
         role: 'joueur',

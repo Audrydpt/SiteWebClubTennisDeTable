@@ -17,10 +17,19 @@ export interface ResultatData {
 export interface SponsorData {
   id: string;
   name: string;
-  texte: string;
   logoUrl: string;
-  redirectUrl: string;
+  texte: string;
+  description: string;
+  redirectUrl?: string;
   order: number;
+  email?: string;
+  telephone?: string;
+  adresse?: string;
+  facebook?: string;
+  instagram?: string;
+  twitter?: string;
+  youtube?: string;
+  linkedin?: string;
 }
 
 export interface TournoiData {
