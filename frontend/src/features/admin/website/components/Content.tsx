@@ -27,6 +27,10 @@ import TournoisManager from '@/features/admin/website/components/content/tournam
 import ResultatsManager from '@/features/admin/website/components/content/result.tsx';
 import SponsorsManager from '@/features/admin/website/components/content/sponsor.tsx';
 import FooterManager from '@/features/admin/website/components/content/footerPage.tsx';
+import GeneralManager from '@/features/admin/website/components/content/general.tsx';
+import PalmaresManager from '@/features/admin/website/components/content/palmares.tsx';
+import ContactManager from '@/features/admin/website/components/content/contact.tsx';
+import AboutManager from '@/features/admin/website/components/content/about.tsx';
 
 interface ContentSection {
   id: string;
@@ -90,6 +94,38 @@ export default function AdminContent() {
       icon: <FileText className="h-5 w-5 text-gray-600" />,
       component: <FooterManager />,
       color: 'bg-gray-100',
+    },
+    {
+      id: 'palmares',
+      title: 'Gestion du Palmarès',
+      description: "Modifier le palmarès de l'équipe",
+      icon: <Trophy className="h-5 w-5 text-orange-600" />,
+      component: <PalmaresManager />,
+      color: 'bg-orange-100',
+    },
+    {
+      id: 'contact',
+      title: 'Gestion du Contact',
+      description: 'Modifier les informations de contact',
+      icon: <FileText className="h-5 w-5 text-teal-600" />,
+      component: <ContactManager />,
+      color: 'bg-teal-100',
+    },
+    {
+      id: 'about',
+      title: 'Gestion de la Page À Propos',
+      description: 'Modifier le contenu de la page à propos',
+      icon: <FileText className="h-5 w-5 text-pink-600" />,
+      component: <AboutManager />,
+      color: 'bg-pink-100',
+    },
+    {
+      id: 'general',
+      title: 'Gestion Générale du Site',
+      description: 'Modifier les paramètres généraux du site',
+      icon: <FileText className="h-5 w-5 text-indigo-600" />,
+      component: <GeneralManager />,
+      color: 'bg-indigo-100',
     },
   ];
 

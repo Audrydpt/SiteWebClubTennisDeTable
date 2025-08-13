@@ -15,6 +15,7 @@ import {
 } from '../services/api';
 import { ActualiteData, SponsorData, ResultatData } from '../services/type';
 import '../lib/styles/home.css';
+import HeroSection from '@/pages/comps/hero.tsx';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.tsx';
 
 // Ajout d'un type minimal pour la saison
@@ -314,32 +315,8 @@ export default function HomePage() {
   return (
     <div>
       {/* Section Hero */}
-      <section
-        className="relative min-h-[300px] flex items-center justify-center text-center bg-cover bg-center"
-        style={{
-          background:
-            'linear-gradient(to bottom, #3A3A3A 5%, #F1C40F 5% 95%, #3A3A3A 5%)',
-        }}
-      >
-        <div className="absolute inset-0 bg-black/20" />
-        <div className="relative z-10 flex flex-col md:flex-row items-center gap-4 md:gap-6 px-4 py-6">
-          <div className="flex-shrink-0">
-            <img
-              src="./logo-removebg.jpg"
-              alt="Logo CTT Frameries"
-              className="h-40 md:h-80 w-auto drop-shadow-lg"
-            />
-          </div>
-          <div className="text-white">
-            <h1 className="text-4xl md:text-6xl font-bold mb-2 md:mb-4 drop-shadow-lg">
-              CTT Frameries
-            </h1>
-            <p className="text-base md:text-xl font-medium drop-shadow-md max-w-4xl">
-              Club de Tennis de Table de Frameries - Passion, Sport et
-              Convivialité
-            </p>
-          </div>
-        </div>
+      <section>
+        <HeroSection />
       </section>
 
       {/* Contenu principal : Carousel et Résultats */}

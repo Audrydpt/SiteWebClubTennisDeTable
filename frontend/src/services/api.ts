@@ -217,3 +217,92 @@ export const updateSelection = async (
   const response = await axios.put(`${API_URL}/commande/${id}`, data);
   return response.data;
 };
+
+// ---- INFOS GENERALES ----
+
+// Récupérer toutes les informations (inclut contact, about, footer, palmares)
+export const fetchInformations = async () => {
+  const response = await axios.get(`${API_URL}/informations`);
+  return response.data;
+};
+
+// Mettre à jour toutes les informations (objet complet)
+export const updateInformations = async (id: string, data: any) => {
+  const response = await axios.put(`${API_URL}/informations/${id}`, data);
+  return response.data;
+};
+
+// ---- CONTACT ----
+
+// Récupérer uniquement la section contact
+export const fetchContact = async () => {
+  const response = await axios.get(`${API_URL}/informations`);
+  return response.data[0].contact; // car on a un tableau
+};
+
+// Mettre à jour la section contact
+export const updateContact = async (data: any) => {
+  const allInfos = await fetchInformations();
+  const current = allInfos[0];
+  const updated = { ...current, contact: data };
+
+  const response = await axios.put(
+    `${API_URL}/informations/${current.id}`,
+    updated
+  );
+  return response.data;
+};
+
+// ---- ABOUT ----
+export const fetchAbout = async () => {
+  const response = await axios.get(`${API_URL}/informations`);
+  return response.data[0].about;
+};
+
+export const updateAbout = async (data: any) => {
+  const allInfos = await fetchInformations();
+  const current = allInfos[0];
+  const updated = { ...current, about: data };
+
+  const response = await axios.put(
+    `${API_URL}/informations/${current.id}`,
+    updated
+  );
+  return response.data;
+};
+
+// ---- FOOTER ----
+export const fetchFooter = async () => {
+  const response = await axios.get(`${API_URL}/informations`);
+  return response.data[0].footer;
+};
+
+export const updateFooter = async (data: any) => {
+  const allInfos = await fetchInformations();
+  const current = allInfos[0];
+  const updated = { ...current, footer: data };
+
+  const response = await axios.put(
+    `${API_URL}/informations/${current.id}`,
+    updated
+  );
+  return response.data;
+};
+
+// ---- PALMARES ----
+export const fetchPalmares = async () => {
+  const response = await axios.get(`${API_URL}/informations`);
+  return response.data[0].palmares;
+};
+
+export const updatePalmares = async (data: any) => {
+  const allInfos = await fetchInformations();
+  const current = allInfos[0];
+  const updated = { ...current, palmares: data };
+
+  const response = await axios.put(
+    `${API_URL}/informations/${current.id}`,
+    updated
+  );
+  return response.data;
+};
