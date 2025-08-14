@@ -88,7 +88,7 @@ export default function AdminSettings() {
     nom: '',
     prenom: '',
     email: '',
-    password: '',
+    password: 'cttframeries',
     telephone: '',
     classement: '',
     role: 'joueur',

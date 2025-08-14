@@ -92,7 +92,7 @@ export default function Contact() {
             Contactez le CTT Frameries
           </h1>
           <p className="text-xl max-w-3xl mx-auto leading-relaxed text-gray-300">
-            Une question sur nos entraînements, nos compétitions ou souhaitez-vous rejoindre notre club ? N'hésitez pas à contacter le comité du CTT Frameries.
+            Une question sur nos entraînements, nos sponsors ou souhaitez-vous rejoindre notre club ? N'hésitez pas à contacter le comité du CTT Frameries.
           </p>
 
           <div className="flex justify-center gap-12 mt-12">

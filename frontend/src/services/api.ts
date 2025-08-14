@@ -234,17 +234,18 @@ export const updateInformations = async (id: string, data: any) => {
 
 // ---- CONTACT ----
 
-// Récupérer uniquement la section contact
+// --- Récupérer uniquement la section contact ---
 export const fetchContact = async () => {
-  const response = await axios.get(`${API_URL}/informations`);
-  return response.data[0].contact; // car on a un tableau
+  const allInfos = await fetchInformations();
+  const current = allInfos[0]; // supposer qu'il n'y a qu'un objet "informations"
+  return current.contact ?? [];
 };
 
-// Mettre à jour la section contact
-export const updateContact = async (data: any) => {
+// --- Mettre à jour la section contact ---
+export const updateContact = async (newContactData: any[]) => {
   const allInfos = await fetchInformations();
-  const current = allInfos[0];
-  const updated = { ...current, contact: data };
+  const current = allInfos[0]; // l'objet "informations" complet
+  const updated = { ...current, contact: newContactData };
 
   const response = await axios.put(
     `${API_URL}/informations/${current.id}`,
@@ -263,24 +264,6 @@ export const updateAbout = async (data: any) => {
   const allInfos = await fetchInformations();
   const current = allInfos[0];
   const updated = { ...current, about: data };
-
-  const response = await axios.put(
-    `${API_URL}/informations/${current.id}`,
-    updated
-  );
-  return response.data;
-};
-
-// ---- FOOTER ----
-export const fetchFooter = async () => {
-  const response = await axios.get(`${API_URL}/informations`);
-  return response.data[0].footer;
-};
-
-export const updateFooter = async (data: any) => {
-  const allInfos = await fetchInformations();
-  const current = allInfos[0];
-  const updated = { ...current, footer: data };
 
   const response = await axios.put(
     `${API_URL}/informations/${current.id}`,

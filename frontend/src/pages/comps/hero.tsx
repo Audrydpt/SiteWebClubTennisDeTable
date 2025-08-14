@@ -62,18 +62,22 @@ export default function HeroSection() {
         </div>
 
         {/* Texte avec fond jaune translucide */}
-        <div className="bg-[#F1C40F22] rounded-2xl p-6 md:p-8 max-w-xl shadow-lg backdrop-blur-sm text-white">
-          <h1 className="text-5xl md:text-6xl font-bold mb-4 leading-tight">
-            <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-              CTT
-            </span>
-            <span className="text-[#F1C40F] ml-4">Frameries</span>
-          </h1>
-          <div className="w-24 h-1 bg-[#F1C40F] mb-4" />
-          <p className="text-xl md:text-2xl font-light">
-            Club de Tennis de Table de Frameries
-          </p>
-          <p className="text-lg text-gray-200 mt-1">Passion • Sport • Convivialité</p>
+        <div className="relative">
+          {/* Effet de surbrillance jaune autour du cadre */}
+          <div className="absolute inset-0 rounded-2xl bg-[#F1C40F] blur-xl opacity-30 pointer-events-none" />
+          <div className="bg-[#3A3A3A] rounded-2xl p-6 md:p-8 max-w-xl shadow-lg text-white relative z-10">
+            <h1 className="text-5xl md:text-6xl font-bold mb-4 leading-tight">
+              <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                CTT
+              </span>
+              <span className="text-[#F1C40F] ml-4">Frameries</span>
+            </h1>
+            <div className="w-24 h-1 bg-[#F1C40F] mb-4" />
+            <p className="text-xl md:text-2xl font-light">
+              Club de Tennis de Table de Frameries
+            </p>
+            <p className="text-lg text-gray-200 mt-1">Passion • Sport • Convivialité</p>
+          </div>
         </div>
       </div>
 

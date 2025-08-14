@@ -26,7 +26,6 @@ import ActualitesManager from '@/features/admin/website/components/content/actu.
 import TournoisManager from '@/features/admin/website/components/content/tournament.tsx';
 import ResultatsManager from '@/features/admin/website/components/content/result.tsx';
 import SponsorsManager from '@/features/admin/website/components/content/sponsor.tsx';
-import FooterManager from '@/features/admin/website/components/content/footerPage.tsx';
 import GeneralManager from '@/features/admin/website/components/content/general.tsx';
 import PalmaresManager from '@/features/admin/website/components/content/palmares.tsx';
 import ContactManager from '@/features/admin/website/components/content/contact.tsx';
@@ -87,14 +86,7 @@ export default function AdminContent() {
       component: <TournoisManager />,
       color: 'bg-yellow-100',
     },
-    {
-      id: 'footer',
-      title: 'Gestion du Footer',
-      description: 'Modifier les informations du footer',
-      icon: <FileText className="h-5 w-5 text-gray-600" />,
-      component: <FooterManager />,
-      color: 'bg-gray-100',
-    },
+
     {
       id: 'palmares',
       title: 'Gestion du Palmarès',

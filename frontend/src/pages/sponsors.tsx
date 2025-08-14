@@ -81,14 +81,14 @@ export default function Sponsors() {
 
       {/* Sponsors Grid */}
       <div className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        <div className="container mx-auto px-10">
+          <div className="flex flex-wrap justify-center gap-8">
             {sponsors.map((sponsor, index) => (
               <div
                 key={sponsor.id}
                 className="group bg-[#FAFAFA] rounded-2xl shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer transform hover:-translate-y-2 border border-gray-200 hover:border-[#F1C40F] overflow-hidden"
                 onClick={() => handleSponsorClick(sponsor)}
-                style={{ animationDelay: `${index * 100}ms` }}
+                style={{ animationDelay: `${index * 100}ms`, width: '350px' }} // largeur fixe pour garder taille actuelle
               >
                 <div className="p-6 flex flex-col items-center text-center h-full">
                   {/* Logo */}
@@ -103,7 +103,6 @@ export default function Sponsors() {
                   <h3 className="text-lg font-bold text-[#3A3A3A] group-hover:text-[#F1C40F] mb-2">
                     {sponsor.name}
                   </h3>
-                  {/* Mini descriptif */}
                   {sponsor.texte && (
                     <p className="text-gray-600 text-sm mb-4 italic">{sponsor.texte}</p>
                   )}
@@ -131,6 +130,7 @@ export default function Sponsors() {
           </div>
         </div>
       </div>
+
 
       {/* Call to Action */}
       <div className="py-8 bg-gray-100">

@@ -246,9 +246,21 @@ export default function HomePage() {
                 <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white z-30 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
                   <div className="flex flex-col gap-2">
                     {/* Titre */}
-                    <h3 className="text-lg md:text-2xl font-bold leading-tight drop-shadow-lg">
-                      {actualite.title}
-                    </h3>
+                    {actualite.redirectUrl && actualite.redirectUrl.trim() !== '' ? (
+                      <a
+                        href={actualite.redirectUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-lg md:text-2xl font-bold leading-tight drop-shadow-lg underline hover:text-yellow-300 transition"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        {actualite.title}
+                      </a>
+                    ) : (
+                      <h3 className="text-lg md:text-2xl font-bold leading-tight drop-shadow-lg">
+                        {actualite.title}
+                      </h3>
+                    )}
 
                     {/* Texte limité + scroll masqué */}
                     <div className="relative">
@@ -304,6 +316,18 @@ export default function HomePage() {
                 <p className="leading-relaxed whitespace-pre-line">
                   {selectedArticle.content}
                 </p>
+                {selectedArticle.redirectUrl && selectedArticle.redirectUrl.trim() !== '' && (
+                  <div className="mt-6">
+                    <a
+                      href={selectedArticle.redirectUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block px-4 py-2 bg-yellow-400 text-black font-semibold rounded hover:bg-yellow-500 transition"
+                    >
+                      Visiter l&#39;actu
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </div>
