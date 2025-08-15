@@ -188,20 +188,6 @@ export default function ContactManager() {
         </CardContent>
       </Card>
 
-      {/* Compétitions */}
-      <Card>
-        <CardContent>
-          <h3 className="font-semibold">Compétitions</h3>
-          <Input
-            value={contactInfo.competitions}
-            onChange={(e) =>
-              handleContactChange('competitions', e.target.value)
-            }
-            placeholder="Compétitions"
-          />
-        </CardContent>
-      </Card>
-
       {/* Sauvegarde */}
       <Button onClick={saveChanges} disabled={saving}>
         {saving ? 'Enregistrement...' : 'Enregistrer'}
