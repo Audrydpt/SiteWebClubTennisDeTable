@@ -17,6 +17,7 @@ import {
   CheckCircle,
   MessageSquare,
   MessageCircle,
+  Loader2,
 } from 'lucide-react';
 import emailjs from 'emailjs-com';
 import { Button } from '@/components/ui/button';
@@ -90,7 +91,14 @@ export default function Contact() {
     }
   };
 
-  if (!infos) return <p className="text-center py-20">Chargement...</p>;
+  if (!infos)
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-[#F1C40F] mx-auto mb-4" />
+        </div>
+      </div>
+    );
 
   // --- Extraire les données dynamiques
   const contact = infos.contact || [];
