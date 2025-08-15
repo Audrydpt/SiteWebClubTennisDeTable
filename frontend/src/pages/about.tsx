@@ -267,7 +267,7 @@ export default function About() {
                       <div className="space-y-4">
                         {(facilitiesSection as any).salle.items.map(
                           (item: string, index: number) => {
-                            const icons = [MapPin, Clock, Users, Heart];
+                            const icons = [MapPin];
                             const IconComponent = icons[index % icons.length];
                             return (
                               <div
