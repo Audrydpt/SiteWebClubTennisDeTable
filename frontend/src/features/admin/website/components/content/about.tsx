@@ -19,9 +19,15 @@ export default function AboutManager() {
       const data = await fetchAbout();
       setAboutData(data);
 
-      // Charger les statistiques
+      // Charger les statistiques depuis l'objet racine
       const informations = await fetchInformations();
-      setStatsData(informations[0]);
+      const current = informations[0];
+      setStatsData({
+        membresActif: current.membresActif,
+        tablesDispo: current.tablesDispo,
+        nbrEquipes: current.nbrEquipes,
+        anciennete: current.anciennete
+      });
     } catch (error) {
       console.error('Erreur chargement about:', error);
     }
@@ -160,13 +166,23 @@ export default function AboutManager() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Sauvegarder les données about
-      await updateAbout(aboutData);
+      // Récupérer les données complètes actuelles
+      const allInfos = await fetchInformations();
+      const current = allInfos[0];
 
-      // Sauvegarder les statistiques
-      if (statsData) {
-        await updateInformations(statsData.id, statsData);
-      }
+      // Mettre à jour avec les nouvelles données about
+      const updatedData = {
+        ...current,
+        about: aboutData,
+        // Mettre à jour les statistiques directement dans l'objet racine
+        membresActif: statsData?.membresActif || current.membresActif,
+        tablesDispo: statsData?.tablesDispo || current.tablesDispo,
+        nbrEquipes: statsData?.nbrEquipes || current.nbrEquipes,
+        anciennete: statsData?.anciennete || current.anciennete
+      };
+
+      // Sauvegarder toutes les données d'un coup
+      await updateInformations(current.id, updatedData);
 
       alert('Données sauvegardées ✅');
     } catch (error) {
