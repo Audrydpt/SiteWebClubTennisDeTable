@@ -36,7 +36,7 @@ export default function Footer() {
           {/* À propos */}
           <div>
             <Link
-              to="/about"
+              to="/infos/about"
               className="hover:text-[#F1C40F] transition-colors cursor-pointer"
             >
               <h4 className="font-semibold mb-4">À propos de nous</h4>
