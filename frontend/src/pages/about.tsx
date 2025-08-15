@@ -245,7 +245,7 @@ export default function About() {
       {/* INSTALLATIONS */}
       {facilitiesSection && (
         <div className="container mx-auto px-4 py-10">
-          <div className="max-w-6xl mx-auto mt-20">
+          <div className="max-w-6xl mx-auto mt-8">
             <div className="text-center mb-16">
               <div className="inline-block bg-[#F1C40F] text-[#3A3A3A] px-6 py-2 rounded-full font-semibold mb-6 text-sm uppercase tracking-wide">
                 🏢 Nos Installations
@@ -298,6 +298,154 @@ export default function About() {
           </div>
         </div>
       )}
+
+      <div className="container mx-auto px-4 py-20">
+        <div className="max-w-6xl mx-auto mb-20">
+          <div className="text-center mb-16">
+            <div className="inline-block bg-[#F1C40F] text-[#3A3A3A] px-6 py-2 rounded-full font-semibold mb-6 text-sm uppercase tracking-wide">
+              📊 Le Club en Chiffres
+            </div>
+            <h2 className="text-4xl font-bold text-[#3A3A3A] mb-6">
+              Notre communauté
+            </h2>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#F1C40F] to-yellow-400 text-[#3A3A3A]">
+              <CardContent className="p-8 text-center">
+                <div className="text-4xl font-bold mb-2">
+                  {statsData?.membresActif || '50'}+
+                </div>
+                <div className="text-lg font-semibold">Membres actifs</div>
+                <div className="text-sm opacity-80 mt-2">De tous âges</div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#3A3A3A] to-gray-600 text-white">
+              <CardContent className="p-8 text-center">
+                <div className="text-4xl font-bold mb-2 text-[#F1C40F]">
+                  {statsData?.tablesDispo || '8'}
+                </div>
+                <div className="text-lg font-semibold">Tables officielles</div>
+                <div className="text-sm opacity-80 mt-2">
+                  Équipement professionnel
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#F1C40F] to-yellow-400 text-[#3A3A3A]">
+              <CardContent className="p-8 text-center">
+                <div className="text-4xl font-bold mb-2">
+                  {statsData?.nbrEquipes || '13'}
+                </div>
+                <div className="text-lg font-semibold">Équipes</div>
+                <div className="text-sm opacity-80 mt-2">En championnat</div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#3A3A3A] to-gray-600 text-white">
+              <CardContent className="p-8 text-center">
+                <div className="text-4xl font-bold mb-2 text-[#F1C40F]">
+                  {statsData?.anciennete || '10'}+
+                </div>
+                <div className="text-lg font-semibold">Années</div>
+                <div className="text-sm opacity-80 mt-2">D'expérience</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* HORAIRES - Section séparée centrée */}
+          {horaires.length > 0 && (
+            <div className="flex justify-center mt-12">
+              <Card className="shadow-2xl border-0 max-w-md w-full">
+                <CardContent className="p-8 text-center">
+                  <div className="flex items-start gap-4 justify-center">
+                    <div className="bg-[#F1C40F] p-3 rounded-full shadow-lg">
+                      <Clock className="h-6 w-6 text-[#3A3A3A]" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="font-bold text-[#3A3A3A] mb-2 text-lg">
+                        Horaires entrainement
+                      </h3>
+                      <ul className="text-gray-700 font-medium space-y-1">
+                        {horaires.map(
+                          (
+                            h: {
+                              jour:
+                                | string
+                                | number
+                                | bigint
+                                | boolean
+                                | ReactElement<
+                                unknown,
+                                string | JSXElementConstructor<any>
+                              >
+                                | Iterable<ReactNode>
+                                | ReactPortal
+                                | Promise<
+                                | string
+                                | number
+                                | bigint
+                                | boolean
+                                | ReactPortal
+                                | ReactElement<
+                                unknown,
+                                string | JSXElementConstructor<any>
+                              >
+                                | Iterable<ReactNode>
+                                | null
+                                | undefined
+                              >
+                                | Iterable<ReactNode>
+                                | null
+                                | undefined;
+                              horaire:
+                                | string
+                                | number
+                                | bigint
+                                | boolean
+                                | ReactElement<
+                                unknown,
+                                string | JSXElementConstructor<any>
+                              >
+                                | Iterable<ReactNode>
+                                | ReactPortal
+                                | Promise<
+                                | string
+                                | number
+                                | bigint
+                                | boolean
+                                | ReactPortal
+                                | ReactElement<
+                                unknown,
+                                string | JSXElementConstructor<any>
+                              >
+                                | Iterable<ReactNode>
+                                | null
+                                | undefined
+                              >
+                                | Iterable<ReactNode>
+                                | null
+                                | undefined;
+                            },
+                            idx: Key | null | undefined
+                          ) => (
+                            <li key={idx}>
+                              <span className="font-semibold">{h.jour} :</span>{' '}
+                              {h.horaire}
+                            </li>
+                          )
+                        )}
+                      </ul>
+                      <p className="text-gray-400 font-medium mt-3">
+                        <span className="font-semibold">
+                          Championnat le samedi
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* ÉVOLUTION & CHANGEMENT DE NOM 2025 */}
       {evolutionSection && (
@@ -587,153 +735,7 @@ export default function About() {
       )}
 
       {/* CHIFFRES CLÉS (DYNAMIQUE) */}
-      <div className="container mx-auto px-4 py-20">
-        <div className="max-w-6xl mx-auto mb-20">
-          <div className="text-center mb-16">
-            <div className="inline-block bg-[#F1C40F] text-[#3A3A3A] px-6 py-2 rounded-full font-semibold mb-6 text-sm uppercase tracking-wide">
-              📊 Le Club en Chiffres
-            </div>
-            <h2 className="text-4xl font-bold text-[#3A3A3A] mb-6">
-              Notre communauté
-            </h2>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#F1C40F] to-yellow-400 text-[#3A3A3A]">
-              <CardContent className="p-8 text-center">
-                <div className="text-4xl font-bold mb-2">
-                  {statsData?.membresActif || '50'}+
-                </div>
-                <div className="text-lg font-semibold">Membres actifs</div>
-                <div className="text-sm opacity-80 mt-2">De tous âges</div>
-              </CardContent>
-            </Card>
-            <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#3A3A3A] to-gray-600 text-white">
-              <CardContent className="p-8 text-center">
-                <div className="text-4xl font-bold mb-2 text-[#F1C40F]">
-                  {statsData?.tablesDispo || '8'}
-                </div>
-                <div className="text-lg font-semibold">Tables officielles</div>
-                <div className="text-sm opacity-80 mt-2">
-                  Équipement professionnel
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#F1C40F] to-yellow-400 text-[#3A3A3A]">
-              <CardContent className="p-8 text-center">
-                <div className="text-4xl font-bold mb-2">
-                  {statsData?.nbrEquipes || '13'}
-                </div>
-                <div className="text-lg font-semibold">Équipes</div>
-                <div className="text-sm opacity-80 mt-2">En championnat</div>
-              </CardContent>
-            </Card>
-            <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#3A3A3A] to-gray-600 text-white">
-              <CardContent className="p-8 text-center">
-                <div className="text-4xl font-bold mb-2 text-[#F1C40F]">
-                  {statsData?.anciennete || '10'}+
-                </div>
-                <div className="text-lg font-semibold">Années</div>
-                <div className="text-sm opacity-80 mt-2">D'expérience</div>
-              </CardContent>
-            </Card>
-          </div>
 
-          {/* HORAIRES - Section séparée centrée */}
-          {horaires.length > 0 && (
-            <div className="flex justify-center mt-12">
-              <Card className="shadow-2xl border-0 max-w-md w-full">
-                <CardContent className="p-8 text-center">
-                  <div className="flex items-start gap-4 justify-center">
-                    <div className="bg-[#F1C40F] p-3 rounded-full shadow-lg">
-                      <Clock className="h-6 w-6 text-[#3A3A3A]" />
-                    </div>
-                    <div className="text-left">
-                      <h3 className="font-bold text-[#3A3A3A] mb-2 text-lg">
-                        Horaires entrainement
-                      </h3>
-                      <ul className="text-gray-700 font-medium space-y-1">
-                        {horaires.map(
-                          (
-                            h: {
-                              jour:
-                                | string
-                                | number
-                                | bigint
-                                | boolean
-                                | ReactElement<
-                                    unknown,
-                                    string | JSXElementConstructor<any>
-                                  >
-                                | Iterable<ReactNode>
-                                | ReactPortal
-                                | Promise<
-                                    | string
-                                    | number
-                                    | bigint
-                                    | boolean
-                                    | ReactPortal
-                                    | ReactElement<
-                                        unknown,
-                                        string | JSXElementConstructor<any>
-                                      >
-                                    | Iterable<ReactNode>
-                                    | null
-                                    | undefined
-                                  >
-                                | Iterable<ReactNode>
-                                | null
-                                | undefined;
-                              horaire:
-                                | string
-                                | number
-                                | bigint
-                                | boolean
-                                | ReactElement<
-                                    unknown,
-                                    string | JSXElementConstructor<any>
-                                  >
-                                | Iterable<ReactNode>
-                                | ReactPortal
-                                | Promise<
-                                    | string
-                                    | number
-                                    | bigint
-                                    | boolean
-                                    | ReactPortal
-                                    | ReactElement<
-                                        unknown,
-                                        string | JSXElementConstructor<any>
-                                      >
-                                    | Iterable<ReactNode>
-                                    | null
-                                    | undefined
-                                  >
-                                | Iterable<ReactNode>
-                                | null
-                                | undefined;
-                            },
-                            idx: Key | null | undefined
-                          ) => (
-                            <li key={idx}>
-                              <span className="font-semibold">{h.jour} :</span>{' '}
-                              {h.horaire}
-                            </li>
-                          )
-                        )}
-                      </ul>
-                      <p className="text-gray-400 font-medium mt-3">
-                        <span className="font-semibold">
-                          Championnat le samedi
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* ÉQUIPE DIRIGEANTE */}
       {teamSection && (
