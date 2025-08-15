@@ -771,12 +771,12 @@ export default function About() {
                       </div>
                     )}
                   </div>
-                  <div className="bg-gray-100 rounded-lg p-8 text-center">
-                    <div className="text-6xl mb-4">🏓</div>
-                    <p className="text-gray-600 text-lg">
-                      {(facilitiesSection as any).salle?.citation ||
-                        'Des installations qui respectent les standards de compétition pour offrir les meilleures conditions de jeu à nos membres.'}
-                    </p>
+                  <div className="bg-gray-100 rounded-lg overflow-hidden">
+                    <img
+                      src="https://res.cloudinary.com/dsrrxx5yx/image/upload/v1755271837/ydrro3shuy69uels5xua.jpg"
+                      alt="Installations du club"
+                      className="w-full h-64 object-cover"
+                    />
                   </div>
                 </div>
               </CardContent>
