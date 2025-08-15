@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,no-console */
 
 import { useState, useEffect } from 'react';
-import { Loader2, Trophy } from 'lucide-react';
+import { Loader2, Trophy, Users, Star } from 'lucide-react';
 import { fetchSaisonEnCours } from '@/services/api';
 import calculerClassement from '@/services/classements';
-import { Saison, Serie, ClassementEntry } from '@/services/type.ts';
+import type { Saison, Serie, ClassementEntry } from '@/services/type.ts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -50,21 +50,43 @@ export default function EquipesPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-10 min-h-[60vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin w-8 h-8 text-[#F1C40F]" />
       </div>
     );
   }
 
   if (!saison) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Alert variant="destructive">
-          <AlertTitle>Erreur</AlertTitle>
-          <AlertDescription>
-            Impossible de charger les données de la saison en cours.
-          </AlertDescription>
-        </Alert>
+      <div className="min-h-screen bg-white">
+        <div className="relative bg-[#3A3A3A] text-white py-24 overflow-hidden">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-10 left-10 w-32 h-32 border-4 border-[#F1C40F] rounded-full" />
+            <div className="absolute top-32 right-20 w-24 h-24 bg-[#F1C40F] rounded-full" />
+            <div className="absolute bottom-20 left-1/4 w-16 h-16 border-4 border-[#F1C40F] rounded-full" />
+            <div className="absolute bottom-10 right-10 w-20 h-20 bg-[#F1C40F] rounded-full opacity-50" />
+            <div className="absolute top-1/2 left-1/2 w-6 h-6 bg-[#F1C40F] rounded-full transform -translate-x-1/2 -translate-y-1/2" />
+          </div>
+
+          <div className="container mx-auto px-4 text-center relative z-10">
+            <h1 className="text-6xl font-bold mb-6 leading-tight">
+              Équipes &{' '}
+              <span className="text-[#F1C40F] drop-shadow-lg">Classements</span>
+            </h1>
+            <p className="text-xl max-w-3xl mx-auto leading-relaxed text-gray-300">
+              Suivez les performances de nos équipes en championnat
+            </p>
+          </div>
+        </div>
+
+        <div className="container mx-auto px-4 py-20">
+          <Alert variant="destructive" className="max-w-2xl mx-auto">
+            <AlertTitle>Erreur</AlertTitle>
+            <AlertDescription>
+              Impossible de charger les données de la saison en cours.
+            </AlertDescription>
+          </Alert>
+        </div>
       </div>
     );
   }
@@ -72,15 +94,39 @@ export default function EquipesPage() {
   const nomClub = 'CTT Frameries';
 
   return (
-    <div className="bg-gray-50/50 py-10">
-      <Card className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 shadow-xl rounded-2xl bg-white">
-        <main>
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
-              Équipes & Classements
-            </h1>
-            <p className="mt-2 text-lg text-gray-600">
-              Classements pour la saison {saison.label}
+    <div className="min-h-screen bg-white">
+      <div className="relative bg-[#3A3A3A] text-white py-24 overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 left-10 w-32 h-32 border-4 border-[#F1C40F] rounded-full" />
+          <div className="absolute top-32 right-20 w-24 h-24 bg-[#F1C40F] rounded-full" />
+          <div className="absolute bottom-20 left-1/4 w-16 h-16 border-4 border-[#F1C40F] rounded-full" />
+          <div className="absolute bottom-10 right-10 w-20 h-20 bg-[#F1C40F] rounded-full opacity-50" />
+          <div className="absolute top-1/2 left-1/2 w-6 h-6 bg-[#F1C40F] rounded-full transform -translate-x-1/2 -translate-y-1/2" />
+        </div>
+
+        <div className="container mx-auto px-4 text-center relative z-10">
+          <h1 className="text-6xl font-bold mb-6 leading-tight">
+            Équipes &{' '}
+            <span className="text-[#F1C40F] drop-shadow-lg">Classements</span>
+          </h1>
+          <p className="text-xl max-w-3xl mx-auto leading-relaxed text-gray-300">
+            Suivez les performances de nos équipes en championnat
+          </p>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-20">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="inline-block bg-[#F1C40F] text-[#3A3A3A] px-6 py-2 rounded-full font-semibold mb-6 text-sm uppercase tracking-wide">
+              🏆 Saison {saison.label}
+            </div>
+            <h2 className="text-4xl font-bold text-[#3A3A3A] mb-6">
+              Classements des équipes
+            </h2>
+            <p className="text-gray-600 text-xl max-w-3xl mx-auto">
+              Découvrez les performances de toutes nos équipes dans leurs
+              divisions respectives
             </p>
           </div>
 
@@ -94,11 +140,13 @@ export default function EquipesPage() {
               return (
                 <Card
                   key={serie.id}
-                  className="shadow-lg border-t-4 border-primary/20 overflow-hidden flex flex-col"
+                  className="shadow-2xl border-0 overflow-hidden flex flex-col hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-2"
                 >
-                  <CardHeader className="bg-slate-100/80">
-                    <CardTitle className="flex items-center gap-3 text-xl font-semibold text-slate-800">
-                      <Trophy className="h-6 w-6 text-yellow-500" />
+                  <CardHeader className="bg-gradient-to-r from-[#3A3A3A] to-gray-600 text-white">
+                    <CardTitle className="flex items-center gap-3 text-xl font-semibold">
+                      <div className="bg-[#F1C40F] p-2 rounded-full">
+                        <Trophy className="h-5 w-5 text-[#3A3A3A]" />
+                      </div>
                       {serie.nom}
                     </CardTitle>
                   </CardHeader>
@@ -107,17 +155,25 @@ export default function EquipesPage() {
                       <Table className="min-w-full h-full">
                         <TableHeader>
                           <TableRow className="bg-gray-50 hover:bg-gray-50">
-                            <TableHead className="w-[60px] text-center">
+                            <TableHead className="w-[60px] text-center font-bold text-[#3A3A3A]">
                               #
                             </TableHead>
-                            <TableHead className="min-w-[150px]">
+                            <TableHead className="min-w-[150px] font-bold text-[#3A3A3A]">
                               Équipe
                             </TableHead>
-                            <TableHead className="text-center">J</TableHead>
-                            <TableHead className="text-center">V</TableHead>
-                            <TableHead className="text-center">N</TableHead>
-                            <TableHead className="text-center">D</TableHead>
-                            <TableHead className="text-center font-bold">
+                            <TableHead className="text-center font-bold text-[#3A3A3A]">
+                              J
+                            </TableHead>
+                            <TableHead className="text-center font-bold text-[#3A3A3A]">
+                              V
+                            </TableHead>
+                            <TableHead className="text-center font-bold text-[#3A3A3A]">
+                              N
+                            </TableHead>
+                            <TableHead className="text-center font-bold text-[#3A3A3A]">
+                              D
+                            </TableHead>
+                            <TableHead className="text-center font-bold text-[#3A3A3A]">
                               Pts
                             </TableHead>
                           </TableRow>
@@ -128,13 +184,13 @@ export default function EquipesPage() {
                               key={equipe.nom}
                               className={
                                 equipe.nom.includes(nomClub)
-                                  ? 'bg-blue-50 hover:bg-blue-100/70'
+                                  ? 'bg-gradient-to-r from-[#F1C40F]/10 to-yellow-50 hover:from-[#F1C40F]/20 hover:to-yellow-100 border-l-4 border-[#F1C40F]'
                                   : 'hover:bg-gray-50/70'
                               }
                             >
                               <TableCell className="text-center">
                                 <span
-                                  className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-bold ${getRankColor(
+                                  className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${getRankColor(
                                     equipe.position
                                   )}`}
                                 >
@@ -144,25 +200,28 @@ export default function EquipesPage() {
                               <TableCell
                                 className={`font-medium text-sm ${
                                   equipe.nom.includes(nomClub)
-                                    ? 'font-bold text-blue-900'
+                                    ? 'font-bold text-[#3A3A3A] flex items-center gap-2'
                                     : 'text-gray-800'
                                 }`}
                               >
+                                {equipe.nom.includes(nomClub) && (
+                                  <Star className="h-4 w-4 text-[#F1C40F]" />
+                                )}
                                 {equipe.nom}
                               </TableCell>
-                              <TableCell className="text-center font-mono text-sm">
+                              <TableCell className="text-center font-mono text-sm font-semibold">
                                 {equipe.joues}
                               </TableCell>
-                              <TableCell className="text-center font-mono text-sm text-green-600 font-semibold">
+                              <TableCell className="text-center font-mono text-sm text-green-600 font-bold">
                                 {equipe.victoires}
                               </TableCell>
-                              <TableCell className="text-center font-mono text-sm text-gray-600">
+                              <TableCell className="text-center font-mono text-sm text-gray-600 font-semibold">
                                 {equipe.nuls}
                               </TableCell>
-                              <TableCell className="text-center font-mono text-sm text-red-600 font-semibold">
+                              <TableCell className="text-center font-mono text-sm text-red-600 font-bold">
                                 {equipe.defaites}
                               </TableCell>
-                              <TableCell className="text-center font-mono text-base font-bold text-gray-900">
+                              <TableCell className="text-center font-mono text-lg font-bold text-[#3A3A3A]">
                                 {equipe.points}
                               </TableCell>
                             </TableRow>
@@ -175,8 +234,86 @@ export default function EquipesPage() {
               );
             })}
           </div>
-        </main>
-      </Card>
+
+          <div className="mt-20">
+            <div className="text-center mb-12">
+              <div className="inline-block bg-[#F1C40F] text-[#3A3A3A] px-6 py-2 rounded-full font-semibold mb-6 text-sm uppercase tracking-wide">
+                📊 Statistiques
+              </div>
+              <h3 className="text-3xl font-bold text-[#3A3A3A] mb-4">
+                Nos équipes en chiffres
+              </h3>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#F1C40F] to-yellow-400 text-[#3A3A3A]">
+                <CardContent className="p-8 text-center">
+                  <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users className="h-8 w-8" />
+                  </div>
+                  <div className="text-4xl font-bold mb-2">
+                    {saison.series.length}
+                  </div>
+                  <div className="text-lg font-semibold">Équipes engagées</div>
+                  <div className="text-sm opacity-80 mt-2">En championnat</div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#3A3A3A] to-gray-600 text-white">
+                <CardContent className="p-8 text-center">
+                  <div className="bg-[#F1C40F]/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Trophy className="h-8 w-8 text-[#F1C40F]" />
+                  </div>
+                  <div className="text-4xl font-bold mb-2 text-[#F1C40F]">
+                    {
+                      saison.series.filter((serie) => {
+                        const classement = calculerClassement(
+                          serie,
+                          saison.calendrier
+                        ) as ClassementEntry[];
+                        const clubTeam = classement.find((equipe) =>
+                          equipe.nom.includes(nomClub)
+                        );
+                        return clubTeam && clubTeam.position <= 3;
+                      }).length
+                    }
+                  </div>
+                  <div className="text-lg font-semibold">Sur le podium</div>
+                  <div className="text-sm opacity-80 mt-2">
+                    Top 3 des divisions
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#F1C40F] to-yellow-400 text-[#3A3A3A]">
+                <CardContent className="p-8 text-center">
+                  <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Star className="h-8 w-8" />
+                  </div>
+                  <div className="text-4xl font-bold mb-2">
+                    {(() => {
+                      let totalPoints = 0;
+                      saison.series.forEach((serie) => {
+                        const classement = calculerClassement(
+                          serie,
+                          saison.calendrier
+                        ) as ClassementEntry[];
+                        const clubTeam = classement.find((equipe) =>
+                          equipe.nom.includes(nomClub)
+                        );
+                        if (clubTeam) totalPoints += clubTeam.points;
+                      });
+                      return totalPoints;
+                    })()}
+                  </div>
+                  <div className="text-lg font-semibold">Points totaux</div>
+                  <div className="text-sm opacity-80 mt-2">Toutes équipes</div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
