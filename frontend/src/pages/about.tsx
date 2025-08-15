@@ -534,23 +534,23 @@ export default function About() {
             </div>
 
             {(historySection as any).events && (
-              <div className="grid lg:grid-cols-2 gap-12 items-center mb-20">
+              <div className="grid lg:grid-cols-2 gap-12 items-stretch mb-20">
                 {(historySection as any).events.map(
                   (event: any, index: number) => {
                     const IconComponent = getIconComponent(event.icon);
                     return (
-                      <div key={index}>
-                        <Card className="shadow-2xl border-0 overflow-hidden">
-                          <CardContent className="p-8">
-                            <div className="flex items-start gap-4 mb-6">
-                              <div className="bg-[#F1C40F] p-3 rounded-full">
+                      <div key={index} className="h-full">
+                        <Card className="shadow-2xl border-0 overflow-hidden h-full">
+                          <CardContent className="p-8 flex flex-col h-full">
+                            <div className="flex items-start gap-4 mb-6 flex-grow">
+                              <div className="bg-[#F1C40F] p-3 rounded-full flex-shrink-0">
                                 <IconComponent className="h-6 w-6 text-[#3A3A3A]" />
                               </div>
-                              <div>
+                              <div className="flex flex-col flex-grow">
                                 <h3 className="font-bold text-[#3A3A3A] mb-2 text-xl">
                                   {event.title}
                                 </h3>
-                                <p className="text-gray-600 leading-relaxed">
+                                <p className="text-gray-600 leading-relaxed flex-grow">
                                   {event.text}
                                 </p>
                               </div>
