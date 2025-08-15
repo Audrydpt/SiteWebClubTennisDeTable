@@ -65,17 +65,22 @@ export default function Sponsors() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-[#3A3A3A] to-[#3A3A3A] text-white py-20">
-        <div className="container mx-auto px-4 text-center">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-6xl font-bold mb-6 leading-tight">
-              Nos <span className="text-[#F1C40F] drop-shadow-lg">Partenaires</span>
-            </h1>
-            <div className="w-24 h-1 bg-[#F1C40F] mx-auto mb-6" />
-            <p className="text-xl text-[#E0E0E0] leading-relaxed max-w-2xl mx-auto">
-              Découvrez les entreprises et organisations qui nous font confiance et accompagnent notre club.
-            </p>
-          </div>
+      <div className="relative bg-[#3A3A3A] text-white py-24 overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 left-10 w-32 h-32 border-4 border-[#F1C40F] rounded-full" />
+          <div className="absolute top-32 right-20 w-24 h-24 bg-[#F1C40F] rounded-full" />
+          <div className="absolute bottom-20 left-1/4 w-16 h-16 border-4 border-[#F1C40F] rounded-full" />
+          <div className="absolute bottom-10 right-10 w-20 h-20 bg-[#F1C40F] rounded-full opacity-50" />
+          <div className="absolute top-1/2 left-1/2 w-6 h-6 bg-[#F1C40F] rounded-full transform -translate-x-1/2 -translate-y-1/2" />
+        </div>
+
+        <div className="container mx-auto px-4 text-center relative z-10">
+          <h1 className="text-6xl font-bold mb-6 leading-tight">
+            Nos <span className="text-[#F1C40F] drop-shadow-lg">Partenaires</span>
+          </h1>
+          <p className="text-xl max-w-3xl mx-auto leading-relaxed text-gray-300">
+            Découvrez les entreprises et organisations qui nous font confiance et accompagnent notre club.
+          </p>
         </div>
       </div>
 

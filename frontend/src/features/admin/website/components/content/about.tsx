@@ -1,7 +1,31 @@
-/* eslint-disable */
-import React, { useEffect, useState } from 'react';
-import { fetchAbout, updateAbout, fetchInformations, updateInformations } from '@/services/api';
-import { Loader2, Save, Plus, Trash } from 'lucide-react';
+/* eslint-disable @typescript-eslint/no-explicit-any,no-plusplus,@typescript-eslint/no-use-before-define,react/no-array-index-key,react/no-unescaped-entities,no-console,no-alert */
+import { useEffect, useState } from 'react';
+import {
+  Loader2,
+  Save,
+  Plus,
+  Trash,
+  Users,
+  Table,
+  Trophy,
+  Calendar,
+} from 'lucide-react';
+import {
+  fetchAbout,
+  fetchInformations,
+  updateInformations,
+} from '@/services/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 
 export default function AboutManager() {
   const [aboutData, setAboutData] = useState<any[]>([]);
@@ -26,7 +50,7 @@ export default function AboutManager() {
         membresActif: current.membresActif,
         tablesDispo: current.tablesDispo,
         nbrEquipes: current.nbrEquipes,
-        anciennete: current.anciennete
+        anciennete: current.anciennete,
       });
     } catch (error) {
       console.error('Erreur chargement about:', error);
@@ -37,13 +61,17 @@ export default function AboutManager() {
   const handleStatsChange = (field: string, value: string) => {
     setStatsData((prev: any) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
-  const handleNestedChange = (sectionId: string, path: (string | number)[], newValue: any) => {
-    setAboutData(prev =>
-      prev.map(section => {
+  const handleNestedChange = (
+    sectionId: string,
+    path: (string | number)[],
+    newValue: any
+  ) => {
+    setAboutData((prev) =>
+      prev.map((section) => {
         if (section.id !== sectionId) return section;
         const updated = { ...section };
         let ref: any = updated;
@@ -56,14 +84,18 @@ export default function AboutManager() {
     );
   };
 
-  const addArrayItem = (sectionId: string, path: (string | number)[], type: 'string' | 'object') => {
-    setAboutData(prev =>
-      prev.map(section => {
+  const addArrayItem = (
+    sectionId: string,
+    path: (string | number)[],
+    type: 'string' | 'object'
+  ) => {
+    setAboutData((prev) =>
+      prev.map((section) => {
         if (section.id !== sectionId) return section;
         const updated = { ...section };
         let ref: any = updated;
         for (let i = 0; i < path.length; i++) {
-          if (!ref[path[i]]) ref[path[i]] = []; // sécurisation si tableau inexistant
+          if (!ref[path[i]]) ref[path[i]] = [];
           ref = ref[path[i]];
         }
         if (type === 'string') {
@@ -76,9 +108,13 @@ export default function AboutManager() {
     );
   };
 
-  const removeArrayItem = (sectionId: string, path: (string | number)[], index: number) => {
-    setAboutData(prev =>
-      prev.map(section => {
+  const removeArrayItem = (
+    sectionId: string,
+    path: (string | number)[],
+    index: number
+  ) => {
+    setAboutData((prev) =>
+      prev.map((section) => {
         if (section.id !== sectionId) return section;
         const updated = { ...section };
         let ref: any = updated;
@@ -94,28 +130,34 @@ export default function AboutManager() {
   };
 
   const addSection = () => {
-    setAboutData(prev => [...prev, { id: `section_${Date.now()}`, title: '', subtitle: '' }]);
+    setAboutData((prev) => [
+      ...prev,
+      { id: `section_${Date.now()}`, title: '', subtitle: '' },
+    ]);
   };
 
   const removeSection = (sectionId: string) => {
-    setAboutData(prev => prev.filter(section => section.id !== sectionId));
+    setAboutData((prev) => prev.filter((section) => section.id !== sectionId));
   };
 
-  const renderField = (sectionId: string, path: (string | number)[], value: any) => {
+  const renderField = (
+    sectionId: string,
+    path: (string | number)[],
+    value: any
+  ) => {
     if (typeof value === 'string') {
       return (
-        <input
-          type="text"
+        <Input
           value={value}
           onChange={(e) => handleNestedChange(sectionId, path, e.target.value)}
-          className="border p-2 rounded w-full"
+          className="w-full"
         />
       );
     }
 
     if (Array.isArray(value)) {
       return (
-        <div className="space-y-2 pl-4 border-l">
+        <div className="space-y-3 pl-4 border-l-2 border-muted">
           {value.map((item, index) => (
             <div key={index} className="flex items-start gap-2">
               <div className="flex-1">
@@ -123,21 +165,30 @@ export default function AboutManager() {
                   ? renderField(sectionId, [...path, index], item)
                   : renderObject(sectionId, [...path, index], item)}
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => removeArrayItem(sectionId, path, index)}
-                className="p-1 text-red-500 hover:text-red-700"
-                title="Supprimer"
+                className="text-destructive hover:text-destructive"
               >
                 <Trash size={16} />
-              </button>
+              </Button>
             </div>
           ))}
-          <button
-            onClick={() => addArrayItem(sectionId, path, typeof value[0] === 'string' ? 'string' : 'object')}
-            className="text-sm text-blue-500 flex items-center gap-1"
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              addArrayItem(
+                sectionId,
+                path,
+                typeof value[0] === 'string' ? 'string' : 'object'
+              )
+            }
+            className="text-sm"
           >
-            <Plus size={14} /> Ajouter
-          </button>
+            <Plus size={14} className="mr-1" /> Ajouter
+          </Button>
         </div>
       );
     }
@@ -149,13 +200,19 @@ export default function AboutManager() {
     return null;
   };
 
-  const renderObject = (sectionId: string, path: (string | number)[], obj: Record<string, any>) => (
-    <div className="space-y-2 pl-4 border-l">
+  const renderObject = (
+    sectionId: string,
+    path: (string | number)[],
+    obj: Record<string, any>
+  ) => (
+    <div className="space-y-3 pl-4 border-l-2 border-muted">
       {Object.entries(obj).map(([key, val]) => {
-        if (key === 'id') return null; // empêche modification de l'id
+        if (key === 'id') return null;
         return (
-          <div key={key}>
-            <label className="text-sm font-semibold">{key}</label>
+          <div key={key} className="space-y-1">
+            <Label className="text-sm font-medium capitalize">
+              {key.replace(/([A-Z])/g, ' $1')}
+            </Label>
             {renderField(sectionId, [...path, key], val)}
           </div>
         );
@@ -166,115 +223,160 @@ export default function AboutManager() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Récupérer les données complètes actuelles
       const allInfos = await fetchInformations();
       const current = allInfos[0];
 
-      // Mettre à jour avec les nouvelles données about
       const updatedData = {
         ...current,
         about: aboutData,
-        // Mettre à jour les statistiques directement dans l'objet racine
         membresActif: statsData?.membresActif || current.membresActif,
         tablesDispo: statsData?.tablesDispo || current.tablesDispo,
         nbrEquipes: statsData?.nbrEquipes || current.nbrEquipes,
-        anciennete: statsData?.anciennete || current.anciennete
+        anciennete: statsData?.anciennete || current.anciennete,
       };
 
-      // Sauvegarder toutes les données d'un coup
       await updateInformations(current.id, updatedData);
 
-      alert('Données sauvegardées ✅');
+      // Alerte de succès pour l'admin
+      alert(
+        "✅ Les modifications de la section 'À propos' ont été sauvegardées avec succès !"
+      );
     } catch (error) {
       console.error('Erreur sauvegarde:', error);
-      alert('Erreur lors de la sauvegarde ❌');
+      // Alerte d'erreur pour l'admin
+      alert('❌ Erreur lors de la sauvegarde. Veuillez réessayer.');
     }
     setSaving(false);
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-6">
-        <Loader2 className="animate-spin w-6 h-6 text-gray-500" />
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="animate-spin w-8 h-8 text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Gestion de la section "À propos"</h2>
-
-      {/* Section Statistiques */}
-      <div className="p-4 border rounded-md bg-blue-50 shadow-sm space-y-3">
-        <h3 className="text-lg font-semibold">📊 Statistiques du Club</h3>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div>
-            <label className="text-sm font-semibold">Membres Actifs</label>
-            <input
-              type="text"
-              value={statsData?.membresActif || ''}
-              onChange={(e) => handleStatsChange('membresActif', e.target.value)}
-              className="border p-2 rounded w-full"
-              placeholder="50+"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-semibold">Tables Disponibles</label>
-            <input
-              type="text"
-              value={statsData?.tablesDispo || ''}
-              onChange={(e) => handleStatsChange('tablesDispo', e.target.value)}
-              className="border p-2 rounded w-full"
-              placeholder="8"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-semibold">Nombre d'Équipes</label>
-            <input
-              type="text"
-              value={statsData?.nbrEquipes || ''}
-              onChange={(e) => handleStatsChange('nbrEquipes', e.target.value)}
-              className="border p-2 rounded w-full"
-              placeholder="13"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-semibold">Ancienneté (années)</label>
-            <input
-              type="text"
-              value={statsData?.anciennete || ''}
-              onChange={(e) => handleStatsChange('anciennete', e.target.value)}
-              className="border p-2 rounded w-full"
-              placeholder="10"
-            />
-          </div>
+    <div className="space-y-6 p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">
+            Gestion de la section "À propos"
+          </h1>
+          <p className="text-muted-foreground">
+            Modifiez les informations et statistiques du club
+          </p>
         </div>
-      </div>
-
-      {aboutData.map((section) => (
-        <div key={section.id} className="p-4 border rounded-md bg-white shadow-sm space-y-3">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">{section.id}</h3>
-            <button
-              onClick={() => removeSection(section.id)}
-              className="text-red-500 hover:text-red-700"
-            >
-              <Trash size={18} />
-            </button>
-          </div>
-          {renderObject(section.id, [], section)}
-        </div>
-      ))}
-
-      <div className="flex gap-3">
-        <button
+        <Button
           onClick={handleSave}
           disabled={saving}
-          className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded flex items-center gap-2"
+          className="min-w-[120px]"
         >
-          <Save className="w-4 h-4" />
+          <Save className="w-4 h-4 mr-2" />
           {saving ? 'Enregistrement...' : 'Sauvegarder'}
-        </button>
+        </Button>
+      </div>
+
+      {/* Section Statistiques */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="w-5 h-5" />
+            Statistiques du Club
+          </CardTitle>
+          <CardDescription>
+            Mettez à jour les chiffres clés de votre club
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Membres Actifs
+              </Label>
+              <Input
+                value={statsData?.membresActif || ''}
+                onChange={(e) =>
+                  handleStatsChange('membresActif', e.target.value)
+                }
+                placeholder="50+"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Table className="w-4 h-4" />
+                Tables Disponibles
+              </Label>
+              <Input
+                value={statsData?.tablesDispo || ''}
+                onChange={(e) =>
+                  handleStatsChange('tablesDispo', e.target.value)
+                }
+                placeholder="8"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Trophy className="w-4 h-4" />
+                Nombre d'Équipes
+              </Label>
+              <Input
+                value={statsData?.nbrEquipes || ''}
+                onChange={(e) =>
+                  handleStatsChange('nbrEquipes', e.target.value)
+                }
+                placeholder="13"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Ancienneté (années)
+              </Label>
+              <Input
+                value={statsData?.anciennete || ''}
+                onChange={(e) =>
+                  handleStatsChange('anciennete', e.target.value)
+                }
+                placeholder="10"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* Sections About */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Sections de contenu</h2>
+          <Button onClick={addSection} variant="outline">
+            <Plus className="w-4 h-4 mr-2" />
+            Ajouter une section
+          </Button>
+        </div>
+
+        {aboutData.map((section) => (
+          <Card key={section.id}>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg">{section.id}</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeSection(section.id)}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash size={18} />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>{renderObject(section.id, [], section)}</CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );
