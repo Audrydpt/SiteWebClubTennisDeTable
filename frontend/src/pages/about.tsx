@@ -242,6 +242,63 @@ export default function About() {
         </div>
       </div>
 
+      {/* INSTALLATIONS */}
+      {facilitiesSection && (
+        <div className="container mx-auto px-4 py-10">
+          <div className="max-w-6xl mx-auto mt-20">
+            <div className="text-center mb-16">
+              <div className="inline-block bg-[#F1C40F] text-[#3A3A3A] px-6 py-2 rounded-full font-semibold mb-6 text-sm uppercase tracking-wide">
+                🏢 Nos Installations
+              </div>
+              <h2 className="text-4xl font-bold text-[#3A3A3A] mb-6">
+                {facilitiesSection.title}
+              </h2>
+            </div>
+
+            <Card className="shadow-2xl border-0 overflow-hidden">
+              <CardContent className="p-8">
+                <div className="grid lg:grid-cols-2 gap-8 items-center">
+                  <div>
+                    <h3 className="text-2xl font-bold text-[#3A3A3A] mb-6">
+                      {(facilitiesSection as any).salle?.title ||
+                        'Salle de tennis de table moderne'}
+                    </h3>
+                    {(facilitiesSection as any).salle?.items && (
+                      <div className="space-y-4">
+                        {(facilitiesSection as any).salle.items.map(
+                          (item: string, index: number) => {
+                            const icons = [MapPin, Clock, Users, Heart];
+                            const IconComponent = icons[index % icons.length];
+                            return (
+                              <div
+                                key={index}
+                                className="flex items-center gap-3"
+                              >
+                                <div className="bg-[#F1C40F] p-2 rounded-full">
+                                  <IconComponent className="h-4 w-4 text-[#3A3A3A]" />
+                                </div>
+                                <span className="text-gray-700">{item}</span>
+                              </div>
+                            );
+                          }
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="bg-gray-100 rounded-lg overflow-hidden">
+                    <img
+                      src="https://res.cloudinary.com/dsrrxx5yx/image/upload/v1755271837/ydrro3shuy69uels5xua.jpg"
+                      alt="Installations du club"
+                      className="w-full h-64 object-cover"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
       {/* ÉVOLUTION & CHANGEMENT DE NOM 2025 */}
       {evolutionSection && (
         <div className="bg-gray-50 py-20">
@@ -728,62 +785,7 @@ export default function About() {
         </div>
       )}
 
-      {/* INSTALLATIONS */}
-      {facilitiesSection && (
-        <div className="container mx-auto px-4 py-20">
-          <div className="max-w-6xl mx-auto mt-20">
-            <div className="text-center mb-16">
-              <div className="inline-block bg-[#F1C40F] text-[#3A3A3A] px-6 py-2 rounded-full font-semibold mb-6 text-sm uppercase tracking-wide">
-                🏢 Nos Installations
-              </div>
-              <h2 className="text-4xl font-bold text-[#3A3A3A] mb-6">
-                {facilitiesSection.title}
-              </h2>
-            </div>
 
-            <Card className="shadow-2xl border-0 overflow-hidden">
-              <CardContent className="p-8">
-                <div className="grid lg:grid-cols-2 gap-8 items-center">
-                  <div>
-                    <h3 className="text-2xl font-bold text-[#3A3A3A] mb-6">
-                      {(facilitiesSection as any).salle?.title ||
-                        'Salle de tennis de table moderne'}
-                    </h3>
-                    {(facilitiesSection as any).salle?.items && (
-                      <div className="space-y-4">
-                        {(facilitiesSection as any).salle.items.map(
-                          (item: string, index: number) => {
-                            const icons = [MapPin, Clock, Users, Heart];
-                            const IconComponent = icons[index % icons.length];
-                            return (
-                              <div
-                                key={index}
-                                className="flex items-center gap-3"
-                              >
-                                <div className="bg-[#F1C40F] p-2 rounded-full">
-                                  <IconComponent className="h-4 w-4 text-[#3A3A3A]" />
-                                </div>
-                                <span className="text-gray-700">{item}</span>
-                              </div>
-                            );
-                          }
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="bg-gray-100 rounded-lg overflow-hidden">
-                    <img
-                      src="https://res.cloudinary.com/dsrrxx5yx/image/upload/v1755271837/ydrro3shuy69uels5xua.jpg"
-                      alt="Installations du club"
-                      className="w-full h-64 object-cover"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
 
       {/* FALLBACK - Si aucune section trouvée, afficher un contenu minimal */}
       {!evolutionSection &&
