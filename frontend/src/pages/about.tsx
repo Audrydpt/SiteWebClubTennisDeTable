@@ -1,5 +1,5 @@
-/* eslint-disable react/no-unescaped-entities,@typescript-eslint/no-explicit-any,react/no-array-index-key,react/button-has-type,@typescript-eslint/no-unused-vars,prettier/prettier */
-import { useEffect, useState } from 'react';
+/* eslint-disable react/no-unescaped-entities,@typescript-eslint/no-explicit-any,react/no-array-index-key,react/button-has-type,@typescript-eslint/no-unused-vars,prettier/prettier,no-console */
+import { JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal, useEffect, useState } from 'react';
 import {
   Users,
   Trophy,
@@ -76,6 +76,8 @@ export default function About() {
   const [statsData, setStatsData] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [infos, setInfos] = useState<any>(null); // toutes les infos depuis JSON
+
 
   useEffect(() => {
     const loadAboutData = async () => {
@@ -102,6 +104,18 @@ export default function About() {
     };
 
     loadAboutData();
+
+    const loadInfos = async () => {
+      try {
+        const data = await fetchInformations();
+        if (data && data.length > 0) {
+          setInfos(data[0]); // objet unique
+        }
+      } catch (err) {
+        console.error('Erreur fetchInformations:', err);
+      }
+    };
+    loadInfos();
   }, []);
 
   const getIconComponent = (iconName?: string) => {
@@ -126,6 +140,9 @@ export default function About() {
     const found = aboutData.find((section) => section.id === id);
     return found;
   };
+
+
+
 
   if (loading) {
     return (
@@ -198,6 +215,8 @@ export default function About() {
   const valuesSection = findSectionById('valeurs');
   const teamSection = findSectionById('equipe');
   const facilitiesSection = findSectionById('installations');
+  const contact = infos?.contact || [];
+  const horaires = contact[0]?.horaires || [];
 
   return (
     <div className="min-h-screen bg-white">
@@ -561,6 +580,101 @@ export default function About() {
               </CardContent>
             </Card>
           </div>
+
+          {/* HORAIRES - Section séparée centrée */}
+          {horaires.length > 0 && (
+            <div className="flex justify-center mt-12">
+              <Card className="shadow-2xl border-0 max-w-md w-full">
+                <CardContent className="p-8 text-center">
+                  <div className="flex items-start gap-4 justify-center">
+                    <div className="bg-[#F1C40F] p-3 rounded-full shadow-lg">
+                      <Clock className="h-6 w-6 text-[#3A3A3A]" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="font-bold text-[#3A3A3A] mb-2 text-lg">
+                        Horaires entrainement
+                      </h3>
+                      <ul className="text-gray-700 font-medium space-y-1">
+                        {horaires.map(
+                          (
+                            h: {
+                              jour:
+                                | string
+                                | number
+                                | bigint
+                                | boolean
+                                | ReactElement<
+                                    unknown,
+                                    string | JSXElementConstructor<any>
+                                  >
+                                | Iterable<ReactNode>
+                                | ReactPortal
+                                | Promise<
+                                    | string
+                                    | number
+                                    | bigint
+                                    | boolean
+                                    | ReactPortal
+                                    | ReactElement<
+                                        unknown,
+                                        string | JSXElementConstructor<any>
+                                      >
+                                    | Iterable<ReactNode>
+                                    | null
+                                    | undefined
+                                  >
+                                | Iterable<ReactNode>
+                                | null
+                                | undefined;
+                              horaire:
+                                | string
+                                | number
+                                | bigint
+                                | boolean
+                                | ReactElement<
+                                    unknown,
+                                    string | JSXElementConstructor<any>
+                                  >
+                                | Iterable<ReactNode>
+                                | ReactPortal
+                                | Promise<
+                                    | string
+                                    | number
+                                    | bigint
+                                    | boolean
+                                    | ReactPortal
+                                    | ReactElement<
+                                        unknown,
+                                        string | JSXElementConstructor<any>
+                                      >
+                                    | Iterable<ReactNode>
+                                    | null
+                                    | undefined
+                                  >
+                                | Iterable<ReactNode>
+                                | null
+                                | undefined;
+                            },
+                            idx: Key | null | undefined
+                          ) => (
+                            <li key={idx}>
+                              <span className="font-semibold">{h.jour} :</span>{' '}
+                              {h.horaire}
+                            </li>
+                          )
+                        )}
+                      </ul>
+                      <p className="text-gray-400 font-medium mt-3">
+                        <span className="font-semibold">
+                          Championnat le samedi
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
 
