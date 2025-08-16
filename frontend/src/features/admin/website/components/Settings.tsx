@@ -207,7 +207,7 @@ export default function AdminSettings() {
         nom: '',
         prenom: '',
         email: '',
-        password: '',
+        password: 'cttframeries', // Garder le mot de passe prédéfini
         telephone: '',
         classement: '',
         role: 'joueur',
