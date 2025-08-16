@@ -289,3 +289,16 @@ export const updatePalmares = async (data: any) => {
   );
   return response.data;
 };
+
+// ---- EVENT ----
+
+export const fetchEvents = async () => {
+  const response = await axios.get(`${API_URL}/event`);
+  return response.data;
+};
+
+export const updateEvent = async (data: any) => {
+  // Correction : PUT directement sur /event au lieu de /event/{id}
+  const response = await axios.put(`${API_URL}/event`, data);
+  return response.data;
+};

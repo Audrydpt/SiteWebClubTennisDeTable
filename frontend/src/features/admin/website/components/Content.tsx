@@ -23,13 +23,14 @@ import {
 } from '@/components/ui/collapsible';
 
 import ActualitesManager from '@/features/admin/website/components/content/actu.tsx';
-import TournoisManager from '@/features/admin/website/components/content/tournament.tsx';
 import ResultatsManager from '@/features/admin/website/components/content/result.tsx';
 import SponsorsManager from '@/features/admin/website/components/content/sponsor.tsx';
 import GeneralManager from '@/features/admin/website/components/content/general.tsx';
 import PalmaresManager from '@/features/admin/website/components/content/palmares.tsx';
 import ContactManager from '@/features/admin/website/components/content/contact.tsx';
 import AboutManager from '@/features/admin/website/components/content/about.tsx';
+import GaleryManager from '@/features/admin/website/components/content/galery.tsx';
+import EventManager from '@/features/admin/website/components/content/event.tsx';
 
 interface ContentSection {
   id: string;
@@ -77,16 +78,22 @@ export default function AdminContent() {
       component: <SponsorsManager />,
       color: 'bg-purple-100',
     },
-
     {
-      id: 'tournois',
-      title: 'Gestion des Tournois',
-      description: 'Créer, modifier et supprimer les tournois',
-      icon: <Trophy className="h-5 w-5 text-yellow-600" />,
-      component: <TournoisManager />,
-      color: 'bg-yellow-100',
+      id: 'galerie',
+      title: 'Gestion de la Galerie',
+      description: 'Gérer les images de la galerie des événements',
+      icon: <FileText className="h-5 w-5 text-red-600" />,
+      component: <GaleryManager />,
+      color: 'bg-red-100',
     },
-
+    {
+      id: 'evenements',
+      title: 'Gestion des Événements',
+      description: 'Gérer les événements du calendrier',
+      icon: <Calendar className="h-5 w-5 text-orange-600" />,
+      component: <EventManager />,
+      color: 'bg-orange-100',
+    },
     {
       id: 'palmares',
       title: 'Gestion du Palmarès',
