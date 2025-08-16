@@ -56,12 +56,34 @@ export default function CreateSaison() {
 
   const genererEquipesClub = () => {
     const equipes: { id: string; nom: string; serieId: string }[] = [];
-    for (let i = 0; i < nbHommes; i++)
-      equipes.push({ id: uuidv4(), nom: `Hommes ${toChar(i)}`, serieId: '' });
-    for (let i = 0; i < nbDames; i++)
-      equipes.push({ id: uuidv4(), nom: `Dames ${toChar(i)}`, serieId: '' });
-    for (let i = 0; i < nbVeterans; i++)
-      equipes.push({ id: uuidv4(), nom: `Vétérans ${toChar(i)}`, serieId: '' });
+
+    // Générer les équipes hommes
+    for (let i = 0; i < nbHommes; i++) {
+      equipes.push({
+        id: uuidv4(),
+        nom: `CTT Frameries ${toChar(i)}`,
+        serieId: '',
+      });
+    }
+
+    // Générer les équipes dames
+    for (let i = 0; i < nbDames; i++) {
+      equipes.push({
+        id: uuidv4(),
+        nom: `CTT Frameries ${toChar(i)} Dame`,
+        serieId: '',
+      });
+    }
+
+    // Générer les équipes vétérans
+    for (let i = 0; i < nbVeterans; i++) {
+      equipes.push({
+        id: uuidv4(),
+        nom: `CTT Frameries ${toChar(i)} Vét.`,
+        serieId: '',
+      });
+    }
+
     setSaison((prev) => ({ ...prev, equipesClub: equipes }));
   };
 

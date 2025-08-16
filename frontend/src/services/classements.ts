@@ -50,8 +50,13 @@ const calculerClassement = (
   );
 
   matchsSerie.forEach((match) => {
-    // Ignorer les forfaits généraux dans les statistiques
-    if (match.score === 'fg' || match.score === 'fg-d' || match.score === 'fg-e') return;
+    // Ignorer les forfaits généraux et les matchs BYE dans les statistiques
+    if (match.score === 'fg' || match.score === 'fg-d' || match.score === 'fg-e' ||
+      match.score.toLowerCase() === 'bye') return;
+
+    // Ignorer les matchs contre BYE
+    if (match.domicile.toLowerCase().includes('bye') ||
+      match.exterieur.toLowerCase().includes('bye')) return;
 
     const statsD = stats.get(match.domicile);
     const statsE = stats.get(match.exterieur);

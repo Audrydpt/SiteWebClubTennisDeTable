@@ -50,13 +50,13 @@ export default function CalendrierPage() {
 
     const aujourdhui = new Date()
 
-    // Vérifie si un match a un score valide (terminé)
     const hasValidScore = (match: Match) =>
       match.score &&
       (match.score === "ff-d" ||
         match.score === "ff-e" ||
         match.score === "fg-d" ||
         match.score === "fg-e" ||
+        match.score.toLowerCase() === 'bye' || // Les matchs BYE sont considérés comme terminés
         (match.score.includes("-") && match.score.split("-").every((s) => !isNaN(Number.parseInt(s, 10)))))
 
     switch (filtre) {
@@ -90,7 +90,14 @@ export default function CalendrierPage() {
   const calculerStatistiques = () => {
     if (!equipeSelectionnee || !saison) return { victoires: 0, defaites: 0, nuls: 0, aJouer: 0 }
 
-    const matchsTermines = matchs.filter((match) => match.score)
+    // Exclure les matchs BYE des statistiques
+    const matchsValides = matchs.filter((match) =>
+      !match.domicile.toLowerCase().includes('bye') &&
+      !match.exterieur.toLowerCase().includes('bye') &&
+      match.score?.toLowerCase() !== 'bye'
+    );
+
+    const matchsTermines = matchsValides.filter((match) => match.score)
 
     let victoires = 0
     let defaites = 0
@@ -101,7 +108,6 @@ export default function CalendrierPage() {
 
       // Cas de forfait
       if (match.score === "ff-d") {
-        // Forfait de l'équipe à domicile
         if (isDomicile) {
           defaites += 1
         } else {
@@ -111,7 +117,6 @@ export default function CalendrierPage() {
       }
 
       if (match.score === "ff-e") {
-        // Forfait de l'équipe à l'extérieur
         if (isDomicile) {
           victoires += 1
         } else {
@@ -144,7 +149,7 @@ export default function CalendrierPage() {
       victoires,
       defaites,
       nuls,
-      aJouer: matchs.length - matchsTermines.length,
+      aJouer: matchsValides.length - matchsTermines.length,
     }
   }
 
@@ -409,32 +414,30 @@ export default function CalendrierPage() {
                               <TableCell className="w-32 text-center py-4">
                                 {match.score ? (
                                   <div className="flex items-center justify-center gap-2">
-                                    {match.score === "ff-d" ? (
+                                    {match.score.toLowerCase() === 'bye' ? (
+                                      <div className="text-base font-bold text-blue-600">
+                                        BYE
+                                      </div>
+                                    ) : match.score === "ff-d" ? (
                                       <div className="text-base font-bold">
-                                        <span className={isDomicile ? "text-red-600" : "text-green-600"}>
-                                          {isDomicile ? "Forfait" : "Forfait adverse"}
-                                        </span>
+                                        <span className={getScoreStyle(resultat, false)}>{scoreEquipe}</span>
+                                        <span className="text-gray-400 mx-1">-</span>
+                                        <span className={getScoreStyle(resultat, true)}>{scoreAdversaire}</span>
+                                        <span className="text-red-600 ml-2 text-sm">(FF Domicile)</span>
                                       </div>
                                     ) : match.score === "ff-e" ? (
                                       <div className="text-base font-bold">
-                                        <span className={!isDomicile ? "text-red-600" : "text-green-600"}>
-                                          {!isDomicile ? "Forfait" : "Forfait adverse"}
-                                        </span>
+                                        <span className={getScoreStyle(resultat, false)}>{scoreEquipe}</span>
+                                        <span className="text-gray-400 mx-1">-</span>
+                                        <span className={getScoreStyle(resultat, true)}>{scoreAdversaire}</span>
+                                        <span className="text-red-600 ml-2 text-sm">(FF Extérieur)</span>
                                       </div>
-                                    ) : match.score === "fg-d" ? (
-                                      <div className="text-base font-bold">
-                                        <span className="text-purple-600">
-                                          {isDomicile ? "Forfait général" : "Forfait général adverse"}
-                                        </span>
-                                      </div>
-                                    ) : match.score === "fg-e" ? (
-                                      <div className="text-base font-bold">
-                                        <span className="text-purple-600">
-                                          {!isDomicile ? "Forfait général" : "Forfait général adverse"}
-                                        </span>
+                                    ) : match.score === "fg-d" || match.score === "fg-e" ? (
+                                      <div className="text-base font-bold text-purple-600">
+                                        Forfait Général
                                       </div>
                                     ) : (
-                                      <div className="text-xl font-bold font-mono">
+                                      <div className="text-base font-bold">
                                         <span className={getScoreStyle(resultat, false)}>{scoreEquipe}</span>
                                         <span className="text-gray-400 mx-1">-</span>
                                         <span className={getScoreStyle(resultat, true)}>{scoreAdversaire}</span>
@@ -445,11 +448,18 @@ export default function CalendrierPage() {
                                       match.score !== "ff-d" &&
                                       match.score !== "ff-e" &&
                                       match.score !== "fg-d" &&
-                                      match.score !== "fg-e" && (
+                                      match.score !== "fg-e" &&
+                                      match.score.toLowerCase() !== 'bye' && (
                                         <Badge className={getBadgeStyle(resultat)}>
                                           {resultat === "victoire" ? "V" : resultat === "defaite" ? "D" : "N"}
                                         </Badge>
                                       )}
+
+                                    {match.score.toLowerCase() === 'bye' && (
+                                      <Badge className="bg-blue-100 text-blue-800 ml-2">
+                                        BYE
+                                      </Badge>
+                                    )}
 
                                     {(match.score === "ff-d" || match.score === "ff-e") && (
                                       <Badge

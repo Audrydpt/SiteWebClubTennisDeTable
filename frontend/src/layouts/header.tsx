@@ -47,10 +47,10 @@ export default function Header({ title, className, ...props }: HeaderProps) {
   const [historiqueOpen, setHistoriqueOpen] = useState(false);
   const [evenementsOpen, setEvenementsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileCompetitionOpen, setMobileCompetitionOpen] = useState(false);
-  const [mobileHistoriqueOpen, setMobileHistoriqueOpen] = useState(false);
-  const [mobileEvenementsOpen, setMobileEvenementsOpen] = useState(false);
-  const [mobileLoginFormOpen, setMobileLoginFormOpen] = useState(false);
+
+  // Un seul état pour gérer quelle section mobile est ouverte
+  const [activeMobileSection, setActiveMobileSection] = useState<string | null>(null);
+
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [loginFormFocused, setLoginFormFocused] = useState(false);
 
@@ -132,7 +132,6 @@ export default function Header({ title, className, ...props }: HeaderProps) {
     setPassword('');
     setError('');
     setMobileMenuOpen(false);
-    setMobileLoginFormOpen(false);
     setIsAdminLogin(false);
   };
 
@@ -148,11 +147,13 @@ export default function Header({ title, className, ...props }: HeaderProps) {
     setMobileMenuOpen(newState);
 
     if (!newState) {
-      setMobileCompetitionOpen(false);
-      setMobileHistoriqueOpen(false);
-      setMobileEvenementsOpen(false);
-      setMobileLoginFormOpen(false);
+      setActiveMobileSection(null);
     }
+  };
+
+  // Nouvelle fonction pour gérer l'ouverture/fermeture des sections mobiles
+  const toggleMobileSection = (sectionName: string) => {
+    setActiveMobileSection(activeMobileSection === sectionName ? null : sectionName);
   };
 
   const competitionItems = [
@@ -741,11 +742,11 @@ export default function Header({ title, className, ...props }: HeaderProps) {
             {/* Menu mobile Compétition */}
             <div>
               <button
-                onClick={() => setMobileCompetitionOpen(!mobileCompetitionOpen)}
+                onClick={() => toggleMobileSection('competition')}
                 className={cn(
                   'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
                   location.pathname.includes('/competition') ||
-                  mobileCompetitionOpen
+                  activeMobileSection === 'competition'
                     ? 'text-[#F1C40F]'
                     : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                 )}
@@ -761,12 +762,12 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className={`transition-transform ${mobileCompetitionOpen ? 'rotate-180' : ''}`}
+                  className={`transition-transform ${activeMobileSection === 'competition' ? 'rotate-180' : ''}`}
                 >
                   <path d="m6 9 6 6 6-6" />
                 </svg>
               </button>
-              {mobileCompetitionOpen && (
+              {activeMobileSection === 'competition' && (
                 <div className="pl-6 py-2 space-y-1 bg-[#444444]">
                   {competitionItems.map((item) => (
                     <Link
@@ -790,11 +791,11 @@ export default function Header({ title, className, ...props }: HeaderProps) {
             {/* Menu mobile Historique */}
             <div>
               <button
-                onClick={() => setMobileHistoriqueOpen(!mobileHistoriqueOpen)}
+                onClick={() => toggleMobileSection('historique')}
                 className={cn(
                   'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
                   location.pathname.includes('/historique') ||
-                  mobileHistoriqueOpen
+                  activeMobileSection === 'historique'
                     ? 'text-[#F1C40F]'
                     : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                 )}
@@ -810,12 +811,12 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className={`transition-transform ${mobileHistoriqueOpen ? 'rotate-180' : ''}`}
+                  className={`transition-transform ${activeMobileSection === 'historique' ? 'rotate-180' : ''}`}
                 >
                   <path d="m6 9 6 6 6-6" />
                 </svg>
               </button>
-              {mobileHistoriqueOpen && (
+              {activeMobileSection === 'historique' && (
                 <div className="pl-6 py-2 space-y-1 bg-[#444444]">
                   {historiqueItems.map((item) => (
                     <Link
@@ -839,11 +840,11 @@ export default function Header({ title, className, ...props }: HeaderProps) {
             {/* Menu mobile Événements */}
             <div>
               <button
-                onClick={() => setMobileEvenementsOpen(!mobileEvenementsOpen)}
+                onClick={() => toggleMobileSection('evenements')}
                 className={cn(
                   'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
                   location.pathname.includes('/evenements') ||
-                  mobileEvenementsOpen
+                  activeMobileSection === 'evenements'
                     ? 'text-[#F1C40F]'
                     : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                 )}
@@ -859,12 +860,12 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className={`transition-transform ${mobileEvenementsOpen ? 'rotate-180' : ''}`}
+                  className={`transition-transform ${activeMobileSection === 'evenements' ? 'rotate-180' : ''}`}
                 >
                   <path d="m6 9 6 6 6-6" />
                 </svg>
               </button>
-              {mobileEvenementsOpen && (
+              {activeMobileSection === 'evenements' && (
                 <div className="pl-6 py-2 space-y-1 bg-[#444444]">
                   {evenementsItems.map((item) => (
                     <Link
@@ -913,7 +914,58 @@ export default function Header({ title, className, ...props }: HeaderProps) {
               Contact
             </Link>
 
-            {/* Section Espace membre/admin sur mobile (si connecté) */}
+            {/* Menu Espace membre pour membre connecté (après Contact) */}
+            {isAuthenticated && !isAdmin() && (
+              <div>
+                <button
+                  onClick={() => toggleMobileSection('espace-membre')}
+                  className={cn(
+                    'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
+                    location.pathname.includes('/espace-membre') ||
+                    activeMobileSection === 'espace-membre'
+                      ? 'text-[#F1C40F]'
+                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                  )}
+                >
+                  <span>Espace membre</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={`transition-transform ${activeMobileSection === 'espace-membre' ? 'rotate-180' : ''}`}
+                  >
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+                {activeMobileSection === 'espace-membre' && (
+                  <div className="pl-6 py-2 space-y-1 bg-[#444444]">
+                    {memberItems.map((item) => (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className={cn(
+                          'block px-4 py-2 text-sm font-medium',
+                          location.pathname === item.path
+                            ? 'text-[#F1C40F]'
+                            : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                        )}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Section membre connecté */}
             {isAuthenticated && (
               <div className="border-t border-gray-600 pt-2">
                 <div className="px-4 py-2 text-[#F1C40F] font-medium">
@@ -922,57 +974,26 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                     : `${isMember(user) ? user.prenom : ''} ${isMember(user) ? user.nom : ''}`}
                 </div>
 
-                {isAdmin() ? (
+                {/* Mon compte pour les membres */}
+                {!isAdmin() && (
+                  <Link
+                    to="/espace-membre/credentials"
+                    className="block px-4 py-2 text-base text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Mon compte
+                  </Link>
+                )}
+
+                {/* Administration pour les admins */}
+                {isAdmin() && (
                   <Link
                     to="/admin"
-                    className="block px-4 py-2 text-base text-white hover:text-[#F1C40F]"
+                    className="block px-4 py-2 text-base text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Administration
                   </Link>
-                ) : (
-                  // Affichage du menu déroulant memberItems pour les membres connectés
-                  <div>
-                    <button
-                      onClick={() => setMobileLoginFormOpen(!mobileLoginFormOpen)}
-                      className="flex justify-between items-center w-full px-4 py-2 text-base font-medium text-white hover:text-[#F1C40F]"
-                    >
-                      <span>Espace membre</span>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className={`transition-transform ${mobileLoginFormOpen ? 'rotate-180' : ''}`}
-                      >
-                        <path d="m6 9 6 6 6-6" />
-                      </svg>
-                    </button>
-                    {mobileLoginFormOpen && (
-                      <div className="pl-6 py-2 space-y-1 bg-[#444444]">
-                        {memberItems.map((item) => (
-                          <Link
-                            key={item.path}
-                            to={item.path}
-                            className={cn(
-                              'block px-4 py-2 text-sm font-medium',
-                              location.pathname === item.path
-                                ? 'text-[#F1C40F]'
-                                : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-                            )}
-                            onClick={() => setMobileMenuOpen(false)}
-                          >
-                            {item.label}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 )}
 
                 <button
@@ -988,7 +1009,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
             {!isAuthenticated && (
               <div className="border-t border-gray-600 pt-2">
                 <button
-                  onClick={() => setMobileLoginFormOpen(!mobileLoginFormOpen)}
+                  onClick={() => toggleMobileSection('login')}
                   className="flex justify-between items-center w-full px-4 py-2 text-base font-medium text-white hover:text-[#F1C40F]"
                 >
                   <span>
@@ -1004,13 +1025,13 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className={`transition-transform ${mobileLoginFormOpen ? 'rotate-180' : ''}`}
+                    className={`transition-transform ${activeMobileSection === 'login' ? 'rotate-180' : ''}`}
                   >
                     <path d="m6 9 6 6 6-6" />
                   </svg>
                 </button>
 
-                {mobileLoginFormOpen && (
+                {activeMobileSection === 'login' && (
                   <div className="pl-6 py-4 bg-[#444444]">
                     <form onSubmit={handleLogin} className="space-y-3">
                       {isAdminLogin && (
@@ -1113,4 +1134,3 @@ export default function Header({ title, className, ...props }: HeaderProps) {
     </header>
   );
 }
-
