@@ -185,64 +185,68 @@ export default function EventsGallery() {
               Revivez les moments forts de nos compétitions et événements
             </p>
 
-            <div className="flex flex-wrap justify-center gap-3 mb-6">
-              {[
-                { key: 'all', label: 'Tout', icon: Star },
-                { key: 'photos', label: 'Photos', icon: Calendar },
-                { key: 'videos', label: 'Vidéos', icon: Play },
-              ].map(({ key, label, icon: Icon }) => (
-                <Button
-                  key={key}
-                  variant={contentFilter === key ? 'default' : 'outline'}
-                  onClick={() => setContentFilter(key as any)}
-                  className={`transition-all duration-200 ${
-                    contentFilter === key
-                      ? 'bg-[#F1C40F] text-[#3A3A3A] hover:bg-[#F1C40F]/90'
-                      : 'bg-white hover:bg-gray-50'
-                  }`}
-                >
-                  <Icon className="w-4 h-4 mr-2" />
-                  {label}
-                  <Badge variant="secondary" className="ml-2">
-                    {key === 'all'
-                      ? galleryItems.length
-                      : key === 'photos'
-                        ? stats.photos
-                        : stats.videos}
-                  </Badge>
-                </Button>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap justify-center gap-3 mb-8">
-              {Object.entries(categories).map(([key, category]) => {
-                const Icon = category.icon;
-                const isActive = selectedCategory === key;
-                return (
-                  <Button
-                    key={key}
-                    variant={isActive ? 'default' : 'outline'}
-                    onClick={() => setSelectedCategory(key)}
-                    className={`transition-all duration-200 ${
-                      isActive
-                        ? 'bg-[#3A3A3A] text-white hover:bg-[#3A3A3A]/90'
-                        : 'bg-white hover:bg-gray-50'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4 mr-2" />
-                    {category.label}
-                    {key !== 'all' && (
+            {/* --- CADRE AUTOUR DES FILTRES --- */}
+            <Card className="shadow-md border border-gray-200 rounded-2xl bg-white p-6 mb-8">
+              <CardContent className="p-0">
+                <div className="flex flex-wrap justify-center gap-3 mb-6">
+                  {[
+                    { key: 'all', label: 'Tout', icon: Star },
+                    { key: 'photos', label: 'Photos', icon: Calendar },
+                    { key: 'videos', label: 'Vidéos', icon: Play },
+                  ].map(({ key, label, icon: Icon }) => (
+                    <Button
+                      key={key}
+                      variant={contentFilter === key ? 'default' : 'outline'}
+                      onClick={() => setContentFilter(key as any)}
+                      className={`transition-all duration-200 ${
+                        contentFilter === key
+                          ? 'bg-[#F1C40F] text-[#3A3A3A] hover:bg-[#F1C40F]/90'
+                          : 'bg-white hover:bg-gray-50'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 mr-2" />
+                      {label}
                       <Badge variant="secondary" className="ml-2">
-                        {
-                          galleryItems.filter((item) => item.category === key)
-                            .length
-                        }
+                        {key === 'all'
+                          ? galleryItems.length
+                          : key === 'photos'
+                            ? stats.photos
+                            : stats.videos}
                       </Badge>
-                    )}
-                  </Button>
-                );
-              })}
-            </div>
+                    </Button>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap justify-center gap-3">
+                  {Object.entries(categories).map(([key, category]) => {
+                    const Icon = category.icon;
+                    const isActive = selectedCategory === key;
+                    return (
+                      <Button
+                        key={key}
+                        variant={isActive ? 'default' : 'outline'}
+                        onClick={() => setSelectedCategory(key)}
+                        className={`transition-all duration-200 ${
+                          isActive
+                            ? 'bg-[#3A3A3A] text-white hover:bg-[#3A3A3A]/90'
+                            : 'bg-white hover:bg-gray-50'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4 mr-2" />
+                        {category.label}
+                        {key !== 'all' && (
+                          <Badge variant="secondary" className="ml-2">
+                            {
+                              galleryItems.filter((item) => item.category === key).length
+                            }
+                          </Badge>
+                        )}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
 
             <p className="text-gray-500 mb-8">
               {filteredItems.length} élément

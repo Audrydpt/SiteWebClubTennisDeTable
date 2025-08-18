@@ -103,21 +103,25 @@ export default function ResultatsAdminPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50">
+    <div className="p-2 sm:p-4 lg:p-8 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">
             Gestion des Saisons & Résultats
           </h1>
           {section !== 'menu' && (
-            <Button variant="outline" onClick={() => setSection('menu')}>
+            <Button
+              variant="outline"
+              onClick={() => setSection('menu')}
+              className="w-full sm:w-auto"
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Retour au menu
             </Button>
           )}
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-white p-3 sm:p-6 rounded-lg shadow-md">
           {renderContent()}
         </div>
       </div>

@@ -129,9 +129,11 @@ export default function AdminContent() {
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Gestion du Contenu</h2>
+    <div className="space-y-4 p-2 sm:p-4">
+      <div className="mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+          Gestion du Contenu
+        </h2>
       </div>
 
       {contentSections.map((section) => (
@@ -141,29 +143,33 @@ export default function AdminContent() {
             onOpenChange={() => toggleSection(section.id)}
           >
             <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+              <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors p-3 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
                     <div
-                      className={`w-10 h-10 ${section.color} rounded-lg flex items-center justify-center`}
+                      className={`w-8 h-8 sm:w-10 sm:h-10 ${section.color} rounded-lg flex items-center justify-center shrink-0`}
                     >
                       {section.icon}
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">{section.title}</CardTitle>
-                      <CardDescription>{section.description}</CardDescription>
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="text-base sm:text-lg truncate">
+                        {section.title}
+                      </CardTitle>
+                      <CardDescription className="text-xs sm:text-sm hidden sm:block">
+                        {section.description}
+                      </CardDescription>
                     </div>
                   </div>
                   {openSections.includes(section.id) ? (
-                    <ChevronDown className="h-5 w-5 text-gray-500" />
+                    <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 shrink-0" />
                   ) : (
-                    <ChevronRight className="h-5 w-5 text-gray-500" />
+                    <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 shrink-0" />
                   )}
                 </div>
               </CardHeader>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <CardContent className="pt-0 max-h-[600px] overflow-y-auto">
+              <CardContent className="pt-0 p-3 sm:p-6 max-h-[70vh] sm:max-h-[600px] overflow-y-auto">
                 {section.component}
               </CardContent>
             </CollapsibleContent>

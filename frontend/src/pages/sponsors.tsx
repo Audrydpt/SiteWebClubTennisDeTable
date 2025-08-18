@@ -308,14 +308,17 @@ export default function Sponsors() {
               {/* Site web */}
               {selectedSponsor.redirectUrl && (
                 <div className="pt-4">
+                  <h3 className="text-xl font-bold text-[#3A3A3A] mb-4 flex items-center">
+                    <div className="w-1 h-6 bg-[#F1C40F] mr-3 rounded" />Site web
+                  </h3>
                   <a
                     href={selectedSponsor.redirectUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center space-x-3 bg-gradient-to-r from-[#3A3A3A] to-gray-700 text-white px-8 py-4 rounded-xl hover:from-gray-700 hover:to-[#3A3A3A] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                    className="text-blue-600 hover:text-blue-800 underline block truncate max-w-full"
+                    title={selectedSponsor.redirectUrl}
                   >
-                    <span className="font-semibold">Visiter le site web</span>
-                    <ExternalLink className="h-5 w-5" />
+                    {selectedSponsor.redirectUrl}
                   </a>
                 </div>
               )}

@@ -225,14 +225,17 @@ export default function CreateSaison() {
         return (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Info /> Étape 1: Informations générales
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Info className="h-4 w-4 sm:h-5 sm:w-5" /> Étape 1: Informations
+                générales
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="space-y-4 p-4 sm:p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="saisonNom">Nom de la saison</Label>
+                  <Label htmlFor="saisonNom" className="text-sm">
+                    Nom de la saison
+                  </Label>
                   <Input
                     id="saisonNom"
                     value={saison.label}
@@ -240,17 +243,20 @@ export default function CreateSaison() {
                       setSaison({ ...saison, label: e.target.value })
                     }
                     placeholder="Ex: Saison 2024-2025"
+                    className="text-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="saisonStatut">Statut</Label>
+                  <Label htmlFor="saisonStatut" className="text-sm">
+                    Statut
+                  </Label>
                   <Select
                     value={saison.statut}
                     onValueChange={(value: any) =>
                       setSaison({ ...saison, statut: value })
                     }
                   >
-                    <SelectTrigger id="saisonStatut">
+                    <SelectTrigger id="saisonStatut" className="text-sm">
                       <SelectValue placeholder="Choisir un statut" />
                     </SelectTrigger>
                     <SelectContent>
@@ -261,7 +267,9 @@ export default function CreateSaison() {
                   </Select>
                 </div>
               </div>
-              <Button onClick={() => setEtape(2)}>Suivant</Button>
+              <Button onClick={() => setEtape(2)} className="w-full sm:w-auto">
+                Suivant
+              </Button>
             </CardContent>
           </Card>
         );
@@ -269,14 +277,17 @@ export default function CreateSaison() {
         return (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users /> Étape 2: Équipes du club (Générateur)
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5" /> Étape 2: Équipes du
+                club (Générateur)
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg">
+            <CardContent className="space-y-4 p-4 sm:p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-3 sm:p-4 border rounded-lg">
                 <div>
-                  <Label htmlFor="nbHommes">Nombre d&#39;équipes Hommes</Label>
+                  <Label htmlFor="nbHommes" className="text-sm">
+                    Nombre d&#39;équipes Hommes
+                  </Label>
                   <Input
                     id="nbHommes"
                     type="number"
@@ -285,10 +296,13 @@ export default function CreateSaison() {
                     onChange={(e) =>
                       setNbHommes(Number.parseInt(e.target.value, 10) || 0)
                     }
+                    className="text-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="nbDames">Nombre d&#39;équipes Dames</Label>
+                  <Label htmlFor="nbDames" className="text-sm">
+                    Nombre d&#39;équipes Dames
+                  </Label>
                   <Input
                     id="nbDames"
                     type="number"
@@ -297,10 +311,11 @@ export default function CreateSaison() {
                     onChange={(e) =>
                       setNbDames(Number.parseInt(e.target.value, 10) || 0)
                     }
+                    className="text-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="nbVeterans">
+                  <Label htmlFor="nbVeterans" className="text-sm">
                     Nombre d&#39;équipes Vétérans
                   </Label>
                   <Input
@@ -311,33 +326,50 @@ export default function CreateSaison() {
                     onChange={(e) =>
                       setNbVeterans(Number.parseInt(e.target.value, 10) || 0)
                     }
+                    className="text-sm"
                   />
                 </div>
               </div>
-              <Button onClick={genererEquipesClub}>Générer les équipes</Button>
+              <Button onClick={genererEquipesClub} className="w-full sm:w-auto">
+                Générer les équipes
+              </Button>
               <div className="space-y-2">
-                <h4 className="font-medium">Équipes générées :</h4>
-                {saison.equipesClub.map((equipe) => (
-                  <div
-                    key={equipe.id}
-                    className="flex justify-between items-center bg-gray-100 p-2 rounded"
-                  >
-                    <span>{equipe.nom}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => supprimerEquipeClub(equipe.id)}
+                <h4 className="font-medium text-sm sm:text-base">
+                  Équipes générées :
+                </h4>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {saison.equipesClub.map((equipe) => (
+                    <div
+                      key={equipe.id}
+                      className="flex justify-between items-center bg-gray-100 p-2 rounded text-sm"
                     >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </div>
-                ))}
+                      <span className="truncate flex-1 mr-2">{equipe.nom}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => supprimerEquipeClub(equipe.id)}
+                        className="h-8 w-8 p-0 shrink-0"
+                      >
+                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setEtape(etape - 1)}>
+              <div className="flex flex-col sm:flex-row justify-between gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setEtape(etape - 1)}
+                  className="w-full sm:w-auto"
+                >
                   Précédent
                 </Button>
-                <Button onClick={() => setEtape(3)}>Suivant</Button>
+                <Button
+                  onClick={() => setEtape(3)}
+                  className="w-full sm:w-auto"
+                >
+                  Suivant
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -353,8 +385,9 @@ export default function CreateSaison() {
         return (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Swords /> Étape 3: Séries et Adversaires
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Swords className="h-4 w-4 sm:h-5 sm:w-5" /> Étape 3: Séries et
+                Adversaires
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -461,17 +494,20 @@ export default function CreateSaison() {
         return (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar /> Étape 4: Calendrier Manuel
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5" /> Étape 4:
+                Calendrier Manuel
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <Label>Sélectionner une série pour définir son calendrier</Label>
+            <CardContent className="space-y-4 p-4 sm:p-6">
+              <Label className="text-sm">
+                Sélectionner une série pour définir son calendrier
+              </Label>
               <Select
                 value={serieSelectionnee}
                 onValueChange={setSerieSelectionnee}
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Choisir une série" />
                 </SelectTrigger>
                 <SelectContent>
@@ -484,99 +520,117 @@ export default function CreateSaison() {
               </Select>
 
               {serieSelectionnee && (
-                <Accordion type="multiple" className="w-full">
-                  {Array.from({ length: 22 }, (_, i) => i + 1).map(
-                    (semaine) => (
-                      <AccordionItem value={`semaine-${semaine}`} key={semaine}>
-                        <AccordionTrigger>Semaine {semaine}</AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-2">
-                            {saison.calendrier
-                              .filter(
-                                (m) =>
-                                  m.serieId === serieSelectionnee &&
-                                  m.semaine === semaine
-                              )
-                              .map((match) => (
-                                <div
-                                  key={match.id}
-                                  className="flex items-center gap-2"
-                                >
-                                  <Select
-                                    value={match.domicile}
-                                    onValueChange={(val) =>
-                                      mettreAJourMatch(
-                                        match.id,
-                                        'domicile',
-                                        val
-                                      )
-                                    }
+                <div className="max-h-[50vh] overflow-y-auto">
+                  <Accordion type="multiple" className="w-full">
+                    {Array.from({ length: 22 }, (_, i) => i + 1).map(
+                      (semaine) => (
+                        <AccordionItem
+                          value={`semaine-${semaine}`}
+                          key={semaine}
+                        >
+                          <AccordionTrigger className="text-sm">
+                            Semaine {semaine}
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="space-y-2">
+                              {saison.calendrier
+                                .filter(
+                                  (m) =>
+                                    m.serieId === serieSelectionnee &&
+                                    m.semaine === semaine
+                                )
+                                .map((match) => (
+                                  <div
+                                    key={match.id}
+                                    className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2"
                                   >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Domicile" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {equipesPourCalendrier.map((e) => (
-                                        <SelectItem key={e.id} value={e.nom}>
-                                          {e.nom}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                  <span>vs</span>
-                                  <Select
-                                    value={match.exterieur}
-                                    onValueChange={(val) =>
-                                      mettreAJourMatch(
-                                        match.id,
-                                        'exterieur',
-                                        val
-                                      )
-                                    }
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Extérieur" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {equipesPourCalendrier.map((e) => (
-                                        <SelectItem key={e.id} value={e.nom}>
-                                          {e.nom}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => supprimerMatch(match.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                  </Button>
-                                </div>
-                              ))}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                ajouterMatch(serieSelectionnee, semaine)
-                              }
-                            >
-                              <PlusCircle className="mr-2 h-4 w-4" />
-                              Ajouter un match
-                            </Button>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    )
-                  )}
-                </Accordion>
+                                    <Select
+                                      value={match.domicile}
+                                      onValueChange={(val) =>
+                                        mettreAJourMatch(
+                                          match.id,
+                                          'domicile',
+                                          val
+                                        )
+                                      }
+                                    >
+                                      <SelectTrigger className="text-xs sm:text-sm">
+                                        <SelectValue placeholder="Domicile" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {equipesPourCalendrier.map((e) => (
+                                          <SelectItem key={e.id} value={e.nom}>
+                                            {e.nom}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <span className="text-center text-sm sm:text-base">
+                                      vs
+                                    </span>
+                                    <Select
+                                      value={match.exterieur}
+                                      onValueChange={(val) =>
+                                        mettreAJourMatch(
+                                          match.id,
+                                          'exterieur',
+                                          val
+                                        )
+                                      }
+                                    >
+                                      <SelectTrigger className="text-xs sm:text-sm">
+                                        <SelectValue placeholder="Extérieur" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {equipesPourCalendrier.map((e) => (
+                                          <SelectItem key={e.id} value={e.nom}>
+                                            {e.nom}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => supprimerMatch(match.id)}
+                                      className="w-8 h-8 shrink-0"
+                                    >
+                                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  ajouterMatch(serieSelectionnee, semaine)
+                                }
+                                className="w-full text-xs sm:text-sm"
+                              >
+                                <PlusCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                                Ajouter un match
+                              </Button>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      )
+                    )}
+                  </Accordion>
+                </div>
               )}
 
-              <div className="flex justify-between mt-6">
-                <Button variant="outline" onClick={() => setEtape(etape - 1)}>
+              <div className="flex flex-col sm:flex-row justify-between mt-6 gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setEtape(etape - 1)}
+                  className="w-full sm:w-auto"
+                >
                   Précédent
                 </Button>
-                <Button onClick={soumettreFormulaire}>
+                <Button
+                  onClick={soumettreFormulaire}
+                  className="w-full sm:w-auto"
+                >
                   Enregistrer la saison
                 </Button>
               </div>
@@ -589,8 +643,10 @@ export default function CreateSaison() {
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Création d&#39;une nouvelle saison</h2>
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-0">
+      <h2 className="text-xl sm:text-2xl font-bold">
+        Création d&#39;une nouvelle saison
+      </h2>
       {renderEtape()}
     </div>
   );

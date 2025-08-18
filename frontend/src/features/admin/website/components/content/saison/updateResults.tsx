@@ -279,14 +279,14 @@ export default function UpdateResults() {
 
     return (
       <div className="mt-2 border-t pt-2">
-        <p className="text-sm font-medium mb-2">Joueurs {equipe}</p>
+        <p className="text-xs sm:text-sm font-medium mb-2 truncate">Joueurs {equipe}</p>
         <div className="space-y-2">
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Select
               value={joueurSelectionne}
               onValueChange={setJoueurSelectionne}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full text-xs sm:text-sm">
                 <SelectValue placeholder="Choisir un joueur" />
               </SelectTrigger>
               <SelectContent>
@@ -305,8 +305,11 @@ export default function UpdateResults() {
               size="sm"
               onClick={() => ajouterJoueur(match.id, estDomicile)}
               disabled={!joueurSelectionne}
+              className="w-full sm:w-auto text-xs"
             >
-              <PlusCircle className="h-4 w-4 mr-1" /> Ajouter
+              <PlusCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+              <span className="hidden sm:inline">Ajouter</span>
+              <span className="sm:hidden">+</span>
             </Button>
           </div>
 
@@ -315,24 +318,25 @@ export default function UpdateResults() {
               joueurs.map((joueur) => (
                 <div
                   key={joueur.id}
-                  className="flex items-center justify-between bg-gray-50 py-1 px-2 rounded"
+                  className="flex items-center justify-between bg-gray-50 py-2 px-2 rounded text-xs sm:text-sm"
                 >
-                <span>
-                  {joueur.nom} ({membres.find((m) => m.id === joueur.id)?.classement || 'N/A'})
-                </span>
+                  <span className="truncate flex-1 mr-2">
+                    {joueur.nom} ({membres.find((m) => m.id === joueur.id)?.classement || 'N/A'})
+                  </span>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() =>
                       supprimerJoueur(match.id, joueur.id, estDomicile)
                     }
+                    className="h-6 w-6 p-0 shrink-0"
                   >
-                    <X className="h-4 w-4 text-red-500" />
+                    <X className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
                   </Button>
                 </div>
               ))
             ) : (
-              <p className="text-gray-400 text-sm italic">
+              <p className="text-gray-400 text-xs italic">
                 Aucun joueur encodé
               </p>
             )}
@@ -370,11 +374,11 @@ export default function UpdateResults() {
 
 
 return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-0">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <h2 className="text-xl sm:text-2xl font-bold">
           Résultats: {saison.label}{' '}
-          <span className="text-sm font-medium text-primary">
+          <span className="text-xs sm:text-sm font-medium text-primary block sm:inline">
             ({saison.statut})
           </span>
         </h2>
@@ -390,7 +394,7 @@ return (
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Colonne 1 : Série */}
         <div>
           <Label>Série</Label>
@@ -411,9 +415,9 @@ return (
           </Select>
         </div>
 
-        {/* Colonne 2 : Semaine + Bouton aligné à droite */}
-        <div className="flex items-end gap-4">
-          <div className="flex-1">
+        {/* Colonne 2 : Semaine + Bouton */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-end gap-3 sm:gap-4">
+          <div className="flex-1 w-full">
             <Label>Semaine</Label>
             <Select
               value={semaineSelectionnee.toString()}
@@ -432,33 +436,34 @@ return (
             </Select>
           </div>
 
-          {/* Bouton à droite du champ Semaine */}
-          <Button onClick={enregistrerResultats}>
+          {/* Bouton responsive */}
+          <Button onClick={enregistrerResultats} className="w-full sm:w-auto">
             <Save className="mr-2 h-4 w-4" />
-            Sauvegarder
+            <span className="hidden sm:inline">Sauvegarder</span>
+            <span className="sm:hidden">Sauver</span>
           </Button>
         </div>
       </div>
 
       {serieSelectionnee && (
-        <div className="border p-4 rounded-lg">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-medium">
+        <div className="border p-3 sm:p-4 rounded-lg">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+            <h3 className="font-medium text-sm sm:text-base">
               Matchs de la semaine {semaineSelectionnee}
             </h3>
             <Button
               size="sm"
               onClick={copierCompoSemainePrecedente}
               disabled={semaineSelectionnee === 1}
-              className="flex items-center"
+              className="flex items-center w-full sm:w-auto text-xs sm:text-sm"
             >
-              <ClipboardCopy className="w-4 h-4 mr-0 sm:mr-2" />
-              <span className="hidden sm:inline">Copier la compo précédente</span>
+              <ClipboardCopy className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="truncate">Copier compo précédente</span>
             </Button>
           </div>
 
           {matchsSemaine.length > 0 ? (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {matchsSemaine.map((match, index) => {
                 const domicileIsFrameries = estEquipeDeFrameries(
                   match.domicile
@@ -470,39 +475,42 @@ return (
                 return (
                   <div
                     key={match.id}
-                    className="border-b pb-6 mb-6 last:border-0 last:mb-0 last:pb-0"
+                    className="border-b pb-4 sm:pb-6 mb-4 sm:mb-6 last:border-0 last:mb-0 last:pb-0"
                   >
-                    <div className="grid grid-cols-3 items-center gap-2 text-center mb-4">
-                      <span className="text-right font-medium text-base sm:text-lg">
-                        {match.domicile}
-                      </span>
-                      <Input
-                        value={match.score}
-                        onChange={(e) =>
-                          mettreAJourScoreMatch(match.id, e.target.value)
-                        }
-                        placeholder="0-0"
-                        className="max-w-24 mx-auto text-center"
-                        ref={(el) => {
-                          scoreRefs.current[index] = el;
-                        }}
-                        onKeyDown={(e) => handleKeyDown(e, index)}
-                      />
-                      <span className="text-left font-medium text-base sm:text-lg">
-                        {match.exterieur}
-                      </span>
+                    {/* Match info - mobile friendly */}
+                    <div className="space-y-3 mb-4">
+                      <div className="grid grid-cols-5 gap-2 items-center text-center">
+                        <span className="col-span-2 text-xs sm:text-base font-medium text-right truncate">
+                          {match.domicile}
+                        </span>
+                        <Input
+                          value={match.score}
+                          onChange={(e) =>
+                            mettreAJourScoreMatch(match.id, e.target.value)
+                          }
+                          placeholder="0-0"
+                          className="text-center text-xs sm:text-sm h-8 sm:h-10"
+                          ref={(el) => {
+                            scoreRefs.current[index] = el;
+                          }}
+                          onKeyDown={(e) => handleKeyDown(e, index)}
+                        />
+                        <span className="col-span-2 text-xs sm:text-base font-medium text-left truncate">
+                          {match.exterieur}
+                        </span>
+                      </div>
                     </div>
 
                     {(() => {
                       if (domicileIsFrameries && exterieurIsFrameries) {
                         return (
                           <Tabs defaultValue="domicile">
-                            <TabsList className="w-full grid grid-cols-2 mb-2">
-                              <TabsTrigger value="domicile">
-                                Joueurs {match.domicile}
+                            <TabsList className="w-full grid grid-cols-2 mb-2 h-8 sm:h-10">
+                              <TabsTrigger value="domicile" className="text-xs sm:text-sm px-1 sm:px-3">
+                                Joueurs {match.domicile.split(' ').slice(-1)[0]}
                               </TabsTrigger>
-                              <TabsTrigger value="exterieur">
-                                Joueurs {match.exterieur}
+                              <TabsTrigger value="exterieur" className="text-xs sm:text-sm px-1 sm:px-3">
+                                Joueurs {match.exterieur.split(' ').slice(-1)[0]}
                               </TabsTrigger>
                             </TabsList>
                             <TabsContent value="domicile">
@@ -527,7 +535,7 @@ return (
               })}
             </div>
           ) : (
-            <p className="text-gray-500 italic mt-4 text-center">
+            <p className="text-gray-500 italic mt-4 text-center text-sm">
               Aucun match programmé pour cette sélection.
             </p>
           )}
