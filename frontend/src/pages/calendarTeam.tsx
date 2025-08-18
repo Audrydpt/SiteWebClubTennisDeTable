@@ -1,6 +1,7 @@
 /* eslint-disable */
 import { useState, useEffect } from "react"
-import { Loader2, Calendar, Home, Plane, Trophy, Filter } from "lucide-react"
+import { Loader2, Calendar, Home, Plane, Trophy, Filter, ArrowLeft } from "lucide-react"
+import { useParams, useNavigate, Link } from "react-router-dom"
 import { fetchSaisonEnCours } from "@/services/api"
 import type { Saison, Match, Equipe } from "@/services/type.ts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -16,12 +17,29 @@ export default function CalendrierPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [filtre, setFiltre] = useState<"tous" | "passes" | "futurs">("tous")
 
+  const { nomEquipe } = useParams<{ nomEquipe?: string }>()
+  const navigate = useNavigate()
+
   useEffect(() => {
     fetchSaisonEnCours()
       .then((data) => {
         setSaison(data)
         if (data && data.equipesClub.length > 0) {
-          setEquipeSelectionnee(data.equipesClub[0])
+          // Si un nom d'équipe est fourni dans l'URL, la sélectionner
+          if (nomEquipe) {
+            const equipeDecoded = decodeURIComponent(nomEquipe)
+            const equipe = data.equipesClub.find(
+              (e: { nom: string }) => e.nom === equipeDecoded
+            );
+            if (equipe) {
+              setEquipeSelectionnee(equipe)
+            } else {
+              // Si l'équipe n'est pas trouvée, sélectionner la première
+              setEquipeSelectionnee(data.equipesClub[0])
+            }
+          } else {
+            setEquipeSelectionnee(data.equipesClub[0])
+          }
         }
       })
       .catch((error) => {
@@ -30,7 +48,7 @@ export default function CalendrierPage() {
       .finally(() => {
         setIsLoading(false)
       })
-  }, [])
+  }, [nomEquipe])
 
   const handleSelectEquipe = (equipeId: string) => {
     const equipe = saison?.equipesClub.find((e) => e.id === equipeId)
@@ -233,6 +251,17 @@ export default function CalendrierPage() {
 
       <div className="container mx-auto px-4 py-20">
         <div className="max-w-7xl mx-auto">
+          {/* Bouton retour vers les équipes */}
+          <div className="mb-6">
+            <Link
+              to="/competition/equipes"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#3A3A3A] text-white rounded-md hover:bg-gray-600 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Retour aux équipes
+            </Link>
+          </div>
+
           {saison?.equipesClub.length > 0 && (
             <Card className="shadow-2xl border-0 mb-8">
               <CardHeader className="bg-gradient-to-r from-[#3A3A3A] to-gray-600 text-white">
@@ -245,7 +274,7 @@ export default function CalendrierPage() {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="w-full">
-                  <Select onValueChange={handleSelectEquipe} defaultValue={equipeSelectionnee?.id}>
+                  <Select onValueChange={handleSelectEquipe} value={equipeSelectionnee?.id || ""}>
                     <SelectTrigger className="w-full text-base py-6">
                       <SelectValue placeholder="Sélectionner une équipe" />
                     </SelectTrigger>

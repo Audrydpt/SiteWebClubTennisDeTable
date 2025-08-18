@@ -41,6 +41,10 @@ export default function App() {
               path="/competition/calendrier"
               element={<CalendrierPage />}
             />
+            <Route
+              path="/competition/calendrier/:nomEquipe"
+              element={<CalendrierPage />}
+            />
             <Route path="/evenements/galerie" element={<Galery />} />
             <Route path="/evenements/calendrier" element={<CalendarEvent />} />
             <Route path="/contact" element={<Contact />} />

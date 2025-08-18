@@ -42,8 +42,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // États pour la gestion des menus
-  const [competitionOpen, setCompetitionOpen] = useState(false);
+  // États pour la gestion des menus (supprimer competitionOpen)
   const [historiqueOpen, setHistoriqueOpen] = useState(false);
   const [evenementsOpen, setEvenementsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -156,11 +155,6 @@ export default function Header({ title, className, ...props }: HeaderProps) {
     setActiveMobileSection(activeMobileSection === sectionName ? null : sectionName);
   };
 
-  const competitionItems = [
-    { path: '/competition/equipes', label: 'Équipes' },
-    { path: '/competition/calendrier', label: 'Calendrier' },
-  ];
-
   const historiqueItems = [
     { path: '/infos/about', label: 'À propos de nous' },
     { path: '/infos/palmares', label: 'Palmarès' },
@@ -233,62 +227,19 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 </Link>
               </li>
 
-              {/* Menu Compétition */}
+              {/* Lien direct vers les équipes */}
               <li>
-                <HoverCard
-                  openDelay={0}
-                  closeDelay={150}
-                  open={competitionOpen}
-                  onOpenChange={setCompetitionOpen}
+                <Link
+                  to="/competition/equipes"
+                  className={cn(
+                    'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
+                    location.pathname.includes('/competition')
+                      ? 'text-[#F1C40F]'
+                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                  )}
                 >
-                  <HoverCardTrigger asChild>
-                    <span
-                      className={cn(
-                        'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center cursor-pointer',
-                        location.pathname.includes('/competition')
-                          ? 'text-[#F1C40F]'
-                          : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-                      )}
-                    >
-                      Compétition
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="ml-1"
-                      >
-                        <path d="m6 9 6 6 6-6" />
-                      </svg>
-                    </span>
-                  </HoverCardTrigger>
-                  <HoverCardContent
-                    className="w-[200px] p-0"
-                    style={{ backgroundColor: '#3A3A3A' }}
-                  >
-                    <div className="grid gap-2 p-2">
-                      {competitionItems.map((item) => (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          className={cn(
-                            'text-sm transition-colors px-3 py-2 rounded-md',
-                            location.pathname === item.path
-                              ? 'text-[#F1C40F]'
-                              : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-                          )}
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </HoverCardContent>
-                </HoverCard>
+                  Équipes championnat
+                </Link>
               </li>
 
               {/* Menu Historique */}
@@ -739,54 +690,19 @@ export default function Header({ title, className, ...props }: HeaderProps) {
               Accueil
             </Link>
 
-            {/* Menu mobile Compétition */}
-            <div>
-              <button
-                onClick={() => toggleMobileSection('competition')}
-                className={cn(
-                  'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
-                  location.pathname.includes('/competition') ||
-                  activeMobileSection === 'competition'
-                    ? 'text-[#F1C40F]'
-                    : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-                )}
-              >
-                <span>Compétition</span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={`transition-transform ${activeMobileSection === 'competition' ? 'rotate-180' : ''}`}
-                >
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </button>
-              {activeMobileSection === 'competition' && (
-                <div className="pl-6 py-2 space-y-1 bg-[#444444]">
-                  {competitionItems.map((item) => (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className={cn(
-                        'block px-4 py-2 text-sm font-medium',
-                        location.pathname === item.path
-                          ? 'text-[#F1C40F]'
-                          : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-                      )}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
+            {/* Lien direct vers les équipes sur mobile */}
+            <Link
+              to="/competition/equipes"
+              className={cn(
+                'block px-4 py-2 text-base font-medium',
+                location.pathname.includes('/competition')
+                  ? 'text-[#F1C40F]'
+                  : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
               )}
-            </div>
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Équipes championnat
+            </Link>
 
             {/* Menu mobile Historique */}
             <div>

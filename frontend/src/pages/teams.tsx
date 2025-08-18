@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Loader2, Trophy, Users, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { fetchSaisonEnCours } from '@/services/api';
 import calculerClassement from '@/services/classements';
 import type { Saison, Serie, ClassementEntry } from '@/services/type.ts';
@@ -32,6 +33,7 @@ const getRankColor = (position: number) => {
 export default function EquipesPage() {
   const [saison, setSaison] = useState<Saison | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,6 +49,12 @@ export default function EquipesPage() {
 
     fetchData();
   }, []);
+
+  const handleEquipeClick = (nomEquipe: string) => {
+    // Encoder le nom de l'équipe pour l'URL
+    const equipeEncoded = encodeURIComponent(nomEquipe);
+    navigate(`/competition/calendrier/${equipeEncoded}`);
+  };
 
   if (isLoading) {
     return (
@@ -184,9 +192,14 @@ export default function EquipesPage() {
                               key={equipe.nom}
                               className={
                                 equipe.nom.includes(nomClub)
-                                  ? 'bg-gradient-to-r from-[#F1C40F]/10 to-yellow-50 hover:from-[#F1C40F]/20 hover:to-yellow-100 border-l-4 border-[#F1C40F]'
+                                  ? 'bg-gradient-to-r from-[#F1C40F]/10 to-yellow-50 hover:from-[#F1C40F]/20 hover:to-yellow-100 border-l-4 border-[#F1C40F] cursor-pointer'
                                   : 'hover:bg-gray-50/70'
                               }
+                              onClick={() => {
+                                if (equipe.nom.includes(nomClub)) {
+                                  handleEquipeClick(equipe.nom);
+                                }
+                              }}
                             >
                               <TableCell className="text-center">
                                 <span

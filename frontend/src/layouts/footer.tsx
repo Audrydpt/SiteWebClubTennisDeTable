@@ -41,7 +41,7 @@ export default function Footer() {
             >
               <h4 className="font-semibold mb-4">À propos de nous</h4>
             </Link>
-            <p className="text-sm">
+            <p className="text-sm whitespace-pre-line">
               {infos.footer?.aboutText || 'Description à venir...'}
             </p>
           </div>
