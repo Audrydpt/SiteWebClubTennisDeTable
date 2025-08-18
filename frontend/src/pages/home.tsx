@@ -149,7 +149,7 @@ export default function HomePage() {
     slidesToShow: 1,
     slidesToScroll: 1,
     autoplay: true,
-    autoplaySpeed: 5000,
+    autoplaySpeed: 8000,
     arrows: true,
     prevArrow: <PrevArrow />,
     nextArrow: <NextArrow />,
@@ -246,34 +246,27 @@ export default function HomePage() {
                 <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white z-30 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
                   <div className="flex flex-col gap-2">
                     {/* Titre */}
-                    {actualite.redirectUrl && actualite.redirectUrl.trim() !== '' ? (
-                      <a
-                        href={actualite.redirectUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-lg md:text-2xl font-bold leading-tight drop-shadow-lg underline hover:text-yellow-300 transition"
-                        onClick={e => e.stopPropagation()}
-                      >
-                        {actualite.title}
-                      </a>
-                    ) : (
-                      <h3 className="text-lg md:text-2xl font-bold leading-tight drop-shadow-lg">
-                        {actualite.title}
-                      </h3>
-                    )}
+                    <h3 className="text-lg md:text-2xl font-bold leading-tight drop-shadow-lg">
+                      {actualite.title}
+                    </h3>
 
-                    {/* Texte limité + scroll masqué */}
-                    <div className="relative">
-                      <div
-                        className="
-                        text-sm md:text-base text-white/90 leading-relaxed drop-shadow-md
-                        max-h-[4.5em] overflow-y-auto pr-1 scrollbar-hide
-                      "
-                        onClick={(e) => e.stopPropagation()} // évite d’ouvrir le plein écran lors du scroll
-                      >
-                        {actualite.content}
-                      </div>
-                      <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+                    {/* Aperçu du contenu avec Voir + après troncature */}
+                    <div className="text-sm md:text-base text-gray-200 leading-relaxed drop-shadow-lg">
+                      <p className="line-clamp-2 overflow-hidden">
+                        {actualite.content.length > 150
+                          ? `${actualite.content.substring(0, 150)}... `
+                          : `${actualite.content} `
+                        }
+                        <button
+                          className="text-white underline hover:text-gray-300 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedArticle(actualite);
+                          }}
+                        >
+                          Voir +
+                        </button>
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -285,22 +278,22 @@ export default function HomePage() {
         {/* MODAL PLEIN ÉCRAN */}
         {selectedArticle && (
           <div
-            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 animate-fadeIn"
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-2 sm:p-4 animate-fadeIn"
             onClick={(e) =>
               e.target === e.currentTarget && setSelectedArticle(null)
             }
           >
-            <div className="relative max-w-4xl w-full bg-white rounded-lg overflow-hidden shadow-lg animate-slideUp">
+            <div className="relative max-w-4xl w-full bg-white rounded-lg overflow-hidden shadow-lg animate-slideUp max-h-[95vh] sm:max-h-[90vh]">
               {/* Bouton fermer */}
               <button
-                className="absolute top-4 right-4 text-white text-3xl z-50"
+                className="absolute top-2 right-2 sm:top-4 sm:right-4 text-white text-2xl sm:text-3xl z-50 bg-black/50 rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center hover:bg-black/70"
                 onClick={() => setSelectedArticle(null)}
               >
                 ✕
               </button>
 
-              {/* Image zoom */}
-              <div className="w-full h-[500px] bg-black overflow-hidden flex items-center justify-center">
+              {/* Image - hauteur adaptative selon l'écran */}
+              <div className="w-full h-[200px] sm:h-[300px] md:h-[400px] bg-black overflow-hidden flex items-center justify-center">
                 <img
                   src={selectedArticle.imageUrl || '/placeholder.svg'}
                   alt={selectedArticle.title}
@@ -308,23 +301,28 @@ export default function HomePage() {
                 />
               </div>
 
-              {/* Contenu */}
-              <div className="p-6 text-black max-h-[300px] overflow-y-auto">
-                <h2 className="text-2xl font-bold mb-4">
+              {/* Contenu - hauteur adaptative pour éviter le scroll */}
+              <div className="p-3 sm:p-4 md:p-6 text-black h-[250px] sm:h-[300px] md:h-[400px] flex flex-col">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-3 md:mb-4 flex-shrink-0 leading-tight">
                   {selectedArticle.title}
                 </h2>
-                <p className="leading-relaxed whitespace-pre-line">
-                  {selectedArticle.content}
-                </p>
+
+                <div className="flex-1 overflow-hidden">
+                  <p className="leading-relaxed whitespace-pre-line text-sm sm:text-base">
+                    {selectedArticle.content}
+                  </p>
+                </div>
+
                 {selectedArticle.redirectUrl && selectedArticle.redirectUrl.trim() !== '' && (
-                  <div className="mt-6">
+                  <div className="mt-2 sm:mt-3 md:mt-4 pt-2 sm:pt-3 md:pt-4 border-t flex-shrink-0">
                     <a
                       href={selectedArticle.redirectUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-block px-4 py-2 bg-yellow-400 text-black font-semibold rounded hover:bg-yellow-500 transition"
+                      className="text-blue-600 underline hover:text-blue-800 visited:text-purple-600 transition-colors block truncate text-sm sm:text-base"
+                      title={selectedArticle.redirectUrl}
                     >
-                      Visiter l&#39;actu
+                      {selectedArticle.redirectUrl}
                     </a>
                   </div>
                 )}

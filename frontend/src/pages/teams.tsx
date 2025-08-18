@@ -119,7 +119,7 @@ export default function EquipesPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <div className="inline-block bg-[#F1C40F] text-[#3A3A3A] px-6 py-2 rounded-full font-semibold mb-6 text-sm uppercase tracking-wide">
-              🏆 Saison {saison.label}
+              🏆 {saison.label}
             </div>
             <h2 className="text-4xl font-bold text-[#3A3A3A] mb-6">
               Classements des équipes

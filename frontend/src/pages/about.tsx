@@ -689,7 +689,7 @@ export default function About() {
         </div>
       )}
 
-      {/* NOS VALEURS */}
+      {/* NOS VALEURS
       {valuesSection && (
         <div className="container mx-auto px-4 py-20">
           <div className="max-w-6xl mx-auto mb-20">
@@ -733,6 +733,7 @@ export default function About() {
           </div>
         </div>
       )}
+      */}
 
       {/* CHIFFRES CLÉS (DYNAMIQUE) */}
 

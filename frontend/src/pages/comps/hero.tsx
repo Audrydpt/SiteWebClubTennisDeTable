@@ -56,13 +56,7 @@ export default function HeroSection() {
           </div>
         </div>
       </div>
-
-      {/* Flèche scroll */}
-      {showScrollArrow && (
-        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <ChevronDown className="w-8 h-8 text-[#F1C40F]" />
-        </div>
-      )}
     </div>
   )
 }
+

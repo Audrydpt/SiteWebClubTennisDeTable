@@ -1,4 +1,4 @@
-/* eslint-disable no-console,no-alert */
+/* eslint-disable no-console,no-alert,no-nested-ternary */
 import { useEffect, useState } from 'react';
 import {
   Plus,
@@ -8,6 +8,7 @@ import {
   ChevronUp,
   ArrowUp,
   ArrowDown,
+  Eye,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,80 @@ import {
   fetchImages,
 } from '@/services/api';
 import { Image, ActualiteData } from '@/services/type.ts';
+
+// Limite de caractères réduite pour mobile (équivalent à environ une demi-page)
+const MAX_CONTENT_LENGTH = 600;
+
+// Composant d'aperçu de l'actualité
+function ActualitePreview({
+  title,
+  content,
+  imageUrl,
+  redirectUrl,
+}: {
+  title: string;
+  content: string;
+  imageUrl: string;
+  redirectUrl: string;
+}) {
+  return (
+    <div className="border rounded-lg p-4 bg-gray-50">
+      <h4 className="font-semibold mb-3 flex items-center gap-2">
+        <Eye className="h-4 w-4" />
+        Aperçu de la publication
+      </h4>
+      <div className="bg-white rounded-lg overflow-hidden shadow-sm">
+        {/* Simulation de l'affichage carousel */}
+        <div className="relative h-32 sm:h-48 bg-black">
+          {imageUrl && (
+            <img
+              src={imageUrl}
+              alt={title}
+              className="w-full h-full object-contain"
+            />
+          )}
+          <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3 bg-gradient-to-t from-black/80 to-transparent text-white">
+            <h5 className="font-bold text-xs sm:text-sm mb-1">
+              {title || "Titre de l'actualité"}
+            </h5>
+            <p className="text-xs text-gray-200 line-clamp-2">
+              {content
+                ? content.length > 60
+                  ? `${content.substring(0, 60)}...`
+                  : content
+                : "Contenu de l'actualité..."}
+            </p>
+          </div>
+        </div>
+
+        {/* Simulation de la modal - optimisée pour mobile */}
+        <div className="p-3 sm:p-4 max-h-48 sm:max-h-64 overflow-hidden">
+          <h6 className="font-bold mb-2 text-sm sm:text-base">
+            {title || "Titre de l'actualité"}
+          </h6>
+          <div className="text-xs sm:text-sm text-gray-700 space-y-1 max-h-24 sm:max-h-32 overflow-hidden">
+            {content ? (
+              <p className="whitespace-pre-line leading-tight">{content}</p>
+            ) : (
+              <p className="text-gray-400">Contenu de l&#39;actualité...</p>
+            )}
+          </div>
+          {redirectUrl && (
+            <div className="mt-2 pt-2 border-t">
+              <a
+                href={redirectUrl}
+                className="text-blue-600 text-xs underline hover:text-blue-800 block truncate"
+                title={redirectUrl}
+              >
+                {redirectUrl}
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ActualitesManager() {
   const [actualites, setActualites] = useState<ActualiteData[]>([]);
@@ -67,6 +142,12 @@ export default function ActualitesManager() {
       alert('Veuillez renseigner un titre et sélectionner une image.');
       return;
     }
+    if (newItem.content.length > MAX_CONTENT_LENGTH) {
+      alert(
+        `Le contenu ne peut pas dépasser ${MAX_CONTENT_LENGTH} caractères.`
+      );
+      return;
+    }
     const newActu = {
       id: Date.now().toString(),
       ...newItem,
@@ -84,6 +165,12 @@ export default function ActualitesManager() {
 
   const handleUpdate = async () => {
     if (!editingItem) return;
+    if (editingItem.content.length > MAX_CONTENT_LENGTH) {
+      alert(
+        `Le contenu ne peut pas dépasser ${MAX_CONTENT_LENGTH} caractères.`
+      );
+      return;
+    }
     await updateActualite(editingItem.id, editingItem);
     setEditingItem(null);
     await loadData();
@@ -141,7 +228,7 @@ export default function ActualitesManager() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-4">
               <Input
                 placeholder="Titre *"
@@ -150,13 +237,43 @@ export default function ActualitesManager() {
                   setNewItem({ ...newItem, title: e.target.value })
                 }
               />
-              <Textarea
-                placeholder="Contenu"
-                value={newItem.content}
-                onChange={(e) =>
-                  setNewItem({ ...newItem, content: e.target.value })
-                }
-              />
+
+              <div className="space-y-2">
+                <Label>Contenu (optimisé pour mobile)</Label>
+                <Textarea
+                  placeholder="Contenu de l'actualité - gardez-le court pour un affichage optimal sur mobile"
+                  value={newItem.content}
+                  onChange={(e) => {
+                    const { value } = e.target;
+                    if (value.length <= MAX_CONTENT_LENGTH) {
+                      setNewItem({ ...newItem, content: value });
+                    }
+                  }}
+                  className="min-h-24 resize-none"
+                  maxLength={MAX_CONTENT_LENGTH}
+                />
+                <div className="flex justify-between items-center text-sm">
+                  <span
+                    className={`${
+                      newItem.content.length > MAX_CONTENT_LENGTH * 0.9
+                        ? 'text-orange-600'
+                        : 'text-gray-500'
+                    }`}
+                  >
+                    {newItem.content.length} / {MAX_CONTENT_LENGTH} caractères
+                  </span>
+                  {newItem.content.length > MAX_CONTENT_LENGTH * 0.9 && (
+                    <span className="text-orange-600 text-xs">
+                      Limite bientôt atteinte
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
+                  💡 Conseil : Sur mobile, limitez-vous à 2-3 phrases courtes
+                  pour un affichage optimal sans scroll
+                </div>
+              </div>
+
               <Input
                 placeholder="URL de redirection (optionnel)"
                 value={newItem.redirectUrl}
@@ -164,31 +281,41 @@ export default function ActualitesManager() {
                   setNewItem({ ...newItem, redirectUrl: e.target.value })
                 }
               />
+
+              <div className="space-y-2">
+                <Label>Image</Label>
+                <select
+                  value={newItem.imageUrl}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, imageUrl: e.target.value })
+                  }
+                  className="w-full border rounded p-2"
+                >
+                  <option value="">-- Choisir une image -- *</option>
+                  {images.map((img) => (
+                    <option key={img.id} value={img.url}>
+                      {img.label}
+                    </option>
+                  ))}
+                </select>
+                {newItem.imageUrl && (
+                  <img
+                    src={newItem.imageUrl}
+                    alt="aperçu"
+                    className="h-24 object-contain rounded border"
+                  />
+                )}
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Image</Label>
-              <select
-                value={newItem.imageUrl}
-                onChange={(e) =>
-                  setNewItem({ ...newItem, imageUrl: e.target.value })
-                }
-                className="w-full border rounded p-2"
-              >
-                <option value="">-- Choisir une image -- *</option>
-                {images.map((img) => (
-                  <option key={img.id} value={img.url}>
-                    {img.label}
-                  </option>
-                ))}
-              </select>
-              {newItem.imageUrl && (
-                <img
-                  src={newItem.imageUrl}
-                  alt="aperçu"
-                  className="h-24 object-contain rounded border"
-                />
-              )}
+            {/* Aperçu en temps réel */}
+            <div className="space-y-4">
+              <ActualitePreview
+                title={newItem.title}
+                content={newItem.content}
+                imageUrl={newItem.imageUrl}
+                redirectUrl={newItem.redirectUrl}
+              />
             </div>
           </div>
 
@@ -226,62 +353,95 @@ export default function ActualitesManager() {
             <Card key={actu.id}>
               <CardContent className="p-4">
                 {editingItem?.id === actu.id ? (
-                  <div className="space-y-4">
-                    <Input
-                      value={editingItem.title}
-                      onChange={(e) =>
-                        setEditingItem({
-                          ...editingItem,
-                          title: e.target.value,
-                        })
-                      }
-                    />
-                    <Textarea
-                      value={editingItem.content}
-                      onChange={(e) =>
-                        setEditingItem({
-                          ...editingItem,
-                          content: e.target.value,
-                        })
-                      }
-                    />
-                    <select
-                      value={editingItem.imageUrl}
-                      onChange={(e) =>
-                        setEditingItem({
-                          ...editingItem,
-                          imageUrl: e.target.value,
-                        })
-                      }
-                      className="w-full border rounded p-2"
-                    >
-                      <option value="">-- Choisir une image --</option>
-                      {images.map((img) => (
-                        <option key={img.id} value={img.url}>
-                          {img.label}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <Input
+                        value={editingItem.title}
+                        onChange={(e) =>
+                          setEditingItem({
+                            ...editingItem,
+                            title: e.target.value,
+                          })
+                        }
+                      />
 
-                    <Input
-                      value={editingItem.redirectUrl}
-                      onChange={(e) =>
-                        setEditingItem({
-                          ...editingItem,
-                          redirectUrl: e.target.value,
-                        })
-                      }
-                      placeholder="URL de redirection"
-                    />
+                      <div className="space-y-2">
+                        <Textarea
+                          value={editingItem.content}
+                          onChange={(e) => {
+                            const { value } = e.target;
+                            if (value.length <= MAX_CONTENT_LENGTH) {
+                              setEditingItem({
+                                ...editingItem,
+                                content: value,
+                              });
+                            }
+                          }}
+                          className="min-h-24 resize-none"
+                          maxLength={MAX_CONTENT_LENGTH}
+                        />
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-500">
+                            {editingItem.content.length} / {MAX_CONTENT_LENGTH}{' '}
+                            caractères
+                          </span>
+                          {editingItem.content.length >
+                            MAX_CONTENT_LENGTH * 0.9 && (
+                            <span className="text-orange-600 text-xs">
+                              Limite bientôt atteinte
+                            </span>
+                          )}
+                        </div>
+                      </div>
 
-                    <div className="flex gap-2">
-                      <Button onClick={handleUpdate}>Enregistrer</Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => setEditingItem(null)}
+                      <select
+                        value={editingItem.imageUrl}
+                        onChange={(e) =>
+                          setEditingItem({
+                            ...editingItem,
+                            imageUrl: e.target.value,
+                          })
+                        }
+                        className="w-full border rounded p-2"
                       >
-                        Annuler
-                      </Button>
+                        <option value="">-- Choisir une image --</option>
+                        {images.map((img) => (
+                          <option key={img.id} value={img.url}>
+                            {img.label}
+                          </option>
+                        ))}
+                      </select>
+
+                      <Input
+                        value={editingItem.redirectUrl}
+                        onChange={(e) =>
+                          setEditingItem({
+                            ...editingItem,
+                            redirectUrl: e.target.value,
+                          })
+                        }
+                        placeholder="URL de redirection"
+                      />
+
+                      <div className="flex gap-2">
+                        <Button onClick={handleUpdate}>Enregistrer</Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setEditingItem(null)}
+                        >
+                          Annuler
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Aperçu pendant l'édition */}
+                    <div>
+                      <ActualitePreview
+                        title={editingItem.title}
+                        content={editingItem.content}
+                        imageUrl={editingItem.imageUrl || ''}
+                        redirectUrl={editingItem.redirectUrl || ''}
+                      />
                     </div>
                   </div>
                 ) : (
@@ -297,6 +457,14 @@ export default function ActualitesManager() {
                       <h4 className="font-semibold mb-1">{actu.title}</h4>
                       <p className="text-sm text-gray-600 line-clamp-2 mb-1">
                         {actu.content}
+                      </p>
+                      <p className="text-xs text-gray-400 mb-1">
+                        {actu.content.length} / {MAX_CONTENT_LENGTH} caractères
+                        {actu.content.length > 300 && (
+                          <span className="text-orange-500 ml-1">
+                            ⚠️ Peut nécessiter scroll sur mobile
+                          </span>
+                        )}
                       </p>
                       {actu.redirectUrl && (
                         <a
