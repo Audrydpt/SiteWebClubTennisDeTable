@@ -1,4 +1,4 @@
-/* eslint-disable jsx-a11y/label-has-associated-control,react/no-array-index-key,@typescript-eslint/no-explicit-any,no-console,no-alert */
+/* eslint-disable jsx-a11y/label-has-associated-control,react/no-array-index-key,@typescript-eslint/no-explicit-any,no-console,no-alert,consistent-return */
 import {
   JSXElementConstructor,
   Key,
@@ -42,7 +42,18 @@ export default function Contact() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const [infos, setInfos] = useState<any>(null); // toutes les infos depuis JSON
+  const [infos, setInfos] = useState<any>(null); // toutes les infos depuis JSON Server
+
+  // --- Timer pour masquer le message de succès après 5 secondes
+  useEffect(() => {
+    if (isSubmitted) {
+      const timer = setTimeout(() => {
+        setIsSubmitted(false);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isSubmitted]);
 
   // --- Charger toutes les informations depuis JSON Server
   useEffect(() => {
@@ -62,11 +73,6 @@ export default function Contact() {
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -148,8 +154,9 @@ export default function Contact() {
                       Envoyez-nous un message
                     </CardTitle>
                     <CardDescription className="text-[#3A3A3A]/80 text-lg mt-2">
-                      Que ce soit pour une inscription, des infos ou juste pour
-                      dire bonjour !
+                      Nous sommes là pour répondre à toutes vos questions !
+                      Remplissez le formulaire ci-dessous et nous vous
+                      contacterons rapidement.
                     </CardDescription>
                   </div>
                 </div>
@@ -216,26 +223,16 @@ export default function Contact() {
                       >
                         Sujet *
                       </label>
-                      <select
+                      <Input
                         id="subject"
                         name="subject"
+                        type="text"
                         required
                         value={formData.subject}
-                        onChange={handleSelectChange}
-                        className="w-full border-2 border-gray-200 focus:border-[#F1C40F] focus:ring-[#F1C40F] h-12 text-lg rounded-md px-3"
-                      >
-                        <option value="">Choisissez un sujet</option>
-                        <option value="inscription">Inscription au club</option>
-                        <option value="entrainements">
-                          Informations sur les entraînements
-                        </option>
-                        <option value="competitions">
-                          Compétitions et tournois
-                        </option>
-                        <option value="tarifs">Tarifs et cotisations</option>
-                        <option value="materiel">Matériel et équipement</option>
-                        <option value="autre">Autre demande</option>
-                      </select>
+                        onChange={handleInputChange}
+                        className="border-2 border-gray-200 focus:border-[#F1C40F] focus:ring-[#F1C40F] h-12 text-lg"
+                        placeholder="Sujet de votre message"
+                      />
                     </div>
 
                     <div className="space-y-2">
@@ -253,7 +250,7 @@ export default function Contact() {
                         value={formData.message}
                         onChange={handleInputChange}
                         className="border-2 border-gray-200 focus:border-[#F1C40F] focus:ring-[#F1C40F] resize-none text-lg"
-                        placeholder="Parlez-nous de votre niveau, vos attentes ou toute autre question..."
+                        placeholder="Écrivez votre message ici..."
                       />
                     </div>
 

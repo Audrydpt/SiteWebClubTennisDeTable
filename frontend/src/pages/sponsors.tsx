@@ -36,6 +36,11 @@ export default function Sponsors() {
     setIsModalOpen(true);
   };
 
+  const handleEmailClick = (email: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    window.location.href = `mailto:${email}`;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -125,7 +130,13 @@ export default function Sponsors() {
                     )}
                     {sponsor.email && (
                       <p className="flex items-center justify-center gap-1">
-                        <Mail size={14} /> {sponsor.email}
+                        <Mail size={14} />
+                        <button
+                          onClick={(e) => handleEmailClick(sponsor.email!, e)}
+                          className="hover:text-[#F1C40F] hover:underline transition-colors cursor-pointer"
+                        >
+                          {sponsor.email}
+                        </button>
                       </p>
                     )}
                   </div>
@@ -217,7 +228,13 @@ export default function Sponsors() {
                   )}
                   {selectedSponsor.email && (
                     <p className="flex items-center gap-2">
-                      <Mail size={16} /> {selectedSponsor.email}
+                      <Mail size={16} />
+                      <a
+                        href={`mailto:${selectedSponsor.email}`}
+                        className="hover:text-[#F1C40F] hover:underline transition-colors"
+                      >
+                        {selectedSponsor.email}
+                      </a>
                     </p>
                   )}
                 </div>

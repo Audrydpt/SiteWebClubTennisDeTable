@@ -42,9 +42,8 @@ export default function Header({ title, className, ...props }: HeaderProps) {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // États pour la gestion des menus (supprimer competitionOpen)
+  // États pour la gestion des menus (supprimer evenementsOpen)
   const [historiqueOpen, setHistoriqueOpen] = useState(false);
-  const [evenementsOpen, setEvenementsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Un seul état pour gérer quelle section mobile est ouverte
@@ -242,6 +241,21 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 </Link>
               </li>
 
+              {/* Lien direct vers le calendrier */}
+              <li>
+                <Link
+                  to="/evenements/calendrier"
+                  className={cn(
+                    'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
+                    location.pathname === '/evenements/calendrier'
+                      ? 'text-[#F1C40F]'
+                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                  )}
+                >
+                  Calendrier
+                </Link>
+              </li>
+
               {/* Menu Historique */}
               <li>
                 <HoverCard
@@ -300,64 +314,6 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 </HoverCard>
               </li>
 
-              {/* Menu Événements */}
-              <li>
-                <HoverCard
-                  openDelay={0}
-                  closeDelay={150}
-                  open={evenementsOpen}
-                  onOpenChange={setEvenementsOpen}
-                >
-                  <HoverCardTrigger asChild>
-                    <span
-                      className={cn(
-                        'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center cursor-pointer',
-                        location.pathname.includes('/evenements')
-                          ? 'text-[#F1C40F]'
-                          : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-                      )}
-                    >
-                      Événements
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="ml-1"
-                      >
-                        <path d="m6 9 6 6 6-6" />
-                      </svg>
-                    </span>
-                  </HoverCardTrigger>
-                  <HoverCardContent
-                    className="w-[200px] p-0"
-                    style={{ backgroundColor: '#3A3A3A' }}
-                  >
-                    <div className="grid gap-2 p-2">
-                      {evenementsItems.map((item) => (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          className={cn(
-                            'text-sm transition-colors px-3 py-2 rounded-md',
-                            location.pathname === item.path
-                              ? 'text-[#F1C40F]'
-                              : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-                          )}
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </HoverCardContent>
-                </HoverCard>
-              </li>
-
               {/* Page Sponsors */}
               <li>
                 <Link
@@ -385,6 +341,21 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   )}
                 >
                   Contact
+                </Link>
+              </li>
+
+              {/* Lien direct vers la galerie */}
+              <li>
+                <Link
+                  to="/evenements/galerie"
+                  className={cn(
+                    'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
+                    location.pathname === '/evenements/galerie'
+                      ? 'text-[#F1C40F]'
+                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                  )}
+                >
+                  Galerie
                 </Link>
               </li>
 
@@ -704,6 +675,20 @@ export default function Header({ title, className, ...props }: HeaderProps) {
               Équipes championnat
             </Link>
 
+            {/* Lien direct vers le calendrier sur mobile */}
+            <Link
+              to="/evenements/calendrier"
+              className={cn(
+                'block px-4 py-2 text-base font-medium',
+                location.pathname === '/evenements/calendrier'
+                  ? 'text-[#F1C40F]'
+                  : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+              )}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Calendrier
+            </Link>
+
             {/* Menu mobile Historique */}
             <div>
               <button
@@ -753,55 +738,6 @@ export default function Header({ title, className, ...props }: HeaderProps) {
               )}
             </div>
 
-            {/* Menu mobile Événements */}
-            <div>
-              <button
-                onClick={() => toggleMobileSection('evenements')}
-                className={cn(
-                  'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
-                  location.pathname.includes('/evenements') ||
-                  activeMobileSection === 'evenements'
-                    ? 'text-[#F1C40F]'
-                    : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-                )}
-              >
-                <span>Événements</span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={`transition-transform ${activeMobileSection === 'evenements' ? 'rotate-180' : ''}`}
-                >
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </button>
-              {activeMobileSection === 'evenements' && (
-                <div className="pl-6 py-2 space-y-1 bg-[#444444]">
-                  {evenementsItems.map((item) => (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className={cn(
-                        'block px-4 py-2 text-sm font-medium',
-                        location.pathname === item.path
-                          ? 'text-[#F1C40F]'
-                          : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-                      )}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Page Sponsors sur mobile */}
             <Link
               to="/sponsors"
@@ -830,7 +766,21 @@ export default function Header({ title, className, ...props }: HeaderProps) {
               Contact
             </Link>
 
-            {/* Menu Espace membre pour membre connecté (après Contact) */}
+            {/* Lien direct vers la galerie sur mobile */}
+            <Link
+              to="/evenements/galerie"
+              className={cn(
+                'block px-4 py-2 text-base font-medium',
+                location.pathname === '/evenements/galerie'
+                  ? 'text-[#F1C40F]'
+                  : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+              )}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Galerie
+            </Link>
+
+            {/* Menu Espace membre pour membre connecté (après Galerie) */}
             {isAuthenticated && !isAdmin() && (
               <div>
                 <button
