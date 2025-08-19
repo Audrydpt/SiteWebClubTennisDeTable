@@ -19,7 +19,6 @@ import ResetPasswordPage from '@/features/public/comps/credential/reset.tsx';
 import Credentials from '@/features/public/comps/Credentials.tsx';
 import CommandePage from '@/features/public/comps/CommandeForm.tsx';
 import Stats from '@/features/public/comps/Stats.tsx';
-import Selections from '@/features/public/comps/Selections.tsx';
 import Footer from './layouts/footer.tsx';
 
 export default function App() {
@@ -83,14 +82,6 @@ export default function App() {
               element={
                 <MemberRoute>
                   <CommandePage />
-                </MemberRoute>
-              }
-            />
-            <Route
-              path="/espace-membre/selections"
-              element={
-                <MemberRoute>
-                  <Selections />
                 </MemberRoute>
               }
             />
