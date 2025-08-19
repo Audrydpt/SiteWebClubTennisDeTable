@@ -119,21 +119,139 @@ export default function EventsGallery() {
   };
 
   const getVideoThumbnail = (item: GalleryItem) => {
-    // Si une miniature personnalisée est définie et que autoThumbnail est false
-    if (!item.autoThumbnail && item.thumbnail) {
+    console.log('Getting thumbnail for item:', item); // Debug
+
+    // Si autoThumbnail est false et qu'une miniature personnalisée est définie
+    if (item.autoThumbnail === false && item.thumbnail) {
       return item.thumbnail;
     }
-    // Sinon, essayer de générer une miniature automatique ou utiliser une image par défaut
-    return item.thumbnail || '/placeholder-video.jpg';
+
+    // Si autoThumbnail est true ou undefined, essayer de générer une miniature automatique
+    if (item.autoThumbnail !== false) {
+      // Pour les vidéos Cloudinary
+      if (item.src.includes('cloudinary.com') && item.src.includes('/video/upload/')) {
+        return generateCloudinaryThumbnail(item.src);
+      }
+
+      // Pour les URLs YouTube
+      if (item.src.includes('youtube.com') || item.src.includes('youtu.be')) {
+        const videoId = extractYouTubeVideoId(item.src);
+        if (videoId) {
+          console.log('YouTube video detected, ID:', videoId); // Debug
+          return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+        }
+      }
+
+      // Pour les vidéos Vimeo
+      if (item.src.includes('vimeo.com')) {
+        return item.thumbnail || generateVideoPreview(item);
+      }
+
+      // Pour les fichiers vidéo locaux (.mp4, .webm, etc.)
+      if (isVideoUrl(item.src)) {
+        return generateVideoPreview(item);
+      }
+    }
+
+    // Si une miniature personnalisée est définie, l'utiliser
+    if (item.thumbnail) {
+      return item.thumbnail;
+    }
+
+    // Fallback vers placeholder
+    return generateVideoPreview(item);
+  };
+
+  const generateCloudinaryThumbnail = (videoUrl: string) => {
+    try {
+      // Extraire l'URL de base et le public_id de Cloudinary
+      // Format: https://res.cloudinary.com/[cloud_name]/video/upload/[transformations]/[public_id].[extension]
+      const regex = /https:\/\/res\.cloudinary\.com\/([^\/]+)\/video\/upload\/(?:v\d+\/)?([^\.]+)\.[^\.]+$/;
+      const match = videoUrl.match(regex);
+
+      if (match) {
+        const cloudName = match[1];
+        const publicId = match[2];
+
+        console.log('Cloudinary video detected:', { cloudName, publicId }); // Debug
+
+        // Générer l'URL de la miniature avec les transformations Cloudinary
+        // so_0 = seek offset 0 (première frame)
+        // f_jpg = format JPEG
+        // q_auto = qualité automatique
+        // w_400,h_300,c_fill = redimensionner à 400x300 avec remplissage
+        return `https://res.cloudinary.com/dsrrxx5yx/video/upload/so_0/f_jpg,q_auto,w_400,h_300,c_fill/${publicId}.jpg`;
+      }
+    } catch (error) {
+      console.error('Erreur lors de la génération de la miniature Cloudinary:', error);
+    }
+
+    // Fallback si impossible d'extraire les informations
+    return generateVideoPreview({ title: 'Vidéo', type: 'video' } as GalleryItem);
+  };
+
+  const generateVideoPreview = (item: GalleryItem) => {
+    // Si c'est une vidéo, créer une miniature avec Canvas (simulation)
+    // En attendant, utiliser une image de placeholder spécifique aux vidéos
+    if (item.type === 'video') {
+      // Utiliser l'API Placeholder avec un overlay vidéo
+      return `https://via.placeholder.com/400x300/3A3A3A/F1C40F?text=${encodeURIComponent('🎥 ' + item.title.slice(0, 20))}`;
+    }
+    return '/api/placeholder/400/300';
+  };
+
+  const extractYouTubeVideoId = (url: string): string | null => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
   };
 
   const isVideoUrl = (url: string) => {
+    if (!url) return false;
     return (
       url.includes('.mp4') ||
       url.includes('.webm') ||
       url.includes('.ogg') ||
-      url.includes('video')
+      url.includes('.mov') ||
+      url.includes('.avi') ||
+      url.includes('video') ||
+      url.includes('youtube.com') ||
+      url.includes('youtu.be') ||
+      url.includes('vimeo.com')
     );
+  };
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const target = e.target as HTMLImageElement;
+    const item = filteredItems.find(item =>
+      getVideoThumbnail(item) === target.src || item.src === target.src
+    );
+
+    console.log('Image error for:', target.src, item); // Debug
+
+    if (item && item.type === 'video') {
+      // Si c'est une vidéo Cloudinary et que la miniature automatique a échoué
+      if (item.src.includes('cloudinary.com') && target.src.includes('cloudinary.com')) {
+        // Essayer une miniature simplifiée sans transformations complexes
+        const fallbackCloudinary = item.src.replace('/video/upload/', '/video/upload/so_0,f_jpg/');
+        if (target.src !== fallbackCloudinary) {
+          target.src = fallbackCloudinary;
+          return;
+        }
+      }
+
+      // Pour les vidéos, utiliser un placeholder spécifique
+      const fallbackUrl = generateVideoPreview(item);
+      if (target.src !== fallbackUrl) {
+        target.src = fallbackUrl;
+        return;
+      }
+    }
+
+    // Dernier fallback
+    if (target.src !== '/api/placeholder/400/300') {
+      target.src = '/api/placeholder/400/300';
+    }
   };
 
   if (loading) {
@@ -277,6 +395,8 @@ export default function EventsGallery() {
                             src={getVideoThumbnail(item)}
                             alt={item.title}
                             className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
+                            onError={handleImageError}
+                            loading="lazy"
                           />
                           <div className="absolute inset-0 bg-black/30" />
                           <div className="absolute inset-0 flex items-center justify-center">
@@ -287,9 +407,11 @@ export default function EventsGallery() {
                         </div>
                       ) : (
                         <img
-                          src={item.src || '/placeholder.svg'}
+                          src={item.src || '/api/placeholder/400/300'}
                           alt={item.title}
                           className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
+                          onError={handleImageError}
+                          loading="lazy"
                         />
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -423,9 +545,10 @@ export default function EventsGallery() {
                   </div>
                 ) : (
                   <img
-                    src={selectedItem.src || '/placeholder.svg'}
+                    src={selectedItem.src || '/api/placeholder/400/300'}
                     alt={selectedItem.title}
                     className="w-full h-auto max-h-[60vh] object-contain rounded-t-lg"
+                    onError={handleImageError}
                   />
                 )}
                 <div className="p-6">

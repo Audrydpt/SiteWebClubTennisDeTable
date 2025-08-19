@@ -101,6 +101,72 @@ export default function GaleryManager() {
     }));
   };
 
+  const getPreviewThumbnail = (item: any) => {
+    console.log('Admin preview for item:', item); // Debug
+
+    if (item.autoThumbnail !== false && item.type === 'video') {
+      // Pour les vidéos Cloudinary
+      if (item.src && item.src.includes('cloudinary.com') && item.src.includes('/video/upload/')) {
+        return generateCloudinaryThumbnail(item.src);
+      }
+
+      // Pour les URLs YouTube
+      if (item.src && (item.src.includes('youtube.com') || item.src.includes('youtu.be'))) {
+        const videoId = extractYouTubeVideoId(item.src);
+        if (videoId) {
+          return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+        }
+      }
+
+      // Pour les autres vidéos, générer une miniature personnalisée
+      if (item.src) {
+        return `https://via.placeholder.com/400x300/3A3A3A/F1C40F?text=${encodeURIComponent('🎥 ' + (item.title || 'Vidéo').slice(0, 15))}`;
+      }
+
+      // Si pas de src
+      return '/api/placeholder/400/300';
+    }
+
+    // Pour les photos ou miniatures personnalisées
+    return item.thumbnail || item.src || '/api/placeholder/400/300';
+  };
+
+  const generateCloudinaryThumbnail = (videoUrl: string) => {
+    try {
+      // Extraire l'URL de base et le public_id de Cloudinary
+      const regex = /https:\/\/res\.cloudinary\.com\/([^\/]+)\/video\/upload\/(?:v\d+\/)?([^\.]+)\.[^\.]+$/;
+      const match = videoUrl.match(regex);
+
+      if (match) {
+        const cloudName = match[1];
+        const publicId = match[2];
+
+        console.log('Admin: Cloudinary video detected:', { cloudName, publicId }); // Debug
+
+        // Utiliser le bon cloud name depuis l'URL fournie
+        return `https://res.cloudinary.com/${cloudName}/video/upload/so_0/f_jpg,q_auto,w_200,h_150,c_fill/${publicId}.jpg`;
+      }
+    } catch (error) {
+      console.error('Erreur lors de la génération de la miniature Cloudinary (admin):', error);
+    }
+
+    // Fallback
+    return '/api/placeholder/400/300';
+  };
+
+  const extractYouTubeVideoId = (url: string): string | null => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const target = e.target as HTMLImageElement;
+    if (target.src !== '/api/placeholder/400/300') {
+      target.src = '/api/placeholder/400/300';
+    }
+  };
+
   const handleDeleteGalleryItem = (id: string) => {
     if (!confirm("Supprimer cet élément de la galerie ?")) return;
     setEventData((prev: any) => ({
@@ -379,6 +445,15 @@ export default function GaleryManager() {
                           <Video className="w-5 h-5 text-red-500" />
                         )}
                         <span className="font-medium">{item.title}</span>
+                        {/* Prévisualisation miniature */}
+                        <div className="ml-4">
+                          <img
+                            src={getPreviewThumbnail(item)}
+                            alt={`Aperçu ${item.title}`}
+                            className="w-16 h-12 object-cover rounded border"
+                            onError={handleImageError}
+                          />
+                        </div>
                       </div>
                       <button
                         onClick={() => handleDeleteGalleryItem(item.id)}
@@ -472,7 +547,20 @@ export default function GaleryManager() {
 
                         {item.autoThumbnail && (
                           <div className="text-xs text-blue-600 bg-blue-100 p-2 rounded">
-                            💡 La miniature sera générée automatiquement à partir de la vidéo
+                            💡 Miniature automatique activée
+                            {item.src && item.src.includes('cloudinary.com')
+                              ? ' - Miniature extraite depuis Cloudinary (première frame)'
+                              : item.src && (item.src.includes('youtube.com') || item.src.includes('youtu.be'))
+                                ? ' - Miniature YouTube sera utilisée'
+                                : item.type === 'video'
+                                  ? ' - Miniature générée automatiquement'
+                                  : ''}
+                          </div>
+                        )}
+
+                        {!item.autoThumbnail && !item.thumbnail && (
+                          <div className="text-xs text-orange-600 bg-orange-100 p-2 rounded">
+                            ⚠️ Aucune miniature définie. Veuillez ajouter une URL de miniature ou activer la génération automatique.
                           </div>
                         )}
                       </div>
