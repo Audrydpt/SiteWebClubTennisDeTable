@@ -57,11 +57,31 @@ export async function fetchImages(): Promise<Image[]> {
 export async function createImage(data: {
   label: string;
   url: string;
+  type?: string;
+  folder?: string;
 }): Promise<void> {
   await fetch(`${API_URL}/images`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
+  });
+}
+
+export async function updateImage(
+  id: string,
+  data: { label?: string; url?: string; folder?: string; type?: string }
+): Promise<void> {
+  // D'abord récupérer l'image existante
+  const currentImageResponse = await fetch(`${API_URL}/images/${id}`);
+  const currentImage = await currentImageResponse.json();
+
+  // Fusionner les nouvelles données avec les données existantes
+  const updatedImage = { ...currentImage, ...data };
+
+  await fetch(`${API_URL}/images/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updatedImage),
   });
 }
 

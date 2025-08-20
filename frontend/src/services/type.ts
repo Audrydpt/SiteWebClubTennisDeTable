@@ -46,6 +46,7 @@ export interface Image {
   url: string;
   uploadDate: string;
   type: 'image' | 'video';
+  folder: string;
 }
 
 export interface ActualiteData {

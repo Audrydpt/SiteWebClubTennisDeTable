@@ -598,24 +598,6 @@ export default function HomePage() {
                     key={sponsor.id}
                     className={sponsors.length >= 6 ? 'mx-8' : 'mx-8 mb-8'}
                   >
-                    {sponsor.redirectUrl ? (
-                      <a
-                        href={sponsor.redirectUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block"
-                      >
-                        <img
-                          src={sponsor.logoUrl || '/placeholder.svg'}
-                          alt={sponsor.name}
-                          className="hover:grayscale"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              '/placeholder.svg';
-                          }}
-                        />
-                      </a>
-                    ) : (
                       <Link to="/sponsors" className="block">
                         <img
                           src={sponsor.logoUrl || '/placeholder.svg'}
@@ -627,7 +609,6 @@ export default function HomePage() {
                           }}
                         />
                       </Link>
-                    )}
                   </div>
                 ))}
 

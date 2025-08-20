@@ -105,7 +105,7 @@ export default function GaleryManager() {
     console.log('Admin preview for item:', item); // Debug
 
     if (item.autoThumbnail !== false && item.type === 'video') {
-      // Pour les vidéos Cloudinary
+      // Pour les vidéos Cloudinary - extraire la première frame
       if (item.src && item.src.includes('cloudinary.com') && item.src.includes('/video/upload/')) {
         return generateCloudinaryThumbnail(item.src);
       }
@@ -114,8 +114,13 @@ export default function GaleryManager() {
       if (item.src && (item.src.includes('youtube.com') || item.src.includes('youtu.be'))) {
         const videoId = extractYouTubeVideoId(item.src);
         if (videoId) {
-          return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+          return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
         }
+      }
+
+      // Pour les vidéos MP4 ou autres formats directs
+      if (item.src && (item.src.includes('.mp4') || item.src.includes('.webm') || item.src.includes('.mov'))) {
+        return generateVideoThumbnail(item.src);
       }
 
       // Pour les autres vidéos, générer une miniature personnalisée
@@ -143,8 +148,8 @@ export default function GaleryManager() {
 
         console.log('Admin: Cloudinary video detected:', { cloudName, publicId }); // Debug
 
-        // Utiliser le bon cloud name depuis l'URL fournie
-        return `https://res.cloudinary.com/${cloudName}/video/upload/so_0/f_jpg,q_auto,w_200,h_150,c_fill/${publicId}.jpg`;
+        // Générer une miniature de haute qualité avec la première frame
+        return `https://res.cloudinary.com/${cloudName}/video/upload/so_0/f_jpg,q_auto:best,w_400,h_300,c_fill,g_center/${publicId}.jpg`;
       }
     } catch (error) {
       console.error('Erreur lors de la génération de la miniature Cloudinary (admin):', error);
@@ -152,6 +157,19 @@ export default function GaleryManager() {
 
     // Fallback
     return '/api/placeholder/400/300';
+  };
+
+  const generateVideoThumbnail = (videoUrl: string) => {
+    // Pour les vidéos hébergées directement, on peut essayer d'utiliser un service de génération de miniatures
+    // ou créer un élément canvas pour extraire la première frame
+    try {
+      // Tentative avec un service de miniature générique
+      const encodedUrl = encodeURIComponent(videoUrl);
+      return `https://image.thum.io/get/width/400/crop/300/${videoUrl}`;
+    } catch (error) {
+      console.error('Erreur génération miniature vidéo:', error);
+      return '/api/placeholder/400/300';
+    }
   };
 
   const extractYouTubeVideoId = (url: string): string | null => {
@@ -321,16 +339,19 @@ export default function GaleryManager() {
                onClick={() => setIsOpen(!isOpen)}>
             {selectedImage ? (
               <div className="flex items-center gap-2">
-                <img
-                  src={selectedImage.url}
-                  alt={selectedImage.label}
-                  className="w-8 h-8 object-cover rounded"
-                />
+                <div className="w-8 h-8 rounded overflow-hidden flex-shrink-0 bg-gray-100">
+                  <img
+                    src={selectedImage.url}
+                    alt={selectedImage.label}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
                 <span className="text-sm font-medium truncate">{selectedImage.label}</span>
               </div>
             ) : (
               <span className="text-gray-500 text-sm">{placeholder}</span>
-            )}
+            )
+            }
             <Image className="w-4 h-4 text-gray-400" />
           </div>
           {value && (
@@ -346,7 +367,7 @@ export default function GaleryManager() {
         </div>
 
         {isOpen && (
-          <div className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          <div className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg max-h-80 overflow-y-auto">
             {loadingImages ? (
               <div className="p-3 text-center text-gray-500 text-sm">
                 <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2" />
@@ -355,25 +376,34 @@ export default function GaleryManager() {
             ) : availableImages.length === 0 ? (
               <div className="p-3 text-gray-500 text-sm">Aucune image disponible</div>
             ) : (
-              <div className="grid grid-cols-2 gap-2 p-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 p-3">
                 {availableImages.map((img) => (
                   <div
                     key={img.id}
-                    className={`cursor-pointer border-2 rounded-lg overflow-hidden hover:bg-gray-50 transition-colors ${
-                      value === img.url ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                    className={`cursor-pointer border-2 rounded-lg overflow-hidden hover:bg-gray-50 transition-all duration-200 hover:shadow-md ${
+                      value === img.url ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200'
                     }`}
                     onClick={() => {
                       onChange(img.url);
                       setIsOpen(false);
                     }}
                   >
-                    <img
-                      src={img.url}
-                      alt={img.label}
-                      className="w-full h-20 object-cover"
-                    />
-                    <div className="p-2">
-                      <div className="text-xs font-medium truncate">{img.label}</div>
+                    <div className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={img.url}
+                        alt={img.label}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.parentElement!.innerHTML = '<div class="text-gray-400 text-xs">❌ Erreur</div>';
+                        }}
+                      />
+                    </div>
+                    <div className="p-1.5 bg-white">
+                      <div className="text-xs font-medium truncate text-gray-700" title={img.label}>
+                        {img.label}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -450,7 +480,7 @@ export default function GaleryManager() {
                           <img
                             src={getPreviewThumbnail(item)}
                             alt={`Aperçu ${item.title}`}
-                            className="w-16 h-12 object-cover rounded border"
+                            className="w-20 h-16 object-cover rounded border"
                             onError={handleImageError}
                           />
                         </div>
@@ -549,12 +579,14 @@ export default function GaleryManager() {
                           <div className="text-xs text-blue-600 bg-blue-100 p-2 rounded">
                             💡 Miniature automatique activée
                             {item.src && item.src.includes('cloudinary.com')
-                              ? ' - Miniature extraite depuis Cloudinary (première frame)'
+                              ? ' - Première frame extraite depuis Cloudinary'
                               : item.src && (item.src.includes('youtube.com') || item.src.includes('youtu.be'))
-                                ? ' - Miniature YouTube sera utilisée'
-                                : item.type === 'video'
-                                  ? ' - Miniature générée automatiquement'
-                                  : ''}
+                                ? ' - Miniature YouTube haute qualité'
+                                : item.src && (item.src.includes('.mp4') || item.src.includes('.webm') || item.src.includes('.mov'))
+                                  ? ' - Première frame extraite de la vidéo'
+                                  : item.type === 'video'
+                                    ? ' - Miniature générée automatiquement'
+                                    : ''}
                           </div>
                         )}
 
@@ -762,3 +794,4 @@ export default function GaleryManager() {
     </div>
   );
 }
+
