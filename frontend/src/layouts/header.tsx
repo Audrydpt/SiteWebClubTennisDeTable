@@ -165,10 +165,9 @@ export default function Header({ title, className, ...props }: HeaderProps) {
   ];
 
   const memberItems = [
-    { path : '/espace-membre', label: 'Dashboard' },
+    { path : '/espace-membre', label: 'Sélection' },
     { path : '/espace-membre/statistiques', label: 'Concours club' },
     { path : '/espace-membre/commandes', label: 'Commande' },
-    { path : '/espace-membre/credentials', label: 'Mon compte' },
 
   ];
 

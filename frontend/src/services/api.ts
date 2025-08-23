@@ -145,16 +145,39 @@ export const updateSaisonResults = async (
   matchesWithScores: any[]
 ) => {
   const saison = await fetchSaisonById(id);
-  saison.calendrier = saison.calendrier.map((match: { id: any }) => {
+  saison.calendrier = saison.calendrier.map((match: Match) => {
     const updatedMatch = matchesWithScores.find((m) => m.id === match.id);
     if (!updatedMatch) return match;
 
     return {
       ...match,
+      // Mettre à jour le score (même s'il est vide)
       score: updatedMatch.score,
-      joueur_dom: updatedMatch.joueursDomicile || updatedMatch.joueur_dom || [],
+      // Mettre à jour les scores individuels (créer l'objet si nécessaire)
+      scoresIndividuels:
+        updatedMatch.scoresIndividuels || match.scoresIndividuels || {},
+      // Mettre à jour les joueurs
+      joueur_dom:
+        updatedMatch.joueursDomicile ||
+        updatedMatch.joueur_dom ||
+        match.joueur_dom ||
+        [],
       joueur_ext:
-        updatedMatch.joueursExterieur || updatedMatch.joueur_ext || [],
+        updatedMatch.joueursExterieur ||
+        updatedMatch.joueur_ext ||
+        match.joueur_ext ||
+        [],
+      // Conserver la compatibilité avec les nouveaux champs
+      joueursDomicile:
+        updatedMatch.joueursDomicile ||
+        updatedMatch.joueur_dom ||
+        match.joueursDomicile ||
+        [],
+      joueursExterieur:
+        updatedMatch.joueursExterieur ||
+        updatedMatch.joueur_ext ||
+        match.joueursExterieur ||
+        [],
     };
   });
   return updateSaison(id, saison);
@@ -237,6 +260,19 @@ export const updateSelection = async (
   const response = await axios.put(`${API_URL}/commande/${id}`, data);
   return response.data;
 };
+
+/* Sauvegarde des sélections/compositions */
+// Cette fonction est maintenant obsolète, utiliser updateSaisonResults à la place
+/*
+export const saveSelections = async (
+  saisonId: string,
+  serieId: string,
+  semaine: number,
+  selections: Record<string, string[]>
+) => {
+  // Code supprimé - utiliser updateSaisonResults
+};
+*/
 
 // ---- INFOS GENERALES ----
 

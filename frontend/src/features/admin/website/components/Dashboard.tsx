@@ -6,7 +6,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
-export default function AdminDashboard() {
+export default function AdminPages() {
   return (
     <div className="space-y-6">
       <Card>

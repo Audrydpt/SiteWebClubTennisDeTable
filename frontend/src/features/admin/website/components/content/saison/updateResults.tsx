@@ -315,26 +315,38 @@ export default function UpdateResults() {
 
           <div className="space-y-1">
             {joueurs.length > 0 ? (
-              joueurs.map((joueur) => (
-                <div
-                  key={joueur.id}
-                  className="flex items-center justify-between bg-gray-50 py-2 px-2 rounded text-xs sm:text-sm"
-                >
-                  <span className="truncate flex-1 mr-2">
-                    {joueur.nom} ({membres.find((m) => m.id === joueur.id)?.classement || 'N/A'})
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      supprimerJoueur(match.id, joueur.id, estDomicile)
-                    }
-                    className="h-6 w-6 p-0 shrink-0"
+              joueurs.map((joueur) => {
+                // Utiliser le classement du joueur en priorité, sinon chercher dans les membres
+                const membre = membres.find((m) => m.id === joueur.id);
+                const classement = joueur.classement || membre?.classement || 'N/A';
+
+                // Nettoyer le nom en supprimant les espaces supplémentaires
+                const nomAffiche = joueur.nom ? joueur.nom.trim() :
+                  (joueur.prenom && joueur.prenom.trim() ?
+                    `${joueur.prenom.trim()} ${joueur.nom || ''}`.trim() :
+                    membre ? `${membre.prenom || ''} ${membre.nom || ''}`.trim() : 'Joueur inconnu');
+
+                return (
+                  <div
+                    key={joueur.id}
+                    className="flex items-center justify-between bg-gray-50 py-2 px-2 rounded text-xs sm:text-sm"
                   >
-                    <X className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
-                  </Button>
-                </div>
-              ))
+                    <span className="truncate flex-1 mr-2">
+                      {nomAffiche} ({classement})
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        supprimerJoueur(match.id, joueur.id, estDomicile)
+                      }
+                      className="h-6 w-6 p-0 shrink-0"
+                    >
+                      <X className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
+                    </Button>
+                  </div>
+                );
+              })
             ) : (
               <p className="text-gray-400 text-xs italic">
                 Aucun joueur encodé

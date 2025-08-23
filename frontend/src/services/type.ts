@@ -91,6 +91,7 @@ export interface Match {
   joueursExterieur?: Joueur[];
   joueur_dom?: Joueur[];
   joueur_ext?: Joueur[];
+  scoresIndividuels?: Record<string, number>;
 }
 
 export interface Saison {

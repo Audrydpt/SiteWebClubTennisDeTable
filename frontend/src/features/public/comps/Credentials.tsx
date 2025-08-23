@@ -20,8 +20,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import supabase from '@/lib/supabaseClient';
-import { updateUserProfile } from '@/services/api';
-import { Member } from '@/services/type';
+import { fetchSaisonEnCours, updateUserProfile } from '@/services/api';
+import { Member, type Saison } from '@/services/type';
 
 export default function Credentials() {
   const [member, setMember] = useState<Member | null>(null);
@@ -30,6 +30,8 @@ export default function Credentials() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [saison, setSaison] = useState<Saison | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const formatRole = (role?: string) =>
     role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Inconnu';
@@ -67,6 +69,21 @@ export default function Credentials() {
     };
 
     fetchMember();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await fetchSaisonEnCours();
+        setSaison(data);
+      } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const handlePasswordReset = async () => {
@@ -304,9 +321,8 @@ export default function Credentials() {
                   <span className="text-sm text-gray-600">Classement</span>
                   <span className="font-medium">{member?.classement}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Saison</span>
-                  <span className="font-medium">2025-2026</span>
+                <div className="flex justify-center">
+                  {saison?.label || 'Chargement...'}
                 </div>
               </div>
             </CardContent>

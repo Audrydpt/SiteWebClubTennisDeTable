@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { BarChart3, FileText, Camera, Users, Settings } from 'lucide-react';
+import { FileText, Camera, Users, Settings, AppWindow } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import AdminDashboard from '@/features/admin/website/components/Dashboard.tsx';
+import AdminPages from '@/features/admin/website/components/Dashboard.tsx';
 import AdminContent from '@/features/admin/website/components/Content.tsx';
 import AdminMedia from '@/features/admin/website/components/Media.tsx';
-import AdminUsers from '@/features/admin/website/components/EquipeMaker.tsx';
+import AdminResults from '@/features/admin/website/components/EquipeMaker.tsx';
 import AdminSettings from '@/features/admin/website/components/Settings.tsx';
 
 export default function AdminHome() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('users');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -25,18 +25,25 @@ export default function AdminHome() {
         >
           <TabsList className="grid w-full grid-cols-5 bg-white shadow rounded-lg overflow-hidden mb-1">
             <TabsTrigger
-              value="dashboard"
+              value="users"
               className="flex items-center justify-center gap-2 py-3 transition-all data-[state=active]:bg-gray-200 data-[state=active]:text-white"
             >
-              <BarChart3 className="h-5 w-5" />
-              <span className="hidden sm:inline">Dashboard</span>
+              <Users className="h-5 w-5" />
+              <span className="hidden sm:inline">Equipes</span>
             </TabsTrigger>
             <TabsTrigger
               value="content"
               className="flex items-center justify-center gap-2 py-3 transition-all data-[state=active]:bg-gray-200 data-[state=active]:text-white"
             >
               <FileText className="h-5 w-5" />
-              <span className="hidden sm:inline">Contenu</span>
+              <span className="hidden sm:inline">Contenus</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="pages"
+              className="flex items-center justify-center gap-2 py-3 transition-all data-[state=active]:bg-gray-200 data-[state=active]:text-white"
+            >
+              <AppWindow />
+              <span className="hidden sm:inline">Pages</span>
             </TabsTrigger>
             <TabsTrigger
               value="media"
@@ -45,13 +52,7 @@ export default function AdminHome() {
               <Camera className="h-5 w-5" />
               <span className="hidden sm:inline">Médias</span>
             </TabsTrigger>
-            <TabsTrigger
-              value="users"
-              className="flex items-center justify-center gap-2 py-3 transition-all data-[state=active]:bg-gray-200 data-[state=active]:text-white"
-            >
-              <Users className="h-5 w-5" />
-              <span className="hidden sm:inline">Equipes</span>
-            </TabsTrigger>
+
             <TabsTrigger
               value="settings"
               className="flex items-center justify-center gap-2 py-3 transition-all data-[state=active]:bg-gray-200 data-[state=active]:text-white"
@@ -62,10 +63,10 @@ export default function AdminHome() {
           </TabsList>
 
           <TabsContent
-            value="dashboard"
+            value="pages"
             className="bg-white p-6 rounded-lg shadow-sm"
           >
-            <AdminDashboard />
+            <AdminPages />
           </TabsContent>
 
           <TabsContent
@@ -86,7 +87,7 @@ export default function AdminHome() {
             value="users"
             className="bg-white p-6 rounded-lg shadow-sm"
           >
-            <AdminUsers />
+            <AdminResults />
           </TabsContent>
 
           <TabsContent
