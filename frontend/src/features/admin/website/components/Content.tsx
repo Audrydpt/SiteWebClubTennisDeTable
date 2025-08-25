@@ -54,11 +54,27 @@ export default function AdminContent() {
 
   const contentSections: ContentSection[] = [
     {
-      id: 'resultats',
-      title: 'Gestion des Résultats',
-      description: 'Créer, modifier et supprimer les matchs',
+      id: 'saisonCreation',
+      title: 'Création de saison',
+      description: 'Créer une saison et les équipes associées',
       icon: <Calendar className="h-5 w-5 text-blue-600" />,
       component: <ResultatsManager />,
+      color: 'bg-blue-100',
+    },
+    {
+      id: 'saisonManagement',
+      title: 'Modification de saison',
+      description: 'Créer, modifier et supprimer les matchs',
+      icon: <Calendar className="h-5 w-5 text-white" />,
+      component: '',
+      color: 'bg-blue-100',
+    },
+    {
+      id: 'saisonInfos',
+      title: 'Gestion des infos sur les series',
+      description: 'Créer, modifier et supprimer les infos sur les series',
+      icon: <Calendar className="h-5 w-5 text-blue-600" />,
+      component: '',
       color: 'bg-blue-100',
     },
     {

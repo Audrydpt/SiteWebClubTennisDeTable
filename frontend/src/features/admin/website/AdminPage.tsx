@@ -36,7 +36,7 @@ export default function AdminHome() {
               className="flex items-center justify-center gap-2 py-3 transition-all data-[state=active]:bg-gray-200 data-[state=active]:text-white"
             >
               <FileText className="h-5 w-5" />
-              <span className="hidden sm:inline">Contenus</span>
+              <span className="hidden sm:inline">Contenu</span>
             </TabsTrigger>
             <TabsTrigger
               value="pages"

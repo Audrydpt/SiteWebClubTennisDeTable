@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,no-nested-ternary,@typescript-eslint/no-unused-vars */
 import React, { useEffect, useState } from 'react';
-import { Calendar, Users, Trophy, MapPin, Loader2 } from 'lucide-react';
+import { Calendar, Users, Trophy, MapPin, Loader2, Ban } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -141,7 +141,9 @@ export default function HomeLogged() {
                             {match.domicile}
                           </span>
                           <span className="font-semibold">vs</span>
-                          <span>{match.exterieur}</span>
+                          <span className="font-semibold">
+                            {match.exterieur}
+                          </span>
                         </>
                       ) : (
                         <>
@@ -203,11 +205,16 @@ export default function HomeLogged() {
                       <div className="space-y-3">
                         {joueurs.map((e) => {
                           const isMe = e.id === member.id;
+                          const isWo = e.wo === 'y'; // Changement ici: utiliser "y" au lieu de true
                           return (
                             <div
                               key={`${match.id}-${e.id}`}
                               className={`flex items-center space-x-3 p-3 rounded-lg ${
-                                isMe ? 'bg-[#F1C40F]' : 'bg-[#FFF8DC]'
+                                isMe
+                                  ? 'bg-[#F1C40F]'
+                                  : isWo
+                                    ? 'bg-red-50'
+                                    : 'bg-[#FFF8DC]'
                               }`}
                             >
                               <Avatar>
@@ -216,13 +223,23 @@ export default function HomeLogged() {
                                 </AvatarFallback>
                               </Avatar>
                               <div className="flex-1">
-                                <p
-                                  className={`font-semibold ${
-                                    isMe ? 'underline font-bold' : ''
-                                  }`}
-                                >
-                                  {e.nom}
-                                </p>
+                                <div className="flex items-center gap-2">
+                                  <p
+                                    className={`font-semibold ${
+                                      isMe ? 'underline font-bold' : ''
+                                    } ${isWo ? 'line-through text-red-700' : ''}`}
+                                  >
+                                    {e.nom}
+                                  </p>
+                                  {isWo && (
+                                    <Badge
+                                      variant="destructive"
+                                      className="text-xs flex items-center"
+                                    >
+                                      <Ban className="mr-1 h-3 w-3" /> WO
+                                    </Badge>
+                                  )}
+                                </div>
                                 <p className="text-sm text-gray-600">
                                   {e.classement}
                                 </p>
@@ -244,11 +261,16 @@ export default function HomeLogged() {
                   .sort((a, b) => a.classement.localeCompare(b.classement))
                   .map((e) => {
                     const isMe = e.id === member.id;
+                    const isWo = e.wo === 'y'; // Changement ici: utiliser "y" au lieu de true
                     return (
                       <div
                         key={`${mesMatchs[0].id}-${e.id}`}
                         className={`flex items-center space-x-3 p-3 rounded-lg ${
-                          isMe ? 'bg-[#F1C40F]' : 'bg-[#FFF8DC]'
+                          isMe
+                            ? 'bg-[#F1C40F]'
+                            : isWo
+                              ? 'bg-red-50'
+                              : 'bg-[#FFF8DC]'
                         }`}
                       >
                         <Avatar>
@@ -257,13 +279,23 @@ export default function HomeLogged() {
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
-                          <p
-                            className={`font-semibold ${
-                              isMe ? 'underline font-bold' : ''
-                            }`}
-                          >
-                            {e.nom}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p
+                              className={`font-semibold ${
+                                isMe ? 'underline font-bold' : ''
+                              } ${isWo ? 'line-through text-red-700' : ''}`}
+                            >
+                              {e.nom}
+                            </p>
+                            {isWo && (
+                              <Badge
+                                variant="destructive"
+                                className="text-xs flex items-center"
+                              >
+                                <Ban className="mr-1 h-3 w-3" /> WO
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-600">
                             {e.classement}
                           </p>

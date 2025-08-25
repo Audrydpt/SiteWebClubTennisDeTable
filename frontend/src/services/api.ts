@@ -145,6 +145,16 @@ export const updateSaisonResults = async (
   matchesWithScores: any[]
 ) => {
   const saison = await fetchSaisonById(id);
+
+  // Helper function pour s'assurer que tous les joueurs ont un champ wo
+  const ensureWoField = (joueurs: Joueur[] | undefined): Joueur[] => {
+    if (!joueurs) return [];
+    return joueurs.map((j) => ({
+      ...j,
+      wo: j.wo || 'n', // S'assurer que wo est "y" ou "n"
+    }));
+  };
+
   saison.calendrier = saison.calendrier.map((match: Match) => {
     const updatedMatch = matchesWithScores.find((m) => m.id === match.id);
     if (!updatedMatch) return match;
@@ -156,28 +166,28 @@ export const updateSaisonResults = async (
       // Mettre à jour les scores individuels (créer l'objet si nécessaire)
       scoresIndividuels:
         updatedMatch.scoresIndividuels || match.scoresIndividuels || {},
-      // Mettre à jour les joueurs
-      joueur_dom:
+      // Mettre à jour les joueurs avec champ wo assuré
+      joueur_dom: ensureWoField(
         updatedMatch.joueursDomicile ||
-        updatedMatch.joueur_dom ||
-        match.joueur_dom ||
-        [],
-      joueur_ext:
+          updatedMatch.joueur_dom ||
+          match.joueur_dom
+      ),
+      joueur_ext: ensureWoField(
         updatedMatch.joueursExterieur ||
-        updatedMatch.joueur_ext ||
-        match.joueur_ext ||
-        [],
+          updatedMatch.joueur_ext ||
+          match.joueur_ext
+      ),
       // Conserver la compatibilité avec les nouveaux champs
-      joueursDomicile:
+      joueursDomicile: ensureWoField(
         updatedMatch.joueursDomicile ||
-        updatedMatch.joueur_dom ||
-        match.joueursDomicile ||
-        [],
-      joueursExterieur:
+          updatedMatch.joueur_dom ||
+          match.joueursDomicile
+      ),
+      joueursExterieur: ensureWoField(
         updatedMatch.joueursExterieur ||
-        updatedMatch.joueur_ext ||
-        match.joueursExterieur ||
-        [],
+          updatedMatch.joueur_ext ||
+          match.joueursExterieur
+      ),
     };
   });
   return updateSaison(id, saison);

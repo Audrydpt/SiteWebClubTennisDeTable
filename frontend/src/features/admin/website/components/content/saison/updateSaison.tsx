@@ -1,75 +1,63 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,prettier/prettier,@stylistic/indent,no-alert,no-console */
+
+'use client';
+
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import {
-  Trash2,
-  PlusCircle,
-  Save,
-  Loader2,
-  Calendar,
-  Info,
-  Swords,
-  X,
-} from 'lucide-react';
+import { Trash2, PlusCircle, Save, Loader2, Calendar, Info, Swords, X, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { fetchSaisons, updateSaison, fetchSaisonEnCours } from '@/services/api';
-import { Saison, SaisonStatut, Match } from '@/services/type.ts';
+import type { Saison, SaisonStatut, Match } from '@/services/type.ts';
 
 export default function UpdateSaison() {
+  // États principaux
   const [allSaisons, setAllSaisons] = useState<Saison[]>([]);
   const [saison, setSaison] = useState<Saison | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSelecting, setIsSelecting] = useState(false);
 
+  // États pour les formulaires
   const [nouvelleEquipeClub, setNouvelleEquipeClub] = useState('');
   const [nouvelleSerie, setNouvelleSerie] = useState('');
   const [nouvelleEquipeAdverse, setNouvelleEquipeAdverse] = useState('');
-
-  const [serieCalendrierSelectionnee, setSerieCalendrierSelectionnee] =
-    useState('');
+  const [serieCalendrierSelectionnee, setSerieCalendrierSelectionnee] = useState('');
   const [serieEquipeSelectionnee, setSerieEquipeSelectionnee] = useState('');
 
+  // Chargement initial des données
   useEffect(() => {
     const chargerDonneesInitiales = async () => {
       setIsLoading(true);
-      const data = await fetchSaisons();
-      setAllSaisons(data);
+      try {
+        const data = await fetchSaisons();
+        setAllSaisons(data);
 
-      // Utilisons l'API spécifique pour obtenir la saison en cours
-      const saisonEnCours = await fetchSaisonEnCours();
-
-      if (saisonEnCours) {
-        setSaison(JSON.parse(JSON.stringify(saisonEnCours)));
-        if (saisonEnCours.series.length > 0) {
-          setSerieCalendrierSelectionnee(saisonEnCours.series[0].id);
-          setSerieEquipeSelectionnee(saisonEnCours.series[0].id);
+        const saisonEnCours = await fetchSaisonEnCours();
+        if (saisonEnCours) {
+          setSaison(JSON.parse(JSON.stringify(saisonEnCours)));
+          if (saisonEnCours.series.length > 0) {
+            setSerieCalendrierSelectionnee(saisonEnCours.series[0].id);
+            setSerieEquipeSelectionnee(saisonEnCours.series[0].id);
+          }
+          setIsSelecting(false);
+        } else {
+          setIsSelecting(true);
         }
-        setIsSelecting(false);
-      } else {
-        setIsSelecting(true);
+      } catch (error) {
+        console.error('Erreur lors du chargement:', error);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
     chargerDonneesInitiales();
   }, []);
 
+  // Gestionnaires d'événements
   const handleSelectSaison = (id: string) => {
     const saisonTrouvee = allSaisons.find((s) => s.id === id);
     if (saisonTrouvee) {
@@ -85,38 +73,10 @@ export default function UpdateSaison() {
     setSaison({ ...saison, [champ]: valeur });
   };
 
-  const handleCalendarUpdate = (
-    matchId: string,
-    field: keyof Match,
-    value: any
-  ) => {
+  const handleCalendarUpdate = (matchId: string, field: keyof Match, value: any) => {
     if (!saison) return;
-    const updatedCalendar = saison.calendrier.map((m) =>
-      m.id === matchId ? { ...m, [field]: value } : m
-    );
+    const updatedCalendar = saison.calendrier.map((m) => (m.id === matchId ? { ...m, [field]: value } : m));
     handleUpdate('calendrier', updatedCalendar);
-  };
-
-  const handleAddMatch = (serieId: string, semaine: number) => {
-    if (!saison) return;
-    const newMatch: Match = {
-      id: uuidv4(),
-      serieId,
-      semaine,
-      domicile: '',
-      exterieur: '',
-      score: '',
-      date: '',
-    };
-    handleUpdate('calendrier', [...saison.calendrier, newMatch]);
-  };
-
-  const handleDeleteMatch = (matchId: string) => {
-    if (!saison) return;
-    handleUpdate(
-      'calendrier',
-      saison.calendrier.filter((m) => m.id !== matchId)
-    );
   };
 
   const soumettreFormulaire = async () => {
@@ -132,110 +92,205 @@ export default function UpdateSaison() {
     }
   };
 
+  // Fonctions utilitaires pour les équipes et séries
+  const ajouterEquipeClub = () => {
+    if (!saison || nouvelleEquipeClub.trim() === '') return;
+    handleUpdate('equipesClub', [...saison.equipesClub, { id: uuidv4(), nom: nouvelleEquipeClub, serieId: '' }]);
+    setNouvelleEquipeClub('');
+  };
+
+  const supprimerEquipeClub = (equipeId: string) => {
+    if (!saison) return;
+    handleUpdate(
+      'equipesClub',
+      saison.equipesClub.filter((eq) => eq.id !== equipeId),
+    );
+  };
+
+  const creerNouvelleSerie = () => {
+    if (!saison || nouvelleSerie.trim() === '') return;
+    const newSerie = {
+      id: uuidv4(),
+      nom: nouvelleSerie,
+      equipes: [],
+      saisonId: saison.id,
+    };
+    handleUpdate('series', [...saison.series, newSerie]);
+    setSerieEquipeSelectionnee(newSerie.id);
+    setNouvelleSerie('');
+  };
+
+  const ajouterEquipeAdverse = (serieId: string) => {
+    if (!saison || nouvelleEquipeAdverse.trim() === '') return;
+
+    const serieActuelle = saison.series.find((s) => s.id === serieId);
+    if (!serieActuelle) return;
+
+    const equipeClub = saison.equipesClub.find((eq) => eq.nom === nouvelleEquipeAdverse);
+    const dejaDansSerie = serieActuelle.equipes.some((eq) => eq.nom === nouvelleEquipeAdverse);
+
+    if (dejaDansSerie) return;
+
+    const nouvelleEquipe = {
+      id: equipeClub ? equipeClub.id : uuidv4(),
+      nom: nouvelleEquipeAdverse,
+      serieId: serieActuelle.id,
+    };
+
+    const seriesUpdated = saison.series.map((s) =>
+      s.id === serieActuelle.id ? { ...s, equipes: [...s.equipes, nouvelleEquipe] } : s,
+    );
+
+    let equipesClubUpdated = saison.equipesClub;
+    if (equipeClub) {
+      equipesClubUpdated = saison.equipesClub.map((eq) =>
+        eq.id === equipeClub.id ? { ...eq, serieId: serieActuelle.id } : eq,
+      );
+    }
+
+    setSaison({ ...saison, series: seriesUpdated, equipesClub: equipesClubUpdated });
+    setNouvelleEquipeAdverse('');
+  };
+
+  const ajouterMatch = (serieId: string, semaine: number) => {
+    if (!saison) return;
+    const newMatch: Match = {
+      id: uuidv4(),
+      serieId,
+      semaine,
+      domicile: '',
+      exterieur: '',
+      score: '',
+      date: '',
+      saisonId: saison.id,
+    };
+    handleUpdate('calendrier', [...saison.calendrier, newMatch]);
+  };
+
+  const supprimerMatch = (matchId: string) => {
+    if (!saison) return;
+    handleUpdate(
+      'calendrier',
+      saison.calendrier.filter((m) => m.id !== matchId),
+    );
+  };
+
+  // Écrans de chargement et sélection
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-10">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-3 text-lg">
-          Chargement de la saison en cours...
-        </span>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <p className="text-lg font-medium">Chargement de la saison en cours...</p>
+        </div>
       </div>
     );
   }
 
   if (isSelecting || !saison) {
     return (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold">Modifier une saison</h2>
-        <p className="text-muted-foreground">
-          {allSaisons.length > 0
-            ? "Aucune saison n'est 'En cours'. Veuillez en sélectionner une."
-            : "Aucune saison n'a été créée."}
-        </p>
-        <div className="max-w-md">
-          <Label>Sélectionnez une saison à modifier</Label>
-          <Select onValueChange={handleSelectSaison}>
-            <SelectTrigger>
-              <SelectValue placeholder="Choisir une saison" />
-            </SelectTrigger>
-            <SelectContent>
-              {allSaisons.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.label} ({s.statut})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <div className="max-w-2xl mx-auto p-6 space-y-6">
+        <div className="text-center space-y-4">
+          <h1 className="text-3xl font-bold">Modifier une saison</h1>
+          <p className="text-muted-foreground text-lg">
+            {allSaisons.length > 0
+              ? "Aucune saison n'est 'En cours'. Veuillez en sélectionner une."
+              : "Aucune saison n'a été créée."}
+          </p>
         </div>
+
+        {allSaisons.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Sélectionner une saison</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Select onValueChange={handleSelectSaison}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choisir une saison à modifier" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allSaisons.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      <div className="flex justify-between items-center w-full">
+                        <span>{s.label}</span>
+                        <span className="text-sm text-muted-foreground ml-2">({s.statut})</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   }
 
+  // Interface principale
   return (
-    <div className="space-y-4 sm:space-y-6 p-2 sm:p-0">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <h2 className="text-xl sm:text-2xl font-bold">
-          Modifier: {saison.label}{' '}
-          <span className="text-xs sm:text-sm font-medium text-primary block sm:inline">
-            ({saison.statut})
-          </span>
-        </h2>
+    <div className="max-w-6xl mx-auto p-4 space-y-6">
+      {/* En-tête */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold">{saison.label}</h1>
+          <p className="text-muted-foreground">
+            Statut: <span className="font-medium text-primary">{saison.statut}</span>
+          </p>
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            onClick={() => setIsSelecting(true)}
-            className="w-full sm:w-auto text-sm"
-          >
+          <Button variant="outline" onClick={() => setIsSelecting(true)} className="w-full sm:w-auto">
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Changer de saison
           </Button>
-          <Button onClick={soumettreFormulaire} className="w-full sm:w-auto text-sm">
+          <Button onClick={soumettreFormulaire} className="w-full sm:w-auto">
             <Save className="mr-2 h-4 w-4" />
             Sauvegarder
           </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="infos">
-        <TabsList className="grid w-full grid-cols-3 h-auto">
-          <TabsTrigger value="infos" className="text-xs sm:text-sm px-1 sm:px-3">
-            <Info className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Infos Générales</span>
+      {/* Onglets principaux */}
+      <Tabs defaultValue="infos" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="infos" className="flex items-center gap-2">
+            <Info className="h-4 w-4" />
+            <span className="hidden sm:inline">Informations</span>
             <span className="sm:hidden">Infos</span>
           </TabsTrigger>
-          <TabsTrigger value="equipes" className="text-xs sm:text-sm px-1 sm:px-3">
-            <Swords className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+          <TabsTrigger value="equipes" className="flex items-center gap-2">
+            <Swords className="h-4 w-4" />
             <span className="hidden sm:inline">Équipes & Séries</span>
             <span className="sm:hidden">Équipes</span>
           </TabsTrigger>
-          <TabsTrigger value="calendrier" className="text-xs sm:text-sm px-1 sm:px-3">
-            <Calendar className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+          <TabsTrigger value="calendrier" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
             <span className="hidden sm:inline">Calendrier</span>
             <span className="sm:hidden">Cal.</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="infos" className="space-y-4">
+        {/* Onglet Informations */}
+        <TabsContent value="infos">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">Détails de la saison</CardTitle>
+              <CardTitle>Détails de la saison</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 sm:p-6">
-              <div>
-                <Label htmlFor="saisonNom" className="text-sm">Nom de la saison</Label>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="saisonNom">Nom de la saison</Label>
                 <Input
                   id="saisonNom"
                   value={saison.label}
                   onChange={(e) => handleUpdate('label', e.target.value)}
-                  className="text-sm"
+                  placeholder="Ex: Saison 2024-2025"
                 />
               </div>
-              <div>
-                <Label htmlFor="saisonStatut" className="text-sm">Statut</Label>
-                <Select
-                  value={saison.statut}
-                  onValueChange={(v: SaisonStatut) => handleUpdate('statut', v)}
-                >
-                  <SelectTrigger className="text-sm">
+              <div className="space-y-2">
+                <Label htmlFor="saisonStatut">Statut de la saison</Label>
+                <Select value={saison.statut} onValueChange={(v: SaisonStatut) => handleUpdate('statut', v)}>
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -249,354 +304,269 @@ export default function UpdateSaison() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="equipes" className="space-y-4">
+        {/* Onglet Équipes */}
+        <TabsContent value="equipes" className="space-y-6">
+          {/* Équipes du Club */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">Équipes du Club</CardTitle>
+              <CardTitle>Équipes du Club ({saison.equipesClub.length})</CardTitle>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row gap-2 mb-4">
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
                 <Input
                   value={nouvelleEquipeClub}
                   onChange={(e) => setNouvelleEquipeClub(e.target.value)}
                   placeholder="Nom de la nouvelle équipe du club"
-                  className="text-sm"
+                  onKeyPress={(e) => e.key === 'Enter' && ajouterEquipeClub()}
                 />
-                <Button
-                  onClick={() => {
-                    if (nouvelleEquipeClub.trim() === '') return;
-                    handleUpdate('equipesClub', [
-                      ...saison.equipesClub,
-                      { id: uuidv4(), nom: nouvelleEquipeClub, serieId: '' },
-                    ]);
-                    setNouvelleEquipeClub('');
-                  }}
-                  className="w-full sm:w-auto text-sm"
-                >
+                <Button onClick={ajouterEquipeClub}>
+                  <PlusCircle className="h-4 w-4 mr-2" />
                   Ajouter
                 </Button>
               </div>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {saison.equipesClub.map((e) => (
-                  <div
-                    key={e.id}
-                    className="flex justify-between items-center bg-gray-50 p-2 rounded text-sm"
-                  >
-                    <span className="truncate flex-1 mr-2">{e.nom}</span>
+
+              <div className="grid gap-2 max-h-60 overflow-y-auto">
+                {saison.equipesClub.map((equipe) => (
+                  <div key={equipe.id} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                    <span className="font-medium">{equipe.nom}</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() =>
-                        handleUpdate(
-                          'equipesClub',
-                          saison.equipesClub.filter((eq) => eq.id !== e.id)
-                        )
-                      }
-                      className="h-8 w-8 p-0 shrink-0"
+                      onClick={() => supprimerEquipeClub(equipe.id)}
+                      className="text-destructive hover:text-destructive"
                     >
-                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 ))}
+                {saison.equipesClub.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">Aucune équipe du club ajoutée</p>
+                )}
               </div>
             </CardContent>
           </Card>
 
+          {/* Gestion des Séries */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">Séries et Adversaires</CardTitle>
+              <CardTitle>Séries et Adversaires</CardTitle>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 space-y-4">
-              {/* Sélecteur de série */}
-              <div>
-                <Label className="text-sm">Série à gérer</Label>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Select
-                    value={serieEquipeSelectionnee}
-                    onValueChange={setSerieEquipeSelectionnee}
-                  >
-                    <SelectTrigger className="text-sm">
-                      <SelectValue placeholder="Choisir une série" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {saison.series.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.nom}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    onClick={() => {
-                      if (nouvelleSerie.trim() === '') return;
-                      const newSerie = { id: uuidv4(), nom: nouvelleSerie, equipes: [] };
-                      handleUpdate('series', [...saison.series, newSerie]);
-                      setSerieEquipeSelectionnee(newSerie.id);
-                      setNouvelleSerie('');
-                    }}
-                    className="w-full sm:w-auto text-sm"
-                  >
-                    <PlusCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-                    Nouvelle série
-                  </Button>
-                </div>
-              </div>
-
-              {/* Champ pour créer une nouvelle série */}
-              <div className="flex flex-col sm:flex-row gap-2">
+            <CardContent className="space-y-6">
+              {/* Création de nouvelle série */}
+              <div className="flex gap-2">
                 <Input
                   value={nouvelleSerie}
                   onChange={(e) => setNouvelleSerie(e.target.value)}
                   placeholder="Nom de la nouvelle série"
-                  className="text-sm"
+                  onKeyPress={(e) => e.key === 'Enter' && creerNouvelleSerie()}
                 />
+                <Button onClick={creerNouvelleSerie}>
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Créer série
+                </Button>
               </div>
 
-              {/* Gestion de la série sélectionnée */}
-              {serieEquipeSelectionnee && (
-                <>
-                  {(() => {
-                    const serieActuelle = saison.series.find(s => s.id === serieEquipeSelectionnee);
-                    if (!serieActuelle) return null;
+              {/* Sélection de série à gérer */}
+              {saison.series.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Série à gérer</Label>
+                  <Select value={serieEquipeSelectionnee} onValueChange={setSerieEquipeSelectionnee}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choisir une série" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {saison.series.map((serie) => (
+                        <SelectItem key={serie.id} value={serie.id}>
+                          {serie.nom} ({serie.equipes.length} équipes)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
-                    return (
-                      <div className="border rounded-lg p-4 space-y-4">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                          <h4 className="font-semibold text-base">{serieActuelle.nom}</h4>
+              {/* Gestion de la série sélectionnée */}
+              {serieEquipeSelectionnee &&
+                (() => {
+                  const serieActuelle = saison.series.find((s) => s.id === serieEquipeSelectionnee);
+                  if (!serieActuelle) return null;
+
+                  return (
+                    <Card>
+                      <CardHeader>
+                        <div className="flex justify-between items-center">
+                          <CardTitle className="text-lg">{serieActuelle.nom}</CardTitle>
                           <Button
                             variant="destructive"
                             size="sm"
                             onClick={() => {
                               handleUpdate(
                                 'series',
-                                saison.series.filter((s) => s.id !== serieActuelle.id)
+                                saison.series.filter((s) => s.id !== serieActuelle.id),
                               );
                               setSerieEquipeSelectionnee('');
                             }}
-                            className="w-full sm:w-auto text-sm"
                           >
-                            <Trash2 className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-                            Supprimer la série
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Supprimer
                           </Button>
                         </div>
-
+                      </CardHeader>
+                      <CardContent className="space-y-4">
                         {/* Ajouter équipe adverse */}
-                        <div className="flex flex-col sm:flex-row gap-2">
+                        <div className="flex gap-2">
                           <Input
                             value={nouvelleEquipeAdverse}
                             onChange={(e) => setNouvelleEquipeAdverse(e.target.value)}
                             placeholder="Nom équipe adverse"
-                            className="text-sm"
+                            onKeyPress={(e) => e.key === 'Enter' && ajouterEquipeAdverse(serieActuelle.id)}
                           />
-                          <Button
-                            onClick={() => {
-                              if (nouvelleEquipeAdverse.trim() === '') return;
-
-                              const equipeClub = saison.equipesClub.find(
-                                (eq) => eq.nom === nouvelleEquipeAdverse
-                              );
-
-                              const nouvelleEquipe = {
-                                id: equipeClub ? equipeClub.id : uuidv4(),
-                                nom: nouvelleEquipeAdverse,
-                                serieId: serieActuelle.id,
-                              };
-
-                              const dejaDansSerie = serieActuelle.equipes.some(
-                                (eq) => eq.nom === nouvelleEquipeAdverse
-                              );
-
-                              if (dejaDansSerie) return;
-
-                              const seriesUpdated = saison.series.map((s) =>
-                                s.id === serieActuelle.id
-                                  ? { ...s, equipes: [...s.equipes, nouvelleEquipe] }
-                                  : s
-                              );
-
-                              let equipesClubUpdated = saison.equipesClub;
-                              if (equipeClub) {
-                                equipesClubUpdated = saison.equipesClub.map((eq) =>
-                                  eq.id === equipeClub.id ? { ...eq, serieId: serieActuelle.id } : eq
-                                );
-                              }
-
-                              setSaison({
-                                ...saison,
-                                series: seriesUpdated,
-                                equipesClub: equipesClubUpdated,
-                              });
-                              setNouvelleEquipeAdverse('');
-                            }}
-                            className="w-full sm:w-auto text-sm"
-                          >
-                            <PlusCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                          <Button onClick={() => ajouterEquipeAdverse(serieActuelle.id)}>
+                            <PlusCircle className="h-4 w-4 mr-2" />
                             Ajouter
                           </Button>
                         </div>
 
                         {/* Liste des équipes */}
                         <div className="space-y-2 max-h-48 overflow-y-auto">
-                          <Label className="text-sm font-medium">Équipes de la série ({serieActuelle.equipes.length})</Label>
-                          {serieActuelle.equipes.map((e) => (
-                            <div
-                              key={e.id}
-                              className="flex justify-between items-center bg-gray-50 p-2 rounded text-sm"
-                            >
-                              <span className="truncate flex-1 mr-2">{e.nom}</span>
+                          {serieActuelle.equipes.map((equipe) => (
+                            <div key={equipe.id} className="flex justify-between items-center p-2 bg-muted rounded">
+                              <span>{equipe.nom}</span>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => {
                                   const seriesUpdated = saison.series.map((s) =>
                                     s.id === serieActuelle.id
-                                      ? {
-                                          ...s,
-                                          equipes: s.equipes.filter((eq) => eq.id !== e.id),
-                                        }
-                                      : s
+                                      ? { ...s, equipes: s.equipes.filter((eq) => eq.id !== equipe.id) }
+                                      : s,
                                   );
                                   handleUpdate('series', seriesUpdated);
                                 }}
-                                className="h-6 w-6 p-0 shrink-0"
+                                className="text-destructive hover:text-destructive"
                               >
-                                <X className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
+                                <X className="h-4 w-4" />
                               </Button>
                             </div>
                           ))}
                           {serieActuelle.equipes.length === 0 && (
-                            <p className="text-gray-400 text-xs italic text-center py-2">
-                              Aucune équipe dans cette série
-                            </p>
+                            <p className="text-center text-muted-foreground py-4">Aucune équipe dans cette série</p>
                           )}
                         </div>
-                      </div>
-                    );
-                  })()}
-                </>
-              )}
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="calendrier" className="space-y-4">
+        {/* Onglet Calendrier */}
+        <TabsContent value="calendrier" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">Édition du calendrier</CardTitle>
+              <CardTitle>Édition du calendrier</CardTitle>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6">
-              <Label className="text-sm">Sélectionner une série</Label>
-              <Select
-                value={serieCalendrierSelectionnee}
-                onValueChange={setSerieCalendrierSelectionnee}
-              >
-                <SelectTrigger className="text-sm">
-                  <SelectValue placeholder="Choisir une série à éditer" />
-                </SelectTrigger>
-                <SelectContent>
-                  {saison.series.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <CardContent>
+              <div className="space-y-2">
+                <Label>Sélectionner une série</Label>
+                <Select value={serieCalendrierSelectionnee} onValueChange={setSerieCalendrierSelectionnee}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir une série à éditer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {saison.series.map((serie) => (
+                      <SelectItem key={serie.id} value={serie.id}>
+                        {serie.nom}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardContent>
           </Card>
 
+          {/* Calendrier par semaines */}
           {serieCalendrierSelectionnee && (
-            <div className="max-h-[60vh] overflow-y-auto">
-              <Accordion type="multiple" className="w-full">
+            <div className="max-h-[70vh] overflow-y-auto">
+              <Accordion type="multiple" className="space-y-2">
                 {Array.from({ length: 22 }, (_, i) => i + 1).map((semaine) => {
                   const matchsSemaine = saison.calendrier.filter(
-                    (m) =>
-                      m.serieId === serieCalendrierSelectionnee &&
-                      m.semaine === semaine
+                    (m) => m.serieId === serieCalendrierSelectionnee && m.semaine === semaine,
                   );
-                  const equipesSerie =
-                    saison.series.find(
-                      (s) => s.id === serieCalendrierSelectionnee
-                    )?.equipes || [];
+                  const equipesSerie = saison.series.find((s) => s.id === serieCalendrierSelectionnee)?.equipes || [];
 
                   return (
                     <AccordionItem value={`semaine-${semaine}`} key={semaine}>
-                      <AccordionTrigger className="text-sm">Semaine {semaine}</AccordionTrigger>
-                      <AccordionContent className="space-y-3">
+                      <AccordionTrigger className="hover:no-underline">
+                        <div className="flex justify-between items-center w-full pr-4">
+                          <span>Semaine {semaine}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {matchsSemaine.length} match{matchsSemaine.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4">
                         {matchsSemaine.map((match) => (
-                          <div
-                            key={match.id}
-                            className="grid grid-cols-1 gap-2"
-                          >
-                            <div className="grid grid-cols-3 gap-2 items-center">
-                              <Select
-                                value={match.domicile}
-                                onValueChange={(v) =>
-                                  handleCalendarUpdate(match.id, 'domicile', v)
-                                }
-                              >
-                                <SelectTrigger className="text-xs sm:text-sm">
-                                  <SelectValue placeholder="Domicile" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {equipesSerie.map((e) => (
-                                    <SelectItem key={e.id} value={e.nom}>
-                                      {e.nom}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <div className="text-center font-semibold text-xs sm:text-sm">vs</div>
-                              <Select
-                                value={match.exterieur}
-                                onValueChange={(v) =>
-                                  handleCalendarUpdate(match.id, 'exterieur', v)
-                                }
-                              >
-                                <SelectTrigger className="text-xs sm:text-sm">
-                                  <SelectValue placeholder="Extérieur" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {equipesSerie.map((e) => (
-                                    <SelectItem key={e.id} value={e.nom}>
-                                      {e.nom}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="date"
-                                value={match.date}
-                                onChange={(e) =>
-                                  handleCalendarUpdate(
-                                    match.id,
-                                    'date',
-                                    e.target.value
-                                  )
-                                }
-                                className="text-xs sm:text-sm flex-1"
-                              />
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteMatch(match.id)}
-                                className="h-8 w-8 shrink-0"
-                              >
-                                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
-                              </Button>
-                            </div>
-                          </div>
+                          <Card key={match.id}>
+                            <CardContent className="p-4 space-y-3">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                                <Select
+                                  value={match.domicile}
+                                  onValueChange={(v) => handleCalendarUpdate(match.id, 'domicile', v)}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Équipe domicile" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {equipesSerie.map((equipe) => (
+                                      <SelectItem key={equipe.id} value={equipe.nom}>
+                                        {equipe.nom}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+
+                                <div className="text-center font-semibold text-lg">VS</div>
+
+                                <Select
+                                  value={match.exterieur}
+                                  onValueChange={(v) => handleCalendarUpdate(match.id, 'exterieur', v)}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Équipe extérieur" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {equipesSerie.map((equipe) => (
+                                      <SelectItem key={equipe.id} value={equipe.nom}>
+                                        {equipe.nom}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="flex gap-2">
+                                <Input
+                                  type="date"
+                                  value={match.date}
+                                  onChange={(e) => handleCalendarUpdate(match.id, 'date', e.target.value)}
+                                  className="flex-1"
+                                />
+                                <Button variant="destructive" size="icon" onClick={() => supprimerMatch(match.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
                         ))}
+
                         <Button
                           variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            handleAddMatch(serieCalendrierSelectionnee, semaine)
-                          }
-                          className="mt-2 w-full text-xs sm:text-sm"
+                          onClick={() => ajouterMatch(serieCalendrierSelectionnee, semaine)}
+                          className="w-full"
                         >
-                          <PlusCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                          <PlusCircle className="h-4 w-4 mr-2" />
                           Ajouter un match pour la semaine {semaine}
                         </Button>
                       </AccordionContent>

@@ -168,6 +168,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
     { path : '/espace-membre', label: 'Sélection' },
     { path : '/espace-membre/statistiques', label: 'Concours club' },
     { path : '/espace-membre/commandes', label: 'Commande' },
+    { path : '/espace-membre/listing', label: 'Liste membres' },
 
   ];
 

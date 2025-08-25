@@ -67,6 +67,7 @@ export interface Equipe {
 }
 
 export interface Serie {
+  saisonId: string;
   id: string;
   nom: string;
   equipes: Equipe[];
@@ -77,9 +78,11 @@ export interface Joueur {
   nom: string;
   prenom: string;
   classement: string;
+  wo?: string; // "y" pour forfait, "n" pour normal (ou undefined)
 }
 
 export interface Match {
+  saisonId: string;
   id: string;
   serieId: string;
   semaine: number;

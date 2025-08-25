@@ -36,10 +36,6 @@ export function SerieSelector({
             <SelectItem key={serie.id} value={serie.id}>
               <div className="flex flex-col">
                 <span className="font-medium">{serie.nom}</span>
-                <span className="text-xs text-gray-500">
-                  {serie.equipes.length} équipe
-                  {serie.equipes.length > 1 ? 's' : ''}
-                </span>
               </div>
             </SelectItem>
           ))}

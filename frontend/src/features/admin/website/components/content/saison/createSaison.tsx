@@ -106,6 +106,7 @@ export default function CreateSaison() {
       id: uuidv4(),
       nom: newSerieName,
       equipes: [...clubTeams, ...adversaires],
+      saisonId: saison.id, // Ajout du saisonId
     };
     nouvelleSerie.equipes.forEach((e) => (e.serieId = nouvelleSerie.id));
 
@@ -123,6 +124,7 @@ export default function CreateSaison() {
           nouveauCalendrier.push({
             id: uuidv4(),
             serieId: serie.id,
+            saisonId: saison.id, // Ajout du saisonId
             semaine,
             domicile: '',
             exterieur: '',
@@ -160,6 +162,7 @@ export default function CreateSaison() {
     const nouveauMatch: Match = {
       id: uuidv4(),
       serieId,
+      saisonId: saison.id, // Ajout du saisonId
       semaine,
       domicile: '',
       exterieur: '',
