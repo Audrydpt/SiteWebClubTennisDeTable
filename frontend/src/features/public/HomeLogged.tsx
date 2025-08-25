@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any,no-nested-ternary,@typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any,no-nested-ternary,@typescript-eslint/no-unused-vars,no-restricted-globals */
 import React, { useEffect, useState } from 'react';
 import { Calendar, Users, Trophy, MapPin, Loader2, Ban } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,9 +21,20 @@ export default function HomeLogged() {
     `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
 
   const formatDateFR = (dateString?: string) => {
-    if (!dateString) return 'Date à venir';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR');
+    if (!dateString || dateString === 'jj-mm-aaaa') return 'Date à venir';
+
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Date à venir';
+
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+
+      return `${day}/${month}/${year}`;
+    } catch {
+      return 'Date à venir';
+    }
   };
 
   // 🔄 Récupération des infos JSON Server du membre connecté

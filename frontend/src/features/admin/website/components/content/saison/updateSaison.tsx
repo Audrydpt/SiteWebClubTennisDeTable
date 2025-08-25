@@ -1,7 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,prettier/prettier,@stylistic/indent,no-alert,no-console */
-
-'use client';
-
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Trash2, PlusCircle, Save, Loader2, Calendar, Info, Swords, X, ArrowLeft } from 'lucide-react';

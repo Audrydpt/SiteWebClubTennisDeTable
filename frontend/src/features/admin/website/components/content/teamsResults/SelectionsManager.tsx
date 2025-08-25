@@ -643,6 +643,24 @@ export function SelectionsManager({
     }
   };
 
+  // Fonction pour formater la date au format européen
+  const formatDateEuropean = (dateString: string): string => {
+    if (!dateString || dateString === 'jj-mm-aaaa') return dateString;
+
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return dateString;
+
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+
+      return `${day}/${month}/${year}`;
+    } catch {
+      return dateString;
+    }
+  };
+
   return (
     <TooltipProvider>
       <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
@@ -690,7 +708,7 @@ export function SelectionsManager({
                         <h3 className="font-semibold text-lg">
                           {match.domicile} vs {match.exterieur}
                         </h3>
-                        <p className="text-sm text-gray-600">{match.date}</p>
+                        <p className="text-sm text-gray-600">{formatDateEuropean(match.date)}</p>
                       </div>
                       <Badge
                         variant={
