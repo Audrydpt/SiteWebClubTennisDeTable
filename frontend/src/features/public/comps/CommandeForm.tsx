@@ -1,357 +1,349 @@
 /* eslint-disable */
 
-import { useEffect, useState } from "react"
-import { Loader2, X, Calendar, AlertCircle } from "lucide-react"
-import { Button } from "@/components/ui/button.tsx"
-import { Card, CardContent, CardFooter } from "@/components/ui/card.tsx"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.tsx"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
-import { SelectMembre } from "@/features/public/comps/commande/membres.tsx"
-import { FormMousses } from "@/features/public/comps/commande/mousse.tsx"
-import { FormBois } from "@/features/public/comps/commande/bois.tsx"
-import { FormAutre } from "@/features/public/comps/commande/autre.tsx"
-import type { Mousse, Bois, Autre, Member } from "@/services/type.ts"
-import { createSelection, fetchUsers, fetchSelectionByMembre, updateSelection } from "@/services/api.ts"
+import { useState, useEffect } from 'react';
+import { Calendar, AlertCircle, Zap, User } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ProductForm } from '@/features/public/comps/commande/ProductForm.tsx';
+import { OrderSummary } from '@/features/public/comps/commande/OrderSummary.tsx';
+import { GlobalOrderBar } from '@/features/public/comps/commande/GlobalOrder.tsx';
+import {
+  Mousse,
+  Bois,
+  Autre,
+  Commande,
+  CommandeItem,
+} from '@/services/type.ts';
+import { useAuth } from '@/lib/authContext.tsx';
+import {
+  fetchCommandes,
+  addItemToCommande,
+  getOrCreateOpenCommande,
+} from '@/services/api.ts';
 
-export default function CommandePage() {
-  const [membreSelectionne, setMembreSelectionne] = useState<string | null>(null)
-  const [selectionId, setSelectionId] = useState<string | null>(null)
-  const [mousses, setMousses] = useState<Mousse[]>([])
-  const [bois, setBois] = useState<Bois[]>([])
-  const [autres, setAutres] = useState<Autre[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [membres, setMembres] = useState<Member[]>([])
-  const [isLoadingMembres, setIsLoadingMembres] = useState(true)
+export default function OrderPage() {
+  const { user, getMemberId } = useAuth();
+  const [mousses, setMousses] = useState<Mousse[]>([]);
+  const [bois, setBois] = useState<Bois[]>([]);
+  const [autres, setAutres] = useState<Autre[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [commandes, setCommandes] = useState<Commande[]>([]);
+  const [currentCommande, setCurrentCommande] = useState<Commande | null>(null);
+  const [userItems, setUserItems] = useState<CommandeItem[]>([]);
 
-  const dateClotureCommande = new Date("2025-02-15") // Date de clôture
-  const formatDateFR = (date: Date) => {
-    return date.toLocaleDateString("fr-FR", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
-  }
+  const orderDeadline = new Date('2025-02-15');
+  const isOrderOpen = new Date() <= orderDeadline;
 
-  const isCommandeOuverte = () => {
-    const maintenant = new Date()
-    return maintenant <= dateClotureCommande
-  }
-
+  // Charger les commandes existantes
   useEffect(() => {
-    const chargerMembres = async () => {
+    const loadCommandes = async () => {
       try {
-        const donneesMembers = await fetchUsers()
-        setMembres(donneesMembers)
+        const data = await fetchCommandes();
+        setCommandes(data);
+
+        // Trouver la commande en cours (statut "open")
+        const openCommande = data.find((c) => c.statut === 'open');
+        setCurrentCommande(openCommande || null);
+
+        // Charger les items de l'utilisateur actuel
+        const memberId = getMemberId();
+        if (openCommande && memberId) {
+          const memberItems = openCommande.items.filter(
+            item => item.memberId === memberId
+          );
+          setUserItems(memberItems);
+        }
       } catch (error) {
-        console.error("Erreur lors du chargement des membres:", error)
-        alert("Impossible de charger la liste des membres.")
-      } finally {
-        setIsLoadingMembres(false)
+        console.error('Erreur lors du chargement des commandes:', error);
       }
+    };
+
+    loadCommandes();
+  }, [getMemberId]);
+
+  const formatDateFR = (date: Date) =>
+    date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+  const currentUserTotal = [...mousses, ...bois, ...autres].reduce(
+    (total, item) => total + (item.prix || 0),
+    0
+  );
+
+  // Total des items déjà commandés par l'utilisateur
+  const userCommandedTotal = userItems.reduce(
+    (total, item) => total + parseFloat(item.price),
+    0
+  );
+
+  const handleAddMousse = (mousse: Mousse) => {
+    setMousses((prev) => [...prev, mousse]);
+  };
+
+  const handleAddBois = (b: Bois) => {
+    setBois((prev) => [...prev, b]);
+  };
+
+  const handleAddAutre = (autre: Autre) => {
+    setAutres((prev) => [...prev, autre]);
+  };
+
+  const handleRemoveMousse = (index: number) => {
+    setMousses((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveBois = (index: number) => {
+    setBois((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveAutre = (index: number) => {
+    setAutres((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveOrder = async () => {
+    const memberId = getMemberId();
+    if (!memberId) {
+      alert('Erreur: utilisateur non connecté');
+      return;
     }
 
-    chargerMembres()
-  }, [])
+    if (currentUserTotal === 0) {
+      alert('Veuillez ajouter au moins un article à votre commande');
+      return;
+    }
 
-  const handleSelectMembre = async (membreNom: string) => {
-    setIsLoading(true)
+    setIsLoading(true);
+
     try {
-      const existingSelection = await fetchSelectionByMembre(membreNom)
-      if (existingSelection) {
-        setSelectionId(existingSelection.id)
-        setMousses(existingSelection.mousses || [])
-        setBois(existingSelection.bois || [])
-        setAutres(existingSelection.autres || [])
-      } else {
-        setSelectionId(null)
-        setMousses([])
-        setBois([])
-        setAutres([])
+      // Obtenir ou créer une commande ouverte
+      const commande = await getOrCreateOpenCommande();
+      setCurrentCommande(commande);
+
+      // Créer les items pour tous les produits ajoutés
+      const items: Omit<CommandeItem, 'id'>[] = [
+        ...mousses.map((m) => ({
+          name: `${m.marque} ${m.nom}`,
+          price: (m.prix || 0).toString(),
+          epaisseur: m.epaisseur,
+          quantity: '1',
+          category: 'mousse' as const,
+          memberId,
+        })),
+        ...bois.map((b) => ({
+          name: `${b.marque} ${b.nom}`,
+          price: (b.prix || 0).toString(),
+          quantity: '1',
+          category: 'bois' as const,
+          memberId,
+        })),
+        ...autres.map((a) => ({
+          name: a.nom,
+          price: (a.prix || 0).toString(),
+          quantity: '1',
+          category: 'autre' as const,
+          memberId,
+        })),
+      ];
+
+      // Ajouter chaque item à la commande
+      let updatedCommande = commande;
+      for (const item of items) {
+        updatedCommande = await addItemToCommande(updatedCommande.id, item);
       }
-      setMembreSelectionne(membreNom)
-    } catch (error) {
-      console.error("Erreur lors de la récupération de la sélection:", error)
-      alert("Impossible de charger les données existantes. Une nouvelle sélection sera créée.")
-      setMembreSelectionne(membreNom)
-      setSelectionId(null)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
-  const handleAddMousse = (nouvelleMousse: Mousse) => setMousses([...mousses, nouvelleMousse])
-  const handleAddBois = (nouveauBois: Bois) => setBois([...bois, nouveauBois])
-  const handleAddAutre = (nouvelAutre: Autre) => setAutres([...autres, nouvelAutre])
-  const handleRemoveMousse = (index: number) => setMousses(mousses.filter((_, i) => i !== index))
-  const handleRemoveBois = (index: number) => setBois(bois.filter((_, i) => i !== index))
-  const handleRemoveAutre = (index: number) => setAutres(autres.filter((_, i) => i !== index))
+      // Recharger les commandes
+      const updatedCommandes = await fetchCommandes();
+      setCommandes(updatedCommandes);
 
-  const calculerTotal = () => {
-    const totalMousses = mousses.reduce((acc, item) => acc + (item.prix || 0), 0)
-    const totalBois = bois.reduce((acc, item) => acc + (item.prix || 0), 0)
-    const totalAutres = autres.reduce((acc, item) => acc + (item.prix || 0), 0)
-    return totalMousses + totalBois + totalAutres
-  }
+      // Mettre à jour la commande courante
+      const newCurrentCommande = updatedCommandes.find(c => c.id === updatedCommande.id);
+      setCurrentCommande(newCurrentCommande || null);
 
-  const handleSaveSelection = async () => {
-    if (!membreSelectionne) return
-    setIsLoading(true)
-
-    const selectionData = {
-      membre: membreSelectionne,
-      mousses,
-      bois,
-      autres,
-      totalEstime: calculerTotal(),
-      dateEnregistrement: new Date().toISOString(),
-    }
-
-    try {
-      if (selectionId) {
-        const updated = await updateSelection(selectionId, selectionData)
-        console.log("Sélection mise à jour :", updated)
-        alert("Votre sélection a été mise à jour !")
-      } else {
-        const created = await createSelection(selectionData)
-        setSelectionId(created.id)
-        console.log("Sélection enregistrée :", created)
-        alert("Votre sélection a bien été enregistrée !")
+      // Mettre à jour les items de l'utilisateur
+      if (newCurrentCommande) {
+        const newUserItems = newCurrentCommande.items.filter(
+          item => item.memberId === memberId
+        );
+        setUserItems(newUserItems);
       }
+
+      // Réinitialiser le panier
+      setMousses([]);
+      setBois([]);
+      setAutres([]);
+
+      alert('Commande enregistrée avec succès !');
     } catch (error) {
-      console.error("Erreur lors de l'enregistrement:", error)
-      alert("Une erreur est survenue lors de l'enregistrement.")
+      console.error('Erreur lors de la sauvegarde:', error);
+      alert('Erreur lors de la sauvegarde de la commande');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  if (isLoadingMembres) {
+  if (!user) {
     return (
-      <div className="flex items-center justify-center p-10 min-h-[60vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-[#F1C40F]" />
-      </div>
-    )
-  }
-
-  if (isLoading && !membreSelectionne) {
-    return (
-      <div className="flex items-center justify-center p-10 min-h-[60vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-[#F1C40F]" />
-      </div>
-    )
-  }
-
-  if (!membreSelectionne) {
-    return (
-      <div className="space-y-6 p-6 max-w-6xl mx-auto">
-        <div className="bg-gradient-to-r from-[#F1C40F] to-[#D4AC0D] text-white p-6 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Commande de matériel</h1>
-              <p className="opacity-90">Sélectionnez votre matériel pour la saison</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <AlertCircle className="mx-auto h-12 w-12 text-yellow-600" />
+              <h3 className="mt-2 text-lg font-medium">Connexion requise</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Vous devez être connecté pour passer une commande.
+              </p>
             </div>
-            <div className="text-right">
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar className="h-5 w-5" />
-                <span className="text-sm opacity-90">Date limite</span>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const memberName = 'nom' in user ? `${user.prenom} ${user.nom}` : user.username;
+
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <div className="bg-[#F1C40F] text-[#3A3A3A]">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-balance">
+                Commande d'équipement
+              </h1>
+              <div className="flex items-center gap-2 mt-2">
+                <div className="bg-white p-2 rounded-full">
+                  <User className="w-4 h-4 text-[#3A3A3A]" />
+                </div>
+                <p className="font-semibold">
+                  Connecté en tant que {memberName}
+                </p>
               </div>
-              <p className="text-lg font-bold">{formatDateFR(dateClotureCommande)}</p>
+              {userCommandedTotal > 0 && (
+                <p className="text-sm opacity-80 mt-1">
+                  Déjà commandé: {userCommandedTotal.toFixed(2)}€
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-3 bg-white/20 rounded-lg px-4 py-3">
+              <div className="bg-white p-2 rounded-full">
+                <Calendar className="w-5 h-5 text-[#3A3A3A]" />
+              </div>
+              <div className="text-right">
+                <p className="text-sm opacity-80">Date limite</p>
+                <p className="font-bold">{formatDateFR(orderDeadline)}</p>
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {isCommandeOuverte() ? (
-          <Alert className="border-green-200 bg-green-50">
-            <AlertCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-700">
-              <strong>Commandes ouvertes !</strong> Vous pouvez encore passer votre commande jusqu'au{" "}
-              {formatDateFR(dateClotureCommande)}.
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <GlobalOrderBar
+          currentUserTotal={currentUserTotal}
+          mousses={mousses}
+          bois={bois}
+          autres={autres}
+          commandes={commandes}
+        />
+
+        {/* Status Alert */}
+        {isOrderOpen ? (
+          <Alert className="mb-8 border-green-200 bg-green-50 text-green-800">
+            <div className="bg-green-100 p-2 rounded-full inline-flex">
+              <AlertCircle className="h-4 w-4 text-green-600" />
+            </div>
+            <AlertDescription>
+              <strong>Commandes ouvertes !</strong> Vous pouvez encore passer
+              votre commande jusqu'au {formatDateFR(orderDeadline)}.
             </AlertDescription>
           </Alert>
         ) : (
-          <Alert className="border-red-200 bg-red-50">
-            <AlertCircle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-700">
-              <strong>Commandes fermées.</strong> La période de commande s'est terminée le{" "}
-              {formatDateFR(dateClotureCommande)}.
+          <Alert className="mb-8 border-destructive/20 bg-destructive/5 text-destructive">
+            <div className="bg-destructive/10 p-2 rounded-full inline-flex">
+              <AlertCircle className="h-4 w-4 text-destructive" />
+            </div>
+            <AlertDescription>
+              <strong>Commandes fermées.</strong> La période de commande s'est
+              terminée le {formatDateFR(orderDeadline)}.
             </AlertDescription>
           </Alert>
         )}
 
-        <SelectMembre membres={membres} onSelect={handleSelectMembre} />
-      </div>
-    )
-  }
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Product Selection */}
+          <div className="lg:col-span-2">
+            <Card className="border-0 shadow-lg bg-white">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <div className="bg-[#F1C40F] p-3 rounded-full">
+                    <Zap className="h-6 w-6 text-[#3A3A3A]" />
+                  </div>
+                  Ajouter des équipements
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="mousses" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-100">
+                    <TabsTrigger
+                      value="mousses"
+                      className="data-[state=active]:bg-[#F1C40F] data-[state=active]:text-[#3A3A3A] rounded-lg"
+                    >
+                      Mousses
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="bois"
+                      className="data-[state=active]:bg-[#F1C40F] data-[state=active]:text-[#3A3A3A] rounded-lg"
+                    >
+                      Bois
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="autres"
+                      className="data-[state=active]:bg-[#F1C40F] data-[state=active]:text-[#3A3A3A] rounded-lg"
+                    >
+                      Accessoires
+                    </TabsTrigger>
+                  </TabsList>
 
-  return (
-    <div className="space-y-6 p-6 max-w-6xl mx-auto">
-      <div className="bg-gradient-to-r from-[#F1C40F] to-[#D4AC0D] text-white p-6 rounded-lg">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Enregistrement de matériel</h1>
-            <p className="opacity-90">
-              Sélection pour : <span className="font-semibold">{membreSelectionne}</span>
-            </p>
+                  <TabsContent value="mousses" className="space-y-4">
+                    <ProductForm category="mousse" onAdd={handleAddMousse} />
+                  </TabsContent>
+
+                  <TabsContent value="bois" className="space-y-4">
+                    <ProductForm category="bois" onAdd={handleAddBois} />
+                  </TabsContent>
+
+                  <TabsContent value="autres" className="space-y-4">
+                    <ProductForm category="autre" onAdd={handleAddAutre} />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
           </div>
-          <div className="text-right">
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="h-5 w-5" />
-              <span className="text-sm opacity-90">Date limite</span>
-            </div>
-            <p className="text-lg font-bold">{formatDateFR(dateClotureCommande)}</p>
+
+          {/* Order Summary */}
+          <div className="lg:col-span-1">
+            <OrderSummary
+              mousses={mousses}
+              bois={bois}
+              autres={autres}
+              onRemoveMousse={handleRemoveMousse}
+              onRemoveBois={handleRemoveBois}
+              onRemoveAutre={handleRemoveAutre}
+              onSave={handleSaveOrder}
+              isLoading={isLoading}
+              memberName={memberName}
+              userItems={userItems}
+              userCommandedTotal={userCommandedTotal}
+            />
           </div>
         </div>
       </div>
-
-      {!isCommandeOuverte() && (
-        <Alert className="border-red-200 bg-red-50">
-          <AlertCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-700">
-            <strong>Attention :</strong> La période de commande est fermée depuis le {formatDateFR(dateClotureCommande)}
-            . Contactez le comité pour toute modification.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <Card className="bg-white border border-[#E0E0E0]">
-        <CardContent className="p-6">
-          <Tabs defaultValue="mousses" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-[#F9F9F9]">
-              <TabsTrigger value="mousses" className="data-[state=active]:bg-[#F1C40F] data-[state=active]:text-white">
-                Mousses
-              </TabsTrigger>
-              <TabsTrigger value="bois" className="data-[state=active]:bg-[#F1C40F] data-[state=active]:text-white">
-                Bois
-              </TabsTrigger>
-              <TabsTrigger value="autre" className="data-[state=active]:bg-[#F1C40F] data-[state=active]:text-white">
-                Autre
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="mousses" className="mt-6">
-              <FormMousses mousses={mousses} onAddMousse={handleAddMousse} onRemoveMousse={handleRemoveMousse} />
-            </TabsContent>
-            <TabsContent value="bois" className="mt-6">
-              <FormBois bois={bois} onAddBois={handleAddBois} onRemoveBois={handleRemoveBois} />
-            </TabsContent>
-            <TabsContent value="autre" className="mt-6">
-              <FormAutre autres={autres} onAddAutre={handleAddAutre} onRemoveAutre={handleRemoveAutre} />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-
-        <CardFooter className="flex flex-col items-stretch gap-4 bg-[#F9F9F9] border-t border-[#E0E0E0]">
-          <div className="pt-4">
-            <h3 className="font-semibold mb-4 flex items-center gap-2">
-              Récapitulatif de la sélection
-              {(mousses.length > 0 || bois.length > 0 || autres.length > 0) && (
-                <Badge variant="secondary" className="bg-[#F1C40F] text-white">
-                  {mousses.length + bois.length + autres.length} article(s)
-                </Badge>
-              )}
-            </h3>
-            {mousses.length === 0 && bois.length === 0 && autres.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground bg-white rounded-lg border border-[#E0E0E0]">
-                <p>Aucun article dans la sélection.</p>
-                <p className="text-sm mt-1">Utilisez les onglets ci-dessus pour ajouter des articles.</p>
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg border border-[#E0E0E0] p-4">
-                <ul className="text-sm space-y-3">
-                  {mousses.map((m, i) => (
-                    <li
-                      key={`mousse-recap-${i}`}
-                      className="flex items-center justify-between p-3 bg-[#FFF8DC] rounded-lg"
-                    >
-                      <span>
-                        <strong>Mousse:</strong> {`${m.marque} ${m.nom} (${m.epaisseur}, ${m.couleur})`}
-                        {m.prix && <span className="font-semibold text-[#D4AC0D] ml-2">{m.prix.toFixed(2)} €</span>}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:bg-red-100"
-                        onClick={() => handleRemoveMousse(i)}
-                      >
-                        <X className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </li>
-                  ))}
-                  {bois.map((b, i) => (
-                    <li
-                      key={`bois-recap-${i}`}
-                      className="flex items-center justify-between p-3 bg-[#FFF8DC] rounded-lg"
-                    >
-                      <span>
-                        <strong>Bois:</strong> {`${b.marque} ${b.nom} (${b.type})`}
-                        {b.prix && <span className="font-semibold text-[#D4AC0D] ml-2">{b.prix.toFixed(2)} €</span>}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:bg-red-100"
-                        onClick={() => handleRemoveBois(i)}
-                      >
-                        <X className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </li>
-                  ))}
-                  {autres.map((a, i) => (
-                    <li
-                      key={`autre-recap-${i}`}
-                      className="flex items-center justify-between p-3 bg-[#FFF8DC] rounded-lg"
-                    >
-                      <span>
-                        <strong>Autre:</strong> {a.nom}
-                        {a.prix && <span className="font-semibold text-[#D4AC0D] ml-2">{a.prix.toFixed(2)} €</span>}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:bg-red-100"
-                        onClick={() => handleRemoveAutre(i)}
-                      >
-                        <X className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          <div className="border-t pt-4 flex justify-end items-center">
-            <div className="bg-gradient-to-r from-[#F1C40F] to-[#D4AC0D] text-white px-6 py-3 rounded-lg">
-              <span className="text-lg font-bold">Total estimé : {calculerTotal().toFixed(2)} €</span>
-            </div>
-          </div>
-
-          <Button
-            onClick={handleSaveSelection}
-            size="lg"
-            className="w-full bg-[#F1C40F] hover:bg-[#D4AC0D] text-white font-semibold py-3"
-            disabled={isLoading || !isCommandeOuverte()}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Enregistrement...
-              </>
-            ) : !isCommandeOuverte() ? (
-              "Commandes fermées"
-            ) : (
-              "Enregistrer la sélection"
-            )}
-          </Button>
-
-          {!isCommandeOuverte() && (
-            <p className="text-sm text-center text-muted-foreground">
-              Pour toute modification, contactez le comité du club
-            </p>
-          )}
-        </CardFooter>
-      </Card>
     </div>
-  )
+  );
 }

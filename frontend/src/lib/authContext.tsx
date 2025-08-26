@@ -36,6 +36,7 @@ interface AuthContextProps {
   loginAdmin: (username: string, password: string) => boolean;
   logout: () => void;
   isAdmin: () => boolean;
+  getMemberId: () => string | null;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -107,6 +108,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isAdmin = () =>
     user !== null && 'role' in user && user.role === 'admin';
+
+  const getMemberId = () => {
+    if (user && 'id' in user && user.role !== 'admin') {
+      return user.id;
+    }
+    return null;
+  };
 
   // Session persistée + écoute des changements
   useEffect(() => {
@@ -218,6 +226,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loginAdmin,
       logout,
       isAdmin,
+      getMemberId,
     }),
     [isAuthenticated, user]
   );

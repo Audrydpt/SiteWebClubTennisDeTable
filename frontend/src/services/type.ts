@@ -138,14 +138,23 @@ export interface Autre {
   prix?: number;
 }
 
+export interface CommandeItem {
+  id: string;
+  name: string;
+  price: string;
+  epaisseur?: string;
+  quantity: string;
+  category: 'mousse' | 'bois' | 'autre';
+  memberId: string;
+}
+
 export interface Commande {
   id: string;
-  membre: string;
-  mousses: Mousse[];
-  bois: Bois[];
-  autres: Autre[];
-  totalEstime: number;
-  dateEnregistrement: string;
+  name: string;
+  date: string;
+  items: CommandeItem[];
+  total: string;
+  statut: 'open' | 'closed';
 }
 
 export interface SelectMembreProps {

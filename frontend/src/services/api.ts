@@ -1,7 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable */
 // src/services/api.ts
 import axios from 'axios';
-import { Image, Commande, Joueur, Match } from '@/services/type.ts';
+import {
+  Image,
+  Commande,
+  CommandeItem,
+  Joueur,
+  Match,
+} from '@/services/type.ts';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -247,28 +253,106 @@ export const deleteSaison = async (id: string) => {
 
 /* Commandes API Endpoints */
 
-export const fetchSelectionByMembre = async (
-  membre: string
-): Promise<Commande | null> => {
-  const response = await axios.get(
-    `${API_URL}/commande?membre=${encodeURIComponent(membre)}`
-  );
-  return response.data[0] || null;
-};
-
-export const createSelection = async (
-  data: Omit<Commande, 'id'>
-): Promise<Commande> => {
-  const response = await axios.post(`${API_URL}/commande`, data);
+export const fetchCommandes = async (): Promise<Commande[]> => {
+  const response = await axios.get(`${API_URL}/commandes`);
   return response.data;
 };
 
-export const updateSelection = async (
+export const fetchCommandeByMembre = async (
+  memberId: string
+): Promise<Commande | null> => {
+  const response = await axios.get(`${API_URL}/commandes`);
+  const commandes: Commande[] = response.data;
+
+  // Trouver une commande qui contient des items de ce membre
+  const commandeWithMemberItems = commandes.find((commande) =>
+    commande.items.some((item) => item.memberId === memberId)
+  );
+
+  return commandeWithMemberItems || null;
+};
+
+export const createCommande = async (
+  data: Omit<Commande, 'id'>
+): Promise<Commande> => {
+  const response = await axios.post(`${API_URL}/commandes`, data);
+  return response.data;
+};
+
+export const updateCommande = async (
   id: string,
   data: Partial<Omit<Commande, 'id'>>
 ): Promise<Commande> => {
-  const response = await axios.put(`${API_URL}/commande/${id}`, data);
+  const response = await axios.put(`${API_URL}/commandes/${id}`, data);
   return response.data;
+};
+
+export const addItemToCommande = async (
+  commandeId: string,
+  item: Omit<CommandeItem, 'id'>
+): Promise<Commande> => {
+  // Récupérer la commande existante
+  const response = await axios.get(`${API_URL}/commandes/${commandeId}`);
+  const commande: Commande = response.data;
+
+  // Ajouter le nouvel item avec un ID généré
+  const newItem: CommandeItem = {
+    ...item,
+    id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  };
+
+  commande.items.push(newItem);
+
+  // Recalculer le total
+  const newTotal = commande.items.reduce(
+    (sum, item) => sum + parseFloat(item.price),
+    0
+  );
+  commande.total = newTotal.toString();
+
+  // Mettre à jour la commande
+  return updateCommande(commandeId, commande);
+};
+
+export const removeItemFromCommande = async (
+  commandeId: string,
+  itemId: string
+): Promise<Commande> => {
+  // Récupérer la commande existante
+  const response = await axios.get(`${API_URL}/commandes/${commandeId}`);
+  const commande: Commande = response.data;
+
+  // Retirer l'item
+  commande.items = commande.items.filter((item) => item.id !== itemId);
+
+  // Recalculer le total
+  const newTotal = commande.items.reduce(
+    (sum, item) => sum + parseFloat(item.price),
+    0
+  );
+  commande.total = newTotal.toString();
+
+  // Mettre à jour la commande
+  return updateCommande(commandeId, commande);
+};
+
+export const getOrCreateOpenCommande = async (): Promise<Commande> => {
+  const commandes = await fetchCommandes();
+  let openCommande = commandes.find((c) => c.statut === 'open');
+
+  if (!openCommande) {
+    // Créer une nouvelle commande globale ouverte
+    const newCommande: Omit<Commande, 'id'> = {
+      name: `Commande Groupée ${new Date().getFullYear()}`,
+      date: new Date().toISOString().split('T')[0],
+      items: [],
+      total: '0',
+      statut: 'open',
+    };
+    openCommande = await createCommande(newCommande);
+  }
+
+  return openCommande;
 };
 
 /* Sauvegarde des sélections/compositions */
