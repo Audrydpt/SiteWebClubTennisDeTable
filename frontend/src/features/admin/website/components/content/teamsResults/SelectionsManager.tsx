@@ -1,11 +1,10 @@
 /* eslint-disable */
-'use client';
-
 import { useState, useEffect, useRef } from 'react';
-import { UserCheck, Users, Copy, PlusCircle, X, AlertCircle, Loader2, Ban } from 'lucide-react';
+import { UserCheck, Users, Copy, PlusCircle, X, AlertCircle, Loader2, Ban, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectTrigger,
@@ -56,6 +55,7 @@ export function SelectionsManager({
   const [joueurSelectionne, setJoueurSelectionne] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   // Référence pour stocker la dernière sélection envoyée au parent
   const lastSelectionsSent = useRef<string>('');
@@ -408,37 +408,87 @@ export function SelectionsManager({
   const renderJoueursList = (match: MatchWithPlayers) => {
     const joueurs = match.selectedPlayers || [];
 
+    // Filtrer les membres selon le terme de recherche
+    const filteredMembres = membres.filter((membre) => {
+      if (!searchTerm) return true;
+
+      const search = searchTerm.toLowerCase();
+      const nom = (membre.nom || '').toLowerCase();
+      const prenom = (membre.prenom || '').toLowerCase();
+      const classement = (membre.classement || '').toLowerCase();
+
+      return nom.includes(search) ||
+             prenom.includes(search) ||
+             classement.includes(search) ||
+             `${prenom} ${nom}`.toLowerCase().includes(search);
+    });
+
     return (
       <div className="mt-4 space-y-4">
+        {/* Barre de recherche */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Rechercher par nom, prénom ou classement..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-2">
           <Select
             value={joueurSelectionne}
             onValueChange={setJoueurSelectionne}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Choisir un joueur" />
+              <SelectValue
+                placeholder={
+                  filteredMembres.length === 0
+                    ? searchTerm
+                      ? "Aucun résultat trouvé..."
+                      : "Choisir un joueur..."
+                    : "Choisir un joueur..."
+                }
+              />
             </SelectTrigger>
             <SelectContent>
-              {membres
-                .sort((a, b) =>
-                  trierClassements(a.classement || 'ZZ', b.classement || 'ZZ')
-                )
-                .map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.prenom} {m.nom} ({m.classement})
-                  </SelectItem>
-                ))}
+              {filteredMembres.length > 0 ? (
+                filteredMembres
+                  .sort((a, b) =>
+                    trierClassements(a.classement || 'ZZ', b.classement || 'ZZ')
+                  )
+                  .map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.prenom} {m.nom} ({m.classement})
+                    </SelectItem>
+                  ))
+              ) : (
+                <SelectItem value="no-results" disabled>
+                  <span className="text-gray-400 italic">
+                    {searchTerm ? "Aucun joueur trouvé" : "Aucun joueur disponible"}
+                  </span>
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
           <Button
             onClick={() => ajouterJoueur(match.id)}
-            disabled={!joueurSelectionne || joueurs.length >= 4}
+            disabled={!joueurSelectionne || joueurs.length >= 4 || filteredMembres.length === 0}
             className="w-full sm:w-auto"
           >
             <PlusCircle className="h-4 w-4 mr-2" />
             Ajouter
           </Button>
         </div>
+
+        {/* Afficher le nombre de résultats si recherche active */}
+        {searchTerm && (
+          <p className="text-xs text-gray-500">
+            {filteredMembres.length} joueur{filteredMembres.length > 1 ? 's' : ''} trouvé{filteredMembres.length > 1 ? 's' : ''}
+          </p>
+        )}
 
         <div className="space-y-2">
           {joueurs.length > 0 ? (
