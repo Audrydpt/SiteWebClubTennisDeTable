@@ -1,5 +1,4 @@
 import { ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
 
 import {
   AlertDialog,
@@ -30,13 +29,13 @@ export default function DeleteConfirmation({
   cancelText,
   confirmText,
 }: DeleteConfirmationProps) {
-  const { t } = useTranslation();
-
   const defaultValues = {
-    title: title || t('deleteConfirmation.title'),
-    description: description || t('deleteConfirmation.description'),
-    cancelText: cancelText || t('cancel'),
-    confirmText: confirmText || t('delete'),
+    title: title || 'Confirmer la suppression',
+    description:
+      description ||
+      'Cette action est irréversible. Voulez-vous vraiment continuer ?',
+    cancelText: cancelText || 'Annuler',
+    confirmText: confirmText || 'Supprimer',
   };
 
   const handleDelete = (event: React.MouseEvent) => {

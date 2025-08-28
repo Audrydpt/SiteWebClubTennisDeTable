@@ -266,7 +266,9 @@ export const fetchCommandeByMembre = async (
 
   // Trouver une commande qui contient des items de ce membre
   const commandeWithMemberItems = commandes.find((commande) =>
-    commande.items.some((item) => item.memberId === memberId)
+    commande.members.some((member) =>
+      member.items.some((item) => item.id === memberId)
+    )
   );
 
   return commandeWithMemberItems || null;
@@ -289,7 +291,7 @@ export const updateCommande = async (
 
 export const addItemToCommande = async (
   commandeId: string,
-  item: Omit<CommandeItem, 'id'>
+  item: Omit<CommandeItem, 'id'> & { memberId: string }
 ): Promise<Commande> => {
   // Récupérer la commande existante
   const response = await axios.get(`${API_URL}/commandes/${commandeId}`);
@@ -297,15 +299,40 @@ export const addItemToCommande = async (
 
   // Ajouter le nouvel item avec un ID généré
   const newItem: CommandeItem = {
-    ...item,
     id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    name: item.name,
+    price: item.price,
+    quantity: item.quantity,
+    category: item.category,
+    epaisseur: item.epaisseur,
+    fournisseur: item.fournisseur,
   };
 
-  commande.items.push(newItem);
+  // Trouver ou créer le membre dans la commande
+  let memberGroup = commande.members.find(m => m.memberId === item.memberId);
 
-  // Recalculer le total
-  const newTotal = commande.items.reduce(
-    (sum, item) => sum + parseFloat(item.price),
+  if (!memberGroup) {
+    memberGroup = {
+      memberId: item.memberId,
+      items: [],
+      subtotal: '0'
+    };
+    commande.members.push(memberGroup);
+  }
+
+  // Ajouter l'item au membre
+  memberGroup.items.push(newItem);
+
+  // Recalculer le sous-total du membre
+  const memberSubtotal = memberGroup.items.reduce(
+    (sum, item) => sum + (parseFloat(item.price) * parseInt(item.quantity)),
+    0
+  );
+  memberGroup.subtotal = memberSubtotal.toString();
+
+  // Recalculer le total global
+  const newTotal = commande.members.reduce(
+    (sum, member) => sum + parseFloat(member.subtotal),
     0
   );
   commande.total = newTotal.toString();
@@ -314,45 +341,143 @@ export const addItemToCommande = async (
   return updateCommande(commandeId, commande);
 };
 
-export const removeItemFromCommande = async (
-  commandeId: string,
-  itemId: string
-): Promise<Commande> => {
-  // Récupérer la commande existante
-  const response = await axios.get(`${API_URL}/commandes/${commandeId}`);
-  const commande: Commande = response.data;
-
-  // Retirer l'item
-  commande.items = commande.items.filter((item) => item.id !== itemId);
-
-  // Recalculer le total
-  const newTotal = commande.items.reduce(
-    (sum, item) => sum + parseFloat(item.price),
-    0
-  );
-  commande.total = newTotal.toString();
-
-  // Mettre à jour la commande
-  return updateCommande(commandeId, commande);
-};
-
+// Fonction pour obtenir ou créer une commande ouverte
 export const getOrCreateOpenCommande = async (): Promise<Commande> => {
   const commandes = await fetchCommandes();
-  let openCommande = commandes.find((c) => c.statut === 'open');
+
+  // Chercher une commande ouverte existante
+  let openCommande = commandes.find(c => c.statut === 'open');
 
   if (!openCommande) {
-    // Créer une nouvelle commande globale ouverte
-    const newCommande: Omit<Commande, 'id'> = {
+    // Créer une nouvelle commande ouverte
+    const newCommande = {
       name: `Commande Groupée ${new Date().getFullYear()}`,
       date: new Date().toISOString().split('T')[0],
-      items: [],
+      members: [],
       total: '0',
-      statut: 'open',
+      statut: 'open' as const,
     };
+
     openCommande = await createCommande(newCommande);
   }
 
   return openCommande;
+};
+
+// Fonction pour modifier un item de commande
+export const updateCommandeItem = async (
+  itemId: string,
+  updates: {
+    name?: string;
+    price?: string;
+    quantity?: string;
+    epaisseur?: string;
+    couleur?: string;
+    fournisseur?: string;
+    type?: string;
+    description?: string;
+  }
+): Promise<CommandeItem> => {
+  // Trouver la commande qui contient cet item
+  const commandes = await fetchCommandes();
+  const commande = commandes.find(c =>
+    c.members.some(member =>
+      member.items.some(item => item.id === itemId)
+    )
+  );
+
+  if (!commande) {
+    throw new Error('Commande non trouvée pour cet item');
+  }
+
+  // Trouver le membre qui contient l'item
+  const memberGroup = commande.members.find(member =>
+    member.items.some(item => item.id === itemId)
+  );
+
+  if (!memberGroup) {
+    throw new Error('Membre non trouvé pour cet item');
+  }
+
+  // Mettre à jour l'item
+  memberGroup.items = memberGroup.items.map(item => {
+    if (item.id === itemId) {
+      return { ...item, ...updates };
+    }
+    return item;
+  });
+
+  // Recalculer le sous-total du membre
+  const memberSubtotal = memberGroup.items.reduce(
+    (sum, item) => sum + (parseFloat(item.price) * parseInt(item.quantity)),
+    0
+  );
+  memberGroup.subtotal = memberSubtotal.toString();
+
+  // Recalculer le total global
+  const newTotal = commande.members.reduce(
+    (sum, member) => sum + parseFloat(member.subtotal),
+    0
+  );
+  commande.total = newTotal.toString();
+
+  await updateCommande(commande.id, commande);
+
+  // Retourner l'item modifié
+  return memberGroup.items.find(item => item.id === itemId)!;
+};
+
+// Fonction pour supprimer un item de commande
+export const deleteCommandeItem = async (itemId: string): Promise<void> => {
+  // Trouver la commande qui contient cet item
+  const commandes = await fetchCommandes();
+  const commande = commandes.find(c =>
+    c.members.some(member =>
+      member.items.some(item => item.id === itemId)
+    )
+  );
+
+  if (!commande) {
+    throw new Error('Commande non trouvée pour cet item');
+  }
+
+  // Trouver le membre qui contient l'item
+  const memberGroup = commande.members.find(member =>
+    member.items.some(item => item.id === itemId)
+  );
+
+  if (!memberGroup) {
+    throw new Error('Membre non trouvé pour cet item');
+  }
+
+  // Supprimer l'item
+  memberGroup.items = memberGroup.items.filter(item => item.id !== itemId);
+
+  // Recalculer le sous-total du membre
+  const memberSubtotal = memberGroup.items.reduce(
+    (sum, item) => sum + (parseFloat(item.price) * parseInt(item.quantity)),
+    0
+  );
+  memberGroup.subtotal = memberSubtotal.toString();
+
+  // Si le membre n'a plus d'items, le supprimer
+  if (memberGroup.items.length === 0) {
+    commande.members = commande.members.filter(m => m.memberId !== memberGroup.memberId);
+  }
+
+  // Recalculer le total global
+  const newTotal = commande.members.reduce(
+    (sum, member) => sum + parseFloat(member.subtotal),
+    0
+  );
+  commande.total = newTotal.toString();
+
+  await updateCommande(commande.id, commande);
+};
+
+// Fonction pour supprimer une commande
+export const deleteCommande = async (id: string): Promise<void> => {
+  await axios.delete(`${API_URL}/commandes/${id}`);
 };
 
 /* Sauvegarde des sélections/compositions */
@@ -451,4 +576,37 @@ export const updateEvent = async (data: any) => {
   // Correction : PUT directement sur /event au lieu de /event/{id}
   const response = await axios.put(`${API_URL}/event`, data);
   return response.data;
+};
+
+// Fonction pour créer une nouvelle commande depuis l'admin
+export const createNewCommande = async (
+  data: Pick<Commande, 'name' | 'date' | 'dateFin'>
+): Promise<Commande> => {
+  const newCommande = {
+    ...data,
+    members: [],
+    total: '0',
+    statut: 'open' as const,
+  };
+
+  const response = await axios.post(`${API_URL}/commandes`, newCommande);
+  return response.data;
+};
+
+// Fonction pour modifier les informations de base d'une commande
+export const updateCommandeInfo = async (
+  id: string,
+  updates: Pick<Commande, 'name' | 'date' | 'dateFin'>
+): Promise<Commande> => {
+  // Récupérer la commande existante
+  const response = await axios.get(`${API_URL}/commandes/${id}`);
+  const commande: Commande = response.data;
+
+  // Mettre à jour seulement les champs fournis
+  const updatedCommande = {
+    ...commande,
+    ...updates
+  };
+
+  return updateCommande(id, updatedCommande);
 };

@@ -116,43 +116,31 @@ export interface ClassementEntry {
   points: number;
 }
 
-export interface Mousse {
-  marque: string;
-  nom: string;
-  epaisseur: string;
-  type?: string;
-  couleur: string;
-  prix: number;
-}
-
-export interface Bois {
-  marque: string;
-  nom: string;
-  type: string;
-  prix?: number;
-}
-
-export interface Autre {
-  nom: string;
-  description?: string;
-  prix?: number;
-}
-
 export interface CommandeItem {
   id: string;
   name: string;
   price: string;
-  epaisseur?: string;
   quantity: string;
   category: 'mousse' | 'bois' | 'autre';
+  epaisseur?: string;
+  couleur?: string;
+  fournisseur?: string;
+  type?: string;
+  description?: string;
+}
+
+export interface CommandeMember {
   memberId: string;
+  items: CommandeItem[];
+  subtotal: string;
 }
 
 export interface Commande {
   id: string;
   name: string;
   date: string;
-  items: CommandeItem[];
+  dateFin?: string;
+  members: CommandeMember[];
   total: string;
   statut: 'open' | 'closed';
 }
@@ -173,3 +161,28 @@ export type Member = {
   role?: string; // Optionnel pour les membres
   dateInscription?: string; // Optionnel pour les membres
 };
+
+export interface Mousse {
+  marque: string;
+  nom: string;
+  epaisseur: string;
+  couleur: string;
+  prix: number;
+  quantity: number;
+}
+
+export interface Bois {
+  marque: string;
+  nom: string;
+  type: string;
+  prix: number;
+  quantity: number;
+}
+
+export interface Autre {
+  marque: string;
+  nom: string;
+  description?: string;
+  prix: number;
+  quantity: number;
+}

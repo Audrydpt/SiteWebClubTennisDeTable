@@ -1,8 +1,6 @@
 /* eslint-disable */
-import type React from 'react';
-
-import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Edit, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,20 +11,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
-import { Mousse, Bois, Autre } from '@/services/type.ts';
+import { CommandeItem } from '@/services/type.ts';
 
-interface ProductFormProps {
-  category: 'mousse' | 'bois' | 'autre';
-  onAdd: (product: Mousse | Bois | Autre) => void;
+interface EditItemModalProps {
+  item: CommandeItem | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (updatedItem: CommandeItem) => void;
+  isLoading?: boolean;
 }
 
 const fournisseurs = [
@@ -36,105 +36,121 @@ const fournisseurs = [
   'Mister Ping',
 ];
 
-export function ProductForm({ category, onAdd }: ProductFormProps) {
+export function EditItemModal({
+  item,
+  isOpen,
+  onClose,
+  onSave,
+  isLoading = false,
+}: EditItemModalProps) {
   const [nom, setNom] = useState('');
   const [prix, setPrix] = useState('');
-  const [fournisseur, setFournisseur] = useState('');
-  const [quantity, setQuantity] = useState('1');
+  const [quantity, setQuantity] = useState('');
   const [epaisseur, setEpaisseur] = useState('');
   const [couleur, setCouleur] = useState('');
+  const [fournisseur, setFournisseur] = useState('');
   const [type, setType] = useState('');
   const [description, setDescription] = useState('');
   const [showErrorDialog, setShowErrorDialog] = useState(false);
 
+  useEffect(() => {
+    if (item) {
+      setNom(item.name);
+      setPrix(item.price);
+      setQuantity(item.quantity);
+      setEpaisseur(item.epaisseur || '');
+      setCouleur(item.couleur || '');
+      setFournisseur(item.fournisseur || '');
+      setType(item.type || '');
+      setDescription(item.description || '');
+    }
+  }, [item]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!nom.trim() || !prix || !fournisseur || !quantity) {
+    if (!item || !nom.trim() || !prix || !quantity || !fournisseur) {
       setShowErrorDialog(true);
       return;
     }
 
-    const baseProduct = {
-      nom: nom.trim(),
-      prix: Number.parseFloat(prix),
-      marque: fournisseur,
-      quantity: parseInt(quantity),
+    const updatedItem: CommandeItem = {
+      ...item,
+      name: nom.trim(),
+      price: prix,
+      quantity,
+      epaisseur: item.category === 'mousse' ? epaisseur : undefined,
+      couleur: item.category === 'mousse' ? couleur : undefined,
+      type: item.category === 'bois' ? type : undefined,
+      description: item.category === 'autre' ? description : undefined,
+      fournisseur,
     };
 
-    let product: Mousse | Bois | Autre;
-    if (category === 'mousse') {
-      product = {
-        ...baseProduct,
-        epaisseur: epaisseur || '2.1mm',
-        couleur: couleur || 'Rouge',
-      } as Mousse;
-    } else if (category === 'bois') {
-      product = {
-        ...baseProduct,
-        type: type || 'Concave',
-      } as Bois;
-    } else {
-      product = {
-        ...baseProduct,
-        description: description || '',
-      } as Autre;
-    }
+    onSave(updatedItem);
+  };
 
-    onAdd(product);
-
+  const handleClose = () => {
+    onClose();
     // Reset form
     setNom('');
     setPrix('');
-    setFournisseur('');
-    setQuantity('1');
+    setQuantity('');
     setEpaisseur('');
     setCouleur('');
+    setFournisseur('');
     setType('');
     setDescription('');
   };
 
-  const getCategoryTitle = () => {
-    switch (category) {
-      case 'mousse':
-        return 'Ajouter une mousse';
-      case 'bois':
-        return 'Ajouter un bois';
-      case 'autre':
-        return 'Ajouter un accessoire';
-    }
-  };
+  if (!item) return null;
 
   return (
     <>
-      <Card className="border-0 shadow-lg bg-white">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <div className="bg-[#F1C40F] p-3 rounded-full">
-              <Plus className="w-5 h-5 text-[#3A3A3A]" />
-            </div>
-            {getCategoryTitle()}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="nom" className="text-sm font-medium">
-                  Nom <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="nom"
-                  value={nom}
-                  onChange={(e) => setNom(e.target.value)}
-                  placeholder="Nom du produit"
-                  required
-                />
-              </div>
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="w-5 h-5" />
+              Modifier l'article
+            </DialogTitle>
+          </DialogHeader>
 
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="nom" className="text-sm font-medium">
+                Nom <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="nom"
+                value={nom}
+                onChange={(e) => setNom(e.target.value)}
+                placeholder="Nom du produit"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="fournisseur" className="text-sm font-medium">
+                Fournisseur <span className="text-red-500">*</span>
+              </Label>
+              <Select value={fournisseur} onValueChange={setFournisseur} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un fournisseur" />
+                </SelectTrigger>
+                <SelectContent>
+                  {fournisseurs.map((f) => (
+                    <SelectItem key={f} value={f}>
+                      {f}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="prix" className="text-sm font-medium">
-                  Prix unitaire (€) <span className="text-red-500">*</span>
+                  Prix (€) <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="prix"
@@ -146,26 +162,6 @@ export function ProductForm({ category, onAdd }: ProductFormProps) {
                   placeholder="0.00"
                   required
                 />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="fournisseur" className="text-sm font-medium">
-                  Fournisseur <span className="text-red-500">*</span>
-                </Label>
-                <Select value={fournisseur} onValueChange={setFournisseur} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un fournisseur" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fournisseurs.map((f) => (
-                      <SelectItem key={f} value={f}>
-                        {f}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
 
               <div>
@@ -184,8 +180,8 @@ export function ProductForm({ category, onAdd }: ProductFormProps) {
               </div>
             </div>
 
-            {category === 'mousse' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {item.category === 'mousse' && (
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="epaisseur" className="text-sm font-medium">
                     Épaisseur
@@ -211,7 +207,7 @@ export function ProductForm({ category, onAdd }: ProductFormProps) {
               </div>
             )}
 
-            {category === 'bois' && (
+            {item.category === 'bois' && (
               <div>
                 <Label htmlFor="type" className="text-sm font-medium">
                   Type de manche
@@ -225,7 +221,7 @@ export function ProductForm({ category, onAdd }: ProductFormProps) {
               </div>
             )}
 
-            {category === 'autre' && (
+            {item.category === 'autre' && (
               <div>
                 <Label htmlFor="description" className="text-sm font-medium">
                   Description
@@ -239,18 +235,28 @@ export function ProductForm({ category, onAdd }: ProductFormProps) {
               </div>
             )}
 
-            <Button
-              type="submit"
-              className="w-full bg-[#F1C40F] hover:bg-[#F1C40F]/90 text-[#3A3A3A] font-medium"
-            >
-              <div className="bg-white p-1 rounded-full mr-2">
-                <Plus className="w-4 h-4 text-[#3A3A3A]" />
-              </div>
-              Ajouter à la commande
-            </Button>
+            <DialogFooter className="gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                disabled={isLoading}
+              >
+                <X className="w-4 h-4 mr-2" />
+                Annuler
+              </Button>
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="bg-[#F1C40F] hover:bg-[#F1C40F]/90 text-[#3A3A3A]"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {isLoading ? 'Sauvegarde...' : 'Sauvegarder'}
+              </Button>
+            </DialogFooter>
           </form>
-        </CardContent>
-      </Card>
+        </DialogContent>
+      </Dialog>
 
       {/* Error Dialog */}
       <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
