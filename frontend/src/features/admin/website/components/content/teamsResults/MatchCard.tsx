@@ -225,7 +225,8 @@ export function MatchCard({
       nom: `${player.prenom} ${player.nom}`,
       prenom: player.prenom || '',
       classement: player.classement || 'ZZ',
-      wo: "n" // Initialiser à "n" par défaut
+      wo: "n",
+      indexListeForce: player.indexListeForce || 0,
     };
 
     // Récupérer les joueurs existants en gérant les deux formats
@@ -568,6 +569,7 @@ function PlayerManagement({
             // Utiliser le classement du joueur en priorité, sinon chercher dans les membres
             const membre = membres.find((m) => m.id === player.id);
             const classement = player.classement || membre?.classement || 'N/A';
+            const playerIndex = player.indexListeForce || membre?.indexListeForce || 0;
 
             // S'assurer que wo est défini, par défaut "n"
             if (!player.wo) {
@@ -606,6 +608,12 @@ function PlayerManagement({
                       <Badge variant="destructive" className="ml-2 text-xs">WO</Badge>
                     }
                   </span>
+                  <Badge
+                    variant="outline"
+                    className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                  >
+                    Index: {playerIndex > 0 ? playerIndex : 'N/A'}
+                  </Badge>
                 </div>
                 <div className="flex items-center gap-2">
                   {showIndividualScores &&

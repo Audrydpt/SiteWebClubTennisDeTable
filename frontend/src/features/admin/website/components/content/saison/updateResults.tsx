@@ -68,10 +68,12 @@ export default function UpdateResults() {
             joueursDomicile: (match.joueur_dom || []).map((joueur) => ({
               ...joueur,
               prenom: joueur.prenom || '', // Ajout d'une valeur par défaut pour 'prenom'
+              indexListeForce: joueur.indexListeForce || 0, // Ajout d'une valeur par défaut pour 'indexListeForce'
             })),
             joueursExterieur: (match.joueur_ext || []).map((joueur) => ({
               ...joueur,
               prenom: joueur.prenom || '', // Ajout d'une valeur par défaut pour 'prenom'
+              indexListeForce: joueur.indexListeForce || 0, // Ajout d'une valeur par défaut pour 'indexListeForce'
             })),
           })),
         };
@@ -118,6 +120,7 @@ export default function UpdateResults() {
       nom: `${membre.prenom} ${membre.nom}`,
       prenom: membre.prenom || '',
       classement: membre.classement || 'ZZ',
+      indexListeForce: membre.indexListeForce || 0,
     };
 
     setSaison({

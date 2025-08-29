@@ -79,6 +79,7 @@ export interface Joueur {
   prenom: string;
   classement: string;
   wo?: string; // "y" pour forfait, "n" pour normal (ou undefined)
+  indexListeForce: number;
 }
 
 export interface Match {
@@ -160,6 +161,7 @@ export type Member = {
   email?: string;
   role?: string; // Optionnel pour les membres
   dateInscription?: string; // Optionnel pour les membres
+  indexListeForce: number; // Maintenant requis
 };
 
 export interface Mousse {

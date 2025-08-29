@@ -82,6 +82,7 @@ type User = {
   classement: string;
   role: 'joueur' | 'admin';
   dateInscription: string;
+  indexListeForce: number;
 };
 
 export default function AdminSettings() {
@@ -132,10 +133,11 @@ export default function AdminSettings() {
     classement: '',
     role: 'joueur',
     dateInscription: new Date().toISOString(),
+    indexListeForce: 0,
   });
 
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [editForm, setEditForm] = useState<Partial<User & { role?: string; dateInscription?: string }>>({});
+  const [editForm, setEditForm] = useState<Partial<User & { role?: string; dateInscription?: string; indexListeForce?: number }>>({});
 
   // Fetch users from API
   const fetchUsersFromApi = async () => {
@@ -269,6 +271,7 @@ export default function AdminSettings() {
         classement: newUser.classement,
         role: newUser.role || 'joueur',
         dateInscription: new Date().toISOString(),
+        indexListeForce: newUser.classement ? (newUser.indexListeForce || 0) : 0,
       };
 
       await createUserProfile(profil);
@@ -283,6 +286,7 @@ export default function AdminSettings() {
         classement: '',
         role: 'joueur',
         dateInscription: new Date().toISOString(),
+        indexListeForce: 0,
       });
       setShowCreateDialog(false);
     } catch (err: any) {
@@ -301,6 +305,7 @@ export default function AdminSettings() {
       const updated = {
         ...editingUser,
         ...editForm,
+        indexListeForce: editForm.classement ? (editForm.indexListeForce || 0) : 0,
       };
       await updateUserProfile(editingUser.id, updated);
       const updatedUsers = await fetchUsers();
@@ -603,13 +608,23 @@ export default function AdminSettings() {
                               <h3 className="font-semibold text-sm md:text-base truncate">
                                 {user.prenom} {user.nom}
                               </h3>
-                              {user.classement && (
-                                <Badge
-                                  className={`${getClassementColor(user.classement)} text-xs flex-shrink-0`}
-                                >
-                                  {user.classement}
-                                </Badge>
-                              )}
+                              <div className="flex gap-2 flex-wrap">
+                                {user.classement && (
+                                  <Badge
+                                    className={`${getClassementColor(user.classement)} text-xs flex-shrink-0`}
+                                  >
+                                    {user.classement}
+                                  </Badge>
+                                )}
+                                {user.classement && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs flex-shrink-0 bg-blue-50 text-blue-700 border-blue-200"
+                                  >
+                                    Index: {user.indexListeForce > 0 ? user.indexListeForce : 'N/A'}
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
 
                             <div className="space-y-1 mt-1">
@@ -781,6 +796,24 @@ export default function AdminSettings() {
                     />
                   </div>
                   <div>
+                    <Label>Index Liste Force</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={newUser.indexListeForce}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, indexListeForce: parseInt(e.target.value) || 0 })
+                      }
+                      disabled={!newUser.classement}
+                      placeholder={!newUser.classement ? "Sélectionnez d'abord un classement" : "0"}
+                    />
+                    {!newUser.classement && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Un classement est requis pour définir un index
+                      </p>
+                    )}
+                  </div>
+                  <div>
                     <Label>Rôle</Label>
                     <Select
                       value={newUser.role}
@@ -799,7 +832,7 @@ export default function AdminSettings() {
                   <div>
                     <Label>Date d'inscription</Label>
                     <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
-                      <span>Date d'inscription : {formatDateFR(newUser.dateInscription)}</span>
+                      <span>Date d'inscription : {formatDateFR(newUser.dateInscription)}</span>
                     </div>
                   </div>
                 </div>
@@ -878,6 +911,24 @@ export default function AdminSettings() {
                         setEditForm({ ...editForm, classement: e.target.value })
                       }
                     />
+                  </div>
+                  <div>
+                    <Label>Index Liste Force</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={editForm.indexListeForce || 0}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, indexListeForce: parseInt(e.target.value) || 0 })
+                      }
+                      disabled={!editForm.classement}
+                      placeholder={!editForm.classement ? "Sélectionnez d'abord un classement" : "0"}
+                    />
+                    {!editForm.classement && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Un classement est requis pour définir un index
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>Rôle</Label>

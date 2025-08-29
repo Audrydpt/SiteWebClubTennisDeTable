@@ -7,18 +7,30 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 import { fetchSaisonEnCours } from '@/services/api.ts';
-import { Joueur, Match } from '@/services/type.ts';
+import { Member, Match } from '@/services/type.ts'; // Utiliser Member au lieu de Joueur
 import supabase from '@/lib/supabaseClient.ts';
 
 export default function HomeLogged() {
-  const [member, setMember] = useState<Joueur | null>(null);
+  const [member, setMember] = useState<Member | null>(null); // Changer de Joueur à Member
   const [mesMatchs, setMesMatchs] = useState<Match[]>([]);
-  const [equipiers, setEquipiers] = useState<Joueur[]>([]);
+  const [equipiers, setEquipiers] = useState<Member[]>([]); // Changer de Joueur à Member pour la cohérence
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const getInitials = (nom: string, prenom: string) =>
-    `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
+  const getInitials = (nom: string, prenom: string) => {
+    // Si le prénom est vide ou si le nom contient déjà prénom + nom
+    if (!prenom || nom.includes(' ')) {
+      // Diviser le nom complet et prendre les premières lettres
+      const parts = nom.trim().split(' ');
+      if (parts.length >= 2) {
+        return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
+      }
+      return nom.substring(0, 2).toUpperCase();
+    }
+
+    // Cas normal : prénom et nom séparés
+    return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
+  };
 
   const formatDateFR = (dateString?: string) => {
     if (!dateString || dateString === 'jj-mm-aaaa') return 'Date à venir';
@@ -58,7 +70,7 @@ export default function HomeLogged() {
         const res = await fetch(
           `${import.meta.env.VITE_API_URL}/membres?supabase_uid=${user.id}`
         );
-        const users: Joueur[] = await res.json();
+        const users: Member[] = await res.json(); // Changer de Joueur à Member
         setMember(users[0] || null);
       } catch (err) {
         setError('Erreur de chargement des données.');
@@ -93,12 +105,36 @@ export default function HomeLogged() {
           ...(prochainMatch.joueur_dom || []),
           ...(prochainMatch.joueur_ext || []),
         ].filter((j) => j.id !== member.id);
-        setEquipiers(equipiersMatch);
+        // Convertir les joueurs en membres pour la cohérence de type
+        const equipiersMembres = equipiersMatch.map(
+          (joueur) =>
+            ({
+              ...joueur,
+              supabase_uid: '', // Valeur par défaut
+              telephone: '', // Valeur par défaut
+              email: '', // Valeur par défaut
+            }) as Member
+        );
+        setEquipiers(equipiersMembres);
       }
     };
 
     loadData();
   }, [member]);
+
+  // Fonction pour récupérer l'index d'un joueur depuis les données membres
+  const getPlayerIndex = (playerId: string): number => {
+    // D'abord chercher dans les membres (données complètes)
+    try {
+      const response = fetch(
+        `${import.meta.env.VITE_API_URL}/membres?id=${playerId}`
+      );
+      // Pour l'instant, retourner 0 en attendant la réponse async
+      return 0;
+    } catch {
+      return 0;
+    }
+  };
 
   if (loading)
     return (
@@ -118,7 +154,15 @@ export default function HomeLogged() {
             <h1 className="text-2xl font-bold">
               {member.prenom} {member.nom}
             </h1>
-            <p className="opacity-90">Classement: {member.classement}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="opacity-90">Classement: {member.classement}</p>
+              {member.classement && (
+                <span className="text-sm bg-white/20 px-2 py-1 rounded">
+                  Index:{' '}
+                  {member.indexListeForce > 0 ? member.indexListeForce : 'N/A'}
+                </span>
+              )}
+            </div>
           </div>
           <div className="text-right">
             <p className="text-sm opacity-90">Score concours</p>
@@ -216,7 +260,11 @@ export default function HomeLogged() {
                       <div className="space-y-3">
                         {joueurs.map((e) => {
                           const isMe = e.id === member.id;
-                          const isWo = e.wo === 'y'; // Changement ici: utiliser "y" au lieu de true
+                          const isWo = e.wo === 'y';
+
+                          // Récupérer l'index depuis les données du joueur ou par recherche
+                          const playerIndex = e.indexListeForce || 0;
+
                           return (
                             <div
                               key={`${match.id}-${e.id}`}
@@ -251,9 +299,21 @@ export default function HomeLogged() {
                                     </Badge>
                                   )}
                                 </div>
-                                <p className="text-sm text-gray-600">
-                                  {e.classement}
-                                </p>
+                                <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    {e.classement}
+                                  </Badge>
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                                  >
+                                    Index:{' '}
+                                    {playerIndex > 0 ? playerIndex : 'N/A'}
+                                  </Badge>
+                                </div>
                               </div>
                             </div>
                           );
@@ -272,7 +332,11 @@ export default function HomeLogged() {
                   .sort((a, b) => a.classement.localeCompare(b.classement))
                   .map((e) => {
                     const isMe = e.id === member.id;
-                    const isWo = e.wo === 'y'; // Changement ici: utiliser "y" au lieu de true
+                    const isWo = e.wo === 'y';
+
+                    // Récupérer l'index depuis les données du joueur
+                    const playerIndex = e.indexListeForce || 0;
+
                     return (
                       <div
                         key={`${mesMatchs[0].id}-${e.id}`}
@@ -307,9 +371,17 @@ export default function HomeLogged() {
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-gray-600">
-                            {e.classement}
-                          </p>
+                          <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                            <Badge variant="secondary" className="text-xs">
+                              {e.classement}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                            >
+                              Index: {playerIndex > 0 ? playerIndex : 'N/A'}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
                     );

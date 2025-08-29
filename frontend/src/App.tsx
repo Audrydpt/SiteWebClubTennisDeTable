@@ -20,6 +20,7 @@ import Credentials from '@/features/public/comps/Credentials.tsx';
 import CommandePage from '@/features/public/comps/CommandeForm.tsx';
 import Stats from '@/features/public/comps/Stats.tsx';
 import Footer from './layouts/footer.tsx';
+import MembresListing from '@/features/public/comps/MembresListing.tsx';
 
 export default function App() {
   return (
@@ -47,10 +48,6 @@ export default function App() {
             <Route path="/evenements/galerie" element={<Galery />} />
             <Route path="/evenements/calendrier" element={<CalendarEvent />} />
             <Route path="/contact" element={<Contact />} />
-
-            {/* Route pour la page d'accueil des membres */}
-
-            {/* Route pour la page 404 */}
 
             {/* Routes membres protégées */}
             <Route
@@ -82,6 +79,14 @@ export default function App() {
               element={
                 <MemberRoute>
                   <CommandePage />
+                </MemberRoute>
+              }
+            />
+            <Route
+              path="/espace-membre/listing"
+              element={
+                <MemberRoute>
+                  <MembresListing />
                 </MemberRoute>
               }
             />

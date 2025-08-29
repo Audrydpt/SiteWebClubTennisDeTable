@@ -133,7 +133,8 @@ export function SelectionsManager({
       nom: `${membre.prenom} ${membre.nom}`,
       prenom: membre.prenom || '',
       classement: membre.classement || 'ZZ',
-      wo: "n" // Initialiser à "n" par défaut
+      wo: "n", // Initialiser à "n" par défaut
+      indexListeForce: membre.indexListeForce || 0,
     };
 
     setMatchsWithPlayers((prev) =>
