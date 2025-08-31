@@ -18,6 +18,32 @@ const getClassementColor = (classement: string) => {
 const getInitials = (nom: string, prenom: string) =>
   `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
 
+const sortByClassement = (membres: Member[]) => {
+  return [...membres].sort((a, b) => {
+    // Si l'un des deux n'a pas de classement, le mettre à la fin
+    if (!a.classement && !b.classement) return 0;
+    if (!a.classement) return 1;
+    if (!b.classement) return -1;
+
+    // Extraire la lettre et le nombre du classement
+    const getClassementParts = (classement: string) => {
+      const match = classement.match(/^([A-Z])(\d+)$/);
+      return match ? { letter: match[1], number: parseInt(match[2]) } : { letter: 'Z', number: 999 };
+    };
+
+    const partsA = getClassementParts(a.classement);
+    const partsB = getClassementParts(b.classement);
+
+    // Comparer d'abord par lettre
+    if (partsA.letter !== partsB.letter) {
+      return partsA.letter.localeCompare(partsB.letter);
+    }
+
+    // Puis par nombre
+    return partsA.number - partsB.number;
+  });
+};
+
 export default function MembresListing() {
   const [membres, setMembres] = useState<Member[]>([]);
   const [filteredMembres, setFilteredMembres] = useState<Member[]>([]);
@@ -28,8 +54,9 @@ export default function MembresListing() {
     const loadMembres = async () => {
       try {
         const data = await fetchUsers();
-        setMembres(data);
-        setFilteredMembres(data);
+        const sortedData = sortByClassement(data);
+        setMembres(sortedData);
+        setFilteredMembres(sortedData);
       } catch (error) {
         console.error('Erreur lors du chargement des membres:', error);
       } finally {
@@ -42,7 +69,7 @@ export default function MembresListing() {
 
   useEffect(() => {
     if (!searchTerm) {
-      setFilteredMembres(membres);
+      setFilteredMembres(sortByClassement(membres));
       return;
     }
 
@@ -55,7 +82,7 @@ export default function MembresListing() {
       );
     });
 
-    setFilteredMembres(filtered);
+    setFilteredMembres(sortByClassement(filtered));
   }, [searchTerm, membres]);
 
   if (loading) {
