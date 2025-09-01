@@ -265,7 +265,20 @@ export default function EquipesPage() {
                     <Users className="h-8 w-8" />
                   </div>
                   <div className="text-4xl font-bold mb-2">
-                    {saison.series.length}
+                    {(() => {
+                      let totalEquipes = 0;
+                      saison.series.forEach((serie) => {
+                        const classement = calculerClassement(
+                          serie,
+                          saison.calendrier
+                        ) as ClassementEntry[];
+                        const clubTeams = classement.filter((equipe) =>
+                          equipe.nom.includes(nomClub)
+                        );
+                        totalEquipes += clubTeams.length;
+                      });
+                      return totalEquipes;
+                    })()}
                   </div>
                   <div className="text-lg font-semibold">Équipes engagées</div>
                   <div className="text-sm opacity-80 mt-2">En championnat</div>
@@ -278,18 +291,21 @@ export default function EquipesPage() {
                     <Trophy className="h-8 w-8 text-[#F1C40F]" />
                   </div>
                   <div className="text-4xl font-bold mb-2 text-[#F1C40F]">
-                    {
-                      saison.series.filter((serie) => {
+                    {(() => {
+                      let equipesAuPodium = 0;
+                      saison.series.forEach((serie) => {
                         const classement = calculerClassement(
                           serie,
                           saison.calendrier
                         ) as ClassementEntry[];
-                        const clubTeam = classement.find((equipe) =>
-                          equipe.nom.includes(nomClub)
+                        const clubTeams = classement.filter(
+                          (equipe) =>
+                            equipe.nom.includes(nomClub) && equipe.position <= 3
                         );
-                        return clubTeam && clubTeam.position <= 3;
-                      }).length
-                    }
+                        equipesAuPodium += clubTeams.length;
+                      });
+                      return equipesAuPodium;
+                    })()}
                   </div>
                   <div className="text-lg font-semibold">Sur le podium</div>
                   <div className="text-sm opacity-80 mt-2">
@@ -311,10 +327,12 @@ export default function EquipesPage() {
                           serie,
                           saison.calendrier
                         ) as ClassementEntry[];
-                        const clubTeam = classement.find((equipe) =>
+                        const clubTeams = classement.filter((equipe) =>
                           equipe.nom.includes(nomClub)
                         );
-                        if (clubTeam) totalPoints += clubTeam.points;
+                        clubTeams.forEach((equipe) => {
+                          totalPoints += equipe.points;
+                        });
                       });
                       return totalPoints;
                     })()}

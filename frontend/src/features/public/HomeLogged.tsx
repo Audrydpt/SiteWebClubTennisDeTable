@@ -37,9 +37,9 @@ import {
 import supabase from '@/lib/supabaseClient.ts';
 
 export default function HomeLogged() {
-  const [member, setMember] = useState<Member | null>(null); // Changer de Joueur à Member
+  const [member, setMember] = useState<Member | null>(null);
   const [mesMatchs, setMesMatchs] = useState<Match[]>([]);
-  const [equipiers, setEquipiers] = useState<Member[]>([]); // Changer de Joueur à Member pour la cohérence
+  const [equipiers, setEquipiers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showClubInfoModal, setShowClubInfoModal] = useState(false);
@@ -48,6 +48,7 @@ export default function HomeLogged() {
     infosPersonnalisees?: InfosPersonnalisees;
     clubName: string;
   } | null>(null);
+  const [infosPersonnalisees, setInfosPersonnalisees] = useState<InfosPersonnalisees[]>([]);
 
   const getInitials = (nom: string, prenom: string) => {
     // Si le prénom est vide ou si le nom contient déjà prénom + nom
@@ -78,6 +79,23 @@ export default function HomeLogged() {
       return `${day}/${month}/${year}`;
     } catch {
       return 'Date à venir';
+    }
+  };
+
+  // Fonction pour formater la date en version courte pour les onglets
+  const formatDateCourte = (dateString?: string) => {
+    if (!dateString || dateString === 'jj-mm-aaaa') return 'À venir';
+
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'À venir';
+
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+
+      return `${day}/${month}`;
+    } catch {
+      return 'À venir';
     }
   };
 
@@ -130,6 +148,11 @@ export default function HomeLogged() {
       });
 
       setMesMatchs(matchs);
+
+      // Charger les infos personnalisées
+      if (saison.infosPersonnalisees) {
+        setInfosPersonnalisees(saison.infosPersonnalisees);
+      }
 
       // MODIFICATION: Récupérer TOUS les équipiers de TOUS les matchs
       if (matchs.length > 0) {
@@ -227,6 +250,13 @@ export default function HomeLogged() {
     }
   };
 
+  // Fonction pour vérifier s'il y a des infos exceptionnelles pour un match
+  const hasExceptionalInfo = (match: Match): boolean => {
+    return infosPersonnalisees.some(
+      (info: { matchId: string }) => info.matchId === match.id
+    );
+  };
+
   if (loading)
     return (
       <div className="flex items-center justify-center">
@@ -273,50 +303,70 @@ export default function HomeLogged() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mesMatchs.map((match) => (
-                <div
-                  key={match.id}
-                  className="p-4 border border-[#E0E0E0] rounded-lg bg-[#F9F9F9]"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {match.domicile.includes('CTT Frameries') ? (
-                        <>
-                          <Badge variant="secondary">Domicile</Badge>
-                          <span className="font-semibold">CTT Frameries</span>
-                          <span>vs</span>
-                          <span>{match.exterieur}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Badge variant="outline">Extérieur</Badge>
-                          <span>{match.domicile}</span>
-                          <span>vs</span>
-                          <span className="font-semibold">CTT Frameries</span>
-                        </>
+              {mesMatchs.map((match) => {
+                const isHomeMatch = match.domicile.includes('CTT Frameries');
+                const equipeFrameries = isHomeMatch
+                  ? match.domicile
+                  : match.exterieur;
+                const adversaire = isHomeMatch
+                  ? match.exterieur
+                  : match.domicile;
+
+                return (
+                  <div
+                    key={match.id}
+                    className="p-4 border border-[#E0E0E0] rounded-lg bg-[#F9F9F9]"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {isHomeMatch ? (
+                          <>
+                            <Badge variant="secondary">Domicile</Badge>
+                            <span className="font-semibold">
+                              {equipeFrameries}
+                            </span>
+                            <span>vs</span>
+                            <span>{adversaire}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Badge variant="outline">Extérieur</Badge>
+                            <span>{match.domicile}</span>
+                            <span>vs</span>
+                            <span className="font-semibold">
+                              {equipeFrameries}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {formatDateFR(match.date)}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <MapPin className="h-4 w-4" />
+                        <span>{match.domicile}</span>
+                      </div>
+                      {(!isHomeMatch || hasExceptionalInfo(match)) && (
+                        <Button
+                          variant={hasExceptionalInfo(match) ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleShowClubInfo(match)}
+                          className={`text-xs ${
+                            hasExceptionalInfo(match)
+                              ? "bg-orange-500 hover:bg-orange-600 text-white animate-pulse border-orange-400 shadow-lg"
+                              : ""
+                          }`}
+                        >
+                          <Info className="h-3 w-3 mr-1" />
+                          {hasExceptionalInfo(match) ? "⚠️ Infos importantes" : "Infos club"}
+                        </Button>
                       )}
                     </div>
-                    <div className="text-sm text-gray-600">
-                      {formatDateFR(match.date)}
-                    </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <MapPin className="h-4 w-4" />
-                      <span>{match.domicile}</span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleShowClubInfo(match)}
-                      className="text-xs"
-                    >
-                      <Info className="h-3 w-3 mr-1" />
-                      Infos club
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
 
               {mesMatchs.length === 0 && (
                 <div className="text-gray-500 text-center p-4">
@@ -338,12 +388,27 @@ export default function HomeLogged() {
           <CardContent>
             {mesMatchs.length > 1 ? (
               <Tabs defaultValue={mesMatchs[0].id}>
-                <TabsList>
-                  {mesMatchs.map((match) => (
-                    <TabsTrigger key={match.id} value={match.id}>
-                      {formatDateFR(match.date)}
-                    </TabsTrigger>
-                  ))}
+                <TabsList className="grid w-full grid-cols-2 h-8 mb-3">
+                  {mesMatchs.map((match) => {
+                    const isHomeMatch =
+                      match.domicile.includes('CTT Frameries');
+                    const equipeFrameries = isHomeMatch
+                      ? match.domicile
+                      : match.exterieur;
+                    const adversaire = isHomeMatch
+                      ? match.exterieur
+                      : match.domicile;
+
+                    return (
+                      <TabsTrigger
+                        key={match.id}
+                        value={match.id}
+                        className="text-xs py-1 px-2 h-auto"
+                      >
+                        vs {adversaire} - {formatDateCourte(match.date)}
+                      </TabsTrigger>
+                    );
+                  })}
                 </TabsList>
                 {mesMatchs.map((match) => {
                   const joueurs = [
@@ -352,16 +417,12 @@ export default function HomeLogged() {
                   ].sort((a, b) => a.classement.localeCompare(b.classement));
 
                   return (
-                    <TabsContent key={match.id} value={match.id}>
-                      <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-sm font-medium text-blue-800">
-                          {match.domicile.includes('CTT Frameries') ? match.domicile : match.exterieur}
-                        </p>
-                        <p className="text-xs text-blue-600">
-                          vs {match.domicile.includes('CTT Frameries') ? match.exterieur : match.domicile}
-                        </p>
-                      </div>
-                      <div className="space-y-3">
+                    <TabsContent
+                      key={match.id}
+                      value={match.id}
+                      className="mt-2"
+                    >
+                      <div className="space-y-2">
                         {joueurs.map((e) => {
                           const isMe = e.id === member.id;
                           const isWo = e.wo === 'y';
@@ -372,7 +433,7 @@ export default function HomeLogged() {
                           return (
                             <div
                               key={`${match.id}-${e.id}`}
-                              className={`flex items-center space-x-3 p-3 rounded-lg ${
+                              className={`flex items-center space-x-2 p-2 rounded-lg ${
                                 isMe
                                   ? 'bg-[#F1C40F]'
                                   : isWo
@@ -380,15 +441,15 @@ export default function HomeLogged() {
                                     : 'bg-[#FFF8DC]'
                               }`}
                             >
-                              <Avatar>
-                                <AvatarFallback>
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="text-xs">
                                   {getInitials(e.nom, e.prenom || '')}
                                 </AvatarFallback>
                               </Avatar>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1">
                                   <p
-                                    className={`font-semibold ${
+                                    className={`font-semibold text-sm truncate ${
                                       isMe ? 'underline font-bold' : ''
                                     } ${isWo ? 'line-through text-red-700' : ''}`}
                                   >
@@ -397,25 +458,24 @@ export default function HomeLogged() {
                                   {isWo && (
                                     <Badge
                                       variant="destructive"
-                                      className="text-xs flex items-center"
+                                      className="text-xs flex items-center ml-1"
                                     >
-                                      <Ban className="mr-1 h-3 w-3" /> WO
+                                      <Ban className="mr-1 h-2 w-2" /> WO
                                     </Badge>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                                <div className="flex items-center gap-1 mt-1">
                                   <Badge
                                     variant="secondary"
-                                    className="text-xs"
+                                    className="text-xs px-1 py-0"
                                   >
                                     {e.classement}
                                   </Badge>
                                   <Badge
                                     variant="outline"
-                                    className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                                    className="text-xs px-1 py-0 bg-blue-50 text-blue-700 border-blue-200"
                                   >
-                                    Index:{' '}
-                                    {playerIndex > 0 ? playerIndex : 'N/A'}
+                                    Idx: {playerIndex > 0 ? playerIndex : 'N/A'}
                                   </Badge>
                                 </div>
                               </div>
@@ -429,14 +489,6 @@ export default function HomeLogged() {
               </Tabs>
             ) : mesMatchs.length === 1 ? (
               <div>
-                <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm font-medium text-blue-800">
-                    {mesMatchs[0].domicile.includes('CTT Frameries') ? mesMatchs[0].domicile : mesMatchs[0].exterieur}
-                  </p>
-                  <p className="text-xs text-blue-600">
-                    vs {mesMatchs[0].domicile.includes('CTT Frameries') ? mesMatchs[0].exterieur : mesMatchs[0].domicile}
-                  </p>
-                </div>
                 <div className="space-y-3">
                   {[
                     ...(mesMatchs[0].joueur_dom || []),

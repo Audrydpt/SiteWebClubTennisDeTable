@@ -898,8 +898,7 @@ export default function UpdateSaison() {
                         Annuler
                       </Button>
                       <Button onClick={mettreAJourInfosClub}>
-                        <Save className="h-4 w-4 mr-2" />
-                        Sauvegarder les informations
+                        Suivant
                       </Button>
                     </div>
                   </CardContent>
@@ -923,15 +922,6 @@ export default function UpdateSaison() {
                                 {club.localite && `${club.localite} • `}
                                 {club.salle}
                               </p>
-                              <div className="mt-2 flex flex-wrap gap-1">
-                                {getClubsAdversesUniques()
-                                  .find(c => c.nom === club.nom)
-                                  ?.equipes.map((equipe, index) => (
-                                    <span key={index} className="px-1 py-0.5 bg-background rounded text-xs">
-                                      {equipe}
-                                    </span>
-                                  ))}
-                              </div>
                             </div>
                             <Button
                               variant="ghost"
@@ -1220,8 +1210,7 @@ export default function UpdateSaison() {
                         Annuler
                       </Button>
                       <Button onClick={mettreAJourInfosPersonnalisees}>
-                        <Save className="h-4 w-4 mr-2" />
-                        Sauvegarder
+                        Suivant
                       </Button>
                     </div>
                   </CardContent>

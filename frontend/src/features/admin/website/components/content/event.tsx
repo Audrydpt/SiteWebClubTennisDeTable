@@ -20,6 +20,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 export default function EventManager() {
   const [eventData, setEventData] = useState<any>(null);
@@ -27,6 +37,16 @@ export default function EventManager() {
   const [saving, setSaving] = useState(false);
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    id: "",
+    date: "",
+    title: "",
+    type: "",
+    description: "",
+    time: "",
+    location: "",
+  });
 
   useEffect(() => {
     loadData();
@@ -41,8 +61,15 @@ export default function EventManager() {
     }
   }, [eventData]);
 
-
-
+  // Initialiser le nouvel événement lorsque les types d'événements sont chargés
+  useEffect(() => {
+    if (eventData?.eventTypes && Object.keys(eventData.eventTypes).length > 0) {
+      setNewEvent(prev => ({
+        ...prev,
+        type: Object.keys(eventData.eventTypes)[0]
+      }));
+    }
+  }, [eventData?.eventTypes]);
 
   const loadData = async () => {
     try {
@@ -66,20 +93,42 @@ export default function EventManager() {
     }));
   };
 
-  const handleAddEvent = () => {
-    const newId = Date.now().toString();
-    const newEvent = {
-      id: newId,
+  const handleOpenAddEventDialog = () => {
+    // Réinitialiser le formulaire avec des valeurs par défaut
+    setNewEvent({
+      id: Date.now().toString(),
       date: "",
       title: "Nouvel événement",
       type: Object.keys(eventData.eventTypes)[0] || "tournoi",
       description: "",
       time: "",
       location: "",
-    };
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleAddEvent = () => {
+    // Ajouter l'événement aux données
     setEventData((prev: any) => ({
       ...prev,
       calendar: [...prev.calendar, newEvent],
+    }));
+
+    // Ouvrir la catégorie correspondante
+    setCollapsedCategories(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(newEvent.type);
+      return newSet;
+    });
+
+    // Fermer le dialogue
+    setIsDialogOpen(false);
+  };
+
+  const handleNewEventChange = (field: string, value: string) => {
+    setNewEvent(prev => ({
+      ...prev,
+      [field]: value
     }));
   };
 
@@ -259,7 +308,7 @@ export default function EventManager() {
             <TabsContent value="calendar" className="space-y-6">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Événements du calendrier</h3>
-                <Button onClick={handleAddEvent} variant="outline">
+                <Button onClick={handleOpenAddEventDialog} variant="outline">
                   <Plus className="w-4 h-4 mr-2" />
                   Ajouter un événement
                 </Button>
@@ -506,6 +555,101 @@ export default function EventManager() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Dialogue d'ajout d'événement */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Ajouter un nouvel événement</DialogTitle>
+            <DialogDescription>
+              Remplissez les informations pour créer un nouvel événement dans le calendrier.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Titre</Label>
+              <Input
+                id="title"
+                value={newEvent.title}
+                onChange={(e) => handleNewEventChange("title", e.target.value)}
+                placeholder="Titre de l'événement"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="type">Type d'événement</Label>
+              <Select
+                value={newEvent.type}
+                onValueChange={(val) => handleNewEventChange("type", val)}
+              >
+                <SelectTrigger id="type">
+                  <SelectValue placeholder="Sélectionner un type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {eventData?.eventTypes && Object.entries(eventData.eventTypes).map(
+                    ([key, type]: any) => (
+                      <SelectItem key={key} value={key}>
+                        {type.label}
+                      </SelectItem>
+                    )
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="date">Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={newEvent.date}
+                onChange={(e) => handleNewEventChange("date", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="time">Heure</Label>
+              <Input
+                id="time"
+                value={newEvent.time}
+                onChange={(e) => handleNewEventChange("time", e.target.value)}
+                placeholder="ex: 14h30"
+              />
+            </div>
+
+            <div className="col-span-2 space-y-2">
+              <Label htmlFor="location">Lieu</Label>
+              <Input
+                id="location"
+                value={newEvent.location}
+                onChange={(e) => handleNewEventChange("location", e.target.value)}
+                placeholder="Lieu de l'événement"
+              />
+            </div>
+
+            <div className="col-span-2 space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={newEvent.description}
+                onChange={(e) => handleNewEventChange("description", e.target.value)}
+                placeholder="Description détaillée de l'événement"
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Annuler</Button>
+            </DialogClose>
+            <Button onClick={handleAddEvent}>
+              Ajouter l'événement
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

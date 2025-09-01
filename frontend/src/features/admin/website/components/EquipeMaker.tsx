@@ -11,6 +11,12 @@ import {
   CheckCircle,
   AlertCircle,
   Info,
+  Share2,
+  PencilIcon,
+  Users,
+  User,
+  ClipboardCopy,
+  Check,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,10 +26,13 @@ import { MatchCard } from '@/features/admin/website/components/content/teamsResu
 import { SerieSelector } from '@/features/admin/website/components/content/teamsResults/SeriesSelector.tsx';
 import { WeekSelector } from '@/features/admin/website/components/content/teamsResults/WeeksSelector.tsx';
 import { Saison, Member, Match } from '@/services/type.ts';
-import { fetchSaisons, fetchUsers, updateSaisonResults } from '@/services/api';
+import { fetchSaisons, fetchUsers, updateSaisonResults, fetchInformations } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 export default function AdminResults() {
   const [allSaisons, setAllSaisons] = useState<Saison[]>([]);
@@ -41,6 +50,20 @@ export default function AdminResults() {
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [facebookShareMessage, setFacebookShareMessage] = useState('');
+  const [shareDestination, setShareDestination] = useState<'profile' | 'group'>('group');
+  const [groupId, setGroupId] = useState('1414350289649865'); // Valeur par défaut
+  const [isMessageCopied, setIsMessageCopied] = useState(false);
+  const [messageTemplate, setMessageTemplate] = useState('Bonjour @tout le monde\n\n📢 Les sélections pour la semaine {semaine} sont disponibles ! 🏓\n\nChaque membre peut consulter sa sélection personnelle et les compositions d\'équipes complètes dans son espace personnel sur notre site :\n🔗 https://cttframeries.com\n\nN\'oubliez pas de vérifier régulièrement vos sélections, et notez qu\'elles peuvent être mises à jour jusqu\'au jour de la rencontre.\n\nEn cas de problème ou si vous ne pouvez pas participer à une rencontre, merci de contacter rapidement un membre du comité.\n\nBonne semaine à tous et bon match ! 🏓');
+  const [messageTemplateVeteran, setMessageTemplateVeteran] = useState('Bonjour @tout le monde\n\n🏓 Sélections vétérans pour la semaine {semaine} ! 🏓\n\nChaque membre peut consulter sa sélection personnelle dans son espace personnel sur notre site :\n🔗 https://cttframeries.com\n\nN\'hésitez pas à vérifier régulièrement vos sélections.\n\nEn cas de problème ou d\'indisponibilité, contactez rapidement un membre du comité.\n\nBonne semaine et bon jeu ! 🏓');
+  const [selectedMessageType, setSelectedMessageType] = useState<'regular' | 'veteran'>('regular');
+
+  // Définir serieSelectionneeData au début du composant pour éviter l'erreur TS2448
+  const serieSelectionneeData = useMemo(() => {
+    if (!saison || !serieSelectionnee) return null;
+    return saison.series.find((s) => s.id === serieSelectionnee);
+  }, [saison, serieSelectionnee]);
 
   // Référence pour la navigation entre les champs de score
   const scoreRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -449,9 +472,103 @@ export default function AdminResults() {
       }
 
       const nextMatchId = matchIds[nextIndex];
-      scoreRefs.current[nextMatchId]?.focus();
+      scoreRefs.current[nextMatchId?.toString()]?.focus();
     }
   }, [matchsSemaine]);
+
+  // Fonction pour déterminer si la série est vétéran (pour la détection automatique initiale)
+  const isVeteranSerie = useCallback((serie: any) => {
+    if (!serie) return false;
+    const nomSerie = serie.nom.toLowerCase();
+    return nomSerie.includes('vétéran') || nomSerie.includes('veteran');
+  }, []);
+
+  // Fonction pour générer le message de partage Facebook
+  const generateFacebookShareMessage = useCallback(() => {
+    // Utiliser le type de message sélectionné manuellement
+    const template = selectedMessageType === 'veteran' ? messageTemplateVeteran : messageTemplate;
+    // Remplacer la variable {semaine} par le numéro de semaine actuel
+    return template.replace(/{semaine}/g, semaineSelectionnee.toString());
+  }, [messageTemplate, messageTemplateVeteran, semaineSelectionnee, selectedMessageType]);
+
+  // Fonction pour ouvrir le dialogue de partage avec le message pré-rempli
+  const handleOpenShareDialog = useCallback(() => {
+    // Détecter automatiquement le type au moment de l'ouverture du dialogue
+    const autoDetectedType = isVeteranSerie(serieSelectionneeData) ? 'veteran' : 'regular';
+    setSelectedMessageType(autoDetectedType);
+
+    setFacebookShareMessage(generateFacebookShareMessage());
+    setIsMessageCopied(false);
+    setIsShareDialogOpen(true);
+  }, [generateFacebookShareMessage, isVeteranSerie, serieSelectionneeData]);
+
+  // Effet pour régénérer le message quand le type change
+  useEffect(() => {
+    if (isShareDialogOpen) {
+      setFacebookShareMessage(generateFacebookShareMessage());
+    }
+  }, [selectedMessageType, generateFacebookShareMessage, isShareDialogOpen]);
+
+  // Effet pour charger l'ID du groupe Facebook et les messages par défaut depuis les informations générales
+  useEffect(() => {
+    const loadFacebookConfig = async () => {
+      try {
+        const infosData = await fetchInformations();
+        if (infosData && infosData.length > 0) {
+          // Charger l'ID du groupe
+          if (infosData[0].facebookGroupePriveUrl) {
+            const url = infosData[0].facebookGroupePriveUrl;
+            const match = url.match(/groups\/(\d+)/);
+            if (match && match[1]) {
+              setGroupId(match[1]);
+              console.log('ID du groupe Facebook chargé:', match[1]);
+            }
+          }
+
+          // Charger le message par défaut régulier
+          if (infosData[0].facebookMessageDefaut) {
+            setMessageTemplate(infosData[0].facebookMessageDefaut);
+            console.log('Message par défaut Facebook chargé');
+          }
+
+          // Charger le message par défaut vétéran
+          if (infosData[0].facebookMessageVeteran) {
+            setMessageTemplateVeteran(infosData[0].facebookMessageVeteran);
+            console.log('Message vétéran Facebook chargé');
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement de la configuration Facebook:', error);
+      }
+    };
+
+    loadFacebookConfig();
+  }, []);
+
+  // Fonction pour copier le message et ouvrir Facebook
+  const handleCopyAndOpenFacebook = useCallback(() => {
+    // Copier le message dans le presse-papiers
+    navigator.clipboard.writeText(facebookShareMessage)
+      .then(() => {
+        setIsMessageCopied(true);
+
+        // Ouvrir Facebook dans un nouvel onglet avec l'ID du groupe dynamique
+        window.open(
+          `https://www.facebook.com/groups/${groupId}`,
+          '_blank'
+        );
+
+        // Fermer automatiquement le dialogue après 1 seconde
+        setTimeout(() => {
+          setIsShareDialogOpen(false);
+          // Réinitialiser l'état de copie après fermeture
+          setTimeout(() => setIsMessageCopied(false), 500);
+        }, 1000);
+      })
+      .catch(err => {
+        console.error('Erreur lors de la copie du message:', err);
+      });
+  }, [facebookShareMessage, groupId]);
 
   if (isLoading) {
     return (
@@ -485,11 +602,6 @@ export default function AdminResults() {
       </div>
     );
   }
-
-
-  const serieSelectionneeData = saison.series.find(
-    (s) => s.id === serieSelectionnee
-  );
 
   return (
     <TooltipProvider>
@@ -553,6 +665,26 @@ export default function AdminResults() {
                     )}
                     {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
                   </Button>
+
+                  <Button
+                    onClick={handleOpenShareDialog}
+                    disabled={!serieSelectionnee}
+                    variant="outline"
+                    className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="#1877F2"
+                      className="mr-2"
+                    >
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                    Publier
+                  </Button>
+
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -686,6 +818,115 @@ export default function AdminResults() {
               </CardContent>
             </Card>
           )}
+
+          {/* Dialogue de partage Facebook */}
+          <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Publier sur le groupe Facebook</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="flex items-center gap-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="#1877F2"
+                  >
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                  <p className="text-sm text-gray-600">
+                    Personnalisez votre message avant de le publier
+                  </p>
+                </div>
+
+                {/* Sélecteur de type de message */}
+                <div className="space-y-3">
+                  <Label>Type de message</Label>
+                  <div className="flex space-x-4">
+                    <Button
+                      variant={selectedMessageType === 'regular' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setSelectedMessageType('regular')}
+                      className="flex items-center"
+                    >
+                      <Target className="h-4 w-4 mr-2" />
+                      Équipes régulières
+                    </Button>
+                    <Button
+                      variant={selectedMessageType === 'veteran' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setSelectedMessageType('veteran')}
+                      className="flex items-center"
+                    >
+                      <Trophy className="h-4 w-4 mr-2" />
+                      Équipes vétérans
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="fb-message">Message à publier</Label>
+                  <Textarea
+                    id="fb-message"
+                    value={facebookShareMessage}
+                    onChange={(e) => setFacebookShareMessage(e.target.value)}
+                    rows={6}
+                    className="resize-none"
+                  />
+                </div>
+
+                <div className="rounded-md bg-blue-50 p-3">
+                  <div className="flex items-start">
+                    <Info className="h-5 w-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
+                    <div className="text-blue-700 text-sm">
+                      <p className="font-medium mb-1">Comment publier facilement :</p>
+                      <ol className="list-decimal pl-5 space-y-1">
+                        <li>Choisissez le type de message approprié</li>
+                        <li>Cliquez sur le bouton "Copier et ouvrir Facebook"</li>
+                        <li>Le message sera automatiquement copié</li>
+                        <li>Collez le message (Ctrl+V) dans la fenêtre de publication Facebook qui s'ouvre</li>
+                      </ol>
+                      <p className="mt-2 text-xs">
+                        Groupe configuré: ID {groupId}
+                      </p>
+                      <p className="mt-1 text-xs">
+                        Type de message: {selectedMessageType === 'veteran' ? 'Vétéran' : 'Équipes régulières'}
+                        {serieSelectionneeData && isVeteranSerie(serieSelectionneeData) && (
+                          <span className="text-orange-600"> (série vétéran détectée automatiquement)</span>
+                        )}
+                      </p>
+                      <p className="mt-1 text-xs text-green-600">
+                        💡 Le message commence par "Bonjour @tout le monde" pour notifier tous les membres du groupe
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter className="sm:justify-between">
+                <DialogClose asChild>
+                  <Button variant="secondary">Annuler</Button>
+                </DialogClose>
+                <Button
+                  onClick={handleCopyAndOpenFacebook}
+                  className="bg-[#1877F2] hover:bg-[#166FE5] text-white"
+                >
+                  {isMessageCopied ? (
+                    <>
+                      <Check className="h-4 w-4 mr-2" />
+                      Copié !
+                    </>
+                  ) : (
+                    <>
+                      <ClipboardCopy className="h-4 w-4 mr-2" />
+                      Copier et ouvrir Facebook
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </TooltipProvider>
