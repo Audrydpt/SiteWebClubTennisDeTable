@@ -1,7 +1,20 @@
 /* eslint-disable */
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Trash2, PlusCircle, Save, Loader2, Calendar, Info, Swords, X, ArrowLeft, Building, Edit } from 'lucide-react';
+import {
+  Trash2,
+  PlusCircle,
+  Save,
+  Loader2,
+  Calendar,
+  Info,
+  Swords,
+  X,
+  ArrowLeft,
+  Building,
+  Edit,
+  AlertTriangle,
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -9,6 +22,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
 import { fetchSaisons, updateSaison, fetchSaisonEnCours } from '@/services/api';
 import type { Saison, SaisonStatut, Match } from '@/services/type.ts';
 
@@ -36,6 +50,17 @@ export default function UpdateSaison() {
     telephone: '',
     email: '',
     site: '',
+  });
+
+  // États pour la gestion des infos personnalisées
+  const [matchSelectionne, setMatchSelectionne] = useState('');
+  const [infosPersonnalisees, setInfosPersonnalisees] = useState({
+    salle: '',
+    adresse: '',
+    telephone: '',
+    email: '',
+    horaire: '',
+    commentaire: '',
   });
 
   // Chargement initial des données
@@ -310,6 +335,138 @@ export default function UpdateSaison() {
     }
   };
 
+  // Nouvelle fonction pour mettre à jour les infos personnalisées d'un match
+  const mettreAJourInfosPersonnalisees = () => {
+    if (!saison || !matchSelectionne) return;
+
+    // Initialiser le tableau infosPersonnalisees s'il n'existe pas
+    const infosExistantes = saison.infosPersonnalisees || [];
+
+    // Vérifier si des infos existent déjà pour ce match
+    const infosExistante = infosExistantes.find(info => info.matchId === matchSelectionne);
+
+    // Trouver le match pour obtenir le nom du club adverse
+    const match = saison.calendrier.find(m => m.id === matchSelectionne);
+    if (!match) return;
+
+    const clubAdverse = match.domicile.includes('CTT Frameries')
+      ? extraireNomClub(match.exterieur)
+      : extraireNomClub(match.domicile);
+
+    let infosUpdated;
+    if (infosExistante) {
+      // Mettre à jour les infos existantes
+      infosUpdated = infosExistantes.map(info =>
+        info.matchId === matchSelectionne
+          ? {
+              ...info,
+              salle: infosPersonnalisees.salle,
+              adresse: infosPersonnalisees.adresse,
+              telephone: infosPersonnalisees.telephone,
+              email: infosPersonnalisees.email,
+              horaire: infosPersonnalisees.horaire,
+              commentaire: infosPersonnalisees.commentaire,
+              dateModification: new Date().toISOString(),
+            }
+          : info
+      );
+    } else {
+      // Ajouter de nouvelles infos
+      infosUpdated = [...infosExistantes, {
+        id: uuidv4(),
+        matchId: matchSelectionne,
+        clubAdverse,
+        salle: infosPersonnalisees.salle,
+        adresse: infosPersonnalisees.adresse,
+        telephone: infosPersonnalisees.telephone,
+        email: infosPersonnalisees.email,
+        horaire: infosPersonnalisees.horaire,
+        commentaire: infosPersonnalisees.commentaire,
+        dateCreation: new Date().toISOString(),
+        dateModification: new Date().toISOString(),
+      }];
+    }
+
+    setSaison({ ...saison, infosPersonnalisees: infosUpdated });
+
+    // Réinitialiser le formulaire
+    setInfosPersonnalisees({
+      salle: '',
+      adresse: '',
+      telephone: '',
+      email: '',
+      horaire: '',
+      commentaire: '',
+    });
+    setMatchSelectionne('');
+
+    alert('Informations personnalisées mises à jour avec succès !');
+  };
+
+  // Fonction pour charger les infos d'un match
+  const chargerInfosMatch = (matchId: string) => {
+    if (!saison) return;
+
+    const infos = saison.infosPersonnalisees?.find(info => info.matchId === matchId);
+    if (infos) {
+      setInfosPersonnalisees({
+        salle: infos.salle || '',
+        adresse: infos.adresse || '',
+        telephone: infos.telephone || '',
+        email: infos.email || '',
+        horaire: infos.horaire || '',
+        commentaire: infos.commentaire || '',
+      });
+    } else {
+      // Réinitialiser si pas d'infos existantes
+      setInfosPersonnalisees({
+        salle: '',
+        adresse: '',
+        telephone: '',
+        email: '',
+        horaire: '',
+        commentaire: '',
+      });
+    }
+  };
+
+  // Fonction pour supprimer les infos personnalisées d'un match
+  const supprimerInfosPersonnalisees = (matchId: string) => {
+    if (!saison || !saison.infosPersonnalisees) return;
+
+    const infosUpdated = saison.infosPersonnalisees.filter(info => info.matchId !== matchId);
+    setSaison({ ...saison, infosPersonnalisees: infosUpdated });
+
+    if (matchSelectionne === matchId) {
+      setMatchSelectionne('');
+      setInfosPersonnalisees({
+        salle: '',
+        adresse: '',
+        telephone: '',
+        email: '',
+        horaire: '',
+        commentaire: '',
+      });
+    }
+  };
+
+  // Obtenir tous les matchs de CTT Frameries
+  const getMatchsCTTFrameries = () => {
+    if (!saison) return [];
+
+    return saison.calendrier.filter(match =>
+      match.domicile.includes('CTT Frameries') || match.exterieur.includes('CTT Frameries')
+    ).sort((a, b) => {
+      // Trier par série puis par semaine
+      if (a.serieId !== b.serieId) {
+        const serieA = saison.series.find(s => s.id === a.serieId);
+        const serieB = saison.series.find(s => s.id === b.serieId);
+        return (serieA?.nom || '').localeCompare(serieB?.nom || '');
+      }
+      return a.semaine - b.semaine;
+    });
+  };
+
   // Écrans de chargement et sélection
   if (isLoading) {
     return (
@@ -388,7 +545,7 @@ export default function UpdateSaison() {
 
       {/* Onglets principaux */}
       <Tabs defaultValue="infos" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="infos" className="flex items-center gap-2">
             <Info className="h-4 w-4" />
             <span className="hidden sm:inline">Informations</span>
@@ -403,6 +560,11 @@ export default function UpdateSaison() {
             <Building className="h-4 w-4" />
             <span className="hidden sm:inline">Infos Clubs</span>
             <span className="sm:hidden">Clubs</span>
+          </TabsTrigger>
+          <TabsTrigger value="infos-personnalisees" className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            <span className="hidden sm:inline">Infos Exceptionnelles</span>
+            <span className="sm:hidden">Except.</span>
           </TabsTrigger>
           <TabsTrigger value="calendrier" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
@@ -911,6 +1073,225 @@ export default function UpdateSaison() {
               </Accordion>
             </div>
           )}
+        </TabsContent>
+
+        {/* Nouvel onglet Informations Exceptionnelles */}
+        <TabsContent value="infos-personnalisees" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informations Exceptionnelles par Match</CardTitle>
+              <CardDescription>
+                Ajoutez des informations spécifiques pour certains matchs (changement de salle, horaire spécial, etc.)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Sélection du match */}
+              <div className="space-y-2">
+                <Label>Sélectionner un match de CTT Frameries</Label>
+                <Select
+                  value={matchSelectionne}
+                  onValueChange={(value) => {
+                    setMatchSelectionne(value);
+                    chargerInfosMatch(value);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir un match" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getMatchsCTTFrameries().map((match) => {
+                      const serie = saison.series.find(s => s.id === match.serieId);
+                      const adversaire = match.domicile.includes('CTT Frameries') ? match.exterieur : match.domicile;
+                      const lieu = match.domicile.includes('CTT Frameries') ? 'Domicile' : 'Extérieur';
+                      const hasInfos = saison.infosPersonnalisees?.some(info => info.matchId === match.id);
+
+                      return (
+                        <SelectItem key={match.id} value={match.id}>
+                          <div className="flex items-center justify-between w-full">
+                            <span>
+                              {serie?.nom} - S{match.semaine} - {adversaire} ({lieu})
+                            </span>
+                            {hasInfos && (
+                              <Badge variant="secondary" className="ml-2 text-xs">
+                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                Infos
+                              </Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Formulaire d'informations exceptionnelles */}
+              {matchSelectionne && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">
+                      Informations exceptionnelles
+                      {(() => {
+                        const match = saison.calendrier.find(m => m.id === matchSelectionne);
+                        const adversaire = match
+                          ? (match.domicile.includes('CTT Frameries') ? match.exterieur : match.domicile)
+                          : '';
+                        return ` - ${adversaire}`;
+                      })()}
+                    </CardTitle>
+                    <CardDescription>
+                      Ces informations seront prioritaires sur les informations générales du club
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="infos-salle">Salle (si différente)</Label>
+                        <Input
+                          id="infos-salle"
+                          value={infosPersonnalisees.salle}
+                          onChange={(e) => setInfosPersonnalisees({ ...infosPersonnalisees, salle: e.target.value })}
+                          placeholder="Ex: Salle de gymnastique"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="infos-horaire">Horaire spécial</Label>
+                        <Input
+                          id="infos-horaire"
+                          value={infosPersonnalisees.horaire}
+                          onChange={(e) => setInfosPersonnalisees({ ...infosPersonnalisees, horaire: e.target.value })}
+                          placeholder="Ex: 19h30 au lieu de 20h"
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="infos-adresse">Adresse (si différente)</Label>
+                        <Input
+                          id="infos-adresse"
+                          value={infosPersonnalisees.adresse}
+                          onChange={(e) => setInfosPersonnalisees({ ...infosPersonnalisees, adresse: e.target.value })}
+                          placeholder="Ex: Rue temporaire 456, 7000 Mons"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="infos-telephone">Téléphone contact</Label>
+                        <Input
+                          id="infos-telephone"
+                          value={infosPersonnalisees.telephone}
+                          onChange={(e) => setInfosPersonnalisees({ ...infosPersonnalisees, telephone: e.target.value })}
+                          placeholder="Ex: +32 65 99 88 77"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="infos-email">Email contact</Label>
+                        <Input
+                          id="infos-email"
+                          type="email"
+                          value={infosPersonnalisees.email}
+                          onChange={(e) => setInfosPersonnalisees({ ...infosPersonnalisees, email: e.target.value })}
+                          placeholder="Ex: contact.special@club.be"
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="infos-commentaire">Commentaire / Remarque</Label>
+                        <Input
+                          id="infos-commentaire"
+                          value={infosPersonnalisees.commentaire}
+                          onChange={(e) => setInfosPersonnalisees({ ...infosPersonnalisees, commentaire: e.target.value })}
+                          placeholder="Ex: Travaux en cours, entrée par l'arrière"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setMatchSelectionne('');
+                          setInfosPersonnalisees({
+                            salle: '',
+                            adresse: '',
+                            telephone: '',
+                            email: '',
+                            horaire: '',
+                            commentaire: '',
+                          });
+                        }}
+                      >
+                        Annuler
+                      </Button>
+                      <Button onClick={mettreAJourInfosPersonnalisees}>
+                        <Save className="h-4 w-4 mr-2" />
+                        Sauvegarder
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Liste des matchs avec infos exceptionnelles */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Matchs avec informations exceptionnelles</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {saison.infosPersonnalisees && saison.infosPersonnalisees.length > 0 ? (
+                      saison.infosPersonnalisees.map((infos) => {
+                        const match = saison.calendrier.find(m => m.id === infos.matchId);
+                        const serie = match ? saison.series.find(s => s.id === match.serieId) : null;
+
+                        if (!match) return null;
+
+                        return (
+                          <div key={infos.id} className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-orange-800">
+                                  {serie?.nom} - Semaine {match.semaine}
+                                </h4>
+                                <p className="text-sm text-orange-700">
+                                  {match.domicile} vs {match.exterieur}
+                                </p>
+                                <div className="mt-2 text-xs text-orange-600">
+                                  {infos.salle && <div>Salle: {infos.salle}</div>}
+                                  {infos.horaire && <div>Horaire: {infos.horaire}</div>}
+                                  {infos.commentaire && <div>Remarque: {infos.commentaire}</div>}
+                                </div>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setMatchSelectionne(infos.matchId);
+                                    chargerInfosMatch(infos.matchId);
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => supprimerInfosPersonnalisees(infos.matchId)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="text-center text-muted-foreground py-8">
+                        Aucune information exceptionnelle configurée
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

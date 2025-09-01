@@ -139,11 +139,12 @@ export default function Palmares() {
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {/* Exactement 4 cartes par ligne pour les statistiques */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center max-w-6xl mx-auto">
             {stats.map((stat, index) => (
               <Card
                 key={index}
-                className={`shadow-2xl border-0 ${index % 2 === 0 ? 'bg-gradient-to-br from-[#F1C40F] to-yellow-400 text-[#3A3A3A]' : 'bg-gradient-to-br from-[#3A3A3A] to-gray-600 text-white'}`}
+                className={`shadow-2xl border-0 w-full max-w-xs ${index % 2 === 0 ? 'bg-gradient-to-br from-[#F1C40F] to-yellow-400 text-[#3A3A3A]' : 'bg-gradient-to-br from-[#3A3A3A] to-gray-600 text-white'}`}
               >
                 <CardContent className="p-8 text-center">
                   <div
@@ -177,13 +178,14 @@ export default function Palmares() {
               </p>
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-8">
+            {/* Maximum 3 cartes par ligne CENTRÉ */}
+            <div className="flex flex-wrap justify-center gap-8 max-w-5xl mx-auto">
               {clubAchievements.map((achievement, index) => {
                 const IconComponent = getIconForCategory(achievement.categorie);
                 return (
                   <Card
                     key={index}
-                    className="shadow-xl border-0 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
+                    className="shadow-xl border-0 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 w-full max-w-lg"
                   >
                     <CardContent className="p-8">
                       <div className="flex items-start gap-4 mb-4">
@@ -239,13 +241,14 @@ export default function Palmares() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          {/* Maximum 3 cartes par ligne CENTRÉ */}
+          <div className="flex flex-wrap justify-center gap-8 max-w-5xl mx-auto">
             {individualAchievements.map((player, index) => {
               const IconComponent = getIconForCategory(player.categorie);
               return (
                 <Card
                   key={index}
-                  className="shadow-xl border-0 hover:shadow-2xl transition-all duration-300"
+                  className="shadow-xl border-0 hover:shadow-2xl transition-all duration-300 w-full max-w-md"
                 >
                   <CardContent className="p-8">
                     <div className="flex items-start gap-4 mb-6">
@@ -296,7 +299,7 @@ export default function Palmares() {
               </h2>
             </div>
 
-            <Card className="shadow-2xl border-0 bg-gradient-to-r from-[#3A3A3A] to-gray-600 text-white">
+            <Card className="shadow-2xl border-0 bg-gradient-to-r from-[#3A3A3A] to-gray-600 text-white mb-12">
               <CardContent className="p-12">
                 <div className="text-center">
                   <div className="text-6xl mb-6">🏓</div>
@@ -310,11 +313,12 @@ export default function Palmares() {
               </CardContent>
             </Card>
 
-            <div className="grid md:grid-cols-3 gap-8 mt-12">
+            {/* Maximum 3 cartes par ligne CENTRÉ */}
+            <div className="flex flex-wrap justify-center gap-8 max-w-5xl mx-auto">
               {objectifs.map((objectif, index) => (
                 <Card
                   key={index}
-                  className="shadow-xl border-0 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
+                  className="shadow-xl border-0 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 w-full max-w-sm"
                 >
                   <CardContent className="p-8 text-center">
                     <div className="bg-[#F1C40F] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">

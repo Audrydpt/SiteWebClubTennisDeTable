@@ -118,6 +118,7 @@ export interface Saison {
   series: Serie[];
   calendrier: Match[];
   clubs?: ClubInfo[]; // Nouvelle propriété pour stocker les infos des clubs
+  infosPersonnalisees?: InfosPersonnalisees[]; // Nouvelle propriété
 }
 
 export interface ClassementEntry {
@@ -200,4 +201,18 @@ export interface Autre {
   description?: string;
   prix: number;
   quantity: number;
+}
+
+export interface InfosPersonnalisees {
+  id: string;
+  matchId: string;
+  clubAdverse: string;
+  salle?: string;
+  adresse?: string;
+  telephone?: string;
+  email?: string;
+  horaire?: string;
+  commentaire?: string;
+  dateCreation: string;
+  dateModification?: string;
 }

@@ -1,13 +1,39 @@
-/* eslint-disable @typescript-eslint/no-explicit-any,no-nested-ternary,@typescript-eslint/no-unused-vars,no-restricted-globals */
+/* eslint-disable */
 import React, { useEffect, useState } from 'react';
-import { Calendar, Users, Trophy, MapPin, Loader2, Ban } from 'lucide-react';
+import {
+  Calendar,
+  Users,
+  Trophy,
+  MapPin,
+  Loader2,
+  Ban,
+  Info,
+  Building,
+  Phone,
+  Mail,
+  Globe,
+  Clock,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 import { fetchSaisonEnCours } from '@/services/api.ts';
-import { Member, Match } from '@/services/type.ts'; // Utiliser Member au lieu de Joueur
+import {
+  Member,
+  Match,
+  ClubInfo,
+  InfosPersonnalisees,
+} from '@/services/type.ts';
 import supabase from '@/lib/supabaseClient.ts';
 
 export default function HomeLogged() {
@@ -16,6 +42,12 @@ export default function HomeLogged() {
   const [equipiers, setEquipiers] = useState<Member[]>([]); // Changer de Joueur à Member pour la cohérence
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showClubInfoModal, setShowClubInfoModal] = useState(false);
+  const [selectedClubInfo, setSelectedClubInfo] = useState<{
+    clubInfo?: ClubInfo;
+    infosPersonnalisees?: InfosPersonnalisees;
+    clubName: string;
+  } | null>(null);
 
   const getInitials = (nom: string, prenom: string) => {
     // Si le prénom est vide ou si le nom contient déjà prénom + nom
@@ -99,23 +131,32 @@ export default function HomeLogged() {
 
       setMesMatchs(matchs);
 
+      // MODIFICATION: Récupérer TOUS les équipiers de TOUS les matchs
       if (matchs.length > 0) {
-        const prochainMatch = matchs[0];
-        const equipiersMatch = [
-          ...(prochainMatch.joueur_dom || []),
-          ...(prochainMatch.joueur_ext || []),
-        ].filter((j) => j.id !== member.id);
-        // Convertir les joueurs en membres pour la cohérence de type
-        const equipiersMembres = equipiersMatch.map(
-          (joueur) =>
-            ({
-              ...joueur,
-              supabase_uid: '', // Valeur par défaut
-              telephone: '', // Valeur par défaut
-              email: '', // Valeur par défaut
-            }) as Member
-        );
-        setEquipiers(equipiersMembres);
+        const tousEquipiers = new Map<string, Member>();
+
+        matchs.forEach((match: { joueur_dom: any; joueur_ext: any }) => {
+          const equipiersMatch = [
+            ...(match.joueur_dom || []),
+            ...(match.joueur_ext || []),
+          ].filter((j) => j.id !== member.id);
+
+          // Ajouter chaque équipier unique à la Map
+          equipiersMatch.forEach((joueur) => {
+            if (!tousEquipiers.has(joueur.id)) {
+              const equipierMembre = {
+                ...joueur,
+                supabase_uid: '', // Valeur par défaut
+                telephone: '', // Valeur par défaut
+                email: '', // Valeur par défaut
+              } as Member;
+              tousEquipiers.set(joueur.id, equipierMembre);
+            }
+          });
+        });
+
+        // Convertir la Map en array
+        setEquipiers(Array.from(tousEquipiers.values()));
       }
     };
 
@@ -133,6 +174,56 @@ export default function HomeLogged() {
       return 0;
     } catch {
       return 0;
+    }
+  };
+
+  // Fonction pour extraire le nom du club à partir du nom d'équipe
+  const extraireNomClub = (nomEquipe: string): string =>
+    nomEquipe
+      .replace(/\s+[A-Z]$/, '')
+      .replace(/\s+\d+$/, '')
+      .replace(/\s+(Dame|Dames)$/, '')
+      .replace(/\s+(Vét\.|Veteran)$/, '')
+      .trim();
+
+  // Fonction pour obtenir les infos d'un club adversaire
+  const getClubInfo = async (match: Match) => {
+    try {
+      const saison = await fetchSaisonEnCours();
+      if (!saison) return null;
+
+      // Déterminer le nom du club adversaire
+      const clubAdversaire = match.domicile.includes('CTT Frameries')
+        ? extraireNomClub(match.exterieur)
+        : extraireNomClub(match.domicile);
+
+      // Chercher les infos générales du club
+      const clubInfo = saison.clubs?.find(
+        (club: { nom: string }) => club.nom === clubAdversaire
+      );
+
+      // Chercher les infos personnalisées pour ce match
+      const infosPersonnalisees = saison.infosPersonnalisees?.find(
+        (info: { matchId: string }) => info.matchId === match.id
+      );
+
+      return {
+        clubInfo,
+        infosPersonnalisees,
+        clubName: clubAdversaire,
+      };
+    } catch (error) {
+      console.error('Erreur lors de la récupération des infos club:', error);
+      return null;
+    }
+  };
+
+  // Gestionnaire pour afficher les infos du club
+  const handleShowClubInfo = async (match: Match) => {
+    const infos = await getClubInfo(match);
+    if (infos) {
+      setSelectedClubInfo(infos);
+      setShowClubInfoModal(true);
     }
   };
 
@@ -192,22 +283,16 @@ export default function HomeLogged() {
                       {match.domicile.includes('CTT Frameries') ? (
                         <>
                           <Badge variant="secondary">Domicile</Badge>
-                          <span className="font-semibold">
-                            {match.domicile}
-                          </span>
-                          <span className="font-semibold">vs</span>
-                          <span className="font-semibold">
-                            {match.exterieur}
-                          </span>
+                          <span className="font-semibold">CTT Frameries</span>
+                          <span>vs</span>
+                          <span>{match.exterieur}</span>
                         </>
                       ) : (
                         <>
                           <Badge variant="outline">Extérieur</Badge>
                           <span>{match.domicile}</span>
-                          <span className="font-semibold">vs</span>
-                          <span className="font-semibold">
-                            {match.exterieur}
-                          </span>
+                          <span>vs</span>
+                          <span className="font-semibold">CTT Frameries</span>
                         </>
                       )}
                     </div>
@@ -215,9 +300,20 @@ export default function HomeLogged() {
                       {formatDateFR(match.date)}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin className="h-4 w-4" />
-                    <span>{match.domicile}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <MapPin className="h-4 w-4" />
+                      <span>{match.domicile}</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleShowClubInfo(match)}
+                      className="text-xs"
+                    >
+                      <Info className="h-3 w-3 mr-1" />
+                      Infos club
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -257,6 +353,14 @@ export default function HomeLogged() {
 
                   return (
                     <TabsContent key={match.id} value={match.id}>
+                      <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm font-medium text-blue-800">
+                          {match.domicile.includes('CTT Frameries') ? match.domicile : match.exterieur}
+                        </p>
+                        <p className="text-xs text-blue-600">
+                          vs {match.domicile.includes('CTT Frameries') ? match.exterieur : match.domicile}
+                        </p>
+                      </div>
                       <div className="space-y-3">
                         {joueurs.map((e) => {
                           const isMe = e.id === member.id;
@@ -324,68 +428,78 @@ export default function HomeLogged() {
                 })}
               </Tabs>
             ) : mesMatchs.length === 1 ? (
-              <div className="space-y-3">
-                {[
-                  ...(mesMatchs[0].joueur_dom || []),
-                  ...(mesMatchs[0].joueur_ext || []),
-                ]
-                  .sort((a, b) => a.classement.localeCompare(b.classement))
-                  .map((e) => {
-                    const isMe = e.id === member.id;
-                    const isWo = e.wo === 'y';
+              <div>
+                <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm font-medium text-blue-800">
+                    {mesMatchs[0].domicile.includes('CTT Frameries') ? mesMatchs[0].domicile : mesMatchs[0].exterieur}
+                  </p>
+                  <p className="text-xs text-blue-600">
+                    vs {mesMatchs[0].domicile.includes('CTT Frameries') ? mesMatchs[0].exterieur : mesMatchs[0].domicile}
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {[
+                    ...(mesMatchs[0].joueur_dom || []),
+                    ...(mesMatchs[0].joueur_ext || []),
+                  ]
+                    .sort((a, b) => a.classement.localeCompare(b.classement))
+                    .map((e) => {
+                      const isMe = e.id === member.id;
+                      const isWo = e.wo === 'y';
 
-                    // Récupérer l'index depuis les données du joueur
-                    const playerIndex = e.indexListeForce || 0;
+                      // Récupérer l'index depuis les données du joueur
+                      const playerIndex = e.indexListeForce || 0;
 
-                    return (
-                      <div
-                        key={`${mesMatchs[0].id}-${e.id}`}
-                        className={`flex items-center space-x-3 p-3 rounded-lg ${
-                          isMe
-                            ? 'bg-[#F1C40F]'
-                            : isWo
-                              ? 'bg-red-50'
-                              : 'bg-[#FFF8DC]'
-                        }`}
-                      >
-                        <Avatar>
-                          <AvatarFallback>
-                            {getInitials(e.nom, e.prenom || '')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <p
-                              className={`font-semibold ${
-                                isMe ? 'underline font-bold' : ''
-                              } ${isWo ? 'line-through text-red-700' : ''}`}
-                            >
-                              {e.nom}
-                            </p>
-                            {isWo && (
-                              <Badge
-                                variant="destructive"
-                                className="text-xs flex items-center"
+                      return (
+                        <div
+                          key={`${mesMatchs[0].id}-${e.id}`}
+                          className={`flex items-center space-x-3 p-3 rounded-lg ${
+                            isMe
+                              ? 'bg-[#F1C40F]'
+                              : isWo
+                                ? 'bg-red-50'
+                                : 'bg-[#FFF8DC]'
+                          }`}
+                        >
+                          <Avatar>
+                            <AvatarFallback>
+                              {getInitials(e.nom, e.prenom || '')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p
+                                className={`font-semibold ${
+                                  isMe ? 'underline font-bold' : ''
+                                } ${isWo ? 'line-through text-red-700' : ''}`}
                               >
-                                <Ban className="mr-1 h-3 w-3" /> WO
+                                {e.nom}
+                              </p>
+                              {isWo && (
+                                <Badge
+                                  variant="destructive"
+                                  className="text-xs flex items-center"
+                                >
+                                  <Ban className="mr-1 h-3 w-3" /> WO
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                              <Badge variant="secondary" className="text-xs">
+                                {e.classement}
                               </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                            <Badge variant="secondary" className="text-xs">
-                              {e.classement}
-                            </Badge>
-                            <Badge
-                              variant="outline"
-                              className="text-xs bg-blue-50 text-blue-700 border-blue-200"
-                            >
-                              Index: {playerIndex > 0 ? playerIndex : 'N/A'}
-                            </Badge>
+                              <Badge
+                                variant="outline"
+                                className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                              >
+                                Index: {playerIndex > 0 ? playerIndex : 'N/A'}
+                              </Badge>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                </div>
               </div>
             ) : (
               <div className="text-gray-500 text-center p-4">
@@ -413,6 +527,163 @@ export default function HomeLogged() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal des informations du club */}
+      <Dialog open={showClubInfoModal} onOpenChange={setShowClubInfoModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building className="h-5 w-5" />
+              Informations - {selectedClubInfo?.clubName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Informations personnalisées (prioritaires) */}
+            {selectedClubInfo?.infosPersonnalisees && (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <h3 className="font-semibold text-yellow-800 mb-3 flex items-center gap-2">
+                  <Info className="h-4 w-4" />
+                  Informations exceptionnelles pour ce match
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  {selectedClubInfo.infosPersonnalisees.salle && (
+                    <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4 text-yellow-600" />
+                      <span>
+                        <strong>Salle :</strong>{' '}
+                        {selectedClubInfo.infosPersonnalisees.salle}
+                      </span>
+                    </div>
+                  )}
+                  {selectedClubInfo.infosPersonnalisees.adresse && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-yellow-600" />
+                      <span>
+                        <strong>Adresse :</strong>{' '}
+                        {selectedClubInfo.infosPersonnalisees.adresse}
+                      </span>
+                    </div>
+                  )}
+                  {selectedClubInfo.infosPersonnalisees.horaire && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-yellow-600" />
+                      <span>
+                        <strong>Horaire :</strong>{' '}
+                        {selectedClubInfo.infosPersonnalisees.horaire}
+                      </span>
+                    </div>
+                  )}
+                  {selectedClubInfo.infosPersonnalisees.telephone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-yellow-600" />
+                      <span>
+                        <strong>Tél :</strong>{' '}
+                        {selectedClubInfo.infosPersonnalisees.telephone}
+                      </span>
+                    </div>
+                  )}
+                  {selectedClubInfo.infosPersonnalisees.email && (
+                    <div className="flex items-center gap-2 md:col-span-2">
+                      <Mail className="h-4 w-4 text-yellow-600" />
+                      <span>
+                        <strong>Email :</strong>{' '}
+                        {selectedClubInfo.infosPersonnalisees.email}
+                      </span>
+                    </div>
+                  )}
+                  {selectedClubInfo.infosPersonnalisees.commentaire && (
+                    <div className="md:col-span-2">
+                      <p className="text-yellow-800">
+                        <strong>Remarque :</strong>{' '}
+                        {selectedClubInfo.infosPersonnalisees.commentaire}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Informations générales du club */}
+            {selectedClubInfo?.clubInfo ? (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-gray-800 border-b pb-2">
+                  Informations générales
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  {selectedClubInfo.clubInfo.localite && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-gray-500" />
+                      <span>
+                        <strong>Localité :</strong>{' '}
+                        {selectedClubInfo.clubInfo.localite}
+                      </span>
+                    </div>
+                  )}
+                  {selectedClubInfo.clubInfo.salle && (
+                    <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4 text-gray-500" />
+                      <span>
+                        <strong>Salle :</strong>{' '}
+                        {selectedClubInfo.clubInfo.salle}
+                      </span>
+                    </div>
+                  )}
+                  {selectedClubInfo.clubInfo.adresse && (
+                    <div className="flex items-center gap-2 md:col-span-2">
+                      <MapPin className="h-4 w-4 text-gray-500" />
+                      <span>
+                        <strong>Adresse :</strong>{' '}
+                        {selectedClubInfo.clubInfo.adresse}
+                      </span>
+                    </div>
+                  )}
+                  {selectedClubInfo.clubInfo.telephone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-gray-500" />
+                      <span>
+                        <strong>Téléphone :</strong>{' '}
+                        {selectedClubInfo.clubInfo.telephone}
+                      </span>
+                    </div>
+                  )}
+                  {selectedClubInfo.clubInfo.email && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-gray-500" />
+                      <span>
+                        <strong>Email :</strong>{' '}
+                        {selectedClubInfo.clubInfo.email}
+                      </span>
+                    </div>
+                  )}
+                  {selectedClubInfo.clubInfo.site && (
+                    <div className="flex items-center gap-2 md:col-span-2">
+                      <Globe className="h-4 w-4 text-gray-500" />
+                      <span>
+                        <strong>Site web :</strong>
+                        <a
+                          href={selectedClubInfo.clubInfo.site}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline ml-1"
+                        >
+                          {selectedClubInfo.clubInfo.site}
+                        </a>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              !selectedClubInfo?.infosPersonnalisees && (
+                <div className="text-center py-8 text-gray-500">
+                  <Building className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Aucune information disponible pour ce club</p>
+                </div>
+              )
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

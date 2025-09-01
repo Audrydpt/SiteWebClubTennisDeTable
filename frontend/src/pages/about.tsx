@@ -309,8 +309,9 @@ export default function About() {
               Notre communauté
             </h2>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#F1C40F] to-yellow-400 text-[#3A3A3A]">
+          {/* MODIFICATION: Grille responsive pour les statistiques */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 justify-items-center max-w-6xl mx-auto">
+            <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#F1C40F] to-yellow-400 text-[#3A3A3A] w-full max-w-xs">
               <CardContent className="p-8 text-center">
                 <div className="text-4xl font-bold mb-2">
                   {statsData?.membresActif || '50'}+
@@ -319,7 +320,7 @@ export default function About() {
                 <div className="text-sm opacity-80 mt-2">De tous âges</div>
               </CardContent>
             </Card>
-            <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#3A3A3A] to-gray-600 text-white">
+            <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#3A3A3A] to-gray-600 text-white w-full max-w-xs">
               <CardContent className="p-8 text-center">
                 <div className="text-4xl font-bold mb-2 text-[#F1C40F]">
                   {statsData?.tablesDispo || '8'}
@@ -330,7 +331,7 @@ export default function About() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#F1C40F] to-yellow-400 text-[#3A3A3A]">
+            <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#F1C40F] to-yellow-400 text-[#3A3A3A] w-full max-w-xs">
               <CardContent className="p-8 text-center">
                 <div className="text-4xl font-bold mb-2">
                   {statsData?.nbrEquipes || '13'}
@@ -339,7 +340,7 @@ export default function About() {
                 <div className="text-sm opacity-80 mt-2">En championnat</div>
               </CardContent>
             </Card>
-            <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#3A3A3A] to-gray-600 text-white">
+            <Card className="shadow-2xl border-0 bg-gradient-to-br from-[#3A3A3A] to-gray-600 text-white w-full max-w-xs">
               <CardContent className="p-8 text-center">
                 <div className="text-4xl font-bold mb-2 text-[#F1C40F]">
                   {statsData?.anciennete || '10'}+
@@ -464,33 +465,36 @@ export default function About() {
                 </p>
               </div>
 
-              {/* Afficher les raisons de l'évolution */}
+              {/* Afficher les raisons de l'évolution - CENTRÉ avec CSS Grid */}
               {(evolutionSection as any).raisons && (
-                <div className="grid lg:grid-cols-3 gap-8 mb-12">
-                  {(evolutionSection as any).raisons.map(
-                    (raison: any, index: number) => {
-                      const icons = [MapPin, Target, Sparkles];
-                      const IconComponent = icons[index % icons.length];
-                      return (
-                        <Card
-                          key={index}
-                          className="shadow-xl border-0 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 bg-white"
-                        >
-                          <CardContent className="p-8 text-center">
-                            <div className="bg-[#F1C40F] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-                              <IconComponent className="h-8 w-8 text-[#3A3A3A]" />
-                            </div>
-                            <h3 className="font-bold text-[#3A3A3A] mb-4 text-xl">
-                              {raison.title}
-                            </h3>
-                            <p className="text-gray-600 leading-relaxed">
-                              {raison.text}
-                            </p>
-                          </CardContent>
-                        </Card>
-                      );
-                    }
-                  )}
+                <div className="mb-12">
+                  {/* MODIFICATION: Grille responsive pour les raisons de l'évolution */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center max-w-6xl mx-auto">
+                    {(evolutionSection as any).raisons.map(
+                      (raison: any, index: number) => {
+                        const icons = [MapPin, Target, Sparkles];
+                        const IconComponent = icons[index % icons.length];
+                        return (
+                          <Card
+                            key={index}
+                            className="shadow-xl border-0 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 bg-white w-full max-w-sm"
+                          >
+                            <CardContent className="p-8 text-center">
+                              <div className="bg-[#F1C40F] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <IconComponent className="h-8 w-8 text-[#3A3A3A]" />
+                              </div>
+                              <h3 className="font-bold text-[#3A3A3A] mb-4 text-xl">
+                                {raison.title}
+                              </h3>
+                              <p className="text-gray-600 leading-relaxed">
+                                {raison.text}
+                              </p>
+                            </CardContent>
+                          </Card>
+                        );
+                      }
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -534,33 +538,35 @@ export default function About() {
             </div>
 
             {(historySection as any).events && (
-              <div className="grid lg:grid-cols-2 gap-12 items-stretch mb-20">
-                {(historySection as any).events.map(
-                  (event: any, index: number) => {
-                    const IconComponent = getIconComponent(event.icon);
-                    return (
-                      <div key={index} className="h-full">
-                        <Card className="shadow-2xl border-0 overflow-hidden h-full">
-                          <CardContent className="p-8 flex flex-col h-full">
-                            <div className="flex items-start gap-4 mb-6 flex-grow">
-                              <div className="bg-[#F1C40F] p-3 rounded-full flex-shrink-0">
-                                <IconComponent className="h-6 w-6 text-[#3A3A3A]" />
+              <div className="mb-20">
+                <div className="flex justify-center">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch max-w-4xl">
+                    {(historySection as any).events.map(
+                      (event: any, index: number) => {
+                        const IconComponent = getIconComponent(event.icon);
+                        return (
+                          <Card key={index} className="shadow-2xl border-0 overflow-hidden h-full w-full max-w-lg">
+                            <CardContent className="p-8 flex flex-col h-full">
+                              <div className="flex items-start gap-4 mb-6 flex-grow">
+                                <div className="bg-[#F1C40F] p-3 rounded-full flex-shrink-0">
+                                  <IconComponent className="h-6 w-6 text-[#3A3A3A]" />
+                                </div>
+                                <div className="flex flex-col flex-grow">
+                                  <h3 className="font-bold text-[#3A3A3A] mb-2 text-xl">
+                                    {event.title}
+                                  </h3>
+                                  <p className="text-gray-600 leading-relaxed flex-grow">
+                                    {event.text}
+                                  </p>
+                                </div>
                               </div>
-                              <div className="flex flex-col flex-grow">
-                                <h3 className="font-bold text-[#3A3A3A] mb-2 text-xl">
-                                  {event.title}
-                                </h3>
-                                <p className="text-gray-600 leading-relaxed flex-grow">
-                                  {event.text}
-                                </p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    );
-                  }
-                )}
+                            </CardContent>
+                          </Card>
+                        );
+                      }
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -585,30 +591,33 @@ export default function About() {
               </div>
 
               {(spiritSection as any).valeurs && (
-                <div className="grid lg:grid-cols-3 gap-8 mb-12">
-                  {(spiritSection as any).valeurs.map(
-                    (valeur: any, index: number) => {
-                      const IconComponent = getIconComponent(valeur.icon);
-                      return (
-                        <Card
-                          key={index}
-                          className="shadow-xl border-0 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
-                        >
-                          <CardContent className="p-8 text-center">
-                            <div className="bg-[#F1C40F] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-                              <IconComponent className="h-8 w-8 text-[#3A3A3A]" />
-                            </div>
-                            <h3 className="font-bold text-[#3A3A3A] mb-4 text-xl">
-                              {valeur.title}
-                            </h3>
-                            <p className="text-gray-600 leading-relaxed">
-                              {valeur.text}
-                            </p>
-                          </CardContent>
-                        </Card>
-                      );
-                    }
-                  )}
+                <div className="mb-12">
+                  {/* MODIFICATION: Grille responsive pour les valeurs */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center max-w-6xl mx-auto">
+                    {(spiritSection as any).valeurs.map(
+                      (valeur: any, index: number) => {
+                        const IconComponent = getIconComponent(valeur.icon);
+                        return (
+                          <Card
+                            key={index}
+                            className="shadow-xl border-0 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 w-full max-w-sm"
+                          >
+                            <CardContent className="p-8 text-center">
+                              <div className="bg-[#F1C40F] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <IconComponent className="h-8 w-8 text-[#3A3A3A]" />
+                              </div>
+                              <h3 className="font-bold text-[#3A3A3A] mb-4 text-xl">
+                                {valeur.title}
+                              </h3>
+                              <p className="text-gray-600 leading-relaxed">
+                                {valeur.text}
+                              </p>
+                            </CardContent>
+                          </Card>
+                        );
+                      }
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -630,11 +639,11 @@ export default function About() {
 
               {((spiritSection as any).momentsForts ||
                 (spiritSection as any).uniques) && (
-                <div className="grid md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 justify-items-center max-w-4xl mx-auto">
                   {(spiritSection as any).momentsForts && (
-                    <Card className="shadow-xl border-0">
+                    <Card className="shadow-xl border-0 w-full max-w-md">
                       <CardContent className="p-8">
-                        <h3 className="text-2xl font-bold text-[#3A3A3A] mb-4 flex items-center gap-3">
+                        <h3 className="text-2xl font-bold text-[#3A3A3A] mb-4 flex items-center gap-3 justify-center">
                           <Calendar className="h-6 w-6" />
                           Nos moments forts
                         </h3>
@@ -658,9 +667,9 @@ export default function About() {
                   )}
 
                   {(spiritSection as any).uniques && (
-                    <Card className="shadow-xl border-0">
+                    <Card className="shadow-xl border-0 w-full max-w-md">
                       <CardContent className="p-8">
-                        <h3 className="text-2xl font-bold text-[#3A3A3A] mb-4 flex items-center gap-3">
+                        <h3 className="text-2xl font-bold text-[#3A3A3A] mb-4 flex items-center gap-3 justify-center">
                           <Star className="h-6 w-6" />
                           Ce qui nous rend uniques
                         </h3>
@@ -689,55 +698,6 @@ export default function About() {
         </div>
       )}
 
-      {/* NOS VALEURS
-      {valuesSection && (
-        <div className="container mx-auto px-4 py-20">
-          <div className="max-w-6xl mx-auto mb-20">
-            <div className="text-center mb-16">
-              <div className="inline-block bg-[#F1C40F] text-[#3A3A3A] px-6 py-2 rounded-full font-semibold mb-6 text-sm uppercase tracking-wide">
-                ⭐ Nos Valeurs
-              </div>
-              <h2 className="text-4xl font-bold text-[#3A3A3A] mb-6">
-                {valuesSection.title}
-              </h2>
-              <p className="text-gray-600 text-xl max-w-3xl mx-auto">
-                {valuesSection.subtitle}
-              </p>
-            </div>
-
-            {(valuesSection as any).list && (
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {(valuesSection as any).list.map(
-                  (value: any, index: number) => {
-                    const IconComponent = getIconComponent(value.icon);
-                    return (
-                      <Card
-                        key={index}
-                        className="shadow-xl border-0 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
-                      >
-                        <CardContent className="p-6 text-center">
-                          <div className="bg-[#F1C40F] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <IconComponent className="h-8 w-8 text-[#3A3A3A]" />
-                          </div>
-                          <h3 className="font-bold text-[#3A3A3A] mb-3 text-lg">
-                            {value.title}
-                          </h3>
-                          <p className="text-gray-600 text-sm">{value.text}</p>
-                        </CardContent>
-                      </Card>
-                    );
-                  }
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      */}
-
-      {/* CHIFFRES CLÉS (DYNAMIQUE) */}
-
-
       {/* ÉQUIPE DIRIGEANTE */}
       {teamSection && (
         <div className="container mx-auto px-4 py-20">
@@ -755,14 +715,14 @@ export default function About() {
             </div>
 
             {(teamSection as any).membres && (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center max-w-6xl mx-auto">
                 {(teamSection as any).membres.map(
                   (member: any, index: number) => {
                     const IconComponent = getIconComponent(member.icon);
                     return (
                       <Card
                         key={index}
-                        className="shadow-xl border-0 hover:shadow-2xl transition-all duration-300"
+                        className="shadow-xl border-0 hover:shadow-2xl transition-all duration-300 w-full max-w-sm"
                       >
                         <CardContent className="p-8 text-center">
                           <div className="bg-[#F1C40F] w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -787,7 +747,6 @@ export default function About() {
           </div>
         </div>
       )}
-
 
 
       {/* FALLBACK - Si aucune section trouvée, afficher un contenu minimal */}
