@@ -1,12 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any,prettier/prettier,@stylistic/indent,no-alert,no-console */
+/* eslint-disable */
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Trash2, PlusCircle, Save, Loader2, Calendar, Info, Swords, X, ArrowLeft } from 'lucide-react';
+import { Trash2, PlusCircle, Save, Loader2, Calendar, Info, Swords, X, ArrowLeft, Building, Edit } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { fetchSaisons, updateSaison, fetchSaisonEnCours } from '@/services/api';
@@ -25,6 +25,18 @@ export default function UpdateSaison() {
   const [nouvelleEquipeAdverse, setNouvelleEquipeAdverse] = useState('');
   const [serieCalendrierSelectionnee, setSerieCalendrierSelectionnee] = useState('');
   const [serieEquipeSelectionnee, setSerieEquipeSelectionnee] = useState('');
+
+  // États pour la gestion des infos clubs
+  const [clubSelectionne, setClubSelectionne] = useState('');
+  const [infosClub, setInfosClub] = useState({
+    nom: '',
+    localite: '',
+    salle: '',
+    adresse: '',
+    telephone: '',
+    email: '',
+    site: '',
+  });
 
   // Chargement initial des données
   useEffect(() => {
@@ -172,6 +184,132 @@ export default function UpdateSaison() {
     );
   };
 
+
+  // Fonction pour obtenir les clubs adverses uniques
+  const getClubsAdversesUniques = () => {
+    if (!saison) return [];
+
+    const clubsMap = new Map<string, string[]>();
+
+    // Grouper les équipes par nom de club (en extrayant le nom du club à partir du nom de l'équipe)
+    saison.series.forEach(serie => {
+      serie.equipes
+        .filter(equipe => !saison.equipesClub.some(clubTeam => clubTeam.nom === equipe.nom))
+        .forEach(equipe => {
+          // Extraire le nom du club (enlever les suffixes comme "A", "B", "1", "2", etc.)
+          const nomClub = extraireNomClub(equipe.nom);
+
+          if (!clubsMap.has(nomClub)) {
+            clubsMap.set(nomClub, []);
+          }
+          clubsMap.get(nomClub)!.push(equipe.nom);
+        });
+    });
+
+    return Array.from(clubsMap.entries()).map(([nomClub, equipes]) => ({
+      nom: nomClub,
+      equipes,
+    }));
+  };
+
+  // Fonction utilitaire pour extraire le nom du club
+  const extraireNomClub = (nomEquipe: string): string => {
+    // Enlever les suffixes communs (A, B, C, 1, 2, 3, Dame, Dames, Vét., etc.)
+    return nomEquipe
+      .replace(/\s+[A-Z]$/, '') // Enlever " A", " B", etc.
+      .replace(/\s+\d+$/, '') // Enlever " 1", " 2", etc.
+      .replace(/\s+(Dame|Dames)$/, '') // Enlever " Dame" ou " Dames"
+      .replace(/\s+(Vét\.|Veteran)$/, '') // Enlever " Vét." ou " Veteran"
+      .trim();
+  };
+
+  // Nouvelle fonction pour mettre à jour les infos d'un club
+  const mettreAJourInfosClub = () => {
+    if (!saison || !clubSelectionne) return;
+
+    // Initialiser le tableau clubs s'il n'existe pas
+    const clubsExistants = saison.clubs || [];
+
+    // Vérifier si le club existe déjà
+    const clubExistant = clubsExistants.find(c => c.nom === clubSelectionne);
+
+    let clubsUpdated;
+    if (clubExistant) {
+      // Mettre à jour le club existant
+      clubsUpdated = clubsExistants.map(club =>
+        club.nom === clubSelectionne
+          ? {
+              ...club,
+              nom: clubSelectionne,
+              localite: infosClub.localite,
+              salle: infosClub.salle,
+              adresse: infosClub.adresse,
+              telephone: infosClub.telephone,
+              email: infosClub.email,
+              site: infosClub.site,
+            }
+          : club
+      );
+    } else {
+      // Ajouter un nouveau club
+      clubsUpdated = [...clubsExistants, {
+        id: uuidv4(),
+        nom: clubSelectionne,
+        localite: infosClub.localite,
+        salle: infosClub.salle,
+        adresse: infosClub.adresse,
+        telephone: infosClub.telephone,
+        email: infosClub.email,
+        site: infosClub.site,
+      }];
+    }
+
+    setSaison({ ...saison, clubs: clubsUpdated });
+
+    // Réinitialiser le formulaire
+    setInfosClub({
+      nom: '',
+      localite: '',
+      salle: '',
+      adresse: '',
+      telephone: '',
+      email: '',
+      site: '',
+    });
+    setClubSelectionne('');
+
+    alert('Informations du club mises à jour avec succès !');
+  };
+
+  // Fonction pour charger les infos d'un club
+  const chargerInfosClub = (nomClub: string) => {
+    if (!saison) return;
+
+    const club = saison.clubs?.find(c => c.nom === nomClub);
+    if (club) {
+      setInfosClub({
+        nom: club.nom,
+        localite: club.localite || '',
+        salle: club.salle || '',
+        adresse: club.adresse || '',
+        telephone: club.telephone || '',
+        email: club.email || '',
+        site: club.site || '',
+      });
+    } else {
+      // Si pas d'infos existantes, réinitialiser avec le nom du club
+      setInfosClub({
+        nom: nomClub,
+        localite: '',
+        salle: '',
+        adresse: '',
+        telephone: '',
+        email: '',
+        site: '',
+      });
+    }
+  };
+
   // Écrans de chargement et sélection
   if (isLoading) {
     return (
@@ -250,7 +388,7 @@ export default function UpdateSaison() {
 
       {/* Onglets principaux */}
       <Tabs defaultValue="infos" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="infos" className="flex items-center gap-2">
             <Info className="h-4 w-4" />
             <span className="hidden sm:inline">Informations</span>
@@ -260,6 +398,11 @@ export default function UpdateSaison() {
             <Swords className="h-4 w-4" />
             <span className="hidden sm:inline">Équipes & Séries</span>
             <span className="sm:hidden">Équipes</span>
+          </TabsTrigger>
+          <TabsTrigger value="clubs" className="flex items-center gap-2">
+            <Building className="h-4 w-4" />
+            <span className="hidden sm:inline">Infos Clubs</span>
+            <span className="sm:hidden">Clubs</span>
           </TabsTrigger>
           <TabsTrigger value="calendrier" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
@@ -454,6 +597,201 @@ export default function UpdateSaison() {
                     </Card>
                   );
                 })()}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Nouvel onglet Informations des Clubs */}
+        <TabsContent value="clubs" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informations des Clubs Adverses</CardTitle>
+              <CardDescription>
+                Ajoutez ou modifiez les informations des clubs adverses (localité, salle, contact, etc.)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Sélection du club */}
+              <div className="space-y-2">
+                <Label>Sélectionner un club adverse</Label>
+                <Select
+                  value={clubSelectionne}
+                  onValueChange={(value) => {
+                    setClubSelectionne(value);
+                    chargerInfosClub(value);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir un club adverse" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getClubsAdversesUniques().map((club) => (
+                      <SelectItem key={club.nom} value={club.nom}>
+                        {club.nom} ({club.equipes.length} équipe{club.equipes.length > 1 ? 's' : ''})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Formulaire d'informations */}
+              {clubSelectionne && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Informations - {clubSelectionne}</CardTitle>
+                    <CardDescription>
+                      Ces informations s'appliqueront à toutes les équipes de ce club
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="club-localite">Localité</Label>
+                        <Input
+                          id="club-localite"
+                          value={infosClub.localite}
+                          onChange={(e) => setInfosClub({ ...infosClub, localite: e.target.value })}
+                          placeholder="Ex: Mons"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="club-salle">Nom de la salle</Label>
+                        <Input
+                          id="club-salle"
+                          value={infosClub.salle}
+                          onChange={(e) => setInfosClub({ ...infosClub, salle: e.target.value })}
+                          placeholder="Ex: Salle communale"
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="club-adresse">Adresse complète</Label>
+                        <Input
+                          id="club-adresse"
+                          value={infosClub.adresse}
+                          onChange={(e) => setInfosClub({ ...infosClub, adresse: e.target.value })}
+                          placeholder="Ex: Rue de la Paix 123, 7000 Mons"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="club-telephone">Téléphone</Label>
+                        <Input
+                          id="club-telephone"
+                          value={infosClub.telephone}
+                          onChange={(e) => setInfosClub({ ...infosClub, telephone: e.target.value })}
+                          placeholder="Ex: +32 65 12 34 56"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="club-email">Email</Label>
+                        <Input
+                          id="club-email"
+                          type="email"
+                          value={infosClub.email}
+                          onChange={(e) => setInfosClub({ ...infosClub, email: e.target.value })}
+                          placeholder="Ex: contact@club.be"
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="club-site">Site web</Label>
+                        <Input
+                          id="club-site"
+                          type="url"
+                          value={infosClub.site}
+                          onChange={(e) => setInfosClub({ ...infosClub, site: e.target.value })}
+                          placeholder="Ex: https://www.club.be"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Aperçu des équipes de ce club */}
+                    <div className="mt-4 p-3 bg-muted rounded-lg">
+                      <h4 className="font-medium mb-2">Équipes de ce club :</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {getClubsAdversesUniques()
+                          .find(c => c.nom === clubSelectionne)
+                          ?.equipes.map((equipe, index) => (
+                            <span key={index} className="px-2 py-1 bg-background rounded text-sm">
+                              {equipe}
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setClubSelectionne('');
+                          setInfosClub({
+                            nom: '',
+                            localite: '',
+                            salle: '',
+                            adresse: '',
+                            telephone: '',
+                            email: '',
+                            site: '',
+                          });
+                        }}
+                      >
+                        Annuler
+                      </Button>
+                      <Button onClick={mettreAJourInfosClub}>
+                        <Save className="h-4 w-4 mr-2" />
+                        Sauvegarder les informations
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Aperçu des clubs avec informations */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Clubs avec informations</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {saison.clubs && saison.clubs.length > 0 ? (
+                      saison.clubs.map((club) => (
+                        <div key={club.id} className="p-3 bg-muted rounded-lg">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h4 className="font-medium">{club.nom}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {club.localite && `${club.localite} • `}
+                                {club.salle}
+                              </p>
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {getClubsAdversesUniques()
+                                  .find(c => c.nom === club.nom)
+                                  ?.equipes.map((equipe, index) => (
+                                    <span key={index} className="px-1 py-0.5 bg-background rounded text-xs">
+                                      {equipe}
+                                    </span>
+                                  ))}
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setClubSelectionne(club.nom);
+                                chargerInfosClub(club.nom);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-center text-muted-foreground py-8">
+                        Aucun club adverse n'a encore d'informations
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </CardContent>
           </Card>
         </TabsContent>

@@ -1,14 +1,14 @@
 import type React from 'react';
-
 import { useState } from 'react';
 import {
-  ChevronDown,
-  ChevronRight,
   FileText,
-  Trophy,
   Calendar,
-  // Users,
+  Image as ImageIcon,
+  Users,
+  Trophy,
+  ArrowLeft,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -16,19 +16,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 
 import ActualitesManager from '@/features/admin/website/components/content/actu.tsx';
 import ResultatsManager from '@/features/admin/website/components/content/result.tsx';
 import SponsorsManager from '@/features/admin/website/components/content/sponsor.tsx';
-import GeneralManager from '@/features/admin/website/components/content/general.tsx';
-import PalmaresManager from '@/features/admin/website/components/content/palmares.tsx';
-import ContactManager from '@/features/admin/website/components/content/contact.tsx';
-import AboutManager from '@/features/admin/website/components/content/about.tsx';
 import GaleryManager from '@/features/admin/website/components/content/galery.tsx';
 import EventManager from '@/features/admin/website/components/content/event.tsx';
 
@@ -42,156 +33,122 @@ interface ContentSection {
 }
 
 export default function AdminContent() {
-  const [openSections, setOpenSections] = useState<string[]>(['']);
-
-  const toggleSection = (sectionId: string) => {
-    setOpenSections((prev) =>
-      prev.includes(sectionId)
-        ? prev.filter((id) => id !== sectionId)
-        : [...prev, sectionId]
-    );
-  };
+  const [activeSection, setActiveSection] = useState<string | null>(null);
 
   const contentSections: ContentSection[] = [
     {
-      id: 'saisonCreation',
-      title: 'Création de saison',
-      description: 'Créer une saison et les équipes associées',
-      icon: <Calendar className="h-5 w-5 text-blue-600" />,
-      component: <ResultatsManager />,
-      color: 'bg-blue-100',
-    },
-    {
-      id: 'saisonManagement',
-      title: 'Modification de saison',
-      description: 'Créer, modifier et supprimer les matchs',
-      icon: <Calendar className="h-5 w-5 text-white" />,
-      component: '',
-      color: 'bg-blue-100',
-    },
-    {
-      id: 'saisonInfos',
-      title: 'Gestion des infos sur les series',
-      description: 'Créer, modifier et supprimer les infos sur les series',
-      icon: <Calendar className="h-5 w-5 text-blue-600" />,
-      component: '',
-      color: 'bg-blue-100',
-    },
-    {
       id: 'actualites',
-      title: 'Gestion des Actualités',
-      description: 'Créer, modifier et supprimer les actualités',
-      icon: <FileText className="h-5 w-5 text-green-600" />,
+      title: 'Actualités',
+      description: 'Gérer les actualités du club',
+      icon: <FileText className="h-6 w-6" />,
       component: <ActualitesManager />,
-      color: 'bg-green-100',
-    },
-
-    {
-      id: 'sponsors',
-      title: 'Gestion des Sponsors',
-      description: 'Créer, modifier et supprimer les sponsors',
-      icon: <FileText className="h-5 w-5 text-purple-600" />,
-      component: <SponsorsManager />,
-      color: 'bg-purple-100',
-    },
-    {
-      id: 'galerie',
-      title: 'Gestion de la Galerie',
-      description: 'Gérer les images de la galerie des événements',
-      icon: <FileText className="h-5 w-5 text-red-600" />,
-      component: <GaleryManager />,
-      color: 'bg-red-100',
+      color: 'from-blue-500 to-blue-600',
     },
     {
       id: 'evenements',
-      title: 'Gestion des Événements',
-      description: 'Gérer les événements du calendrier',
-      icon: <Calendar className="h-5 w-5 text-orange-600" />,
+      title: 'Événements',
+      description: 'Gérer le calendrier des événements',
+      icon: <Calendar className="h-6 w-6" />,
       component: <EventManager />,
-      color: 'bg-orange-100',
+      color: 'from-green-500 to-green-600',
     },
     {
-      id: 'palmares',
-      title: 'Gestion du Palmarès',
-      description: "Modifier le palmarès de l'équipe",
-      icon: <Trophy className="h-5 w-5 text-orange-600" />,
-      component: <PalmaresManager />,
-      color: 'bg-orange-100',
+      id: 'galerie',
+      title: 'Galerie',
+      description: 'Gérer les photos et vidéos',
+      icon: <ImageIcon className="h-6 w-6" />,
+      component: <GaleryManager />,
+      color: 'from-purple-500 to-purple-600',
     },
     {
-      id: 'contact',
-      title: 'Gestion du Contact',
-      description: 'Modifier les informations de contact',
-      icon: <FileText className="h-5 w-5 text-teal-600" />,
-      component: <ContactManager />,
-      color: 'bg-teal-100',
+      id: 'sponsors',
+      title: 'Sponsors',
+      description: 'Gérer les partenaires et sponsors',
+      icon: <Users className="h-6 w-6" />,
+      component: <SponsorsManager />,
+      color: 'from-orange-500 to-orange-600',
     },
     {
-      id: 'about',
-      title: 'Gestion de la Page À Propos',
-      description: 'Modifier le contenu de la page à propos',
-      icon: <FileText className="h-5 w-5 text-pink-600" />,
-      component: <AboutManager />,
-      color: 'bg-pink-100',
-    },
-    {
-      id: 'general',
-      title: 'Gestion Générale du Site',
-      description: 'Modifier les paramètres généraux du site',
-      icon: <FileText className="h-5 w-5 text-indigo-600" />,
-      component: <GeneralManager />,
-      color: 'bg-indigo-100',
+      id: 'resultats',
+      title: 'Saisons',
+      description: 'Gérer les saisons et informations des équipes',
+      icon: <Trophy className="h-6 w-6" />,
+      component: <ResultatsManager />,
+      color: 'from-red-500 to-red-600',
     },
   ];
 
+  // Si une section est active, afficher uniquement cette section
+  if (activeSection) {
+    const section = contentSections.find((s) => s.id === activeSection);
+    if (section) {
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="outline"
+              onClick={() => setActiveSection(null)}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Retour
+            </Button>
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-2 rounded-lg bg-gradient-to-r ${section.color} text-white`}
+              >
+                {section.icon}
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">{section.title}</h2>
+                <p className="text-gray-600">{section.description}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg">{section.component}</div>
+        </div>
+      );
+    }
+  }
+
+  // Vue de la liste des sections
   return (
-    <div className="space-y-4 p-2 sm:p-4">
-      <div className="mb-4 sm:mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+    <div className="space-y-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Gestion du Contenu
-        </h2>
+        </h1>
+        <p className="text-gray-600">
+          Gérez les éléments dynamiques de votre site web
+        </p>
       </div>
 
-      {contentSections.map((section) => (
-        <Card key={section.id} className="overflow-hidden">
-          <Collapsible
-            open={openSections.includes(section.id)}
-            onOpenChange={() => toggleSection(section.id)}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {contentSections.map((section) => (
+          <Card
+            key={section.id}
+            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+            onClick={() => setActiveSection(section.id)}
           >
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors p-3 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-                    <div
-                      className={`w-8 h-8 sm:w-10 sm:h-10 ${section.color} rounded-lg flex items-center justify-center shrink-0`}
-                    >
-                      {section.icon}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <CardTitle className="text-base sm:text-lg truncate">
-                        {section.title}
-                      </CardTitle>
-                      <CardDescription className="text-xs sm:text-sm hidden sm:block">
-                        {section.description}
-                      </CardDescription>
-                    </div>
-                  </div>
-                  {openSections.includes(section.id) ? (
-                    <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 shrink-0" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 shrink-0" />
-                  )}
-                </div>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="pt-0 p-3 sm:p-6 max-h-[70vh] sm:max-h-[600px] overflow-y-auto">
-                {section.component}
-              </CardContent>
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
-      ))}
+            <CardHeader className="pb-4">
+              <div
+                className={`w-12 h-12 rounded-lg bg-gradient-to-r ${section.color} text-white flex items-center justify-center mb-4`}
+              >
+                {section.icon}
+              </div>
+              <CardTitle className="text-xl">{section.title}</CardTitle>
+              <CardDescription className="text-gray-600">
+                {section.description}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full" variant="outline">
+                Gérer →
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

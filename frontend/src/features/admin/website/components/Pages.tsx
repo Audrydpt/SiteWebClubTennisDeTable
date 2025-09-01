@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useState } from 'react';
-import { PlusCircle, Edit, ArrowLeft } from 'lucide-react';
+import { FileText, Phone, Info, Settings, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -10,10 +10,12 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
-import CreateSaison from '@/features/admin/website/components/content/saison/createSaison.tsx';
-import UpdateSaison from '@/features/admin/website/components/content/saison/updateSaison.tsx';
+import AboutManager from '@/features/admin/website/components/content/about.tsx';
+import ContactManager from '@/features/admin/website/components/content/contact.tsx';
+import GeneralManager from '@/features/admin/website/components/content/general.tsx';
+import PalmaresManager from '@/features/admin/website/components/content/palmares.tsx';
 
-interface SaisonSection {
+interface PageSection {
   id: string;
   title: string;
   description: string;
@@ -22,32 +24,47 @@ interface SaisonSection {
   color: string;
 }
 
-export default function ResultatsManager() {
+export default function AdminPages() {
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
-  const saisonSections: SaisonSection[] = [
+  const pageSections: PageSection[] = [
     {
-      id: 'create',
-      title: 'Créer une Saison',
-      description: 'Créer une nouvelle saison avec équipes et calendrier',
-      icon: <PlusCircle className="h-6 w-6" />,
-      component: <CreateSaison />,
-      color: 'from-green-500 to-green-600',
+      id: 'about',
+      title: 'Page À Propos',
+      description: 'Gérer les informations et statistiques du club',
+      icon: <Info className="h-6 w-6" />,
+      component: <AboutManager />,
+      color: 'from-indigo-500 to-indigo-600',
     },
     {
-      id: 'update',
-      title: 'Modifier une Saison',
-      description:
-        'Modifier une saison existante, gérer les matchs et les informations des équipes adverses',
-      icon: <Edit className="h-6 w-6" />,
-      component: <UpdateSaison />,
-      color: 'from-blue-500 to-blue-600',
+      id: 'contact',
+      title: 'Page Contact',
+      description: 'Gérer les informations de contact et FAQ',
+      icon: <Phone className="h-6 w-6" />,
+      component: <ContactManager />,
+      color: 'from-teal-500 to-teal-600',
+    },
+    {
+      id: 'palmares',
+      title: 'Palmarès',
+      description: 'Gérer les trophées et récompenses',
+      icon: <FileText className="h-6 w-6" />,
+      component: <PalmaresManager />,
+      color: 'from-yellow-500 to-yellow-600',
+    },
+    {
+      id: 'general',
+      title: 'Paramètres Généraux',
+      description: 'Configuration générale du site',
+      icon: <Settings className="h-6 w-6" />,
+      component: <GeneralManager />,
+      color: 'from-gray-500 to-gray-600',
     },
   ];
 
   // Si une section est active, afficher uniquement cette section
   if (activeSection) {
-    const section = saisonSections.find((s) => s.id === activeSection);
+    const section = pageSections.find((s) => s.id === activeSection);
     if (section) {
       return (
         <div className="space-y-4">
@@ -83,15 +100,15 @@ export default function ResultatsManager() {
     <div className="space-y-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Gestion des Saisons & Résultats
+          Gestion des Pages
         </h1>
         <p className="text-gray-600">
-          Créez et gérez les saisons, matchs et informations des clubs
+          Gérez les pages statiques et la configuration de votre site
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {saisonSections.map((section) => (
+        {pageSections.map((section) => (
           <Card
             key={section.id}
             className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
@@ -110,7 +127,7 @@ export default function ResultatsManager() {
             </CardHeader>
             <CardContent>
               <Button className="w-full" variant="outline">
-                {section.id === 'create' ? 'Créer' : 'Modifier'} →
+                Configurer →
               </Button>
             </CardContent>
           </Card>

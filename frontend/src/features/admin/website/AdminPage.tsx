@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { FileText, Camera, Users, Settings, AppWindow } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import AdminPages from '@/features/admin/website/components/Dashboard.tsx';
+import AdminPages from '@/features/admin/website/components/Pages.tsx';
 import AdminContent from '@/features/admin/website/components/Content.tsx';
 import AdminMedia from '@/features/admin/website/components/Media.tsx';
 import AdminResults from '@/features/admin/website/components/EquipeMaker.tsx';

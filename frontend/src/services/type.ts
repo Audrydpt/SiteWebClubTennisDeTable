@@ -60,10 +60,22 @@ export interface ActualiteData {
 
 export type SaisonStatut = 'En cours' | 'Terminée' | 'Archivée';
 
+export interface ClubInfo {
+  id: string;
+  nom: string; // Nom du club (ex: "Sporting Frameries")
+  localite?: string;
+  salle?: string;
+  adresse?: string;
+  telephone?: string;
+  email?: string;
+  site?: string;
+}
+
 export interface Equipe {
   id: string;
   nom: string;
   serieId: string;
+  clubId?: string; // Référence au club parent
 }
 
 export interface Serie {
@@ -105,6 +117,7 @@ export interface Saison {
   equipesClub: Equipe[];
   series: Serie[];
   calendrier: Match[];
+  clubs?: ClubInfo[]; // Nouvelle propriété pour stocker les infos des clubs
 }
 
 export interface ClassementEntry {
