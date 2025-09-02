@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any,no-console */
+/* eslint-disable */
 
 import { useState, useEffect } from 'react';
 import { Loader2, Trophy, Users, Star } from 'lucide-react';
@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 
 const getRankColor = (position: number) => {
   switch (position) {
@@ -30,9 +31,34 @@ const getRankColor = (position: number) => {
   }
 };
 
+type CategorieFiltre = 'tous' | 'homme' | 'veteran' | 'femme';
+
+const getCategorieFromSerieNom = (
+  nom: string
+): 'homme' | 'femme' | 'veteran' => {
+  const nomLower = nom.toLowerCase();
+  if (
+    nomLower.includes('dame') ||
+    nomLower.includes('femme') ||
+    nomLower.includes('féminin')
+  ) {
+    return 'femme';
+  }
+  if (
+    nomLower.includes('vétéran') ||
+    nomLower.includes('veteran') ||
+    nomLower.includes('vét')
+  ) {
+    return 'veteran';
+  }
+  return 'homme';
+};
+
 export default function EquipesPage() {
   const [saison, setSaison] = useState<Saison | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [filtreCategorie, setFiltreCategorie] =
+    useState<CategorieFiltre>('tous');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -101,6 +127,14 @@ export default function EquipesPage() {
 
   const nomClub = 'CTT Frameries';
 
+  // Filtrer les séries selon la catégorie sélectionnée
+  const seriesFiltrees =
+    filtreCategorie === 'tous'
+      ? saison.series
+      : saison.series.filter(
+        (serie) => getCategorieFromSerieNom(serie.nom) === filtreCategorie
+      );
+
   return (
     <div className="min-h-screen bg-white">
       <div className="relative bg-[#3A3A3A] text-white py-24 overflow-hidden">
@@ -132,14 +166,62 @@ export default function EquipesPage() {
             <h2 className="text-4xl font-bold text-[#3A3A3A] mb-6">
               Classements des équipes
             </h2>
-            <p className="text-gray-600 text-xl max-w-3xl mx-auto">
+            <p className="text-gray-600 text-xl max-w-3xl mx-auto mb-8">
               Découvrez les performances de toutes nos équipes dans leurs
               divisions respectives
             </p>
+
+            {/* Boutons de filtrage */}
+            <div className="flex flex-wrap justify-center gap-4 mb-8">
+              <Button
+                onClick={() => setFiltreCategorie('tous')}
+                variant={filtreCategorie === 'tous' ? 'default' : 'outline'}
+                className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 ${
+                  filtreCategorie === 'tous'
+                    ? 'bg-[#F1C40F] text-[#3A3A3A] hover:bg-[#F1C40F]/90'
+                    : 'border-[#F1C40F] text-[#F1C40F] hover:bg-[#F1C40F] hover:text-[#3A3A3A]'
+                }`}
+              >
+                Toutes les catégories
+              </Button>
+              <Button
+                onClick={() => setFiltreCategorie('homme')}
+                variant={filtreCategorie === 'homme' ? 'default' : 'outline'}
+                className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 ${
+                  filtreCategorie === 'homme'
+                    ? 'bg-[#F1C40F] text-[#3A3A3A] hover:bg-[#F1C40F]/90'
+                    : 'border-[#F1C40F] text-[#F1C40F] hover:bg-[#F1C40F] hover:text-[#3A3A3A]'
+                }`}
+              >
+                Hommes
+              </Button>
+              <Button
+                onClick={() => setFiltreCategorie('veteran')}
+                variant={filtreCategorie === 'veteran' ? 'default' : 'outline'}
+                className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 ${
+                  filtreCategorie === 'veteran'
+                    ? 'bg-[#F1C40F] text-[#3A3A3A] hover:bg-[#F1C40F]/90'
+                    : 'border-[#F1C40F] text-[#F1C40F] hover:bg-[#F1C40F] hover:text-[#3A3A3A]'
+                }`}
+              >
+                Vétérans
+              </Button>
+              <Button
+                onClick={() => setFiltreCategorie('femme')}
+                variant={filtreCategorie === 'femme' ? 'default' : 'outline'}
+                className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 ${
+                  filtreCategorie === 'femme'
+                    ? 'bg-[#F1C40F] text-[#3A3A3A] hover:bg-[#F1C40F]/90'
+                    : 'border-[#F1C40F] text-[#F1C40F] hover:bg-[#F1C40F] hover:text-[#3A3A3A]'
+                }`}
+              >
+                Femmes
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-            {saison.series.map((serie: Serie) => {
+            {seriesFiltrees.map((serie: Serie) => {
               const classement = calculerClassement(
                 serie,
                 saison.calendrier
@@ -248,6 +330,15 @@ export default function EquipesPage() {
             })}
           </div>
 
+          {/* Message si aucune série trouvée */}
+          {seriesFiltrees.length === 0 && (
+            <div className="text-center py-12">
+              <div className="text-gray-500 text-xl">
+                Aucune série trouvée pour cette catégorie
+              </div>
+            </div>
+          )}
+
           <div className="mt-20">
             <div className="text-center mb-12">
               <div className="inline-block bg-[#F1C40F] text-[#3A3A3A] px-6 py-2 rounded-full font-semibold mb-6 text-sm uppercase tracking-wide">
@@ -267,7 +358,7 @@ export default function EquipesPage() {
                   <div className="text-4xl font-bold mb-2">
                     {(() => {
                       let totalEquipes = 0;
-                      saison.series.forEach((serie) => {
+                      seriesFiltrees.forEach((serie) => {
                         const classement = calculerClassement(
                           serie,
                           saison.calendrier
@@ -281,7 +372,11 @@ export default function EquipesPage() {
                     })()}
                   </div>
                   <div className="text-lg font-semibold">Équipes engagées</div>
-                  <div className="text-sm opacity-80 mt-2">En championnat</div>
+                  <div className="text-sm opacity-80 mt-2">
+                    {filtreCategorie === 'tous'
+                      ? 'En championnat'
+                      : `Catégorie ${filtreCategorie}`}
+                  </div>
                 </CardContent>
               </Card>
 
@@ -293,7 +388,7 @@ export default function EquipesPage() {
                   <div className="text-4xl font-bold mb-2 text-[#F1C40F]">
                     {(() => {
                       let equipesAuPodium = 0;
-                      saison.series.forEach((serie) => {
+                      seriesFiltrees.forEach((serie) => {
                         const classement = calculerClassement(
                           serie,
                           saison.calendrier
@@ -322,7 +417,7 @@ export default function EquipesPage() {
                   <div className="text-4xl font-bold mb-2">
                     {(() => {
                       let totalPoints = 0;
-                      saison.series.forEach((serie) => {
+                      seriesFiltrees.forEach((serie) => {
                         const classement = calculerClassement(
                           serie,
                           saison.calendrier
@@ -338,7 +433,11 @@ export default function EquipesPage() {
                     })()}
                   </div>
                   <div className="text-lg font-semibold">Points totaux</div>
-                  <div className="text-sm opacity-80 mt-2">Toutes équipes</div>
+                  <div className="text-sm opacity-80 mt-2">
+                    {filtreCategorie === 'tous'
+                      ? 'Toutes équipes'
+                      : `Catégorie ${filtreCategorie}`}
+                  </div>
                 </CardContent>
               </Card>
             </div>
