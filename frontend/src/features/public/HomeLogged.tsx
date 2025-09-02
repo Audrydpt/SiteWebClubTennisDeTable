@@ -13,6 +13,10 @@ import {
   Mail,
   Globe,
   Clock,
+  Star,
+  Award,
+  Target,
+  User,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -268,26 +272,63 @@ export default function HomeLogged() {
 
   return (
     <div className="space-y-6 p-6 max-w-6xl mx-auto">
-      {/* En-tête joueur */}
+      {/* En-tête joueur simplifié */}
       <div className="bg-gradient-to-r from-[#F1C40F] to-[#D4AC0D] text-white p-6 rounded-lg">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">
-              {member.prenom} {member.nom}
-            </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <p className="opacity-90">Classement: {member.classement}</p>
-              {member.classement && (
-                <span className="text-sm bg-white/20 px-2 py-1 rounded">
-                  Index:{' '}
-                  {member.indexListeForce > 0 ? member.indexListeForce : 'N/A'}
+        <div className="relative p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            {/* Section principale avec avatar et nom */}
+            <div className="flex items-center gap-6">
+              {/* Avatar stylisé */}
+              <div className="flex-shrink-0">
+                <div className="relative">
+                  <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border-2 border-white/30">
+                    <User className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Informations principales */}
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold tracking-tight mb-3 text-white drop-shadow-sm">
+                  {member.prenom} {member.nom}
+                </h1>
+
+                {/* Badges d'informations */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {member.classement && (
+                    <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/30">
+                      <Award className="w-4 h-4" />
+                      <span className="text-sm font-medium">
+                  Classement: {member.classement}
                 </span>
-              )}
+                    </div>
+                  )}
+
+                  {member.indexListeForce && member.indexListeForce > 0 && (
+                    <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/30">
+                      <Target className="w-4 h-4" />
+                      <span className="text-sm font-medium">
+                  Index: {member.indexListeForce}
+                </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="text-right">
-            <p className="text-sm opacity-90">Score concours</p>
-            <p className="text-2xl font-bold">--</p>
+
+            {/* Section statistiques simplifiée */}
+            {member.indexListeForce && member.indexListeForce > 0 && (
+              <div className="flex lg:flex-col gap-4 lg:text-right">
+                <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 border border-white/30 min-w-[120px]">
+                  <div className="text-2xl font-bold text-white">
+                    {member.indexListeForce}
+                  </div>
+                  <div className="text-sm text-white/90">
+                    Index
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
