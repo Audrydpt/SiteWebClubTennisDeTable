@@ -17,6 +17,9 @@ import {
   Award,
   Target,
   User,
+  CalendarX,
+  Dumbbell,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -603,23 +606,53 @@ export default function HomeLogged() {
         </Card>
       </div>
 
-      {/* Stats */}
-      <Card className="bg-white border border-[#E0E0E0]">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Trophy className="mr-2 h-5 w-5" />
-            Mes statistiques
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Section en développement
-            </h3>
-            <p className="text-gray-500">La section sera bientôt disponible.</p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* 3 petits cadres : Absences, Entraînement, Menu */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Calendrier des absences */}
+        <Card className="bg-white border border-[#E0E0E0]">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center text-sm">
+              <CalendarX className="mr-2 h-4 w-4 text-red-500" />
+              Calendrier absences
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-center py-4">
+              <p className="text-sm text-gray-500">Bientôt disponible</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Calendrier d'entraînement */}
+        <Card className="bg-white border border-[#E0E0E0]">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center text-sm">
+              <Dumbbell className="mr-2 h-4 w-4 text-blue-500" />
+              Calendrier entraînement
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-center py-4">
+              <p className="text-sm text-gray-500">Bientôt disponible</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Menu du samedi */}
+        <Card className="bg-white border border-[#E0E0E0]">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center text-sm">
+              <UtensilsCrossed className="mr-2 h-4 w-4 text-green-500" />
+              Menu du samedi
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-center py-4">
+              <p className="text-sm text-gray-500">Bientôt disponible</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Modal des informations du club */}
       <Dialog open={showClubInfoModal} onOpenChange={setShowClubInfoModal}>
