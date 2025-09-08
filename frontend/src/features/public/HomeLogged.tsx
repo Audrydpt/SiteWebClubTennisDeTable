@@ -42,6 +42,9 @@ import {
   InfosPersonnalisees,
 } from '@/services/type.ts';
 import supabase from '@/lib/supabaseClient.ts';
+import AbsenceCalendar from './components/AbsenceCalendar';
+import TrainingCalendar from './components/TrainingCalendar';
+import FoodMenuSaturday from './components/FoodMenuSaturday';
 
 export default function HomeLogged() {
   const [member, setMember] = useState<Member | null>(null);
@@ -56,6 +59,11 @@ export default function HomeLogged() {
     clubName: string;
   } | null>(null);
   const [infosPersonnalisees, setInfosPersonnalisees] = useState<InfosPersonnalisees[]>([]);
+
+  // 3 petits cadres : Absences, Entraînement, Menu
+  const [showAbsences, setShowAbsences] = useState(false);
+  const [showTraining, setShowTraining] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   const getInitials = (nom: string, prenom: string) => {
     // Si le prénom est vide ou si le nom contient déjà prénom + nom
@@ -606,8 +614,8 @@ export default function HomeLogged() {
         </Card>
       </div>
 
-      {/* 3 petits cadres : Absences, Entraînement, Menu */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* 2 petits cadres : Absences et Entraînement */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Calendrier des absences */}
         <Card className="bg-white border border-[#E0E0E0]">
           <CardHeader className="pb-3">
@@ -617,8 +625,20 @@ export default function HomeLogged() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-center py-4">
-              <p className="text-sm text-gray-500">Bientôt disponible</p>
+            <div className="text-center py-2">
+              <Dialog open={showAbsences} onOpenChange={setShowAbsences}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full">
+                    Gérer mes absences
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Gestion des absences</DialogTitle>
+                  </DialogHeader>
+                  <AbsenceCalendar member={member} />
+                </DialogContent>
+              </Dialog>
             </div>
           </CardContent>
         </Card>
@@ -632,27 +652,37 @@ export default function HomeLogged() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-center py-4">
-              <p className="text-sm text-gray-500">Bientôt disponible</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Menu du samedi */}
-        <Card className="bg-white border border-[#E0E0E0]">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center text-sm">
-              <UtensilsCrossed className="mr-2 h-4 w-4 text-green-500" />
-              Menu du samedi
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-center py-4">
-              <p className="text-sm text-gray-500">Bientôt disponible</p>
+            <div className="text-center py-2">
+              <Dialog open={showTraining} onOpenChange={setShowTraining}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full">
+                    Voir les entraînements
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Entraînements programmés</DialogTitle>
+                  </DialogHeader>
+                  <TrainingCalendar member={member} />
+                </DialogContent>
+              </Dialog>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Menu du samedi - plus large pour une meilleure lisibilité */}
+      <Card className="bg-white border border-[#E0E0E0]">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center text-lg">
+            <UtensilsCrossed className="mr-2 h-5 w-5 text-green-500" />
+            Menu du samedi
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <FoodMenuSaturday member={member} />
+        </CardContent>
+      </Card>
 
       {/* Modal des informations du club */}
       <Dialog open={showClubInfoModal} onOpenChange={setShowClubInfoModal}>

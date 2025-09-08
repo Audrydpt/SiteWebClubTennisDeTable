@@ -32,6 +32,100 @@ export const deleteUserProfile = async (id: string) => {
   await axios.delete(`${API_URL}/membres/${id}`);
 };
 
+/* Abscence Calendar/Training Calendar/Food menu - Compatibilité */
+
+export const fetchAbsence = async () => {
+  const response = await axios.get(`${API_URL}/absences`);
+  return response.data;
+};
+
+export const updateAbsence = async (id: string, data: any) => {
+  const response = await axios.put(`${API_URL}/absences/${id}`, data);
+  return response.data;
+};
+
+export const createAbsence = async (data: any) => {
+  const response = await axios.post(`${API_URL}/absences`, data);
+  return response.data;
+};
+
+export const deleteAbsence = async (id: string) => {
+  await axios.delete(`${API_URL}/absences/${id}`);
+};
+
+export const fetchTraining = async () => {
+  const response = await axios.get(`${API_URL}/training`);
+  return response.data;
+};
+
+export const updateTraining = async (id: string, data: any) => {
+  const response = await axios.put(`${API_URL}/training/${id}`, data);
+  return response.data;
+};
+
+export const createTraining = async (data: any) => {
+  const response = await axios.post(`${API_URL}/training`, data);
+  return response.data;
+};
+
+export const deleteTraining = async (id: string) => {
+  await axios.delete(`${API_URL}/training/${id}`);
+};
+
+// Garder la compatibilité avec l'ancien système de menu
+export const fetchFoodMenu = async () => {
+  // Essayer d'abord le nouveau système (zones de commande)
+  try {
+    const zones = await fetchZonesCommande();
+    // Convertir les zones en format de menu legacy pour compatibilité
+    return zones.map((zone: any) => ({
+      id: zone.id,
+      date: zone.date,
+      dateLimiteCommande: zone.dateLimiteCommande,
+      statut: zone.statut,
+      commandes: zone.commandes,
+    }));
+  } catch (error) {
+    // Fallback vers l'ancien système
+    const response = await axios.get(`${API_URL}/menu`);
+    return response.data;
+  }
+};
+
+export const updateFoodMenu = async (id: string, data: any) => {
+  const response = await axios.put(`${API_URL}/menu/${id}`, data);
+  return response.data;
+};
+export const createFoodMenu = async (data: any) => {
+  const response = await axios.post(`${API_URL}/menu`, data);
+  return response.data;
+};
+export const deleteFoodMenu = async (id: string) => {
+  await axios.delete(`${API_URL}/menu/${id}`);
+};
+
+
+/* Zones de Commande API Endpoints */
+export const fetchZonesCommande = async () => {
+  const response = await axios.get(`${API_URL}/zonesCommande`);
+  return response.data;
+};
+
+export const createZoneCommande = async (data: any) => {
+  const response = await axios.post(`${API_URL}/zonesCommande`, data);
+  return response.data;
+};
+
+export const updateZoneCommande = async (id: string, data: any) => {
+  const response = await axios.put(`${API_URL}/zonesCommande/${id}`, data);
+  return response.data;
+};
+
+export const deleteZoneCommande = async (id: string) => {
+  await axios.delete(`${API_URL}/zonesCommande/${id}`);
+};
+
+
 /* Actualités API Endpoints */
 
 export const fetchActualites = async () => {
@@ -610,3 +704,32 @@ export const updateCommandeInfo = async (
 
   return updateCommande(id, updatedCommande);
 };
+
+/* Facebook API Endpoints */
+
+export const publishToFacebook = async (data: {
+  message: string;
+  trainingId?: string;
+  type: 'training' | 'news' | 'event';
+}) => {
+  const response = await axios.post(`${API_URL}/facebook/publish`, data);
+  return response.data;
+};
+
+export const getFacebookConfig = async () => {
+  const response = await axios.get(`${API_URL}/facebook/config`);
+  return response.data;
+};
+
+export const updateFacebookConfig = async (data: {
+  accessToken?: string;
+  pageId?: string;
+  appId?: string;
+  enabled: boolean;
+}) => {
+  const response = await axios.put(`${API_URL}/facebook/config`, data);
+  return response.data;
+};
+
+
+

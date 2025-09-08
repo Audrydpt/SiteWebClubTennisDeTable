@@ -216,3 +216,118 @@ export interface InfosPersonnalisees {
   dateCreation: string;
   dateModification?: string;
 }
+
+export interface Absence {
+  id: string;
+  memberId: string;
+  memberName: string;
+  date: string; // Une seule date au lieu de dateDebut/dateFin
+  details: string; // Remplace motif et type
+  statut: 'active' | 'terminee';
+  dateCreation: string;
+}
+
+export interface Training {
+  id: string;
+  titre: string;
+  date: string;
+  heureDebut: string;
+  heureFin: string;
+  lieu: string;
+  type: 'entrainement' | 'stage' | 'competition';
+  niveau: 'debutant' | 'intermediaire' | 'avance' | 'tous';
+  participants: string[]; // IDs des membres
+  maxParticipants?: number;
+  description?: string;
+  responsable: string;
+  statut: 'planifie' | 'en_cours' | 'termine' | 'annule';
+}
+
+export interface Plat {
+  id: string;
+  nom: string;
+  description?: string;
+  prix: number;
+  disponible: boolean;
+  allergenes?: string[];
+  categorie: 'entree' | 'plat' | 'dessert' | 'boisson';
+  dateCreation: string;
+}
+
+export interface ZoneCommande {
+  id: string;
+  nom: string; // Ex: "Menu du samedi 15 décembre"
+  date: string;
+  dateLimiteCommande: string;
+  platsDisponibles: string[]; // IDs des plats disponibles pour cette zone
+  commandes: {
+    memberId: string;
+    memberName: string;
+    items: {
+      platId: string;
+      platNom: string;
+      quantite: number;
+      prix: number;
+    }[];
+    total: number;
+    statut: 'en_attente' | 'confirmee' | 'payee';
+    dateCommande: string;
+  }[];
+  statut: 'ouvert' | 'ferme' | 'termine';
+}
+
+// Garder l'ancien type pour compatibilité mais le marquer comme déprécié
+/** @deprecated Utiliser Plat et ZoneCommande à la place */
+export interface MenuItem {
+  id: string;
+  nom: string;
+  description?: string;
+  prix: number;
+  disponible: boolean;
+  allergenes?: string[];
+}
+
+/** @deprecated Utiliser ZoneCommande à la place */
+export interface FoodMenu {
+  id: string;
+  date: string;
+  entrees: MenuItem[];
+  plats: MenuItem[];
+  desserts: MenuItem[];
+  boissons: MenuItem[];
+  commandes: {
+    memberId: string;
+    memberName: string;
+    items: {
+      itemId: string;
+      nom: string;
+      quantite: number;
+      prix: number;
+    }[];
+    total: number;
+    statut: 'en_attente' | 'confirmee' | 'payee';
+    dateCommande: string;
+  }[];
+  dateLimiteCommande: string;
+  statut: 'ouvert' | 'ferme' | 'termine';
+}
+
+export interface FacebookConfig {
+  id: string;
+  accessToken: string;
+  pageId: string;
+  appId: string;
+  enabled: boolean;
+  lastSync?: string;
+}
+
+export interface FacebookPost {
+  id: string;
+  message: string;
+  type: 'training' | 'news' | 'event';
+  relatedId?: string; // ID de l'entraînement/actualité/événement
+  publishedAt: string;
+  facebookPostId?: string;
+  status: 'pending' | 'published' | 'failed';
+  error?: string;
+}

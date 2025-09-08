@@ -7,6 +7,9 @@ import {
   Users,
   Trophy,
   ArrowLeft,
+  CalendarX,
+  Dumbbell,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +25,11 @@ import ResultatsManager from '@/features/admin/website/components/content/result
 import SponsorsManager from '@/features/admin/website/components/content/sponsor.tsx';
 import GaleryManager from '@/features/admin/website/components/content/galery.tsx';
 import EventManager from '@/features/admin/website/components/content/event.tsx';
+import AbsenceManager from '@/features/admin/website/components/content/absence.tsx';
+import TrainingManager from '@/features/admin/website/components/content/training.tsx';
+import PlatsManager from '@/features/admin/website/components/content/plats.tsx';
+import ZonesCommandeManager from '@/features/admin/website/components/content/zones-commande.tsx';
+import MenuManager from '@/features/admin/website/components/content/menu.tsx';
 
 interface ContentSection {
   id: string;
@@ -75,6 +83,47 @@ export default function AdminContent() {
       icon: <Trophy className="h-6 w-6" />,
       component: <ResultatsManager />,
       color: 'from-red-500 to-red-600',
+    },
+    {
+      id: 'absences',
+      title: 'Absences',
+      description: 'Gérer toutes les absences des membres',
+      icon: <CalendarX className="h-6 w-6" />,
+      component: <AbsenceManager />,
+      color: 'from-red-500 to-red-600',
+    },
+    {
+      id: 'training',
+      title: 'Entraînements',
+      description: 'Créer et gérer les entraînements',
+      icon: <Dumbbell className="h-6 w-6" />,
+      component: <TrainingManager />,
+      color: 'from-blue-500 to-blue-600',
+    },
+    {
+      id: 'plats',
+      title: 'Plats',
+      description: 'Gérer les plats disponibles',
+      icon: <UtensilsCrossed className="h-6 w-6" />,
+      component: <PlatsManager />,
+      color: 'from-green-500 to-green-600',
+    },
+    {
+      id: 'zones-commande',
+      title: 'Zones de commande',
+      description: 'Créer et gérer les zones de commande',
+      icon: <UtensilsCrossed className="h-6 w-6" />,
+      component: <ZonesCommandeManager />,
+      color: 'from-purple-500 to-purple-600',
+    },
+    {
+      id: 'menus-legacy',
+      title: 'Menus (Legacy)',
+      description:
+        'Ancien système de menus - Utilisez Plats et Zones de commande',
+      icon: <UtensilsCrossed className="h-6 w-6" />,
+      component: <MenuManager />,
+      color: 'from-gray-500 to-gray-600',
     },
   ];
 
