@@ -68,7 +68,7 @@ export default function FoodMenuSaturday({ member }: FoodMenuSaturdayProps) {
       }
     } catch (error) {
       console.error('Erreur lors du chargement du menu:', error);
-      setError('Erreur lors du chargement du menu. Les endpoints /plats et /zones-commande doivent être configurés sur votre serveur.');
+      setError('Erreur lors du chargement du menu. Les endpoints /zonesCommande et /menu doivent être configurés sur votre serveur.');
     } finally {
       setLoading(false);
     }
@@ -169,7 +169,7 @@ export default function FoodMenuSaturday({ member }: FoodMenuSaturdayProps) {
       setLastSaved(new Date());
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
-      setError('Erreur lors de la sauvegarde. Vérifiez que les endpoints /zones-commande sont configurés.');
+      setError('Erreur lors de la sauvegarde. Vérifiez que les endpoints /zonesCommande sont configurés.');
     } finally {
       setSaving(false);
     }
@@ -314,7 +314,7 @@ export default function FoodMenuSaturday({ member }: FoodMenuSaturdayProps) {
           <UtensilsCrossed className="h-8 w-8 mx-auto mb-2 text-gray-400" />
           <p>Aucun menu disponible pour le moment</p>
           <p className="text-sm mt-1">
-            {plats.length > 0 ? 'Les plats sont disponibles mais aucune zone de commande n\'est ouverte.' : 'Aucun plat n\'est encore configuré.'}
+            {plats.length > 0 ? 'Les plats sont disponibles mais aucune zone de commande n\'est ouverte.' : 'Aucun plat n\'est encore configuré dans /menu.'}
           </p>
         </div>
       </div>

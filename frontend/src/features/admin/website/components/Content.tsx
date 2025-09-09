@@ -29,7 +29,6 @@ import AbsenceManager from '@/features/admin/website/components/content/absence.
 import TrainingManager from '@/features/admin/website/components/content/training.tsx';
 import PlatsManager from '@/features/admin/website/components/content/plats.tsx';
 import ZonesCommandeManager from '@/features/admin/website/components/content/zones-commande.tsx';
-import MenuManager from '@/features/admin/website/components/content/menu.tsx';
 
 interface ContentSection {
   id: string;
@@ -115,15 +114,6 @@ export default function AdminContent() {
       icon: <UtensilsCrossed className="h-6 w-6" />,
       component: <ZonesCommandeManager />,
       color: 'from-purple-500 to-purple-600',
-    },
-    {
-      id: 'menus-legacy',
-      title: 'Menus (Legacy)',
-      description:
-        'Ancien système de menus - Utilisez Plats et Zones de commande',
-      icon: <UtensilsCrossed className="h-6 w-6" />,
-      component: <MenuManager />,
-      color: 'from-gray-500 to-gray-600',
     },
   ];
 

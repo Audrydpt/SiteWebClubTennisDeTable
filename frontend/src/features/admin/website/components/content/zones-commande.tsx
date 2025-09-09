@@ -1,6 +1,6 @@
 /* eslint-disable */
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Plus, Edit, Trash2, Eye, UtensilsCrossed } from 'lucide-react';
+import { ShoppingCart, Plus, Edit, Trash2, ChevronDown, ChevronRight, Power, PowerOff } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,8 +36,7 @@ export default function ZonesCommandeManager() {
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingZone, setEditingZone] = useState<ZoneCommande | null>(null);
-  const [selectedZone, setSelectedZone] = useState<ZoneCommande | null>(null);
-  const [isSimulated, setIsSimulated] = useState(false);
+  const [expandedZones, setExpandedZones] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
     nom: '',
     date: '',
@@ -117,13 +116,38 @@ export default function ZonesCommandeManager() {
       try {
         await deleteZoneCommande(id);
         await loadData();
-        if (selectedZone?.id === id) {
-          setSelectedZone(null);
-        }
+        setExpandedZones(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(id);
+          return newSet;
+        });
       } catch (error) {
         console.error('Erreur lors de la suppression:', error);
       }
     }
+  };
+
+  const toggleZoneStatus = async (zone: ZoneCommande) => {
+    const newStatut = zone.statut === 'ouvert' ? 'ferme' : 'ouvert';
+
+    try {
+      await updateZoneCommande(zone.id, { ...zone, statut: newStatut });
+      await loadData();
+    } catch (error) {
+      console.error('Erreur lors du changement de statut:', error);
+    }
+  };
+
+  const toggleExpanded = (zoneId: string) => {
+    setExpandedZones(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(zoneId)) {
+        newSet.delete(zoneId);
+      } else {
+        newSet.add(zoneId);
+      }
+      return newSet;
+    });
   };
 
   const handlePlatToggle = (platId: string, checked: boolean) => {
@@ -142,10 +166,17 @@ export default function ZonesCommandeManager() {
 
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString('fr-FR', {
-      weekday: 'long',
+      weekday: 'short',
       day: 'numeric',
-      month: 'long',
-      year: 'numeric',
+      month: 'short',
+    });
+
+  const formatLimitDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
     });
 
   const getStatutColor = (statut: string) => {
@@ -196,7 +227,7 @@ export default function ZonesCommandeManager() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-green-500" />
+              <Power className="h-5 w-5 text-green-500" />
               <div>
                 <p className="text-sm text-gray-600">Ouvertes</p>
                 <p className="text-2xl font-bold">{stats.ouvertes}</p>
@@ -207,7 +238,7 @@ export default function ZonesCommandeManager() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-orange-500" />
+              <PowerOff className="h-5 w-5 text-orange-500" />
               <div>
                 <p className="text-sm text-gray-600">Fermées</p>
                 <p className="text-2xl font-bold">{stats.fermees}</p>
@@ -228,253 +259,272 @@ export default function ZonesCommandeManager() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Liste des zones de commande */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5" />
-                Zones de commande
-              </span>
-              <Dialog open={showForm} onOpenChange={setShowForm}>
-                <DialogTrigger asChild>
-                  <Button onClick={resetForm}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nouvelle zone
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingZone ? 'Modifier la zone' : 'Nouvelle zone de commande'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Zones de commande */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              Zones de commande
+            </span>
+            <Dialog open={showForm} onOpenChange={setShowForm}>
+              <DialogTrigger asChild>
+                <Button onClick={resetForm}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nouvelle zone
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingZone ? 'Modifier la zone' : 'Nouvelle zone de commande'}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <Label htmlFor="nom">Nom de la zone</Label>
+                    <Input
+                      id="nom"
+                      value={formData.nom}
+                      onChange={(e) => setFormData({...formData, nom: e.target.value})}
+                      placeholder="Ex: Menu du samedi 15 décembre"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="nom">Nom de la zone</Label>
+                      <Label htmlFor="date">Date</Label>
                       <Input
-                        id="nom"
-                        value={formData.nom}
-                        onChange={(e) => setFormData({...formData, nom: e.target.value})}
-                        placeholder="Ex: Menu du samedi 15 décembre"
+                        id="date"
+                        type="date"
+                        value={formData.date}
+                        onChange={(e) => setFormData({...formData, date: e.target.value})}
                         required
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="date">Date</Label>
-                        <Input
-                          id="date"
-                          type="date"
-                          value={formData.date}
-                          onChange={(e) => setFormData({...formData, date: e.target.value})}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="dateLimiteCommande">Date limite</Label>
-                        <Input
-                          id="dateLimiteCommande"
-                          type="datetime-local"
-                          value={formData.dateLimiteCommande}
-                          onChange={(e) => setFormData({...formData, dateLimiteCommande: e.target.value})}
-                          required
-                        />
-                      </div>
-                    </div>
                     <div>
-                      <Label htmlFor="statut">Statut</Label>
-                      <Select value={formData.statut} onValueChange={(value: 'ouvert' | 'ferme' | 'termine') =>
-                        setFormData({...formData, statut: value})}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ouvert">Ouvert</SelectItem>
-                          <SelectItem value="ferme">Fermé</SelectItem>
-                          <SelectItem value="termine">Terminé</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="dateLimiteCommande">Date limite</Label>
+                      <Input
+                        id="dateLimiteCommande"
+                        type="datetime-local"
+                        value={formData.dateLimiteCommande}
+                        onChange={(e) => setFormData({...formData, dateLimiteCommande: e.target.value})}
+                        required
+                      />
                     </div>
-                    <div>
-                      <Label>Plats disponibles</Label>
-                      <div className="border rounded-lg p-4 max-h-60 overflow-y-auto space-y-3">
-                        {['entree', 'plat', 'dessert', 'boisson'].map(categorie => {
-                          const platsCategorie = plats.filter(p => p.categorie === categorie && p.disponible);
-                          if (platsCategorie.length === 0) return null;
+                  </div>
+                  <div>
+                    <Label htmlFor="statut">Statut</Label>
+                    <Select value={formData.statut} onValueChange={(value: 'ouvert' | 'ferme' | 'termine') =>
+                      setFormData({...formData, statut: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ouvert">Ouvert</SelectItem>
+                        <SelectItem value="ferme">Fermé</SelectItem>
+                        <SelectItem value="termine">Terminé</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Plats disponibles</Label>
+                    <div className="border rounded-lg p-4 max-h-60 overflow-y-auto space-y-3">
+                      {['entree', 'plat', 'dessert', 'boisson'].map(categorie => {
+                        const platsCategorie = plats.filter(p => p.categorie === categorie && p.disponible);
+                        if (platsCategorie.length === 0) return null;
 
-                          return (
-                            <div key={categorie}>
-                              <h4 className="font-semibold mb-2 capitalize">{categorie}s</h4>
-                              <div className="space-y-2">
-                                {platsCategorie.map(plat => (
-                                  <div key={plat.id} className="flex items-center space-x-2">
-                                    <Checkbox
-                                      id={plat.id}
-                                      checked={formData.platsDisponibles.includes(plat.id)}
-                                      onCheckedChange={(checked) => handlePlatToggle(plat.id, checked as boolean)}
-                                    />
-                                    <Label htmlFor={plat.id} className="flex-1 cursor-pointer">
-                                      <span className="font-medium">{plat.nom}</span>
-                                      <span className="text-sm text-gray-500 ml-2">({plat.prix.toFixed(2)} €)</span>
-                                    </Label>
+                        return (
+                          <div key={categorie}>
+                            <h4 className="font-semibold mb-2 capitalize">{categorie}s</h4>
+                            <div className="space-y-2">
+                              {platsCategorie.map(plat => (
+                                <div key={plat.id} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={plat.id}
+                                    checked={formData.platsDisponibles.includes(plat.id)}
+                                    onCheckedChange={(checked) => handlePlatToggle(plat.id, checked as boolean)}
+                                  />
+                                  <Label htmlFor={plat.id} className="flex-1 cursor-pointer">
+                                    <span className="font-medium">{plat.nom}</span>
+                                    <span className="text-sm text-gray-500 ml-2">({plat.prix.toFixed(2)} €)</span>
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                      Annuler
+                    </Button>
+                    <Button type="submit">
+                      {editingZone ? 'Modifier' : 'Créer'}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">Chargement...</div>
+          ) : zones.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              Aucune zone de commande
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {zones
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                .map((zone) => {
+                  const isExpanded = expandedZones.has(zone.id);
+                  const platsParCategorie = getPlatsByCategorie(zone.platsDisponibles);
+
+                  return (
+                    <div key={zone.id} className="border rounded-lg bg-white">
+                      {/* En-tête de la zone */}
+                      <div className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => toggleExpanded(zone.id)}
+                              className="p-0 h-auto"
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                            </Button>
+
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-semibold">{zone.nom}</h3>
+                                <Badge className={getStatutColor(zone.statut)}>
+                                  {zone.statut}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-4 text-sm text-gray-600">
+                                <span>{formatDate(zone.date)}</span>
+                                <span>Limite: {formatLimitDate(zone.dateLimiteCommande)}</span>
+                                <span>{zone.commandes.length} commande(s)</span>
+                                <span>{zone.platsDisponibles.length} plat(s)</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            {/* Bouton pour fermer/ouvrir la zone */}
+                            {zone.statut !== 'termine' && (
+                              <Button
+                                size="sm"
+                                variant={zone.statut === 'ouvert' ? 'destructive' : 'default'}
+                                onClick={() => toggleZoneStatus(zone)}
+                                className="text-xs"
+                              >
+                                {zone.statut === 'ouvert' ? (
+                                  <>
+                                    <PowerOff className="h-3 w-3 mr-1" />
+                                    Fermer
+                                  </>
+                                ) : (
+                                  <>
+                                    <Power className="h-3 w-3 mr-1" />
+                                    Ouvrir
+                                  </>
+                                )}
+                              </Button>
+                            )}
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEdit(zone)}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDelete(zone.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Détails de la zone (dépliable) */}
+                      {isExpanded && (
+                        <div className="border-t bg-gray-50 p-4 space-y-4">
+                          {/* Plats disponibles par catégorie */}
+                          <div>
+                            <h4 className="font-semibold mb-3">Plats disponibles</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {Object.entries(platsParCategorie).map(([categorie, platsCategorie]) => {
+                                if (platsCategorie.length === 0) return null;
+                                return (
+                                  <div key={categorie} className="bg-white p-3 rounded border">
+                                    <h5 className="font-medium mb-2 capitalize">{categorie}s ({platsCategorie.length})</h5>
+                                    <div className="space-y-1">
+                                      {platsCategorie.map(plat => (
+                                        <div key={plat.id} className="flex items-center justify-between text-sm">
+                                          <span>{plat.nom}</span>
+                                          <span className="font-semibold">{plat.prix.toFixed(2)} €</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Commandes */}
+                          <div>
+                            <h4 className="font-semibold mb-3">Commandes ({zone.commandes.length})</h4>
+                            {zone.commandes.length === 0 ? (
+                              <p className="text-sm text-gray-500 italic bg-white p-3 rounded border">Aucune commande</p>
+                            ) : (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {zone.commandes.map((commande, index) => (
+                                  <div key={index} className="bg-white p-3 border rounded">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="font-medium text-sm">{commande.memberName}</span>
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="text-xs">{commande.statut}</Badge>
+                                        <span className="font-semibold text-sm">{commande.total.toFixed(2)} €</span>
+                                      </div>
+                                    </div>
+                                    <div className="text-xs text-gray-600">
+                                      {commande.items.map((item, itemIndex) => (
+                                        <span key={itemIndex}>
+                                          {item.platNom} x{item.quantite}
+                                          {itemIndex < commande.items.length - 1 && ', '}
+                                        </span>
+                                      ))}
+                                    </div>
                                   </div>
                                 ))}
                               </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                        Annuler
-                      </Button>
-                      <Button type="submit">
-                        {editingZone ? 'Modifier' : 'Créer'}
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8">Chargement...</div>
-            ) : zones.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                Aucune zone de commande
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {zones
-                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                  .map((zone) => (
-                    <div key={zone.id} className="p-3 border rounded-lg">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-semibold">{zone.nom}</h3>
-                            <Badge className={getStatutColor(zone.statut)}>
-                              {zone.statut}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-gray-600">
-                            {formatDate(zone.date)}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {zone.commandes.length} commande(s) • {zone.platsDisponibles.length} plat(s)
-                          </p>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setSelectedZone(zone)}
-                          >
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(zone)}
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDelete(zone.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Détails de la zone sélectionnée */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {selectedZone ? `Détails - ${selectedZone.nom}` : 'Sélectionnez une zone'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {selectedZone ? (
-              <div className="space-y-6">
-                {/* Plats disponibles par catégorie */}
-                <div>
-                  <h4 className="font-semibold mb-3">Plats disponibles</h4>
-                  {(() => {
-                    const platsParCategorie = getPlatsByCategorie(selectedZone.platsDisponibles);
-                    return (
-                      <div className="space-y-3">
-                        {Object.entries(platsParCategorie).map(([categorie, platsCategorie]) => {
-                          if (platsCategorie.length === 0) return null;
-                          return (
-                            <div key={categorie}>
-                              <h5 className="font-medium mb-2 capitalize">{categorie}s ({platsCategorie.length})</h5>
-                              <div className="space-y-1">
-                                {platsCategorie.map(plat => (
-                                  <div key={plat.id} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
-                                    <span>{plat.nom}</span>
-                                    <span className="font-semibold">{plat.prix.toFixed(2)} €</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {/* Commandes */}
-                <div>
-                  <h4 className="font-semibold mb-3">Commandes ({selectedZone.commandes.length})</h4>
-                  {selectedZone.commandes.length === 0 ? (
-                    <p className="text-sm text-gray-500 italic">Aucune commande</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {selectedZone.commandes.map((commande, index) => (
-                        <div key={index} className="p-3 border rounded bg-gray-50">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium">{commande.memberName}</span>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline">{commande.statut}</Badge>
-                              <span className="font-semibold">{commande.total.toFixed(2)} €</span>
-                            </div>
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            {commande.items.map((item, itemIndex) => (
-                              <span key={itemIndex}>
-                                {item.platNom} x{item.quantite}
-                                {itemIndex < commande.items.length - 1 && ', '}
-                              </span>
-                            ))}
+                            )}
                           </div>
                         </div>
-                      ))}
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                Sélectionnez une zone pour voir ses détails
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                  );
+                })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

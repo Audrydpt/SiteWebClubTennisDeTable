@@ -587,6 +587,26 @@ export const saveSelections = async (
 };
 */
 
+/* Menu/Plats API Endpoints */
+export const fetchPlats = async () => {
+  const response = await axios.get(`${API_URL}/menu`);
+  return response.data;
+};
+
+export const createPlat = async (data: any) => {
+  const response = await axios.post(`${API_URL}/menu`, data);
+  return response.data;
+};
+
+export const updatePlat = async (id: string, data: any) => {
+  const response = await axios.put(`${API_URL}/menu/${id}`, data);
+  return response.data;
+};
+
+export const deletePlat = async (id: string) => {
+  await axios.delete(`${API_URL}/menu/${id}`);
+};
+
 // ---- INFOS GENERALES ----
 
 // Récupérer toutes les informations (inclut contact, about, footer, palmares)
@@ -730,6 +750,4 @@ export const updateFacebookConfig = async (data: {
   const response = await axios.put(`${API_URL}/facebook/config`, data);
   return response.data;
 };
-
-
 
