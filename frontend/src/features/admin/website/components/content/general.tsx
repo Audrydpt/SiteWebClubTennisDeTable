@@ -15,7 +15,8 @@ interface GeneralInfos {
   youtube?: string;
   facebookGroupePriveUrl?: string;
   facebookMessageDefaut?: string;
-  facebookMessageVeteran?: string;  // Nouveau message pour les vétérans
+  facebookMessageVeteran?: string;
+  facebookMessageEntrainement?: string; // Nouveau message pour les entraînements
   footer?: {
     aboutText?: string;
     year?: string;
@@ -48,6 +49,7 @@ export default function GeneralManager() {
             facebookGroupePriveUrl: data[0].facebookGroupePriveUrl || '',
             facebookMessageDefaut: data[0].facebookMessageDefaut || 'Bonjour @tout le monde\n\n📢 Les sélections pour la semaine {semaine} sont disponibles ! 🏓\n\nChaque membre peut consulter sa sélection personnelle et les compositions d\'équipes complètes dans son espace personnel sur notre site :\n🔗 https://cttframeries.com\n\nN\'oubliez pas de vérifier régulièrement vos sélections, et notez qu\'elles peuvent être mises à jour jusqu\'au jour de la rencontre.\n\nEn cas de problème ou si vous ne pouvez pas participer à une rencontre, merci de contacter rapidement un membre du comité.\n\nBonne semaine à tous et bon match ! 🏓',
             facebookMessageVeteran: data[0].facebookMessageVeteran || 'Bonjour @tout le monde\n\n🏓 Sélections vétérans pour la semaine {semaine} ! 🏓\n\nChaque membre peut consulter sa sélection personnelle dans son espace personnel sur notre site :\n🔗 https://cttframeries.com\n\nN\'hésitez pas à vérifier régulièrement vos sélections.\n\nEn cas de problème ou d\'indisponibilité, contactez rapidement un membre du comité.\n\nBonne semaine et bon jeu ! 🏓',
+            facebookMessageEntrainement: data[0].facebookMessageEntrainement || '🏓 {titre}\n\n📅 {date}\n⏰ {heures}\n📍 {lieu}\n👨‍🏫 Responsable: {responsable}\n\n{description}\n\n{maxParticipants}Inscrivez-vous directement sur notre site web !\n🔗 https://cttframeries.com\n\nVenez nombreux ! 🎯\n\n#CTTFrameries #TennisDeTable #Entraînement #Sport',
             footer: {
               aboutText: data[0].footer?.aboutText || '',
               year: data[0].footer?.year || '',
@@ -97,7 +99,8 @@ export default function GeneralManager() {
         anciennete: infos.anciennete,
         facebookGroupePriveUrl: infos.facebookGroupePriveUrl,
         facebookMessageDefaut: infos.facebookMessageDefaut,
-        facebookMessageVeteran: infos.facebookMessageVeteran,  // Ajouté
+        facebookMessageVeteran: infos.facebookMessageVeteran,
+        facebookMessageEntrainement: infos.facebookMessageEntrainement, // Ajouté
       };
       await updateInformations(mergedData.id, mergedData);
       alert('Infos générales sauvegardées !');
@@ -257,6 +260,23 @@ export default function GeneralManager() {
           />
           <p className="text-xs text-gray-500 mt-1">
             Variables disponibles : {'{semaine}'} sera remplacé par le numéro de semaine automatiquement.
+            Utilisez "Bonjour @tout le monde" en début de message pour notifier tous les membres du groupe.
+          </p>
+        </div>
+
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Message par défaut pour les entraînements
+          </label>
+          <textarea
+            placeholder="Message de publication par défaut pour les entraînements"
+            value={infos.facebookMessageEntrainement || ''}
+            onChange={(e) => handleChange('facebookMessageEntrainement', e.target.value)}
+            className="w-full border p-2 rounded"
+            rows={8}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Variables disponibles : {'{titre}'}, {'{date}'}, {'{heures}'}, {'{lieu}'}, {'{responsable}'}, {'{description}'}, {'{maxParticipants}'} seront remplacées automatiquement.
             Utilisez "Bonjour @tout le monde" en début de message pour notifier tous les membres du groupe.
           </p>
         </div>

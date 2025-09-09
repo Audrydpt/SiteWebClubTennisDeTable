@@ -61,7 +61,8 @@ export default function FoodMenuSaturday({ member }: FoodMenuSaturdayProps) {
           // Remplir le panier avec la commande existante
           const existingCart: { [platId: string]: number } = {};
           memberOrder.items.forEach((item: any) => {
-            existingCart[item.platId] = item.quantite;
+            // Convertir l'ID en string pour la cohérence
+            existingCart[String(item.platId)] = item.quantite;
           });
           setCart(existingCart);
         }
@@ -106,7 +107,7 @@ export default function FoodMenuSaturday({ member }: FoodMenuSaturdayProps) {
           const plat = findPlatById(platId);
           if (!plat) return null;
           return {
-            platId,
+            platId: Number(platId), // Convertir en nombre pour correspondre à la structure
             platNom: plat.nom,
             quantite: quantity,
             prix: plat.prix,
@@ -120,6 +121,7 @@ export default function FoodMenuSaturday({ member }: FoodMenuSaturdayProps) {
 
       if (!currentZone) {
         console.error('Zone non trouvée');
+        setError('Zone de commande non trouvée');
         return;
       }
 
@@ -133,13 +135,16 @@ export default function FoodMenuSaturday({ member }: FoodMenuSaturdayProps) {
         );
         setExistingOrder(null);
       } else {
+        // Déterminer le statut de la commande
+        const commandeStatut = determineOrderStatus(orderItems, zone);
+
         // Créer ou mettre à jour la commande
         const orderData = {
           memberId: member.id,
           memberName: `${member.prenom} ${member.nom}`,
           items: orderItems,
           total: calculateTotal(updatedCart),
-          statut: 'en_attente' as const,
+          statut: commandeStatut,
           dateCommande: existingOrder ? existingOrder.dateCommande : new Date().toISOString(),
         };
 
@@ -167,12 +172,48 @@ export default function FoodMenuSaturday({ member }: FoodMenuSaturdayProps) {
 
       await updateZoneCommande(zone.id, updatedZone);
       setLastSaved(new Date());
+      setError(''); // Clear any previous errors
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
       setError('Erreur lors de la sauvegarde. Vérifiez que les endpoints /zonesCommande sont configurés.');
+
+      // En cas d'erreur, marquer la commande existante comme erreur si elle existe
+      if (existingOrder) {
+        setExistingOrder({
+          ...existingOrder,
+          statut: 'erreur'
+        });
+      }
     } finally {
       setSaving(false);
     }
+  };
+
+  // Nouvelle fonction pour déterminer le statut de la commande
+  const determineOrderStatus = (orderItems: any[], zone: ZoneCommande): 'confirmee' | 'en_attente' | 'erreur' => {
+    // Vérifier si tous les plats commandés sont encore disponibles
+    const allPlatsAvailable = orderItems.every(item => {
+      const plat = findPlatById(String(item.platId));
+      return plat && plat.disponible && zone.platsDisponibles.some(id => String(id) === String(item.platId));
+    });
+
+    if (!allPlatsAvailable) {
+      return 'erreur'; // Certains plats ne sont plus disponibles
+    }
+
+    // Vérifier si la date limite est dépassée
+    const isDeadlinePassed = new Date() > new Date(zone.dateLimiteCommande);
+    if (isDeadlinePassed) {
+      return 'erreur'; // Date limite dépassée
+    }
+
+    // Vérifier si la zone est encore ouverte
+    if (zone.statut !== 'ouvert') {
+      return 'erreur'; // Zone fermée
+    }
+
+    // Si tout va bien, la commande est confirmée
+    return 'confirmee';
   };
 
   const calculateTotal = (cartData: { [platId: string]: number }) => {
@@ -187,14 +228,16 @@ export default function FoodMenuSaturday({ member }: FoodMenuSaturdayProps) {
   };
 
   const findPlatById = (platId: string): Plat | null => {
-    return plats.find((plat) => plat.id === platId) || null;
+    // Gérer les IDs en string et en nombre
+    return plats.find((plat) => String(plat.id) === String(platId)) || null;
   };
 
   const getAvailablePlatsByCategory = () => {
     if (!zone) return { entrees: [], plats: [], desserts: [], boissons: [] };
 
     const availablePlats = plats.filter(plat =>
-      zone.platsDisponibles.includes(plat.id) && plat.disponible
+      // Gérer les IDs en string et en nombre
+      zone.platsDisponibles.some(id => String(id) === String(plat.id)) && plat.disponible
     );
 
     return {
@@ -263,20 +306,20 @@ export default function FoodMenuSaturday({ member }: FoodMenuSaturdayProps) {
                 size="sm"
                 variant="outline"
                 onClick={() =>
-                  updateCartItem(plat.id, (cart[plat.id] || 0) - 1)
+                  updateCartItem(String(plat.id), (cart[String(plat.id)] || 0) - 1)
                 }
-                disabled={(cart[plat.id] || 0) === 0 || saving}
+                disabled={(cart[String(plat.id)] || 0) === 0 || saving}
               >
                 <Minus className="h-3 w-3" />
               </Button>
               <span className="w-8 text-center font-medium">
-                {cart[plat.id] || 0}
+                {cart[String(plat.id)] || 0}
               </span>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() =>
-                  updateCartItem(plat.id, (cart[plat.id] || 0) + 1)
+                  updateCartItem(String(plat.id), (cart[String(plat.id)] || 0) + 1)
                 }
                 disabled={saving}
               >
@@ -314,7 +357,7 @@ export default function FoodMenuSaturday({ member }: FoodMenuSaturdayProps) {
           <UtensilsCrossed className="h-8 w-8 mx-auto mb-2 text-gray-400" />
           <p>Aucun menu disponible pour le moment</p>
           <p className="text-sm mt-1">
-            {plats.length > 0 ? 'Les plats sont disponibles mais aucune zone de commande n\'est ouverte.' : 'Aucun plat n\'est encore configuré dans /menu.'}
+            {plats.length > 0 ? 'La zone sera bientôt disponible.' : 'Aucun plat n\'est encore configuré.'}
           </p>
         </div>
       </div>
@@ -333,7 +376,18 @@ export default function FoodMenuSaturday({ member }: FoodMenuSaturdayProps) {
         <div className="flex items-center gap-2">
           <h3 className="font-semibold">{zone.nom}</h3>
           {existingOrder && (
-            <Badge variant="secondary">Commande {existingOrder.statut}</Badge>
+            <Badge
+              variant={
+                existingOrder.statut === 'confirmee' ? 'default' :
+                existingOrder.statut === 'erreur' ? 'destructive' :
+                'secondary'
+              }
+            >
+              {existingOrder.statut === 'confirmee' ? 'Confirmée' :
+               existingOrder.statut === 'erreur' ? 'Erreur' :
+               existingOrder.statut === 'en_attente' ? 'En attente' :
+               existingOrder.statut}
+            </Badge>
           )}
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -406,9 +460,23 @@ export default function FoodMenuSaturday({ member }: FoodMenuSaturdayProps) {
                   {totalPrice.toFixed(2)} €
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Votre commande est automatiquement sauvegardée
-              </p>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-xs text-gray-500">
+                  {existingOrder?.statut === 'confirmee' ? 'Commande confirmée et sauvegardée' :
+                   existingOrder?.statut === 'erreur' ? 'Erreur dans la commande - Vérifiez les plats' :
+                   'Votre commande est automatiquement sauvegardée'}
+                </p>
+                {existingOrder?.statut === 'erreur' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => loadMenu()}
+                    className="text-xs"
+                  >
+                    Actualiser
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </div>

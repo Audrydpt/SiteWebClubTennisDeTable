@@ -188,8 +188,26 @@ export default function ZonesCommandeManager() {
     }
   };
 
+  const getCommandeStatutColor = (statut: string) => {
+    switch (statut) {
+      case 'confirmee': return 'bg-green-100 text-green-800';
+      case 'en_attente': return 'bg-yellow-100 text-yellow-800';
+      case 'payee': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getCommandeStatutLabel = (statut: string) => {
+    switch (statut) {
+      case 'confirmee': return 'Confirmée';
+      case 'en_attente': return 'En attente';
+      case 'payee': return 'Payée';
+      default: return statut;
+    }
+  };
+
   const getPlatsByIds = (platIds: string[]) => {
-    return plats.filter(plat => platIds.includes(plat.id));
+    return plats.filter(plat => platIds.some(id => String(id) === String(plat.id)));
   };
 
   const getPlatsByCategorie = (platIds: string[]) => {
@@ -341,11 +359,11 @@ export default function ZonesCommandeManager() {
                               {platsCategorie.map(plat => (
                                 <div key={plat.id} className="flex items-center space-x-2">
                                   <Checkbox
-                                    id={plat.id}
-                                    checked={formData.platsDisponibles.includes(plat.id)}
-                                    onCheckedChange={(checked) => handlePlatToggle(plat.id, checked as boolean)}
+                                    id={String(plat.id)}
+                                    checked={formData.platsDisponibles.some(id => String(id) === String(plat.id))}
+                                    onCheckedChange={(checked) => handlePlatToggle(String(plat.id), checked as boolean)}
                                   />
-                                  <Label htmlFor={plat.id} className="flex-1 cursor-pointer">
+                                  <Label htmlFor={String(plat.id)} className="flex-1 cursor-pointer">
                                     <span className="font-medium">{plat.nom}</span>
                                     <span className="text-sm text-gray-500 ml-2">({plat.prix.toFixed(2)} €)</span>
                                   </Label>
@@ -499,7 +517,12 @@ export default function ZonesCommandeManager() {
                                     <div className="flex items-center justify-between mb-2">
                                       <span className="font-medium text-sm">{commande.memberName}</span>
                                       <div className="flex items-center gap-2">
-                                        <Badge variant="outline" className="text-xs">{commande.statut}</Badge>
+                                        <Badge
+                                          className={getCommandeStatutColor(commande.statut)}
+                                          variant="outline"
+                                        >
+                                          {getCommandeStatutLabel(commande.statut)}
+                                        </Badge>
                                         <span className="font-semibold text-sm">{commande.total.toFixed(2)} €</span>
                                       </div>
                                     </div>
