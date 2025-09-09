@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+    <!-- Page d'accueil -->
+    <url>
+        <loc>https://cttframeries.com/</loc>
+        <lastmod>2025-09-09</lastmod>
+        <priority>1.0</priority>
+    </url>
+
+    <!-- Actualités -->
+    <url>
+        <loc>https://cttframeries.com/actualites</loc>
+        <lastmod>2025-09-09</lastmod>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- Calendrier -->
+    <url>
+        <loc>https://cttframeries.com/evenements/calendrier</loc>
+        <lastmod>2025-09-09</lastmod>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- Compétition -->
+    <url>
+        <loc>https://cttframeries.com/competition/equipes</loc>
+        <lastmod>2025-09-09</lastmod>
+        <priority>0.7</priority>
+    </url>
+
+    <!-- Sponsors -->
+    <url>
+        <loc>https://cttframeries.com/sponsors</loc>
+        <lastmod>2025-09-09</lastmod>
+        <priority>0.6</priority>
+    </url>
+
+    <!-- Contact -->
+    <url>
+        <loc>https://cttframeries.com/contact</loc>
+        <lastmod>2025-09-09</lastmod>
+        <priority>0.5</priority>
+    </url>
+
+    <url>
+        <loc>https://cttframeries.com/evenements/galerie</loc>
+        <lastmod>2025-09-09</lastmod>
+        <priority>0.4</priority>
+    </url>
+
+</urlset>
