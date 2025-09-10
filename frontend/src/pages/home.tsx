@@ -396,7 +396,9 @@ export default function HomePage() {
                       };
 
                       // Pour chaque équipe du club, on prend son dernier match joué ou la prochaine rencontre prévue
+                      // MODIFICATION: Limiter à 3 équipes seulement
                       const resultatsEquipes: ResultatData[] = equipesClub
+                        .slice(0, 3) // Prendre seulement les 3 premières équipes
                         .map((nomEquipe: string) => {
                           // Tous les matchs de l'équipe (domicile ou extérieur)
                           const matchsEquipe = resultats
