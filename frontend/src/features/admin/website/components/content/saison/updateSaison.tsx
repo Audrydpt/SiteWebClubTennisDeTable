@@ -196,6 +196,8 @@ export default function UpdateSaison() {
       exterieur: '',
       score: '',
       date: '',
+      heure: '20:00', // Heure par défaut
+      lieu: '',
       saisonId: saison.id,
     };
     handleUpdate('calendrier', [...saison.calendrier, newMatch]);
@@ -1033,12 +1035,24 @@ export default function UpdateSaison() {
                                 </Select>
                               </div>
 
-                              <div className="flex gap-2">
+                              <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                                 <Input
                                   type="date"
                                   value={match.date}
                                   onChange={(e) => handleCalendarUpdate(match.id, 'date', e.target.value)}
-                                  className="flex-1"
+                                  placeholder="Date"
+                                />
+                                <Input
+                                  type="time"
+                                  value={match.heure || ''}
+                                  onChange={(e) => handleCalendarUpdate(match.id, 'heure', e.target.value)}
+                                  placeholder="Heure"
+                                />
+                                <Input
+                                  type="text"
+                                  value={match.lieu || ''}
+                                  onChange={(e) => handleCalendarUpdate(match.id, 'lieu', e.target.value)}
+                                  placeholder="Lieu"
                                 />
                                 <Button variant="destructive" size="icon" onClick={() => supprimerMatch(match.id)}>
                                   <Trash2 className="h-4 w-4" />

@@ -393,12 +393,23 @@ export default function HomeLogged() {
                       </div>
                       <div className="text-sm text-gray-600">
                         {formatDateFR(match.date)}
+                        {match.heure && (
+                          <span className="ml-2 text-blue-600 font-medium">
+                            à {match.heure}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <MapPin className="h-4 w-4" />
                         <span>{match.domicile}</span>
+                        {match.heure && (
+                          <>
+                            <Clock className="h-4 w-4 ml-2" />
+                            <span>{match.heure}</span>
+                          </>
+                        )}
                       </div>
                       {(!isHomeMatch || hasExceptionalInfo(match)) && (
                         <Button
@@ -458,6 +469,7 @@ export default function HomeLogged() {
                         className="text-xs py-1 px-2 h-auto"
                       >
                         vs {adversaire} - {formatDateCourte(match.date)}
+                        {match.heure && <span className="ml-1">({match.heure})</span>}
                       </TabsTrigger>
                     );
                   })}
@@ -654,10 +666,17 @@ export default function HomeLogged() {
           <CardContent className="pt-0">
             <div className="text-center py-2">
               <Dialog open={showTraining} onOpenChange={setShowTraining}>
+                <Card className="bg-white border border-[#E0E0E0]">
+                  <CardContent className="pt-0">
+                    Les groupes d'entraînement seront bientôt disponibles ici.
+                  </CardContent>
+                </Card>
                 <DialogTrigger asChild>
+                  {/* Le bouton pour ouvrir le modal
                   <Button variant="outline" size="sm" className="w-full">
                     Voir les entraînements
                   </Button>
+                  */}
                 </DialogTrigger>
                 <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>

@@ -103,6 +103,8 @@ export interface Match {
   exterieur: string;
   score: string;
   date: string;
+  heure?: string; // Ajout du champ heure
+  lieu?: string; // Ajout du champ lieu (optionnel)
   joueursDomicile?: Joueur[];
   joueursExterieur?: Joueur[];
   joueur_dom?: Joueur[];

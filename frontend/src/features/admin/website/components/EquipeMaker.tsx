@@ -570,6 +570,91 @@ export default function AdminResults() {
       });
   }, [facebookShareMessage, groupId]);
 
+  // Nouvelles fonctions pour toutes les équipes
+  const toutesLesEquipes = useMemo(() => {
+    if (!saison || !semaineSelectionnee) return [];
+
+    // Récupérer tous les matchs de la semaine sélectionnée où CTT Frameries joue
+    const matchsCttFrameries = matchs.filter(
+      (match) =>
+        match.semaine === semaineSelectionnee &&
+        (match.domicile.includes('CTT Frameries') || match.exterieur.includes('CTT Frameries'))
+    );
+
+    // Créer un Map pour grouper par équipe CTT Frameries
+    const equipesMap = new Map<string, {
+      equipe: string;
+      serie: string;
+      serieId: string;
+      match?: any;
+      joueurs: any[];
+      estDomicile: boolean;
+    }>();
+
+    // Traiter les matchs avec compositions
+    matchsCttFrameries.forEach(match => {
+      const serie = saison.series.find(s => s.id === match.serieId);
+      if (!serie) return;
+
+      let joueurs: any[] = [];
+      let estDomicile = false;
+      let equipeFrameries = '';
+
+      if (match.domicile.includes('CTT Frameries')) {
+        joueurs = match.joueursDomicile || match.joueur_dom || [];
+        estDomicile = true;
+        equipeFrameries = match.domicile;
+      } else if (match.exterieur.includes('CTT Frameries')) {
+        joueurs = match.joueursExterieur || match.joueur_ext || [];
+        estDomicile = false;
+        equipeFrameries = match.exterieur;
+      }
+
+      // Ajouter l'équipe à la Map (même si elle n'a pas de joueurs)
+      if (equipeFrameries) {
+        equipesMap.set(equipeFrameries, {
+          equipe: equipeFrameries,
+          serie: serie.nom,
+          serieId: serie.id,
+          match: {
+            id: match.id,
+            domicile: match.domicile,
+            exterieur: match.exterieur,
+            date: match.date,
+            heure: match.heure,
+            lieu: match.lieu
+          },
+          joueurs,
+          estDomicile
+        });
+      }
+    });
+
+    // Ajouter les équipes du club qui n'ont pas encore de match cette semaine
+    saison.equipesClub.forEach(equipeClub => {
+      // Vérifier si cette équipe a déjà un match cette semaine
+      const aDejaMatch = Array.from(equipesMap.values()).some(e => e.equipe === equipeClub.nom);
+
+      if (!aDejaMatch && equipeClub.serieId) {
+        const serie = saison.series.find(s => s.id === equipeClub.serieId);
+        if (serie) {
+          equipesMap.set(equipeClub.nom, {
+            equipe: equipeClub.nom,
+            serie: serie.nom,
+            serieId: serie.id,
+            joueurs: [],
+            estDomicile: true // Valeur par défaut
+          });
+        }
+      }
+    });
+
+    // Convertir en array et trier par nom d'équipe CTT Frameries
+    return Array.from(equipesMap.values()).sort((a, b) => {
+      return a.equipe.localeCompare(b.equipe);
+    });
+  }, [saison, matchs, semaineSelectionnee]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -735,7 +820,7 @@ export default function AdminResults() {
           {/* Content */}
           {serieSelectionnee && (
             <Tabs defaultValue="selections" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2 bg-white/80 backdrop-blur-sm">
+              <TabsList className="grid w-full grid-cols-3 bg-white/80 backdrop-blur-sm">
                 <TabsTrigger
                   value="selections"
                   className="flex items-center gap-2"
@@ -746,6 +831,10 @@ export default function AdminResults() {
                 <TabsTrigger value="results" className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4" />
                   Résultats
+                </TabsTrigger>
+                <TabsTrigger value="toutes-equipes" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Toutes les équipes
                 </TabsTrigger>
               </TabsList>
 
@@ -801,6 +890,152 @@ export default function AdminResults() {
                   </Card>
                 )}
               </TabsContent>
+
+              <TabsContent value="toutes-equipes" className="space-y-4">
+                <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="text-xl text-center flex items-center justify-center gap-2">
+                      <Users className="h-6 w-6 text-blue-600" />
+                      Toutes les équipes CTT Frameries - Semaine {semaineSelectionnee}
+                    </CardTitle>
+                    <p className="text-center text-sm text-gray-600">
+                      Vue d'ensemble de toutes les équipes du club pour cette semaine (y compris les équipes sans composition)
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    {toutesLesEquipes.length > 0 ? (
+                      <div className="space-y-6">
+                        {toutesLesEquipes.map((equipe, index) => (
+                          <Card
+                            key={`${equipe.serieId}-${equipe.equipe}-${index}`}
+                            className={`border ${
+                              equipe.joueurs.length === 0 
+                                ? 'border-orange-200 bg-orange-50' 
+                                : 'border-gray-200'
+                            }`}
+                          >
+                            <CardHeader className="pb-3">
+                              <div className="flex items-center justify-between">
+                                <CardTitle className="text-lg text-blue-700">
+                                  {equipe.equipe}
+                                </CardTitle>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-xs">
+                                    {equipe.serie}
+                                  </Badge>
+                                  {equipe.match && (
+                                    <Badge variant={equipe.estDomicile ? "default" : "secondary"}>
+                                      {equipe.estDomicile ? "Domicile" : "Extérieur"}
+                                    </Badge>
+                                  )}
+                                  {equipe.joueurs.length === 0 && (
+                                    <Badge variant="destructive" className="text-xs">
+                                      Équipe vide
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+
+                              {equipe.match ? (
+                                <div className="text-sm text-gray-600 space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <strong>Match:</strong> {equipe.match.domicile} vs {equipe.match.exterieur}
+                                  </div>
+                                  {equipe.match.date && (
+                                    <div className="flex items-center gap-2">
+                                      <CalendarDays className="h-4 w-4" />
+                                      {new Date(equipe.match.date).toLocaleDateString('fr-FR')}
+                                      {equipe.match.heure && <span>à {equipe.match.heure}</span>}
+                                    </div>
+                                  )}
+                                  {equipe.match.lieu && (
+                                    <div className="text-xs text-gray-500">
+                                      📍 {equipe.match.lieu}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="text-sm text-orange-600">
+                                  <div className="flex items-center gap-2">
+                                    <CalendarDays className="h-4 w-4" />
+                                    Aucun match programmé pour la semaine {semaineSelectionnee}
+                                  </div>
+                                </div>
+                              )}
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-3">
+                                <h4 className="font-medium text-gray-700 flex items-center gap-2">
+                                  <User className="h-4 w-4" />
+                                  Composition ({equipe.joueurs.length} joueur{equipe.joueurs.length > 1 ? 's' : ''})
+                                </h4>
+
+                                {equipe.joueurs.length > 0 ? (
+                                  <>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                      {equipe.joueurs.map((joueur, jIndex) => {
+                                        const membre = membres.find(m => m.id === joueur.id);
+                                        return (
+                                          <div
+                                            key={`${joueur.id}-${jIndex}`}
+                                            className={`flex items-center gap-2 p-2 rounded-lg border ${
+                                              joueur.wo === "y" 
+                                                ? 'bg-red-50 border-red-200 text-red-700' 
+                                                : 'bg-gray-50 border-gray-200'
+                                            }`}
+                                          >
+                                            <div className="flex-1">
+                                              <div className="font-medium text-sm">
+                                                {membre ? `${membre.nom} ${membre.prenom}` : joueur.nom}
+                                              </div>
+                                              {membre?.classement && (
+                                                <div className="text-xs text-gray-500">
+                                                  {membre.classement}
+                                                </div>
+                                              )}
+                                            </div>
+                                            {joueur.wo === "y" && (
+                                              <Badge variant="destructive" className="text-xs">
+                                                WO
+                                              </Badge>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                    {equipe.joueurs.filter(j => j.wo === "y").length > 0 && (
+                                      <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                                        ⚠️ {equipe.joueurs.filter(j => j.wo === "y").length} joueur(s) en forfait (WO)
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <div className="text-center py-8 text-orange-600 bg-orange-50 rounded-lg border border-orange-200">
+                                    <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                    <p className="font-medium">Aucune composition définie</p>
+                                    <p className="text-sm text-orange-500 mt-1">
+                                      {equipe.match
+                                        ? "Les joueurs doivent encore être sélectionnés pour ce match"
+                                        : "Aucun match programmé pour cette semaine"
+                                      }
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-gray-500">
+                        <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg">Aucune équipe trouvée</p>
+                        <p className="text-sm">pour la semaine {semaineSelectionnee}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
             </Tabs>
           )}
 
@@ -813,7 +1048,7 @@ export default function AdminResults() {
                   Sélectionnez une série
                 </h3>
                 <p className="text-gray-500">
-                  Choisissez une série pour commencer l'encodage des résultats
+                  Choisissez une série pour commencer l'encodage des résultats ou voir toutes les équipes en sélectionnant n'importe quelle série
                 </p>
               </CardContent>
             </Card>
