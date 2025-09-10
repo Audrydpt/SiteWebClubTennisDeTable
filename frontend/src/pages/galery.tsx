@@ -119,7 +119,6 @@ export default function EventsGallery() {
   };
 
   const getVideoThumbnail = (item: GalleryItem) => {
-    console.log('Getting thumbnail for item:', item); // Debug
 
     // Si autoThumbnail est false et qu'une miniature personnalisée est définie
     if (item.autoThumbnail === false && item.thumbnail) {
@@ -137,7 +136,6 @@ export default function EventsGallery() {
       if (item.src.includes('youtube.com') || item.src.includes('youtu.be')) {
         const videoId = extractYouTubeVideoId(item.src);
         if (videoId) {
-          console.log('YouTube video detected, ID:', videoId); // Debug
           return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
         }
       }
@@ -173,7 +171,6 @@ export default function EventsGallery() {
         const cloudName = match[1];
         const publicId = match[2];
 
-        console.log('Cloudinary video detected:', { cloudName, publicId }); // Debug
 
         // Générer l'URL de la miniature avec les transformations Cloudinary
         // so_0 = seek offset 0 (première frame)
@@ -227,7 +224,6 @@ export default function EventsGallery() {
       getVideoThumbnail(item) === target.src || item.src === target.src
     );
 
-    console.log('Image error for:', target.src, item); // Debug
 
     if (item && item.type === 'video') {
       // Si c'est une vidéo Cloudinary et que la miniature automatique a échoué

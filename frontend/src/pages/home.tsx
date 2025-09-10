@@ -82,7 +82,6 @@ export default function HomePage() {
     const loadData = async () => {
       try {
         const data = await fetchActualites();
-        console.log('Actualités récupérées:', data);
 
         let actualitesData = [];
 
@@ -172,16 +171,6 @@ export default function HomePage() {
     if (clubScore > advScore) return 'text-green-600';
     if (clubScore < advScore) return 'text-red-600';
     return 'text-gray-700';
-  };
-
-  const handleActualiteClick = (redirectUrl: string | undefined | null) => {
-    // Vérifie si l'URL existe et n'est pas une chaîne vide
-    if (redirectUrl && redirectUrl.trim() !== '') {
-      console.log('Redirection vers:', redirectUrl);
-      window.open(redirectUrl, '_blank', 'noopener,noreferrer');
-    } else {
-      console.log('Pas de redirection: URL manquante ou vide');
-    }
   };
 
   const renderCarouselContent = () => {
