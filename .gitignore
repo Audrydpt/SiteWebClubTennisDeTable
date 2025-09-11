@@ -4,7 +4,7 @@
 .pnp.js
 
 # Dépendances Composer
-backend/vendor/
+frontend/apiPHP/vendor/
 vendor/
 
 # Testing
