@@ -10,6 +10,16 @@ vendor/
 # Testing
 **/coverage
 
+# .env ne pas être versionné
+.env
+.env.local
+.env.*.local
+.env.test.local
+.env.production.local
+.env.development.local
+.env.test
+.env.production
+
 # Production
 **/dist
 **/build
