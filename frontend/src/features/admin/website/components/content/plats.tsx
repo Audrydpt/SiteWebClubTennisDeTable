@@ -51,7 +51,7 @@ export default function PlatsManager() {
       const data = await fetchPlats();
       setPlats(data);
     } catch (error) {
-      console.error('Erreur lors du chargement des plats:', error);
+      console.error('Erreur lors du chargement des plat:', error);
     } finally {
       setLoading(false);
     }
