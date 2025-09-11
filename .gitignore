@@ -3,6 +3,10 @@
 **/.pnp
 .pnp.js
 
+# Dépendances Composer
+backend/vendor/
+vendor/
+
 # Testing
 **/coverage
 
