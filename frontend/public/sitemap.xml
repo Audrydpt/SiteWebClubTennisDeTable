@@ -8,13 +8,6 @@
         <priority>1.0</priority>
     </url>
 
-    <!-- Actualités -->
-    <url>
-        <loc>https://cttframeries.com/actualites</loc>
-        <lastmod>2025-09-09</lastmod>
-        <priority>0.8</priority>
-    </url>
-
     <!-- Calendrier -->
     <url>
         <loc>https://cttframeries.com/evenements/calendrier</loc>
