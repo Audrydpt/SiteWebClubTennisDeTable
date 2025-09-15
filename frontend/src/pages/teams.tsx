@@ -1,9 +1,9 @@
 /* eslint-disable */
 
 import { useState, useEffect } from 'react';
-import { Loader2, Trophy, Users, Star } from 'lucide-react';
+import { Loader2, Trophy, Users, Star, CheckCircle, Circle, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { fetchAllRankings, getCachedAllRankings, type TabtDivisionRanking, type TabtRankingEntry, type TabtRankingResponse } from '@/services/tabt';
+import { fetchAllRankings, getCachedAllRankings, type TabtDivisionRanking, type TabtRankingEntry, type TabtRankingResponse, type TabtProgressPhase } from '@/services/tabt';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -31,6 +31,15 @@ const getRankColor = (position: number) => {
 
 type CategorieFiltre = 'tous' | 'homme' | 'veteran' | 'femme';
 
+// Remplacement d’affichage pour certains termes NL
+const formatDivisionName = (name: string): string => {
+  if (!name) return ''
+  return name
+    .replace(/\bAfdeling\b/gi, 'Division')
+    .replace(/\bVeteranen\b/gi, 'Vétérans')
+    .replace(/\bHeren\b/gi, 'Hommes')
+}
+
 const getCategorieFromDivisionNom = (
   nom: string
 ): 'homme' | 'femme' | 'veteran' => {
@@ -52,19 +61,85 @@ const getCategorieFromDivisionNom = (
   ) {
     return 'veteran';
   }
-  // Heren / Hommes par défaut
   if (nomLower.includes('heren') || nomLower.includes('homme')) {
     return 'homme';
   }
   return 'homme';
 };
 
+const ProgressStep = ({
+  label,
+  isActive,
+  isCompleted,
+  isLast
+}: {
+  phase: TabtProgressPhase;
+  label: string;
+  isActive: boolean;
+  isCompleted: boolean;
+  isLast: boolean;
+}) => {
+  const getIcon = () => {
+    if (isCompleted) return <CheckCircle className="w-6 h-6" />;
+    if (isActive) return <Clock className="w-6 h-6" />;
+    return <Circle className="w-6 h-6" />;
+  };
+
+  return (
+    <div className="flex items-center">
+      <div className="flex flex-col items-center">
+        <div className={`
+          relative p-3 rounded-full transition-all duration-500 ease-in-out
+          ${isCompleted 
+            ? 'bg-[#F1C40F] text-[#3A3A3A] shadow-lg' 
+            : isActive 
+              ? 'bg-[#F1C40F]/20 text-[#F1C40F] ring-2 ring-[#F1C40F] shadow-md' 
+              : 'bg-gray-200 text-gray-400'
+          }
+        `}>
+          {getIcon()}
+          {isActive && (
+            <div className="absolute inset-0 rounded-full bg-[#F1C40F]/20 animate-pulse" />
+          )}
+        </div>
+        <span className={`
+          mt-2 text-sm font-medium text-center transition-all duration-300
+          ${isCompleted || isActive ? 'text-[#3A3A3A]' : 'text-gray-500'}
+        `}>
+          {label}
+        </span>
+      </div>
+      {!isLast && (
+        <div className={`
+          flex-1 h-1 mx-4 rounded-full transition-all duration-500 ease-in-out
+          ${isCompleted ? 'bg-[#F1C40F]' : 'bg-gray-200'}
+        `}>
+          {isActive && !isCompleted && (
+            <div className="h-full bg-gradient-to-r from-[#F1C40F] to-transparent rounded-full animate-pulse" />
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function EquipesPage() {
   const [tabtData, setTabtData] = useState<TabtRankingResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [filtreCategorie, setFiltreCategorie] =
-    useState<CategorieFiltre>('tous');
+  const [filtreCategorie, setFiltreCategorie] = useState<CategorieFiltre>('tous');
+  const [showProgress, setShowProgress] = useState(false);
+  const [progressValue, setProgressValue] = useState(0);
+  const [currentPhase, setCurrentPhase] = useState<TabtProgressPhase>('contact');
+  const [completedPhases, setCompletedPhases] = useState<TabtProgressPhase[]>([]);
   const navigate = useNavigate();
+
+  const progressSteps: { phase: TabtProgressPhase; label: string }[] = [
+    { phase: 'contact', label: 'Connexion AFTT' },
+    { phase: 'reception', label: 'Réception données' },
+    { phase: 'tri', label: 'Traitement' },
+    { phase: 'cache', label: 'Mise en cache' },
+    { phase: 'done', label: 'Finalisation' },
+  ];
 
   useEffect(() => {
     let cancelled = false;
@@ -74,20 +149,48 @@ export default function EquipesPage() {
     if (cached && !cancelled) {
       setTabtData(cached);
       setIsLoading(false);
+      setShowProgress(false);
+    } else {
+      setShowProgress(true);
+      setProgressValue(5);
+      setCurrentPhase('contact');
+      setCompletedPhases([]);
     }
 
     // 2) Revalidation en arrière-plan (force=true) pour rafraîchir
     const revalidate = async () => {
       try {
-        const data = await fetchAllRankings({ force: true });
-        if (!cancelled) setTabtData(data);
+        const data = await fetchAllRankings({
+          force: true,
+          onProgress: (phase, percent) => {
+            if (cancelled) return;
+            setCurrentPhase(phase);
+            if (typeof percent === 'number') {
+              setProgressValue(percent);
+            }
+
+            // Marquer les phases précédentes comme complétées
+            const currentIndex = progressSteps.findIndex(step => step.phase === phase);
+            const completed = progressSteps.slice(0, currentIndex).map(step => step.phase);
+            setCompletedPhases(completed);
+          },
+        });
+        if (!cancelled) {
+          setTabtData(data);
+          // Marquer toutes les phases comme complétées
+          setCompletedPhases(progressSteps.map(step => step.phase));
+        }
       } catch (error) {
         if (!cached && !cancelled) {
-          // pas de cache affichable: on reste en erreur/loading
           console.error('Erreur lors du chargement des données TABT:', error);
         }
       } finally {
-        if (!cached && !cancelled) setIsLoading(false);
+        if (!cached && !cancelled) {
+          setIsLoading(false);
+          setTimeout(() => {
+            if (!cancelled) setShowProgress(false);
+          }, 800);
+        }
       }
     };
 
@@ -98,15 +201,137 @@ export default function EquipesPage() {
     };
   }, []);
 
-  const handleEquipeClick = (nomEquipe: string) => {
+  const handleEquipeClick = (nomEquipe: string, divisionId: number) => {
     const equipeEncoded = encodeURIComponent(nomEquipe);
-    navigate(`/competition/calendrier/${equipeEncoded}`);
+    navigate(`/competition/calendrier/${equipeEncoded}?divisionId=${divisionId}`);
   };
 
   if (isLoading) {
+    // Premier chargement sans cache: afficher la barre de progression
+    if (showProgress) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+          {/* Header élégant */}
+          <div className="relative bg-gradient-to-r from-[#3A3A3A] via-gray-700 to-[#3A3A3A] text-white py-20 overflow-hidden">
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-10 left-10 w-32 h-32 border-4 border-[#F1C40F] rounded-full animate-pulse" />
+              <div className="absolute top-32 right-20 w-24 h-24 bg-[#F1C40F] rounded-full opacity-50 animate-bounce" />
+              <div className="absolute bottom-20 left-1/4 w-16 h-16 border-4 border-[#F1C40F] rounded-full animate-spin" />
+              <div className="absolute bottom-10 right-10 w-20 h-20 bg-[#F1C40F] rounded-full opacity-30" />
+              <div className="absolute top-1/2 left-1/2 w-6 h-6 bg-[#F1C40F] rounded-full transform -translate-x-1/2 -translate-y-1/2 animate-ping" />
+            </div>
+
+            <div className="container mx-auto px-4 text-center relative z-10">
+              <div className="mb-6">
+                <div className="inline-flex items-center px-4 py-2 bg-[#F1C40F]/20 rounded-full backdrop-blur-sm border border-[#F1C40F]/30">
+                  <Loader2 className="animate-spin w-5 h-5 text-[#F1C40F] mr-2" />
+                  <span className="text-[#F1C40F] font-medium">Chargement en cours</span>
+                </div>
+              </div>
+              <h1 className="text-5xl font-bold mb-4 leading-tight bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
+                Récupération des classements
+              </h1>
+              <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+                Connexion aux services AFTT pour obtenir les données les plus récentes
+              </p>
+            </div>
+          </div>
+
+          {/* Section de progression principale */}
+          <div className="container mx-auto px-4 py-16">
+            <div className="max-w-4xl mx-auto">
+              {/* Étapes de progression */}
+              <div className="mb-12">
+                <div className="flex items-center justify-between mb-8">
+                  {progressSteps.map((step, index) => (
+                    <ProgressStep
+                      key={step.phase}
+                      phase={step.phase}
+                      label={step.label}
+                      isActive={currentPhase === step.phase}
+                      isCompleted={completedPhases.includes(step.phase)}
+                      isLast={index === progressSteps.length - 1}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Barre de progression principale */}
+              <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-200">
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-[#3A3A3A]">
+                      {progressSteps.find(s => s.phase === currentPhase)?.label || 'Chargement...'}
+                    </span>
+                    <span className="text-sm font-bold text-[#F1C40F]">
+                      {Math.min(100, Math.max(0, Math.round(progressValue)))}%
+                    </span>
+                  </div>
+
+                  {/* Barre de progression stylée */}
+                  <div className="relative w-full h-4 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+                    <div
+                      className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#F1C40F] to-yellow-300 rounded-full transition-all duration-500 ease-out shadow-lg"
+                      style={{ width: `${Math.min(100, Math.max(0, progressValue))}%` }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Informations détaillées */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+                  <div className="bg-gradient-to-br from-[#F1C40F]/10 to-yellow-50 rounded-xl p-4 border border-[#F1C40F]/20">
+                    <div className="text-xs text-[#3A3A3A]/70 uppercase tracking-wide font-semibold mb-1">
+                      Source
+                    </div>
+                    <div className="text-sm font-bold text-[#3A3A3A]">
+                      AFTT Belgique
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                    <div className="text-xs text-[#3A3A3A]/70 uppercase tracking-wide font-semibold mb-1">
+                      Étape actuelle
+                    </div>
+                    <div className="text-sm font-bold text-[#3A3A3A]">
+                      {progressSteps.find(s => s.phase === currentPhase)?.label}
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                    <div className="text-xs text-[#3A3A3A]/70 uppercase tracking-wide font-semibold mb-1">
+                      Progression
+                    </div>
+                    <div className="text-sm font-bold text-[#3A3A3A]">
+                      {completedPhases.length} / {progressSteps.length} étapes
+                    </div>
+                  </div>
+                </div>
+
+                {/* Message d'encouragement */}
+                <div className="mt-8 text-center">
+                  <div className="inline-flex items-center px-4 py-2 bg-gray-50 rounded-full border">
+                    <Clock className="w-4 h-4 text-gray-500 mr-2" />
+                    <span className="text-sm text-gray-600">
+                      Cette opération peut prendre quelques secondes...
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Fallback spinner (ne devrait s'afficher que très brièvement)
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin w-8 h-8 text-[#F1C40F]" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-white">
+        <div className="text-center">
+          <Loader2 className="animate-spin w-12 h-12 text-[#F1C40F] mx-auto mb-4" />
+          <p className="text-gray-600">Préparation...</p>
+        </div>
       </div>
     );
   }
@@ -138,7 +363,7 @@ export default function EquipesPage() {
           <Alert variant="destructive" className="max-w-2xl mx-auto">
             <AlertTitle>Erreur</AlertTitle>
             <AlertDescription>
-              Impossible de charger les données de classement (TABT).
+              Impossible de charger les données de classement (AFTT).
             </AlertDescription>
           </Alert>
         </div>
@@ -173,7 +398,7 @@ export default function EquipesPage() {
             <span className="text-[#F1C40F] drop-shadow-lg">Classements</span>
           </h1>
           <p className="text-xl max-w-3xl mx-auto leading-relaxed text-gray-300">
-            Classements officiels TABT — Club {clubId}
+            Classements officiels AFTT — Club {clubId}
           </p>
         </div>
       </div>
@@ -255,7 +480,7 @@ export default function EquipesPage() {
                       <div className="bg-[#F1C40F] p-2 rounded-full">
                         <Trophy className="h-5 w-5 text-[#3A3A3A]" />
                       </div>
-                      {division.divisionName}
+                      {formatDivisionName(division.divisionName)}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-0 flex-grow">
@@ -297,7 +522,7 @@ export default function EquipesPage() {
                               }
                               onClick={() => {
                                 if (equipe.teamClub === clubId) {
-                                  handleEquipeClick(equipe.team);
+                                  handleEquipeClick(equipe.team, division.divisionId);
                                 }
                               }}
                             >
