@@ -37,7 +37,13 @@ export default function App() {
       <Header title="" />
 
       <main className="flex-1">
-        <Suspense fallback={<LoadingSpinner />}>
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
+              <LoadingSpinner />
+            </div>
+          }
+        >
           <Routes>
             {/* Routes publiques */}
             <Route path="/" element={<HomePage />} />
