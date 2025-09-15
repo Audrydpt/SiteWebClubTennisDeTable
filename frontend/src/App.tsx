@@ -1,26 +1,35 @@
-import { Suspense } from 'react';
+import { Suspense, lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
 import Header from './layouts/header.tsx';
 import LoadingSpinner from './components/loading';
-import HomePage from '@/pages/home';
-import AboutPage from '@/pages/about';
-import Sponsors from '@/pages/sponsors.tsx';
-import AdminPage from '@/features/admin/website/AdminPage.tsx';
-import EquipesPage from '@/pages/teams.tsx';
-import CalendrierPage from '@/pages/calendarTeam.tsx';
-import Palmares from '@/pages/palmares.tsx';
-import Contact from '@/pages/contact.tsx';
-import CalendarEvent from '@/pages/calendarEvent.tsx';
-import Galery from '@/pages/galery.tsx';
 import { MemberRoute, AdminRoute } from './lib/protectedRoutes';
-import HomeLogged from '@/features/public/HomeLogged.tsx';
-import ResetPasswordPage from '@/features/public/comps/credential/reset.tsx';
-import Credentials from '@/features/public/comps/Credentials.tsx';
-import CommandePage from '@/features/public/comps/CommandeForm.tsx';
-import Stats from '@/features/public/comps/Stats.tsx';
-import Footer from './layouts/footer.tsx';
-import MembresListing from '@/features/public/comps/MembresListing.tsx';
+
+const HomePage = lazy(() => import('@/pages/home'));
+const AboutPage = lazy(() => import('@/pages/about'));
+const Sponsors = lazy(() => import('@/pages/sponsors.tsx'));
+const AdminPage = lazy(() => import('@/features/admin/website/AdminPage.tsx'));
+const EquipesPage = lazy(() => import('@/pages/teams.tsx'));
+const CalendrierPage = lazy(() => import('@/pages/calendarTeam.tsx'));
+const Palmares = lazy(() => import('@/pages/palmares.tsx'));
+const Contact = lazy(() => import('@/pages/contact.tsx'));
+const CalendarEvent = lazy(() => import('@/pages/calendarEvent.tsx'));
+const Galery = lazy(() => import('@/pages/galery.tsx'));
+const HomeLogged = lazy(() => import('@/features/public/HomeLogged.tsx'));
+const ResetPasswordPage = lazy(
+  () => import('@/features/public/comps/credential/reset.tsx')
+);
+const Credentials = lazy(
+  () => import('@/features/public/comps/Credentials.tsx')
+);
+const CommandePage = lazy(
+  () => import('@/features/public/comps/CommandeForm.tsx')
+);
+const Stats = lazy(() => import('@/features/public/comps/Stats.tsx'));
+const Footer = lazy(() => import('./layouts/footer.tsx'));
+const MembresListing = lazy(
+  () => import('@/features/public/comps/MembresListing.tsx')
+);
 
 export default function App() {
   return (
@@ -104,7 +113,9 @@ export default function App() {
         </Suspense>
       </main>
 
-      <Footer />
+      <Suspense fallback={null}>
+        <Footer />
+      </Suspense>
     </div>
   );
 }

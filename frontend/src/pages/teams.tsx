@@ -3,9 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, Trophy, Users, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { fetchSaisonEnCours } from '@/services/api';
-import calculerClassement from '@/services/classements';
-import type { Saison, Serie, ClassementEntry } from '@/services/type.ts';
+import { fetchAllRankings, getCachedAllRankings, type TabtDivisionRanking, type TabtRankingEntry, type TabtRankingResponse } from '@/services/tabt';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -33,51 +31,74 @@ const getRankColor = (position: number) => {
 
 type CategorieFiltre = 'tous' | 'homme' | 'veteran' | 'femme';
 
-const getCategorieFromSerieNom = (
+const getCategorieFromDivisionNom = (
   nom: string
 ): 'homme' | 'femme' | 'veteran' => {
   const nomLower = nom.toLowerCase();
   if (
     nomLower.includes('dame') ||
     nomLower.includes('femme') ||
-    nomLower.includes('féminin')
+    nomLower.includes('féminin') ||
+    nomLower.includes('dames') ||
+    nomLower.includes('women')
   ) {
     return 'femme';
   }
   if (
     nomLower.includes('vétéran') ||
     nomLower.includes('veteran') ||
-    nomLower.includes('vét')
+    nomLower.includes('vét') ||
+    nomLower.includes('veteranen')
   ) {
     return 'veteran';
+  }
+  // Heren / Hommes par défaut
+  if (nomLower.includes('heren') || nomLower.includes('homme')) {
+    return 'homme';
   }
   return 'homme';
 };
 
 export default function EquipesPage() {
-  const [saison, setSaison] = useState<Saison | null>(null);
+  const [tabtData, setTabtData] = useState<TabtRankingResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [filtreCategorie, setFiltreCategorie] =
     useState<CategorieFiltre>('tous');
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
+    let cancelled = false;
+
+    // 1) Afficher immédiatement le cache s'il existe
+    const cached = getCachedAllRankings();
+    if (cached && !cancelled) {
+      setTabtData(cached);
+      setIsLoading(false);
+    }
+
+    // 2) Revalidation en arrière-plan (force=true) pour rafraîchir
+    const revalidate = async () => {
       try {
-        const data = await fetchSaisonEnCours();
-        setSaison(data);
+        const data = await fetchAllRankings({ force: true });
+        if (!cancelled) setTabtData(data);
       } catch (error) {
-        console.error('Erreur lors du chargement des données:', error);
+        if (!cached && !cancelled) {
+          // pas de cache affichable: on reste en erreur/loading
+          console.error('Erreur lors du chargement des données TABT:', error);
+        }
       } finally {
-        setIsLoading(false);
+        if (!cached && !cancelled) setIsLoading(false);
       }
     };
 
-    fetchData();
+    revalidate();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleEquipeClick = (nomEquipe: string) => {
-    // Encoder le nom de l'équipe pour l'URL
     const equipeEncoded = encodeURIComponent(nomEquipe);
     navigate(`/competition/calendrier/${equipeEncoded}`);
   };
@@ -90,7 +111,7 @@ export default function EquipesPage() {
     );
   }
 
-  if (!saison) {
+  if (!tabtData || !tabtData.success) {
     return (
       <div className="min-h-screen bg-white">
         <div className="relative bg-[#3A3A3A] text-white py-24 overflow-hidden">
@@ -117,7 +138,7 @@ export default function EquipesPage() {
           <Alert variant="destructive" className="max-w-2xl mx-auto">
             <AlertTitle>Erreur</AlertTitle>
             <AlertDescription>
-              Impossible de charger les données de la saison en cours.
+              Impossible de charger les données de classement (TABT).
             </AlertDescription>
           </Alert>
         </div>
@@ -125,15 +146,15 @@ export default function EquipesPage() {
     );
   }
 
-  const nomClub = 'CTT Frameries';
+  const clubId = tabtData.clubId; // ex: H442
 
-  // Filtrer les séries selon la catégorie sélectionnée
-  const seriesFiltrees =
+  // Filtrer les divisions selon la catégorie sélectionnée
+  const divisionsFiltrees: TabtDivisionRanking[] =
     filtreCategorie === 'tous'
-      ? saison.series
-      : saison.series.filter(
-        (serie) => getCategorieFromSerieNom(serie.nom) === filtreCategorie
-      );
+      ? tabtData.data
+      : tabtData.data.filter(
+          (division) => getCategorieFromDivisionNom(division.divisionName) === filtreCategorie
+        );
 
   return (
     <div className="min-h-screen bg-white">
@@ -152,7 +173,7 @@ export default function EquipesPage() {
             <span className="text-[#F1C40F] drop-shadow-lg">Classements</span>
           </h1>
           <p className="text-xl max-w-3xl mx-auto leading-relaxed text-gray-300">
-            Suivez les performances de nos équipes en championnat
+            Classements officiels TABT — Club {clubId}
           </p>
         </div>
       </div>
@@ -161,7 +182,7 @@ export default function EquipesPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <div className="inline-block bg-[#F1C40F] text-[#3A3A3A] px-6 py-2 rounded-full font-semibold mb-6 text-sm uppercase tracking-wide">
-              🏆 {saison.label}
+              🏆 Divisions: {tabtData.count}
             </div>
             <h2 className="text-4xl font-bold text-[#3A3A3A] mb-6">
               Classements des équipes
@@ -178,7 +199,7 @@ export default function EquipesPage() {
                 variant={filtreCategorie === 'tous' ? 'default' : 'outline'}
                 className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 ${
                   filtreCategorie === 'tous'
-                    ? 'bg-[#F1C40F] text-[#3A3A3A] hover:bg-[#F1C40F]/90'
+                    ? 'bg-[#F1C40F] text[#3A3A3A] hover:bg-[#F1C40F]/90'
                     : 'border-[#F1C40F] text-[#F1C40F] hover:bg-[#F1C40F] hover:text-[#3A3A3A]'
                 }`}
               >
@@ -221,15 +242,12 @@ export default function EquipesPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-            {seriesFiltrees.map((serie: Serie) => {
-              const classement = calculerClassement(
-                serie,
-                saison.calendrier
-              ) as ClassementEntry[];
+            {divisionsFiltrees.map((division: TabtDivisionRanking) => {
+              const classement = division.ranking as TabtRankingEntry[];
 
               return (
                 <Card
-                  key={serie.id}
+                  key={division.divisionId}
                   className="shadow-2xl border-0 overflow-hidden flex flex-col hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-2"
                 >
                   <CardHeader className="bg-gradient-to-r from-[#3A3A3A] to-gray-600 text-white">
@@ -237,7 +255,7 @@ export default function EquipesPage() {
                       <div className="bg-[#F1C40F] p-2 rounded-full">
                         <Trophy className="h-5 w-5 text-[#3A3A3A]" />
                       </div>
-                      {serie.nom}
+                      {division.divisionName}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-0 flex-grow">
@@ -269,17 +287,17 @@ export default function EquipesPage() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {classement.map((equipe: ClassementEntry) => (
+                          {classement.map((equipe: TabtRankingEntry) => (
                             <TableRow
-                              key={equipe.nom}
+                              key={`${division.divisionId}-${equipe.team}`}
                               className={
-                                equipe.nom.includes(nomClub)
+                                equipe.teamClub === clubId
                                   ? 'bg-gradient-to-r from-[#F1C40F]/10 to-yellow-50 hover:from-[#F1C40F]/20 hover:to-yellow-100 border-l-4 border-[#F1C40F] cursor-pointer'
                                   : 'hover:bg-gray-50/70'
                               }
                               onClick={() => {
-                                if (equipe.nom.includes(nomClub)) {
-                                  handleEquipeClick(equipe.nom);
+                                if (equipe.teamClub === clubId) {
+                                  handleEquipeClick(equipe.team);
                                 }
                               }}
                             >
@@ -294,27 +312,27 @@ export default function EquipesPage() {
                               </TableCell>
                               <TableCell
                                 className={`font-medium text-sm ${
-                                  equipe.nom.includes(nomClub)
+                                  equipe.teamClub === clubId
                                     ? 'font-bold text-[#3A3A3A] flex items-center gap-2'
                                     : 'text-gray-800'
                                 }`}
                               >
-                                {equipe.nom.includes(nomClub) && (
+                                {equipe.teamClub === clubId && (
                                   <Star className="h-4 w-4 text-[#F1C40F]" />
                                 )}
-                                {equipe.nom}
+                                {equipe.team}
                               </TableCell>
                               <TableCell className="text-center font-mono text-sm font-semibold">
-                                {equipe.joues}
+                                {equipe.gamesPlayed}
                               </TableCell>
                               <TableCell className="text-center font-mono text-sm text-green-600 font-bold">
-                                {equipe.victoires}
+                                {equipe.gamesWon}
                               </TableCell>
                               <TableCell className="text-center font-mono text-sm text-gray-600 font-semibold">
-                                {equipe.nuls}
+                                {equipe.gamesDraw}
                               </TableCell>
                               <TableCell className="text-center font-mono text-sm text-red-600 font-bold">
-                                {equipe.defaites}
+                                {equipe.gamesLost}
                               </TableCell>
                               <TableCell className="text-center font-mono text-lg font-bold text-[#3A3A3A]">
                                 {equipe.points}
@@ -330,11 +348,11 @@ export default function EquipesPage() {
             })}
           </div>
 
-          {/* Message si aucune série trouvée */}
-          {seriesFiltrees.length === 0 && (
+          {/* Message si aucune division trouvée */}
+          {divisionsFiltrees.length === 0 && (
             <div className="text-center py-12">
               <div className="text-gray-500 text-xl">
-                Aucune série trouvée pour cette catégorie
+                Aucune division trouvée pour cette catégorie
               </div>
             </div>
           )}
@@ -358,13 +376,9 @@ export default function EquipesPage() {
                   <div className="text-4xl font-bold mb-2">
                     {(() => {
                       let totalEquipes = 0;
-                      seriesFiltrees.forEach((serie) => {
-                        const classement = calculerClassement(
-                          serie,
-                          saison.calendrier
-                        ) as ClassementEntry[];
-                        const clubTeams = classement.filter((equipe) =>
-                          equipe.nom.includes(nomClub)
+                      divisionsFiltrees.forEach((division) => {
+                        const clubTeams = division.ranking.filter(
+                          (e) => e.teamClub === clubId
                         );
                         totalEquipes += clubTeams.length;
                       });
@@ -388,14 +402,9 @@ export default function EquipesPage() {
                   <div className="text-4xl font-bold mb-2 text-[#F1C40F]">
                     {(() => {
                       let equipesAuPodium = 0;
-                      seriesFiltrees.forEach((serie) => {
-                        const classement = calculerClassement(
-                          serie,
-                          saison.calendrier
-                        ) as ClassementEntry[];
-                        const clubTeams = classement.filter(
-                          (equipe) =>
-                            equipe.nom.includes(nomClub) && equipe.position <= 3
+                      divisionsFiltrees.forEach((division) => {
+                        const clubTeams = division.ranking.filter(
+                          (e) => e.teamClub === clubId && e.position <= 3
                         );
                         equipesAuPodium += clubTeams.length;
                       });
@@ -417,16 +426,9 @@ export default function EquipesPage() {
                   <div className="text-4xl font-bold mb-2">
                     {(() => {
                       let totalPoints = 0;
-                      seriesFiltrees.forEach((serie) => {
-                        const classement = calculerClassement(
-                          serie,
-                          saison.calendrier
-                        ) as ClassementEntry[];
-                        const clubTeams = classement.filter((equipe) =>
-                          equipe.nom.includes(nomClub)
-                        );
-                        clubTeams.forEach((equipe) => {
-                          totalPoints += equipe.points;
+                      divisionsFiltrees.forEach((division) => {
+                        division.ranking.forEach((e) => {
+                          if (e.teamClub === clubId) totalPoints += e.points;
                         });
                       });
                       return totalPoints;

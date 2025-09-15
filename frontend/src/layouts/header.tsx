@@ -14,6 +14,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from '@/components/ui/popover.tsx';
+import { fetchAllRankings } from '@/services/tabt';
 
 type HeaderProps = {
   title: string;
@@ -171,6 +172,21 @@ export default function Header({ title, className, ...props }: HeaderProps) {
 
   ];
 
+  // Préchargement au survol du lien Équipes
+  let prewarmScheduled = false;
+  const prewarmEquipes = () => {
+    if (prewarmScheduled) return;
+    prewarmScheduled = true;
+    // Charger le chunk de la page
+    import('@/pages/teams.tsx').catch(() => {});
+    // Pré-remplir le cache TABT (sans bloquer l’UI)
+    fetchAllRankings({ force: false, timeoutMs: 8000 }).catch(() => {});
+    // Petit délai pour éviter le spam en cas de multiples survols
+    setTimeout(() => {
+      prewarmScheduled = false;
+    }, 3000);
+  };
+
   return (
     <header
       className={cn('sticky top-0 z-50 border-b shadow-sm', className)}
@@ -228,6 +244,9 @@ export default function Header({ title, className, ...props }: HeaderProps) {
               <li>
                 <Link
                   to="/competition/equipes"
+                  onMouseEnter={prewarmEquipes}
+                  onFocus={prewarmEquipes}
+                  onTouchStart={prewarmEquipes}
                   className={cn(
                     'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
                     location.pathname.includes('/competition')
