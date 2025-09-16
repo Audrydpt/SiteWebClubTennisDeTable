@@ -123,6 +123,24 @@ const ProgressStep = ({
   );
 };
 
+const InfoBox = () => (
+  <div className="max-w-4xl mx-auto mb-8">
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+      <div className="bg-blue-100 rounded-full p-2 flex-shrink-0 mt-0.5">
+        <Star className="h-4 w-4 text-blue-600" />
+      </div>
+      <div>
+        <h4 className="text-blue-900 font-semibold text-sm mb-1">
+          💡 Astuce
+        </h4>
+        <p className="text-blue-800 text-sm">
+          Cliquez sur une équipe de notre club (marquée avec ⭐) pour consulter tous ses matchs de la saison
+        </p>
+      </div>
+    </div>
+  </div>
+);
+
 export default function EquipesPage() {
   const [tabtData, setTabtData] = useState<TabtRankingResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -465,6 +483,8 @@ export default function EquipesPage() {
               </Button>
             </div>
           </div>
+
+          <InfoBox />
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
             {divisionsFiltrees.map((division: TabtDivisionRanking) => {

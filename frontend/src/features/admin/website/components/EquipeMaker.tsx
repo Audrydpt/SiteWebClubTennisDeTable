@@ -39,6 +39,10 @@ export default function AdminResults() {
     if (!teamLabel) return false;
     return teamLabel.toLowerCase().includes(CLUB_KEYWORD);
   }, [CLUB_KEYWORD]);
+  const hasTeamLetter = useCallback((teamLabel?: string) => {
+    if (!teamLabel) return false;
+    return /\s[A-Z]$/.test(teamLabel.trim());
+  }, []);
 
   const [saison, setSaison] = useState<Saison | null>(null);
   const [membres, setMembres] = useState<Member[]>([]);
@@ -493,32 +497,6 @@ export default function AdminResults() {
     await saveCurrentData(false);
   };
 
-  // Fonction pour la navigation entre les champs de score avec les flèches
-  const handleKeyDown = useCallback((e: React.KeyboardEvent, currentMatchId: string) => {
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault();
-
-      const matchIds = matchsSemaine.map(m => m.id);
-      const currentIndex = matchIds.indexOf(currentMatchId);
-
-      let nextIndex: number;
-      if (e.key === 'ArrowDown') {
-        nextIndex = currentIndex + 1;
-        if (nextIndex >= matchIds.length) {
-          nextIndex = 0; // Revenir au premier
-        }
-      } else { // ArrowUp
-        nextIndex = currentIndex - 1;
-        if (nextIndex < 0) {
-          nextIndex = matchIds.length - 1; // Aller au dernier
-        }
-      }
-
-      const nextMatchId = matchIds[nextIndex];
-      scoreRefs.current[nextMatchId?.toString()]?.focus();
-    }
-  }, [matchsSemaine]);
-
   // Fonction pour déterminer si la série est vétéran (pour la détection automatique initiale)
   const isVeteranSerie = useCallback((serie: any) => {
     if (!serie) return false;
@@ -647,6 +625,9 @@ export default function AdminResults() {
         equipeFrameries = match.exterieur;
       }
 
+      // Filtrer: afficher uniquement les équipes avec lettre (A, B, C, …)
+      if (!hasTeamLetter(equipeFrameries)) return;
+
       // Ajouter l'équipe à la Map (même si elle n'a pas de joueurs)
       if (equipeFrameries) {
         equipesMap.set(equipeFrameries, {
@@ -669,6 +650,9 @@ export default function AdminResults() {
 
     // Ajouter les équipes du club qui n'ont pas encore de match cette semaine
     saison.equipesClub.forEach(equipeClub => {
+      // Filtrer: uniquement les équipes avec lettre
+      if (!hasTeamLetter(equipeClub.nom)) return;
+
       // Vérifier si cette équipe a déjà un match cette semaine
       const aDejaMatch = Array.from(equipesMap.values()).some(e => e.equipe === equipeClub.nom);
 
@@ -690,13 +674,8 @@ export default function AdminResults() {
     return Array.from(equipesMap.values()).sort((a, b) => {
       return a.equipe.localeCompare(b.equipe);
     });
-  }, [saison, matchs, semaineSelectionnee, isClubTeam]);
+  }, [saison, matchs, semaineSelectionnee, isClubTeam, hasTeamLetter]);
 
-  const displaySerieName = useCallback((name?: string) => {
-    if (!name) return '';
-    const trimmed = String(name).trim();
-    return /^\d+$/.test(trimmed) ? `Division ${trimmed}` : trimmed;
-  }, []);
 
   // Condition d'affichage optimiste
   if (isInitialLoading) {

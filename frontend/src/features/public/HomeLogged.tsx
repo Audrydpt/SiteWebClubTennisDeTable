@@ -44,6 +44,7 @@ import supabase from '@/lib/supabaseClient.ts';
 import AbsenceCalendar from './components/AbsenceCalendar';
 import TrainingCalendar from './components/TrainingCalendar';
 import FoodMenuSaturday from './components/FoodMenuSaturday';
+import { useNavigate } from 'react-router-dom';
 
 export default function HomeLogged() {
   // Détection robuste du club
@@ -64,6 +65,7 @@ export default function HomeLogged() {
   const [infosPersonnalisees, setInfosPersonnalisees] = useState<InfosPersonnalisees[]>([]);
   // NEW: état de chargement dédié aux matchs/équipe
   const [loadingMatches, setLoadingMatches] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   // 3 petits cadres : Absences, Entraînement, Menu
   const [showAbsences, setShowAbsences] = useState(false);
@@ -330,6 +332,24 @@ export default function HomeLogged() {
           </div>
         </div>
       </div>
+
+      {/* Accès rapide: Toutes les sélections du club */}
+      <Card className="bg-white border border-[#E0E0E0]">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center text-sm">
+            <Users className="mr-2 h-4 w-4 text-blue-500" />
+            Toutes les sélections du club
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <p className="text-gray-600 text-sm">Consultez les compositions de toutes les équipes A, B, C, D… dans un accordéon.</p>
+            <Button size="sm" onClick={() => navigate('/espace-membre/selections')}>
+              Voir toutes les sélections
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Prochains matchs */}

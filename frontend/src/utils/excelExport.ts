@@ -1,5 +1,7 @@
 /* eslint-disable */
 import { Commande } from '@/services/type';
+import type { Absence } from '@/services/type';
+import * as XLSX from 'xlsx';
 
 // Déclarations pour éviter l'erreur TS2584 sans activer "DOM" dans tsconfig
 declare const document: any;
@@ -80,4 +82,41 @@ export const exportCommandeToExcel = (commande: Commande, users: any[]) => {
     link.click();
     document.body.removeChild(link);
   }
+};
+
+// --- Export des absences en Excel ---
+export const exportAbsencesToExcel = (absences: Absence[]) => {
+  const headers = ['Membre', 'Date', 'Détails', 'Statut', 'Date de création'];
+
+  // Construire les lignes au format lisible
+  const rows = absences.map((a) => [
+    a.memberName || '',
+    a.date ? new Date(a.date).toLocaleDateString('fr-FR') : '',
+    a.details || '',
+    a.statut || '',
+    a.dateCreation ? new Date(a.dateCreation).toLocaleString('fr-FR') : '',
+  ]);
+
+  // Créer la feuille avec les en-têtes puis les données
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+  // Largeurs de colonnes approximatives
+  ws['!cols'] = [
+    { wch: 22 }, // Membre
+    { wch: 14 }, // Date
+    { wch: 60 }, // Détails
+    { wch: 12 }, // Statut
+    { wch: 22 }, // Date de création
+  ];
+
+  // Auto-filter sur toute la zone de données
+  if (ws['!ref']) {
+    ws['!autofilter'] = { ref: ws['!ref'] } as any;
+  }
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Absences');
+
+  const filename = `absences_${new Date().toISOString().split('T')[0]}.xlsx`;
+  XLSX.writeFile(wb, filename, { compression: true });
 };

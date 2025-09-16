@@ -30,6 +30,7 @@ const Footer = lazy(() => import('./layouts/footer.tsx'));
 const MembresListing = lazy(
   () => import('@/features/public/comps/MembresListing.tsx')
 );
+const AllSelections = lazy(() => import('@/features/public/AllSelections.tsx'));
 
 export default function App() {
   return (
@@ -102,6 +103,14 @@ export default function App() {
               element={
                 <MemberRoute>
                   <MembresListing />
+                </MemberRoute>
+              }
+            />
+            <Route
+              path="/espace-membre/selections"
+              element={
+                <MemberRoute>
+                  <AllSelections />
                 </MemberRoute>
               }
             />

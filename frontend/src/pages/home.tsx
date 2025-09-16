@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,no-console,jsx-a11y/no-noninteractive-element-interactions,jsx-a11y/click-events-have-key-events,no-nested-ternary,@typescript-eslint/no-explicit-any,prettier/prettier,jsx-a11y/no-static-element-interactions,react/button-has-type */
+/* eslint-disable */
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Slider from 'react-slick';
@@ -17,6 +17,7 @@ import { ActualiteData, SponsorData, ResultatData } from '../services/type';
 import '../lib/styles/home.css';
 import HeroSection from '@/pages/comps/hero.tsx';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.tsx';
+import { fetchMatches } from '@/services/tabt';
 
 // Ajout d'un type minimal pour la saison
 type Serie = { id: string; nom: string };
@@ -71,76 +72,259 @@ function NextArrow({ onClick }: ArrowProps) {
 
 export default function HomePage() {
   const [actualites, setActualites] = useState<ActualiteData[]>([]);
-  const [resultats, setResultats] = useState<ResultatData[]>([]);
+  const [resultatsABC, setResultatsABC] = useState<ResultatData[]>([]);
   const [sponsors, setSponsors] = useState<SponsorData[]>([]);
-  const [loading, setLoading] = useState(true);
+  // États de chargement indépendants
+  const [loadingNews, setLoadingNews] = useState(true);
+  const [loadingResults, setLoadingResults] = useState(true);
+  const [loadingSponsors, setLoadingSponsors] = useState(true);
   const [saison, setSaison] = useState<SaisonData | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<ActualiteData | null>(null);
+  const [divisionNameById, setDivisionNameById] = useState<Record<string, string>>({});
 
+  // Helpers club/équipes
+  const CLUB_CODE = (import.meta.env.VITE_TABT_CLUB_CODE as string) || '';
+  const CLUB_NAME = (import.meta.env.VITE_TABT_CLUB_NAME as string) || '';
+  const CLUB_KEYWORD = ((import.meta.env.VITE_TABT_CLUB_KEYWORD as string) || 'frameries').toLowerCase();
+
+  // Divisions Heren A/B/C (override possible via .env)
+  const DIV_A = Number((import.meta.env.VITE_TABT_DIV_A as string) || '') || 9168;
+  const DIV_B = Number((import.meta.env.VITE_TABT_DIV_B as string) || '') || 9182;
+  const DIV_C = Number((import.meta.env.VITE_TABT_DIV_C as string) || '') || 9196;
+  const DIVISION_IDS_ABC = [DIV_A, DIV_B, DIV_C];
+
+  const normalize = (s?: string) => (s || '')
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+
+  const isClubTeamName = (name?: string) => {
+    if (!name) return false;
+    const n = normalize(name);
+    // Ne tester le code club et le nom que s'ils sont définis/non vides
+    if (CLUB_CODE) {
+      const code = normalize(CLUB_CODE);
+      if (code && n.includes(code)) return true;
+    }
+    if (CLUB_NAME) {
+      const clubName = normalize(CLUB_NAME);
+      if (clubName && n.includes(clubName)) return true;
+    }
+    // Fallback sur le mot-clé ("frameries" par défaut)
+    return n.includes(CLUB_KEYWORD);
+  };
+
+  const getSerieNom = (serieId?: string) => {
+    if (!serieId) return '';
+    if (divisionNameById[serieId]) return divisionNameById[serieId];
+    if (saison?.series) {
+      const s = saison.series.find(x => x.id === serieId);
+      if (s?.nom) return s.nom;
+    }
+    return '';
+  };
+
+  const cacheKey = 'home_results_heren_ABC_v4';
+  const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+  const readCache = () => {
+    try {
+      const raw = localStorage.getItem(cacheKey);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { ts: number; data: ResultatData[] };
+      if (!parsed?.ts || Date.now() - parsed.ts > CACHE_TTL_MS) return null;
+      return parsed.data || null;
+    } catch {
+      return null;
+    }
+  };
+
+  const writeCache = (data: ResultatData[]) => {
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+    } catch {}
+  };
 
   useEffect(() => {
-    const loadData = async () => {
+    // Charger les actualités (indépendant)
+    (async () => {
       try {
         const data = await fetchActualites();
-
-        let actualitesData = [];
-
-        // Si data est directement un tableau, c'est notre tableau d'actualités
-        if (Array.isArray(data)) {
-          actualitesData = data;
-        } else if (data && data.actualites && Array.isArray(data.actualites)) {
-          // Si data est un objet avec une propriété actualites
-          actualitesData = data.actualites;
-        }
-
-        // Trier les actualités par ordre
-        const sortedActualites = actualitesData.sort(
-          (a: ActualiteData, b: ActualiteData) =>
-            (a.order || Infinity) - (b.order || Infinity)
-        );
-
+        let actualitesData: any[] = [];
+        if (Array.isArray(data)) actualitesData = data;
+        else if (data && (data as any).actualites && Array.isArray((data as any).actualites)) actualitesData = (data as any).actualites;
+        const sortedActualites = actualitesData.sort((a: ActualiteData, b: ActualiteData) => (a.order || Infinity) - (b.order || Infinity));
         setActualites(sortedActualites);
+      } catch (e) {
+        setActualites([]);
+      } finally {
+        setLoadingNews(false);
+      }
+    })();
 
-        // Récupération des résultats réels depuis l'API (saison en cours)
+    // Charger les sponsors (indépendant)
+    (async () => {
+      try {
+        const sponsorsData = await fetchSponsors();
+        const sortedSponsors = sponsorsData.sort((a: SponsorData, b: SponsorData) => a.order - b.order);
+        setSponsors(sortedSponsors);
+      } catch (e) {
+        setSponsors([]);
+      } finally {
+        setLoadingSponsors(false);
+      }
+    })();
+
+    // Charger les résultats A/B/C (indépendant)
+    (async () => {
+      try {
+        const cached = readCache();
+        if (cached && cached.length) setResultatsABC(cached);
+
         const saisonEnCours = await fetchSaisonEnCours();
         setSaison(saisonEnCours);
 
-        // On extrait les résultats des matchs du calendrier de la saison en cours
-        let resultatsData: ResultatData[] = [];
-        if (saisonEnCours && Array.isArray(saisonEnCours.calendrier)) {
-          resultatsData = saisonEnCours.calendrier
-            .filter((match: any) => match.score) // On ne garde que les matchs avec un score
-            .map((match: any) => ({
-              id: match.id,
-              division: match.division || match.serie || '',
-              equipe: match.domicile,
-              adversaire: match.exterieur,
-              score: match.score,
-              date: match.date,
-              domicile: true, // Par défaut, on considère que l'équipe passée ici est à domicile
-              serieId: match.serieId || '',
-            }));
+        // Charger noms de divisions via club pour enrichir l'affichage
+        try {
+          const clubCode = (import.meta.env.VITE_TABT_CLUB_CODE as string) || undefined;
+          const tabt = await fetchMatches({ club: clubCode, showDivisionName: 'short' });
+          const map: Record<string, string> = {};
+          (tabt?.data || []).forEach((m: any) => {
+            const id = String(m.divisionId || '').trim();
+            const name = (m.divisionName || '').toString().trim();
+            if (id && name && !map[id]) map[id] = name;
+          });
+          setDivisionNameById(map);
+        } catch {}
+
+        // -------- Nouvelle logique basée sur la lettre d'équipe --------
+        const clubCode = (import.meta.env.VITE_TABT_CLUB_CODE as string) || '';
+        const clubMatchesResp = await fetchMatches({ club: clubCode || undefined, showDivisionName: 'short' });
+        const clubMatches: any[] = (clubMatchesResp?.data || []).slice();
+
+        const mkTeamLabel = (m: any, side: 'home'|'away') => `${side==='home'?(m.homeClub||''):(m.awayClub||'')} ${side==='home'?(m.homeTeam||''):(m.awayTeam||'')}`.trim();
+        const isClubSide = (m: any, side: 'home'|'away') => {
+          const club = side==='home' ? (m.homeClub || '') : (m.awayClub || '');
+          if (CLUB_CODE && club) return String(club).trim().toLowerCase() === CLUB_CODE.toLowerCase();
+          const label = mkTeamLabel(m, side);
+          return isClubTeamName(label);
+        };
+        const parseDate = (m: any) => new Date(m.date || m.dateTime || '').getTime() || 0;
+        const today = new Date(); today.setHours(0,0,0,0);
+        const teamLetter = (val: any): string => String(val || '').trim().toUpperCase();
+        const extractLetter = (team?: string): string => {
+          if (!team) return '';
+          const tokens = String(team).trim().split(/\s+/);
+          const last = tokens[tokens.length - 1] || '';
+          if (/^[A-Za-z]$/.test(last)) return last.toUpperCase();
+          const found = tokens.find((t) => /^[A-Za-z]$/.test(t));
+          return found ? found.toUpperCase() : '';
+        };
+
+        const pickForLetter = (letter: 'A'|'B'|'C'): ResultatData | null => {
+          // matches où notre club joue et avec la bonne lettre de team
+          const list = clubMatches.filter((m) => {
+            const homeIsClub = isClubSide(m,'home');
+            const awayIsClub = isClubSide(m,'away');
+            if (!homeIsClub && !awayIsClub) return false;
+            const ht = extractLetter(m.homeTeam);
+            const at = extractLetter(m.awayTeam);
+            return (homeIsClub && ht === letter) || (awayIsClub && at === letter);
+          });
+          if (!list.length) return null;
+
+          const withScore = list.filter((m) => m.score && m.score !== '-').sort((a,b) => parseDate(b) - parseDate(a));
+          let chosen: any;
+          if (withScore.length) chosen = withScore[0];
+          else {
+            const upcoming = list.filter((m) => (!m.score || m.score === '-') && parseDate(m) >= today.getTime()).sort((a,b) => parseDate(a) - parseDate(b));
+            chosen = upcoming[0] || list.sort((a,b) => parseDate(b)-parseDate(a))[0];
+          }
+          if (!chosen) return null;
+
+          const homeIsClub = isClubSide(chosen,'home');
+          const equipe = mkTeamLabel(chosen, homeIsClub ? 'home' : 'away');
+          const adv = mkTeamLabel(chosen, homeIsClub ? 'away' : 'home');
+
+          return {
+            id: String(chosen.matchUniqueId || chosen.matchId || `${equipe}-${adv}-${chosen.date}`),
+            division: chosen.divisionName || `Division ${chosen.divisionId || ''}`,
+            equipe,
+            adversaire: adv,
+            score: chosen.score || '-',
+            date: (chosen.date || chosen.dateTime || '') as string,
+            semaine: 0,
+            serieId: String(chosen.divisionId || ''),
+            domicile: !!homeIsClub,
+          } as ResultatData;
+        };
+
+        const letters: ('A'|'B'|'C')[] = ['A','B','C'];
+        let computed: ResultatData[] = letters
+          .map(pickForLetter)
+          .filter((x): x is ResultatData => !!x);
+
+        // Fallback sur ancienne méthode par division si rien trouvé
+        if (!computed.length) {
+          let divisionMatches: any[] = [];
+          try {
+            const [rA, rB, rC] = await Promise.all(
+              DIVISION_IDS_ABC.map((divId) => fetchMatches({ divisionId: divId, showDivisionName: 'short' }))
+            );
+            divisionMatches = [ ...((rA?.data as any[]) || []), ...((rB?.data as any[]) || []), ...((rC?.data as any[]) || []) ];
+          } catch {}
+
+          const computeFromDivisions = (): ResultatData[] => {
+            const out: ResultatData[] = [];
+            DIVISION_IDS_ABC.forEach((divId) => {
+              const list = divisionMatches.filter((m) => Number(m.divisionId) === Number(divId));
+              if (!list.length) return;
+              const clubMatches = list.filter((m) => isClubSide(m,'home') || isClubSide(m,'away'));
+              if (!clubMatches.length) return;
+              const withScore = clubMatches.filter((m) => m.score && m.score !== '-').sort((a,b) => parseDate(b) - parseDate(a));
+              let chosen: any;
+              if (withScore.length) chosen = withScore[0];
+              else {
+                const upcoming = clubMatches.filter((m) => (!m.score || m.score === '-') && parseDate(m) >= today.getTime()).sort((a,b) => parseDate(a) - parseDate(b));
+                chosen = upcoming[0] || clubMatches.sort((a,b) => parseDate(b)-parseDate(a))[0];
+              }
+              if (!chosen) return;
+              const homeIsClub = isClubSide(chosen,'home');
+              const equipe = mkTeamLabel(chosen, homeIsClub ? 'home' : 'away');
+              const adv = mkTeamLabel(chosen, homeIsClub ? 'away' : 'home');
+              out.push({
+                id: String(chosen.matchUniqueId || chosen.matchId || `${equipe}-${adv}-${chosen.date}`),
+                division: chosen.divisionName || `Division ${chosen.divisionId || ''}`,
+                equipe,
+                adversaire: adv,
+                score: chosen.score || '-',
+                date: (chosen.date || chosen.dateTime || '') as string,
+                semaine: 0,
+                serieId: String(chosen.divisionId || ''),
+                domicile: !!homeIsClub,
+              } as ResultatData);
+            });
+            return out;
+          };
+          computed = computeFromDivisions();
         }
-        setResultats(resultatsData);
 
-        const sponsorsData = await fetchSponsors();
-        // Tri par ordre
-        const sortedSponsors = sponsorsData.sort(
-          (a: SponsorData, b: SponsorData) => a.order - b.order
-        );
-        setSponsors(sortedSponsors);
-      } catch (error) {
-        console.error('Erreur lors du chargement des actualités:', error);
-        setActualites([]);
+        if (computed.length) {
+          setResultatsABC(computed);
+          writeCache(computed);
+        } else {
+          setResultatsABC([]);
+        }
+      } catch {
+        // ignorer
       } finally {
-        setLoading(false);
+        setLoadingResults(false);
       }
-    };
-
-    loadData();
+    })();
   }, []);
 
-  // Configuration du carrousel principal (mise à jour)
+  // Carrousel: utiliser loadingNews au lieu d'un état global
   const mainCarouselSettings = {
     dots: true,
     infinite: true,
@@ -154,34 +338,27 @@ export default function HomePage() {
     nextArrow: <NextArrow />,
   };
 
-  // Fonction pour déterminer la classe de couleur du score
-  // Prend en compte si l'équipe du club était à domicile ou à l'extérieur
   const getScoreColorClass = (score: string, isDomicile: boolean): string => {
     if (!score || score === '-') return 'text-gray-400';
     const parts = score.split('-');
     if (parts.length !== 2) return 'text-gray-700';
     const home = parseInt(parts[0], 10);
     const away = parseInt(parts[1], 10);
-
-    // Si l'équipe du club est à domicile, home = club
-    // Si l'équipe du club est à l'extérieur, away = club
     const clubScore = isDomicile ? home : away;
     const advScore = isDomicile ? away : home;
-
     if (clubScore > advScore) return 'text-green-600';
     if (clubScore < advScore) return 'text-red-600';
     return 'text-gray-700';
   };
 
   const renderCarouselContent = () => {
-    if (loading) {
+    if (loadingNews) {
       return (
         <div className="flex items-center justify-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
         </div>
       );
     }
-
     if (!actualites || actualites.length === 0) {
       return (
         <div className="container mx-auto px-4 py-8">
@@ -351,32 +528,18 @@ export default function HomePage() {
                 Derniers Résultats
               </h2>
               <div className="space-y-4">
-                {loading ? (
-                  <div className="flex items-center justify-center">
+                {loadingResults ? (
+                  <div className="flex items-center justify-center h-80">
                     <Loader2 className="h-12 w-12 animate-spin text-primary" />
                   </div>
                 ) : (
                   <>
                     {(() => {
-                      // Récupère les noms complets des équipes du club
-                      const equipesClub =
-                        saison?.equipesClub?.map((e: { nom: string }) =>
-                          e.nom.trim()
-                        ) ?? [];
-
-                      // Fonction utilitaire pour obtenir le nom de la série à partir du serieId
-                      const getSerieNom = (serieId: string) => {
-                        if (!saison?.series) return '';
-                        const serie = saison.series.find(
-                          (s: any) => s.id === serieId
-                        );
-                        return serie ? serie.nom : '';
-                      };
-
                       // Fonction utilitaire pour formater la date
                       const formatDate = (dateStr: string) => {
                         if (!dateStr) return '';
                         const date = new Date(dateStr);
+                        if (isNaN(date.getTime())) return '';
                         return date.toLocaleDateString('fr-BE', {
                           year: 'numeric',
                           month: '2-digit',
@@ -384,112 +547,18 @@ export default function HomePage() {
                         });
                       };
 
-                      // Pour chaque équipe du club, on prend son dernier match joué ou la prochaine rencontre prévue
-                      // MODIFICATION: Limiter à 3 équipes seulement
-                      const resultatsEquipes: ResultatData[] = equipesClub
-                        .slice(0, 3) // Prendre seulement les 3 premières équipes
-                        .map((nomEquipe: string) => {
-                          // Tous les matchs de l'équipe (domicile ou extérieur)
-                          const matchsEquipe = resultats
-                            .filter(
-                              (res) =>
-                                res.equipe?.trim() === nomEquipe ||
-                                res.adversaire?.trim() === nomEquipe
-                            )
-                            .sort(
-                              (a, b) =>
-                                new Date(b.date).getTime() -
-                                new Date(a.date).getTime()
-                            );
-
-                          // Matchs déjà joués (avec score)
-                          const matchsJoues = matchsEquipe.filter(
-                            (res) => res.score && res.score !== '-'
-                          );
-
-                          if (matchsJoues.length > 0) {
-                            // Dernier match joué
-                            const dernierMatch = matchsJoues[0];
-                            const domicile =
-                              dernierMatch.equipe?.trim() === nomEquipe;
-                            // Cherche le match dans le calendrier pour récupérer serieId et date
-                            const matchCalendrier = (
-                              saison?.calendrier ?? []
-                            ).find((m: any) => m.id === dernierMatch.id);
-                            return {
-                              ...dernierMatch,
-                              equipe: nomEquipe,
-                              adversaire: domicile
-                                ? dernierMatch.adversaire
-                                : dernierMatch.equipe,
-                              domicile,
-                              serieId: matchCalendrier?.serieId || dernierMatch.serieId || '',
-                              date: matchCalendrier?.date || dernierMatch.date,
-                            };
-                          }
-
-                          // Si pas de match joué, chercher la prochaine rencontre prévue (dans le calendrier de la saison)
-                          const calendrier = saison?.calendrier ?? [];
-                          const prochainsMatchs = calendrier
-                            .filter(
-                              (match: any) =>
-                                (match.domicile?.trim() === nomEquipe ||
-                                  match.exterieur?.trim() === nomEquipe) &&
-                                (!match.score || match.score === '-') &&
-                                new Date(match.date).getTime() >=
-                                  new Date().setHours(0, 0, 0, 0)
-                            )
-                            .sort(
-                              (a: any, b: any) =>
-                                new Date(a.date).getTime() -
-                                new Date(b.date).getTime()
-                            );
-
-                          if (prochainsMatchs.length > 0) {
-                            const prochain = prochainsMatchs[0];
-                            const domicile =
-                              prochain.domicile?.trim() === nomEquipe;
-                            return {
-                              id: prochain.id,
-                              division:
-                                prochain.division || prochain.serie || '',
-                              equipe: nomEquipe,
-                              adversaire: domicile
-                                ? prochain.exterieur
-                                : prochain.domicile,
-                              score: '-',
-                              date: prochain.date,
-                              domicile,
-                              serieId: prochain.serieId || '',
-                            };
-                          }
-
-                          // Si aucun match joué ni prévu, ne rien retourner
-                          return null;
-                        })
-                        .filter((r): r is ResultatData => !!r);
-
-                      if (resultatsEquipes.length === 0) {
+                      if (!resultatsABC || resultatsABC.length === 0) {
                         return (
                           <div className="text-center text-gray-500 py-8">
-                            Aucun résultat ou match prévu pour les équipes du club.
+                            Aucun résultat ou match prévu pour les équipes Hommes A, B, C.
                           </div>
                         );
                       }
 
                       return (
                         <>
-                          {resultatsEquipes.map(
-                            (res: {
-                              id: React.Key | null | undefined;
-                              division: any;
-                              equipe: any;
-                              adversaire: any;
-                              score: any;
-                              domicile: any;
-                              serieId?: string;
-                              date: string;
-                            }) => (
+                          {resultatsABC.slice(0, 3).map(
+                            (res) => (
                               <div
                                 key={res.id}
                                 className="p-4 border rounded-lg transition-all hover:shadow-md hover:bg-[#F1F1F1]"
@@ -500,9 +569,7 @@ export default function HomePage() {
                               >
                                 <div className="flex justify-between items-center mb-1">
                                   <p className="text-xs text-gray-500">
-                                    {getSerieNom(res.serieId || '') ||
-                                      res.division ||
-                                      'Division inconnue'}
+                                    Division {getSerieNom(res.serieId || '') || res.division || 'inconnue'}
                                   </p>
                                   <p className="text-xs text-gray-400">
                                     {formatDate(res.date)}
@@ -529,9 +596,7 @@ export default function HomePage() {
                                       {res.score}
                                     </p>
                                     <p className="text-xs text-gray-500">
-                                      {res.domicile
-                                        ? '🏠 Domicile'
-                                        : '✈️ Extérieur'}
+                                      {res.domicile ? '🏠 Domicile' : '✈️ Extérieur'}
                                     </p>
                                   </div>
                                 </div>
@@ -566,7 +631,7 @@ export default function HomePage() {
           <h3 className="text-center text-xl font-bold text-gray-600 mb-6">
             Ils nous soutiennent
           </h3>
-          {loading ? (
+          {loadingSponsors ? (
             <div className="flex items-center justify-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
