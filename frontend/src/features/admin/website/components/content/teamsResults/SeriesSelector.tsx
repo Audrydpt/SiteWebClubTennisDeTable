@@ -20,6 +20,12 @@ export function SerieSelector({
   selectedSerie,
   onSerieChange,
 }: SerieSelectorProps) {
+  const toDivisionLabel = (name?: string) => {
+    if (!name) return 'Division';
+    const lower = name.toLowerCase();
+    return lower.startsWith('division') ? name : `Division ${name}`;
+  };
+
   return (
     <div className="space-y-2">
       <Label htmlFor="serie-select" className="text-sm font-medium">
@@ -33,7 +39,9 @@ export function SerieSelector({
           {series.map((serie) => (
             <SelectItem key={serie.id} value={serie.id}>
               <div className="flex flex-col">
-                <span className="font-medium">{serie.nom}</span>
+                <span className="font-medium">
+                  {toDivisionLabel(serie.nom)}
+                </span>
               </div>
             </SelectItem>
           ))}

@@ -5,13 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from '@/components/ui/select';
+import MultiSelect from '@/components/multi-select';
 import { Serie, Match, Member, Joueur } from '@/services/type.ts';
 import { fetchJoueursBySemaineAndEquipe } from '@/services/api';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -36,6 +30,10 @@ export function SelectionsManager({
   matchs,
   onSelectionsChange,
 }: SelectionsManagerProps) {
+  // Détection robuste du club
+  const CLUB_KEYWORD = (import.meta.env.VITE_TABT_CLUB_KEYWORD as string)?.toLowerCase() || 'frameries';
+  const isClubTeam = (label?: string) => !!label && label.toLowerCase().includes(CLUB_KEYWORD);
+
   const [matchsWithPlayers, setMatchsWithPlayers] = useState<
     MatchWithPlayers[]
   >(
@@ -43,16 +41,17 @@ export function SelectionsManager({
       // Initialiser avec les joueurs existants s'ils existent
       let existingPlayers: Joueur[] = [];
 
-      if (match.domicile.includes('CTT Frameries')) {
+      if (isClubTeam(match.domicile)) {
         existingPlayers = match.joueursDomicile || match.joueur_dom || [];
-      } else if (match.exterieur.includes('CTT Frameries')) {
+      } else if (isClubTeam(match.exterieur)) {
         existingPlayers = match.joueursExterieur || match.joueur_ext || [];
       }
 
       return { ...match, selectedPlayers: existingPlayers };
     })
   );
-  const [joueurSelectionne, setJoueurSelectionne] = useState<string>('');
+  // Remplace l'ancien joueurSelectionne (string) par une sélection multiple
+  const [selectedJoueurIds, setSelectedJoueurIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -66,9 +65,9 @@ export function SelectionsManager({
     const updatedMatches = matchs.map((match) => {
       let existingPlayers: Joueur[] = [];
 
-      if (match.domicile.includes('CTT Frameries')) {
+      if (isClubTeam(match.domicile)) {
         existingPlayers = match.joueursDomicile || match.joueur_dom || [];
-      } else if (match.exterieur.includes('CTT Frameries')) {
+      } else if (isClubTeam(match.exterieur)) {
         existingPlayers = match.joueursExterieur || match.joueur_ext || [];
       }
 
@@ -81,9 +80,9 @@ export function SelectionsManager({
     const initialSelections: Record<string, string[]> = {};
     matchs.forEach((match) => {
       let players: Joueur[] = [];
-      if (match.domicile.includes('CTT Frameries')) {
+      if (isClubTeam(match.domicile)) {
         players = match.joueursDomicile || match.joueur_dom || [];
-      } else if (match.exterieur.includes('CTT Frameries')) {
+      } else if (isClubTeam(match.exterieur)) {
         players = match.joueursExterieur || match.joueur_ext || [];
       }
       if (players.length > 0) {
@@ -106,11 +105,9 @@ export function SelectionsManager({
     }
   }, [matchs, onSelectionsChange, serie.id, semaine]);
 
-  // Filter CTT Frameries matches only for selections
+  // Filter matches du club uniquement pour les sélections
   const cttFrameriesMatchs = matchsWithPlayers.filter(
-    (match) =>
-      match.domicile.includes('CTT Frameries') ||
-      match.exterieur.includes('CTT Frameries')
+    (match) => isClubTeam(match.domicile) || isClubTeam(match.exterieur)
   );
 
   const trierClassements = (a: string, b: string) => {
@@ -123,72 +120,71 @@ export function SelectionsManager({
     return chiffreA - chiffreB;
   };
 
-  const ajouterJoueur = (matchId: string) => {
-    if (!joueurSelectionne) return;
-    const membre = membres.find((m) => m.id === joueurSelectionne);
-    if (!membre) return;
-
-    const newJoueur: Joueur = {
-      id: membre.id,
-      nom: `${membre.prenom} ${membre.nom}`,
-      prenom: membre.prenom || '',
-      classement: membre.classement || 'ZZ',
-      wo: "n", // Initialiser à "n" par défaut
-      indexListeForce: membre.indexListeForce || 0,
-    };
+  // Nouveau: ajouter plusieurs joueurs d'un coup (jusqu'à 4 max par match)
+  const ajouterJoueurs = (matchId: string) => {
+    if (!selectedJoueurIds.length) return;
 
     setMatchsWithPlayers((prev) =>
       prev.map((match) => {
-        if (match.id === matchId) {
-          const currentPlayers = match.selectedPlayers || [];
-          // Limiter à 4 joueurs
-          if (currentPlayers.length >= 4) return match;
+        if (match.id !== matchId) return match;
 
-          const nouveauxJoueurs = [...currentPlayers, newJoueur].sort((a, b) =>
-            trierClassements(a.classement || 'ZZ', b.classement || 'ZZ')
-          );
+        const currentPlayers = match.selectedPlayers || [];
+        const currentIds = new Set(currentPlayers.map((p) => p.id));
+        const availableSlots = Math.max(0, 4 - currentPlayers.length);
+        if (availableSlots <= 0) return match;
 
-          const updatedMatch = {
-            ...match,
-            selectedPlayers: nouveauxJoueurs
-          };
+        // Construire la liste des nouveaux joueurs à ajouter (sans doublons)
+        const toAddIds = selectedJoueurIds.filter((id) => !currentIds.has(id)).slice(0, availableSlots);
+        if (toAddIds.length === 0) return match;
 
-          // AJOUT: Déclencher une mise à jour du match parent avec les nouveaux joueurs
-          console.log('Envoi événement updateMatch pour ajout joueur');
-          if (match.domicile.includes('CTT Frameries')) {
-            window.dispatchEvent(new CustomEvent('updateMatch', {
-              detail: {
-                matchId: matchId,
-                updates: {
-                  joueursDomicile: nouveauxJoueurs,
-                  joueur_dom: nouveauxJoueurs
-                }
-              }
-            }));
-          } else if (match.exterieur.includes('CTT Frameries')) {
-            window.dispatchEvent(new CustomEvent('updateMatch', {
-              detail: {
-                matchId: matchId,
-                updates: {
-                  joueursExterieur: nouveauxJoueurs,
-                  joueur_ext: nouveauxJoueurs
-                }
-              }
-            }));
-          }
+        const nouveauxJoueurs: Joueur[] = toAddIds.map((id) => {
+          const membre = membres.find((m) => m.id === id)!;
+          return {
+            id: membre.id,
+            nom: `${membre.prenom} ${membre.nom}`,
+            prenom: membre.prenom || '',
+            classement: membre.classement || 'ZZ',
+            wo: 'n',
+            indexListeForce: membre.indexListeForce || 0,
+          } as Joueur;
+        });
 
-          // Mettre à jour les sélections pour le parent
-          updateSelections(
-            matchId,
-            nouveauxJoueurs.map((j) => j.id)
-          );
+        const updatedList = [...currentPlayers, ...nouveauxJoueurs].sort((a, b) =>
+          trierClassements(a.classement || 'ZZ', b.classement || 'ZZ')
+        );
 
-          return updatedMatch;
+        const updatedMatch: MatchWithPlayers = { ...match, selectedPlayers: updatedList };
+
+        // Déclencher la mise à jour du parent et l’événement
+        if (isClubTeam(match.domicile)) {
+          updatedMatch.joueursDomicile = updatedList;
+          updatedMatch.joueur_dom = updatedList;
+          window.dispatchEvent(new CustomEvent('updateMatch', {
+            detail: {
+              matchId: match.id,
+              updates: { joueursDomicile: updatedList, joueur_dom: updatedList },
+            },
+          }));
+        } else if (isClubTeam(match.exterieur)) {
+          updatedMatch.joueursExterieur = updatedList;
+          updatedMatch.joueur_ext = updatedList;
+          window.dispatchEvent(new CustomEvent('updateMatch', {
+            detail: {
+              matchId: match.id,
+              updates: { joueursExterieur: updatedList, joueur_ext: updatedList },
+            },
+          }));
         }
-        return match;
+
+        // Mettre à jour les sélections pour le parent
+        updateSelections(match.id, updatedList.map((j) => j.id));
+
+        // Vider la sélection multiple après ajout
+        setSelectedJoueurIds([]);
+
+        return updatedMatch;
       })
     );
-    setJoueurSelectionne('');
   };
 
   const supprimerJoueur = (matchId: string, joueurId: string) => {
@@ -204,9 +200,9 @@ export function SelectionsManager({
             selectedPlayers: nouveauxJoueurs
           };
 
-          // AJOUT: Déclencher une mise à jour du match parent avec les nouveaux joueurs
+          // Déclencher une mise à jour du match parent avec les nouveaux joueurs
           console.log('Envoi événement updateMatch pour suppression joueur');
-          if (match.domicile.includes('CTT Frameries')) {
+          if (isClubTeam(match.domicile)) {
             window.dispatchEvent(new CustomEvent('updateMatch', {
               detail: {
                 matchId: matchId,
@@ -216,7 +212,7 @@ export function SelectionsManager({
                 }
               }
             }));
-          } else if (match.exterieur.includes('CTT Frameries')) {
+          } else if (isClubTeam(match.exterieur)) {
             window.dispatchEvent(new CustomEvent('updateMatch', {
               detail: {
                 matchId: matchId,
@@ -270,14 +266,14 @@ export function SelectionsManager({
           };
 
           // Mettre à jour les sélections pour le parent avec les nouveaux états WO
-          if (match.domicile.includes('CTT Frameries')) {
+          if (isClubTeam(match.domicile)) {
             updatedMatch.joueursDomicile = nouveauxJoueurs;
             updatedMatch.joueur_dom = nouveauxJoueurs;
-            console.log('Mise à jour joueurs domicile CTT Frameries');
-          } else if (match.exterieur.includes('CTT Frameries')) {
+            console.log('Mise à jour joueurs domicile (club)');
+          } else if (isClubTeam(match.exterieur)) {
             updatedMatch.joueursExterieur = nouveauxJoueurs;
             updatedMatch.joueur_ext = nouveauxJoueurs;
-            console.log('Mise à jour joueurs extérieur CTT Frameries');
+            console.log('Mise à jour joueurs extérieur (club)');
           }
 
           // S'assurer que les scores individuels des joueurs WO sont à 0
@@ -293,7 +289,7 @@ export function SelectionsManager({
           // Déclencher une mise à jour du match parent avec les nouveaux joueurs
           console.log('Envoi événement updateMatch vers EquipeMaker');
           const matchToUpdate = match;
-          if (matchToUpdate.domicile.includes('CTT Frameries')) {
+          if (isClubTeam(matchToUpdate.domicile)) {
             window.dispatchEvent(new CustomEvent('updateMatch', {
               detail: {
                 matchId: matchId,
@@ -304,7 +300,7 @@ export function SelectionsManager({
                 }
               }
             }));
-          } else if (matchToUpdate.exterieur.includes('CTT Frameries')) {
+          } else if (isClubTeam(matchToUpdate.exterieur)) {
             window.dispatchEvent(new CustomEvent('updateMatch', {
               detail: {
                 matchId: matchId,
@@ -329,59 +325,6 @@ export function SelectionsManager({
         return match;
       })
     );
-  };
-
-  // Nouvelle fonction pour mettre à jour les sélections avec les joueurs complets
-  const updateSelectionsWithFullPlayers = (matchId: string, joueurs: Joueur[]) => {
-    const newSelections: Record<string, string[]> = {};
-
-    // Inclure toutes les sélections existantes
-    matchsWithPlayers.forEach((match) => {
-      if (match.id === matchId) {
-        newSelections[matchId] = joueurs.map((j) => j.id);
-      } else if (match.selectedPlayers && match.selectedPlayers.length > 0) {
-        newSelections[match.id] = match.selectedPlayers.map((j) => j.id);
-      }
-    });
-
-    // Convertir en chaîne pour comparer
-    const selectionsAsString = JSON.stringify(newSelections);
-
-    // N'envoyer au parent que si les sélections ont changé
-    if (lastSelectionsSent.current !== selectionsAsString) {
-      lastSelectionsSent.current = selectionsAsString;
-
-      // Informer le parent des changements avec les joueurs complets
-      if (onSelectionsChange) {
-        // Passer aussi les joueurs mis à jour au parent
-        onSelectionsChange(newSelections);
-
-        // Déclencher une mise à jour du match parent avec les nouveaux joueurs
-        const matchToUpdate = matchsWithPlayers.find(m => m.id === matchId);
-        if (matchToUpdate && matchToUpdate.domicile.includes('CTT Frameries')) {
-          // Simuler une mise à jour du match parent
-          window.dispatchEvent(new CustomEvent('updateMatch', {
-            detail: {
-              matchId: matchId,
-              updates: {
-                joueursDomicile: joueurs,
-                joueur_dom: joueurs
-              }
-            }
-          }));
-        } else if (matchToUpdate && matchToUpdate.exterieur.includes('CTT Frameries')) {
-          window.dispatchEvent(new CustomEvent('updateMatch', {
-            detail: {
-              matchId: matchId,
-              updates: {
-                joueursExterieur: joueurs,
-                joueur_ext: joueurs
-              }
-            }
-          }));
-        }
-      }
-    }
   };
 
   const updateSelections = (matchId: string, joueurIds: string[]) => {
@@ -409,20 +352,20 @@ export function SelectionsManager({
   const renderJoueursList = (match: MatchWithPlayers) => {
     const joueurs = match.selectedPlayers || [];
 
-    // Filtrer les membres selon le terme de recherche
+    // Filtrer les membres selon le terme de recherche et exclure ceux déjà sélectionnés (éviter doublons)
+    const selectedIdsSet = new Set(joueurs.map((j) => j.id));
     const filteredMembres = membres.filter((membre) => {
+      const notAlready = !selectedIdsSet.has(membre.id);
+      if (!notAlready) return false;
       if (!searchTerm) return true;
-
       const search = searchTerm.toLowerCase();
       const nom = (membre.nom || '').toLowerCase();
       const prenom = (membre.prenom || '').toLowerCase();
       const classement = (membre.classement || '').toLowerCase();
-
-      return nom.includes(search) ||
-             prenom.includes(search) ||
-             classement.includes(search) ||
-             `${prenom} ${nom}`.toLowerCase().includes(search);
+      return nom.includes(search) || prenom.includes(search) || classement.includes(search) || `${prenom} ${nom}`.toLowerCase().includes(search);
     });
+
+    const availableSlots = Math.max(0, 4 - joueurs.length);
 
     return (
       <div className="mt-4 space-y-4">
@@ -438,51 +381,29 @@ export function SelectionsManager({
           />
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Select
-            value={joueurSelectionne}
-            onValueChange={setJoueurSelectionne}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue
-                placeholder={
-                  filteredMembres.length === 0
-                    ? searchTerm
-                      ? "Aucun résultat trouvé..."
-                      : "Choisir un joueur..."
-                    : "Choisir un joueur..."
-                }
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {filteredMembres.length > 0 ? (
-                filteredMembres
-                  .sort((a, b) =>
-                    trierClassements(a.classement || 'ZZ', b.classement || 'ZZ')
-                  )
-                  .map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.prenom} {m.nom} ({m.classement})
-                    </SelectItem>
-                  ))
-              ) : (
-                <SelectItem value="no-results" disabled>
-                  <span className="text-gray-400 italic">
-                    {searchTerm ? "Aucun joueur trouvé" : "Aucun joueur disponible"}
-                  </span>
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
+        {/* Sélecteur multiple des membres */}
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
+          <div className="min-w-[240px]">
+            <MultiSelect
+              options={filteredMembres
+                .sort((a, b) => trierClassements(a.classement || 'ZZ', b.classement || 'ZZ'))
+                .map((m) => ({ value: m.id, label: `${m.prenom} ${m.nom} (${m.classement || 'N/A'})` }))}
+              selected={selectedJoueurIds}
+              onChange={setSelectedJoueurIds}
+              placeholder={filteredMembres.length === 0 ? (searchTerm ? 'Aucun résultat...' : 'Aucun joueur disponible') : 'Choisir des joueurs...'}
+              maxSelected={availableSlots > 0 ? availableSlots : 0}
+            />
+          </div>
           <Button
-            onClick={() => ajouterJoueur(match.id)}
-            disabled={!joueurSelectionne || joueurs.length >= 4 || filteredMembres.length === 0}
+            onClick={() => ajouterJoueurs(match.id)}
+            disabled={selectedJoueurIds.length === 0 || joueurs.length >= 4 || filteredMembres.length === 0}
             className="w-full sm:w-auto"
           >
             <PlusCircle className="h-4 w-4 mr-2" />
-            Ajouter
+            Ajouter {selectedJoueurIds.length > 0 ? `(${selectedJoueurIds.length})` : ''}
           </Button>
         </div>
+        <p className="text-xs text-gray-500 mt-1">{availableSlots} place(s) restante(s)</p>
 
         {/* Afficher le nombre de résultats si recherche active */}
         {searchTerm && (
@@ -491,20 +412,13 @@ export function SelectionsManager({
           </p>
         )}
 
+        {/* Liste des joueurs sélectionnés */}
         <div className="space-y-2">
           {joueurs.length > 0 ? (
             joueurs.map((joueur) => {
-              // Utiliser le classement du joueur en priorité, sinon chercher dans les membres
               const membre = membres.find((m) => m.id === joueur.id);
-              const classement =
-                joueur.classement || membre?.classement || 'N/A';
-
-              // S'assurer que wo est défini, par défaut "n"
-              if (!joueur.wo) {
-                joueur.wo = "n";
-              }
-
-              // Nettoyer le nom en supprimant les espaces supplémentaires
+              const classement = joueur.classement || membre?.classement || 'N/A';
+              if (!joueur.wo) joueur.wo = 'n';
               const nomAffiche = joueur.nom
                 ? joueur.nom.trim()
                 : joueur.prenom && joueur.prenom.trim()
@@ -512,33 +426,29 @@ export function SelectionsManager({
                   : membre
                     ? `${membre.prenom || ''} ${membre.nom || ''}`.trim()
                     : 'Joueur inconnu';
-
               return (
                 <div
                   key={joueur.id}
-                  className={`flex items-center justify-between py-2 px-3 rounded ${joueur.wo === "y" ? 'bg-red-50 border border-red-200' : 'bg-gray-50'}`}
+                  className={`flex items-center justify-between py-2 px-3 rounded ${joueur.wo === 'y' ? 'bg-red-50 border border-red-200' : 'bg-gray-50'}`}
                 >
-                  <span className={`truncate flex-1 mr-2 ${joueur.wo === "y" ? 'text-red-700 line-through' : ''}`}>
+                  <span className={`truncate flex-1 mr-2 ${joueur.wo === 'y' ? 'text-red-700 line-through' : ''}`}>
                     {nomAffiche} ({classement})
-                    {joueur.wo === "y" && <Badge variant="destructive" className="ml-2 text-xs">WO</Badge>}
+                    {joueur.wo === 'y' && <Badge variant="destructive" className="ml-2 text-xs">WO</Badge>}
                   </span>
                   <div className="flex items-center">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          variant={joueur.wo === "y" ? "destructive" : "outline"}
+                          variant={joueur.wo === 'y' ? 'destructive' : 'outline'}
                           size="sm"
-                          onClick={() => {
-                            console.log(`Clic WO pour ${joueur.nom}, état actuel: ${joueur.wo}`);
-                            toggleJoueurWO(match.id, joueur.id);
-                          }}
+                          onClick={() => toggleJoueurWO(match.id, joueur.id)}
                           className="h-8 w-8 p-0 shrink-0 mr-1"
                         >
                           <Ban className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        {joueur.wo === "y" ? "Annuler le forfait (WO)" : "Marquer comme forfait (WO)"}
+                        {joueur.wo === 'y' ? 'Annuler le forfait (WO)' : 'Marquer comme forfait (WO)'}
                       </TooltipContent>
                     </Tooltip>
 
@@ -569,7 +479,6 @@ export function SelectionsManager({
   };
 
   const copyFromPreviousWeek = async () => {
-    // Vérifier qu'on n'est pas à la semaine 1
     if (semaine <= 1) {
       setErrorMessage("Impossible de copier : c'est la première semaine");
       setTimeout(() => setErrorMessage(null), 3000);
@@ -579,11 +488,11 @@ export function SelectionsManager({
     try {
       setIsLoading(true);
 
-      // Récupérer tous les matchs CTT Frameries de la semaine actuelle
+      // Récupérer tous les matchs du club de la semaine actuelle
       const cttFrameriesMatches = matchsWithPlayers.filter(
         (match) =>
-          match.domicile.includes('CTT Frameries') ||
-          match.exterieur.includes('CTT Frameries')
+          isClubTeam(match.domicile) ||
+          isClubTeam(match.exterieur)
       );
 
       // Extraire l'ID de saison à partir d'un match
@@ -595,16 +504,14 @@ export function SelectionsManager({
         semaine: semaine - 1
       });
 
-      // Pour chaque match de CTT Frameries, récupérer les joueurs de la semaine précédente
+      // Pour chaque match du club, récupérer les joueurs de la semaine précédente
       const updatedMatches = await Promise.all(
         cttFrameriesMatches.map(async (match) => {
-          // Déterminer quelle équipe de Frameries joue dans ce match
-          const equipeFrameries = match.domicile.includes('CTT Frameries')
+          const equipeFrameries = isClubTeam(match.domicile)
             ? match.domicile
             : match.exterieur;
 
           try {
-            // Récupérer les joueurs de la semaine précédente pour cette équipe
             const previousPlayers = await fetchJoueursBySemaineAndEquipe(
               saisonId || serie.id,
               serie.id,
@@ -614,10 +521,8 @@ export function SelectionsManager({
 
             console.log(`Joueurs récupérés pour ${equipeFrameries}:`, previousPlayers);
 
-            // Si on a trouvé des joueurs, les utiliser pour ce match
             if (previousPlayers.length > 0) {
-              // AJOUT: Envoyer immédiatement les updates vers EquipeMaker
-              if (match.domicile.includes('CTT Frameries')) {
+              if (isClubTeam(match.domicile)) {
                 window.dispatchEvent(new CustomEvent('updateMatch', {
                   detail: {
                     matchId: match.id,
@@ -627,7 +532,7 @@ export function SelectionsManager({
                     }
                   }
                 }));
-              } else if (match.exterieur.includes('CTT Frameries')) {
+              } else if (isClubTeam(match.exterieur)) {
                 window.dispatchEvent(new CustomEvent('updateMatch', {
                   detail: {
                     matchId: match.id,
@@ -669,14 +574,13 @@ export function SelectionsManager({
         }
       });
 
-      // Préserver les sélections des matchs qui ne sont pas CTT Frameries
+      // Préserver les sélections des autres matchs
       matchsWithPlayers.forEach((match) => {
         if (!newSelections[match.id] && match.selectedPlayers && match.selectedPlayers.length > 0) {
           newSelections[match.id] = match.selectedPlayers.map(p => p.id);
         }
       });
 
-      // Mettre à jour le parent avec les nouvelles sélections
       const selectionsAsString = JSON.stringify(newSelections);
       if (lastSelectionsSent.current !== selectionsAsString) {
         lastSelectionsSent.current = selectionsAsString;
@@ -694,7 +598,6 @@ export function SelectionsManager({
     }
   };
 
-  // Fonction pour formater la date au format européen
   const formatDateEuropean = (dateString: string): string => {
     if (!dateString || dateString === 'jj-mm-aaaa') return dateString;
 
@@ -763,12 +666,12 @@ export function SelectionsManager({
                       </div>
                       <Badge
                         variant={
-                          match.domicile.includes('CTT Frameries')
+                          isClubTeam(match.domicile)
                             ? 'default'
                             : 'secondary'
                         }
                       >
-                        {match.domicile.includes('CTT Frameries')
+                        {isClubTeam(match.domicile)
                           ? 'Domicile'
                           : 'Extérieur'}
                       </Badge>

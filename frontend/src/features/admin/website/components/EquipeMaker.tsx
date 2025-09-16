@@ -5,45 +5,53 @@ import {
   Trophy,
   Target,
   UserCheck,
-  BarChart3,
   Loader2,
   Save,
   CheckCircle,
   AlertCircle,
   Info,
-  Share2,
-  PencilIcon,
   Users,
   User,
   ClipboardCopy,
   Check,
+  RefreshCw,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SelectionsManager } from '@/features/admin/website/components/content/teamsResults/SelectionsManager.tsx';
-import { MatchCard } from '@/features/admin/website/components/content/teamsResults/MatchCard.tsx';
 import { SerieSelector } from '@/features/admin/website/components/content/teamsResults/SeriesSelector.tsx';
 import { WeekSelector } from '@/features/admin/website/components/content/teamsResults/WeeksSelector.tsx';
-import { Saison, Member, Match } from '@/services/type.ts';
-import { fetchSaisons, fetchUsers, updateSaisonResults, fetchInformations } from '@/services/api';
+import { Saison, Member, Match, Serie } from '@/services/type.ts';
+import { fetchUsers, updateSaisonResults, fetchInformations, fetchSaisonEnCours, createSaison } from '@/services/api';
+import { fetchMergedUIMatchesForClub, fetchMatches } from '@/services/tabt';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 
 export default function AdminResults() {
-  const [allSaisons, setAllSaisons] = useState<Saison[]>([]);
+  // --- Helper robust pour détecter notre club dans un label d'équipe TABT ---
+  const CLUB_KEYWORD = (import.meta.env.VITE_TABT_CLUB_KEYWORD as string)?.toLowerCase() || 'frameries';
+  const isClubTeam = useCallback((teamLabel?: string) => {
+    if (!teamLabel) return false;
+    return teamLabel.toLowerCase().includes(CLUB_KEYWORD);
+  }, [CLUB_KEYWORD]);
+
   const [saison, setSaison] = useState<Saison | null>(null);
   const [membres, setMembres] = useState<Member[]>([]);
   const [serieSelectionnee, setSerieSelectionnee] = useState<string>('');
   const [semaineSelectionnee, setSemaineSelectionnee] = useState<number>(1);
   const [matchs, setMatchs] = useState<Match[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSelecting, setIsSelecting] = useState(false);
-  const [selections, setSelections] = useState<Record<string, string[]>>({});
+
+  // Nouvel état optimiste
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [hasLoadingError, setHasLoadingError] = useState(false);
+
+  const [, setSelections] = useState<Record<string, string[]>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{
@@ -52,7 +60,6 @@ export default function AdminResults() {
   } | null>(null);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [facebookShareMessage, setFacebookShareMessage] = useState('');
-  const [shareDestination, setShareDestination] = useState<'profile' | 'group'>('group');
   const [groupId, setGroupId] = useState('1414350289649865'); // Valeur par défaut
   const [isMessageCopied, setIsMessageCopied] = useState(false);
   const [messageTemplate, setMessageTemplate] = useState('Bonjour @tout le monde\n\n📢 Les sélections pour la semaine {semaine} sont disponibles ! 🏓\n\nChaque membre peut consulter sa sélection personnelle et les compositions d\'équipes complètes dans son espace personnel sur notre site :\n🔗 https://cttframeries.com\n\nN\'oubliez pas de vérifier régulièrement vos sélections, et notez qu\'elles peuvent être mises à jour jusqu\'au jour de la rencontre.\n\nEn cas de problème ou si vous ne pouvez pas participer à une rencontre, merci de contacter rapidement un membre du comité.\n\nBonne semaine à tous et bon match ! 🏓');
@@ -74,7 +81,7 @@ export default function AdminResults() {
 
   // Fonction pour trouver la dernière semaine avec sélections pour une série donnée
   const findLastWeekWithSelections = useCallback((serieId: string, matchsData: Match[]) => {
-    if (!serieId || !matchsData.length) return 1;
+    if (!serieId || !matchsData.length) return 0; // 0 si aucune selection
 
     const matchsSerie = matchsData.filter(m => m.serieId === serieId);
 
@@ -88,7 +95,7 @@ export default function AdminResults() {
     }, {} as Record<number, Match[]>);
 
     // Trouver la dernière semaine avec des sélections
-    let lastWeekWithSelections = 1;
+    let lastWeekWithSelections = 0;
 
     Object.keys(matchsParSemaine)
       .map(Number)
@@ -98,12 +105,12 @@ export default function AdminResults() {
 
         // Vérifier s'il y a des sélections dans cette semaine
         const hasSelections = matchsSemaine.some(match => {
-          // Vérifier si CTT Frameries joue et a des joueurs sélectionnés
-          if (match.domicile.includes('CTT Frameries')) {
+          // Vérifier si notre club joue et a des joueurs sélectionnés
+          if (isClubTeam(match.domicile)) {
             return (match.joueursDomicile && match.joueursDomicile.length > 0) ||
                    (match.joueur_dom && match.joueur_dom.length > 0);
           }
-          if (match.exterieur.includes('CTT Frameries')) {
+          if (isClubTeam(match.exterieur)) {
             return (match.joueursExterieur && match.joueursExterieur.length > 0) ||
                    (match.joueur_ext && match.joueur_ext.length > 0);
           }
@@ -117,63 +124,93 @@ export default function AdminResults() {
 
     console.log(`Dernière semaine avec sélections pour série ${serieId}: ${lastWeekWithSelections}`);
     return lastWeekWithSelections;
-  }, []);
+  }, [isClubTeam]);
 
   useEffect(() => {
     const chargerDonneesInitiales = async () => {
-      setIsLoading(true);
       try {
-        const [saisonsData, membresData] = await Promise.all([
-          fetchSaisons(),
+        setIsInitialLoading(true);
+        setHasLoadingError(false);
+
+        const [membresData, saisonEnCours, mergedTabt] = await Promise.all([
           fetchUsers(),
+          fetchSaisonEnCours(),
+          fetchMergedUIMatchesForClub(),
         ]);
 
-        setAllSaisons(saisonsData);
         setMembres(membresData);
 
-        const saisonEnCours = saisonsData.find(
-          (s: Saison) => s.statut === 'En cours'
-        );
+        let saisonActive = saisonEnCours;
 
-        if (saisonEnCours) {
-          setSaison(saisonEnCours);
-          setMatchs(saisonEnCours.calendrier);
+        // Auto-créer une saison minimale si aucune n'existe
+        if (!saisonActive) {
+          const now = new Date();
+          const y = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1; // saison sportive
+          const saisonLabel = `Saison ${y}-${y + 1}`;
+          saisonActive = await createSaison({
+            label: saisonLabel,
+            statut: 'En cours',
+            equipesClub: [],
+            series: [],
+            calendrier: [],
+            clubs: [],
+            infosPersonnalisees: [],
+          });
+        }
+
+        if (saisonActive) {
+          // Dériver les séries depuis TABT (divisionId/divisionName)
+          const clubCode = (import.meta.env.VITE_TABT_CLUB_CODE as string) || 'H442';
+          const rawTabt = await fetchMatches({ club: clubCode, showDivisionName: 'short' });
+          const divisions = new Map<string, string>();
+          (rawTabt.data || []).forEach((m) => {
+            const id = String(m.divisionId || '');
+            if (!id) return;
+            const name = m.divisionName || id;
+            if (!divisions.has(id)) divisions.set(id, name);
+          });
+          const derivedSeries: Serie[] = Array.from(divisions.entries()).map(([id, nom]) => ({
+            id,
+            nom,
+            saisonId: saisonActive.id,
+            equipes: [],
+          }));
+
+          const saisonForSelections: Saison = {
+            ...saisonActive,
+            series: derivedSeries,
+            calendrier: Array.isArray(saisonActive.calendrier) ? saisonActive.calendrier : [],
+          };
+
+          setSaison(saisonForSelections);
+          setMatchs(mergedTabt as unknown as Match[]);
           setIsSelecting(false);
-
-          // Si on a déjà une série sélectionnée, trouver la dernière semaine avec sélections
-          if (serieSelectionnee) {
-            const lastWeek = findLastWeekWithSelections(serieSelectionnee, saisonEnCours.calendrier);
-            setSemaineSelectionnee(lastWeek);
-          }
-        } else {
-          setIsSelecting(true);
+          setHasLoadingError(false);
         }
       } catch (error) {
         console.error('Erreur lors du chargement des données:', error);
+        setHasLoadingError(true);
         setIsSelecting(true);
       } finally {
-        setIsLoading(false);
+        setIsInitialLoading(false);
       }
     };
 
     chargerDonneesInitiales();
-  }, [serieSelectionnee, findLastWeekWithSelections]);
+  }, [findLastWeekWithSelections]);
 
-  // Effet pour mettre à jour la semaine sélectionnée quand on change de série
+  // Effet: quand la série change, ne pas réinitialiser la semaine
+  // On se contente d'effacer les sélections locales pour éviter les incohérences
   useEffect(() => {
-    if (serieSelectionnee && saison?.calendrier) {
-      const lastWeek = findLastWeekWithSelections(serieSelectionnee, saison.calendrier);
-      setSemaineSelectionnee(lastWeek);
-      // Réinitialiser les sélections quand on change de série
+    if (serieSelectionnee) {
       setSelections({});
     }
-  }, [serieSelectionnee, saison?.calendrier, findLastWeekWithSelections]);
+  }, [serieSelectionnee]);
 
   // Effet pour réinitialiser les sélections quand les filtres changent (sauf au premier rendu)
   useEffect(() => {
-    // Ne pas réinitialiser lors du premier rendu ou changement de série (géré ci-dessus)
     if (serieSelectionnee && semaineSelectionnee) {
-      // Les sélections sont déjà gérées par l'effet précédent
+      // noop
     }
   }, [semaineSelectionnee]);
 
@@ -181,13 +218,13 @@ export default function AdminResults() {
   const matchsSemaine = useMemo(() => {
     if (!saison) return [];
 
-    // Récupérer TOUS les matchs de la série et semaine (pas seulement CTT Frameries)
-    return matchs.filter(
-      (m) => m.serieId === serieSelectionnee && m.semaine === semaineSelectionnee
-    ).map(match => ({
-      ...match,
-      saisonId: saison.id // S'assurer que saisonId est toujours défini
-    }));
+    // Récupérer TOUS les matchs de la série et semaine (pas seulement notre club)
+    return matchs
+      .filter((m) => m.serieId === serieSelectionnee && m.semaine === semaineSelectionnee)
+      .map(match => ({
+        ...match,
+        saisonId: saison.id // S'assurer que saisonId est toujours défini
+      }));
   }, [matchs, serieSelectionnee, semaineSelectionnee, saison]);
 
   const updateMatch = (matchId: string, updates: Partial<Match>) => {
@@ -234,7 +271,6 @@ export default function AdminResults() {
   // Memoize handleSelectionsChange pour éviter la recréation à chaque rendu
   const handleSelectionsChange = useCallback((newSelections: Record<string, string[]>) => {
     setSelections((prev) => {
-      // Vérifier si les sélections ont réellement changé avant de mettre à jour l'état
       if (JSON.stringify(prev) === JSON.stringify(newSelections)) {
         return prev;
       }
@@ -310,23 +346,19 @@ export default function AdminResults() {
         // Utiliser directement les joueurs du match qui contiennent déjà les infos WO
         let joueursAvecWO: any[] = [];
 
-        if (match.domicile.includes('CTT Frameries')) {
+        if (isClubTeam(match.domicile)) {
           joueursAvecWO = match.joueursDomicile || match.joueur_dom || [];
-          console.log('Joueurs domicile CTT Frameries trouvés:', joueursAvecWO);
-        } else if (match.exterieur.includes('CTT Frameries')) {
+          console.log('Joueurs domicile (club) trouvés:', joueursAvecWO);
+        } else if (isClubTeam(match.exterieur)) {
           joueursAvecWO = match.joueursExterieur || match.joueur_ext || [];
-          console.log('Joueurs extérieur CTT Frameries trouvés:', joueursAvecWO);
+          console.log('Joueurs extérieur (club) trouvés:', joueursAvecWO);
         }
 
         // S'assurer que tous les joueurs ont un champ wo défini
-        joueursAvecWO = joueursAvecWO.map(joueur => {
-          const joueurAvecWO = {
-            ...joueur,
-            wo: joueur.wo || "n"
-          };
-          console.log(`Joueur ${joueur.nom}: wo = ${joueurAvecWO.wo}`);
-          return joueurAvecWO;
-        });
+        joueursAvecWO = joueursAvecWO.map(joueur => ({
+          ...joueur,
+          wo: joueur.wo || "n"
+        }));
 
         // Préparer le match avec TOUTES les données mises à jour
         let matchWithUpdatedData = {
@@ -334,7 +366,7 @@ export default function AdminResults() {
           saisonId: saison.id,
           score: match.score || '',
           scoresIndividuels: match.scoresIndividuels ? { ...match.scoresIndividuels } : {},
-        };
+        } as Match;
 
         // S'assurer que les joueurs WO ont un score de 0
         joueursAvecWO.forEach(joueur => {
@@ -344,23 +376,23 @@ export default function AdminResults() {
           }
         });
 
-        // Déterminer si CTT Frameries joue à domicile ou à l'extérieur
-        if (match.domicile.includes('CTT Frameries')) {
+        // Déterminer si notre club joue à domicile ou à l'extérieur
+        if (isClubTeam(match.domicile)) {
           matchWithUpdatedData = {
             ...matchWithUpdatedData,
             joueursDomicile: joueursAvecWO,
             joueur_dom: joueursAvecWO,
-          };
+          } as Match;
           console.log('Joueurs domicile finaux pour sauvegarde:', joueursAvecWO);
-        } else if (match.exterieur.includes('CTT Frameries')) {
+        } else if (isClubTeam(match.exterieur)) {
           matchWithUpdatedData = {
             ...matchWithUpdatedData,
             joueursExterieur: joueursAvecWO,
             joueur_ext: joueursAvecWO,
-          };
+          } as Match;
           console.log('Joueurs extérieur finaux pour sauvegarde:', joueursAvecWO);
         } else {
-          // Pour les matchs sans CTT Frameries, s'assurer que wo est défini
+          // Pour les matchs sans notre club, s'assurer que wo est défini
           matchWithUpdatedData = {
             ...matchWithUpdatedData,
             joueur_dom: (match.joueur_dom || []).map(j => ({
@@ -371,7 +403,7 @@ export default function AdminResults() {
               ...j,
               wo: j.wo || "n"
             })),
-          };
+          } as Match;
         }
 
         console.log('Match final pour sauvegarde:', JSON.stringify(matchWithUpdatedData, null, 2));
@@ -407,11 +439,11 @@ export default function AdminResults() {
     } finally {
       setSavingState(false);
     }
-  }, [saison, serieSelectionnee, semaineSelectionnee, matchs]);
+  }, [saison, serieSelectionnee, semaineSelectionnee, matchs, isClubTeam]);
 
   // Gestionnaire pour le changement de série avec sauvegarde automatique
   const handleSerieChange = useCallback(async (newSerieId: string) => {
-    // Sauvegarder les données actuelles avant de changer de série (si on avait une série sélectionnée)
+    // Sauvegarde auto avant changement
     if (previousSerieRef.current && previousSerieRef.current !== newSerieId) {
       console.log('Sauvegarde automatique avant changement de série...');
       setIsAutoSaving(true);
@@ -419,14 +451,26 @@ export default function AdminResults() {
       setIsAutoSaving(false);
     }
 
-    // Mettre à jour la série sélectionnée
+    // Déterminer s'il s'agit de la première sélection de série
+    const isFirstSerieSelection = !previousSerieRef.current;
+
     setSerieSelectionnee(newSerieId);
+
+    // Si première sélection de la série ET l'utilisateur n'a pas encore choisi la semaine,
+    // définir par défaut: une semaine après la dernière semaine avec sélections (max 22, min 1)
+    if (isFirstSerieSelection && saison) {
+      const lastWithSel = findLastWeekWithSelections(newSerieId, saison.calendrier || []);
+      const proposed = lastWithSel > 0 ? Math.min(22, lastWithSel + 1) : 1;
+      setSemaineSelectionnee(proposed);
+      previousSemaineRef.current = proposed;
+    }
+
+    // Ne pas modifier la semaine lorsqu'on change de division après la première fois
     previousSerieRef.current = newSerieId;
-  }, [saveCurrentData]);
+  }, [saveCurrentData, saison, findLastWeekWithSelections]);
 
   // Gestionnaire pour le changement de semaine avec sauvegarde automatique
   const handleSemaineChange = useCallback(async (newSemaine: number) => {
-    // Sauvegarder les données actuelles avant de changer de semaine (si on avait une semaine différente)
     if (previousSemaineRef.current && previousSemaineRef.current !== newSemaine && serieSelectionnee) {
       console.log('Sauvegarde automatique avant changement de semaine...');
       setIsAutoSaving(true);
@@ -434,7 +478,6 @@ export default function AdminResults() {
       setIsAutoSaving(false);
     }
 
-    // Mettre à jour la semaine sélectionnée
     setSemaineSelectionnee(newSemaine);
     previousSemaineRef.current = newSemaine;
   }, [saveCurrentData, serieSelectionnee]);
@@ -485,15 +528,12 @@ export default function AdminResults() {
 
   // Fonction pour générer le message de partage Facebook
   const generateFacebookShareMessage = useCallback(() => {
-    // Utiliser le type de message sélectionné manuellement
     const template = selectedMessageType === 'veteran' ? messageTemplateVeteran : messageTemplate;
-    // Remplacer la variable {semaine} par le numéro de semaine actuel
     return template.replace(/{semaine}/g, semaineSelectionnee.toString());
   }, [messageTemplate, messageTemplateVeteran, semaineSelectionnee, selectedMessageType]);
 
   // Fonction pour ouvrir le dialogue de partage avec le message pré-rempli
   const handleOpenShareDialog = useCallback(() => {
-    // Détecter automatiquement le type au moment de l'ouverture du dialogue
     const autoDetectedType = isVeteranSerie(serieSelectionneeData) ? 'veteran' : 'regular';
     setSelectedMessageType(autoDetectedType);
 
@@ -515,7 +555,6 @@ export default function AdminResults() {
       try {
         const infosData = await fetchInformations();
         if (infosData && infosData.length > 0) {
-          // Charger l'ID du groupe
           if (infosData[0].facebookGroupePriveUrl) {
             const url = infosData[0].facebookGroupePriveUrl;
             const match = url.match(/groups\/(\d+)/);
@@ -525,13 +564,11 @@ export default function AdminResults() {
             }
           }
 
-          // Charger le message par défaut régulier
           if (infosData[0].facebookMessageDefaut) {
             setMessageTemplate(infosData[0].facebookMessageDefaut);
             console.log('Message par défaut Facebook chargé');
           }
 
-          // Charger le message par défaut vétéran
           if (infosData[0].facebookMessageVeteran) {
             setMessageTemplateVeteran(infosData[0].facebookMessageVeteran);
             console.log('Message vétéran Facebook chargé');
@@ -574,14 +611,14 @@ export default function AdminResults() {
   const toutesLesEquipes = useMemo(() => {
     if (!saison || !semaineSelectionnee) return [];
 
-    // Récupérer tous les matchs de la semaine sélectionnée où CTT Frameries joue
+    // Récupérer tous les matchs de la semaine sélectionnée où notre club joue
     const matchsCttFrameries = matchs.filter(
       (match) =>
         match.semaine === semaineSelectionnee &&
-        (match.domicile.includes('CTT Frameries') || match.exterieur.includes('CTT Frameries'))
+        (isClubTeam(match.domicile) || isClubTeam(match.exterieur))
     );
 
-    // Créer un Map pour grouper par équipe CTT Frameries
+    // Créer un Map pour grouper par équipe notre club
     const equipesMap = new Map<string, {
       equipe: string;
       serie: string;
@@ -600,11 +637,11 @@ export default function AdminResults() {
       let estDomicile = false;
       let equipeFrameries = '';
 
-      if (match.domicile.includes('CTT Frameries')) {
+      if (isClubTeam(match.domicile)) {
         joueurs = match.joueursDomicile || match.joueur_dom || [];
         estDomicile = true;
         equipeFrameries = match.domicile;
-      } else if (match.exterieur.includes('CTT Frameries')) {
+      } else if (isClubTeam(match.exterieur)) {
         joueurs = match.joueursExterieur || match.joueur_ext || [];
         estDomicile = false;
         equipeFrameries = match.exterieur;
@@ -649,26 +686,123 @@ export default function AdminResults() {
       }
     });
 
-    // Convertir en array et trier par nom d'équipe CTT Frameries
+    // Convertir en array et trier par nom d'équipe notre club
     return Array.from(equipesMap.values()).sort((a, b) => {
       return a.equipe.localeCompare(b.equipe);
     });
-  }, [saison, matchs, semaineSelectionnee]);
+  }, [saison, matchs, semaineSelectionnee, isClubTeam]);
 
-  if (isLoading) {
+  const displaySerieName = useCallback((name?: string) => {
+    if (!name) return '';
+    const trimmed = String(name).trim();
+    return /^\d+$/.test(trimmed) ? `Division ${trimmed}` : trimmed;
+  }, []);
+
+  // Condition d'affichage optimiste
+  if (isInitialLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-center h-96">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-            <span className="text-lg">Chargement des données...</span>
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header optimiste */}
+          <div className="text-center space-y-2">
+            <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
+              <Badge variant="outline" className="bg-white animate-pulse">
+                <CalendarDays className="h-4 w-4 mr-1" />
+                Chargement...
+              </Badge>
+              <Badge variant="default" className="animate-pulse">
+                En cours
+              </Badge>
+              <Badge variant="outline" className="bg-white animate-pulse">
+                Chargement des données...
+              </Badge>
+            </div>
           </div>
+
+          {/* Card de chargement optimiste */}
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Target className="h-5 w-5 text-blue-600" />
+                Chargement des sélections
+                <Badge variant="outline" className="ml-2 text-xs animate-pulse">
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  Initialisation...
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Skeleton loaders pour les sélecteurs */}
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 bg-gray-100 rounded animate-pulse"></div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 bg-gray-100 rounded animate-pulse"></div>
+                </div>
+                <div className="flex items-end gap-2">
+                  <div className="flex-1 h-10 bg-gray-100 rounded animate-pulse"></div>
+                  <div className="flex-1 h-10 bg-blue-100 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Message optimiste */}
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <CardContent className="text-center py-12">
+              <Loader2 className="h-16 w-16 mx-auto mb-4 text-blue-500 animate-spin" />
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                Chargement de la saison en cours...
+              </h3>
+              <p className="text-gray-500">
+                Récupération des données TABT et des équipes
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
   }
 
-  if (isSelecting || !saison) {
+  // Affichage d'erreur uniquement si on a confirmé qu'il n'y a pas de saison
+  if (hasLoadingError || (isSelecting && !isInitialLoading)) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-center h-96">
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <CardContent className="text-center py-12">
+              <AlertCircle className="h-16 w-16 mx-auto mb-4 text-red-400" />
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                {hasLoadingError ? "Erreur de chargement" : "Aucune saison en cours"}
+              </h3>
+              <p className="text-gray-500 mb-4">
+                {hasLoadingError
+                  ? "Impossible de charger les données. Vérifiez votre connexion."
+                  : "Veuillez démarrer une saison pour accéder à cette interface"
+                }
+              </p>
+              {hasLoadingError && (
+                <Button
+                  onClick={() => window.location.reload()}
+                  variant="outline"
+                  className="mt-2"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Réessayer
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Affichage normal si saison existe
+  if (!saison) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
         <div className="max-w-7xl mx-auto flex items-center justify-center h-96">
@@ -676,10 +810,10 @@ export default function AdminResults() {
             <CardContent className="text-center py-12">
               <Trophy className="h-16 w-16 mx-auto mb-4 text-gray-400" />
               <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                Aucune saison en cours
+                Initialisation en cours...
               </h3>
               <p className="text-gray-500">
-                Veuillez démarrer une saison pour accéder à cette interface
+                Préparation de l'interface de sélection
               </p>
             </CardContent>
           </Card>
@@ -769,33 +903,6 @@ export default function AdminResults() {
                     </svg>
                     Publier
                   </Button>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-10 w-10 p-0 shrink-0"
-                      >
-                        <Info className="h-4 w-4 text-gray-500" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-sm p-4" align="center">
-                      <div className="space-y-2">
-                        <h4 className="font-semibold text-sm">Codes de résultats spéciaux :</h4>
-                        <div className="text-xs space-y-1">
-                          <div><strong>bye</strong> - Match contre BYE</div>
-                          <div><strong>ff-d</strong> - Forfait équipe domicile</div>
-                          <div><strong>ff-e</strong> - Forfait équipe extérieur</div>
-                          <div><strong>fg-d</strong> - Forfait général domicile</div>
-                          <div><strong>fg-e</strong> - Forfait général extérieur</div>
-                          <div className="pt-1 border-t border-gray-200">
-                            <strong>Scores normaux :</strong> format "X-Y" (ex: 10-6)
-                          </div>
-                        </div>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
                 </div>
               </div>
 
@@ -820,17 +927,13 @@ export default function AdminResults() {
           {/* Content */}
           {serieSelectionnee && (
             <Tabs defaultValue="selections" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-3 bg-white/80 backdrop-blur-sm">
+              <TabsList className="grid w-full grid-cols-2 bg-white/80 backdrop-blur-sm">
                 <TabsTrigger
                   value="selections"
                   className="flex items-center gap-2"
                 >
                   <UserCheck className="h-4 w-4" />
                   Sélections
-                </TabsTrigger>
-                <TabsTrigger value="results" className="flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  Résultats
                 </TabsTrigger>
                 <TabsTrigger value="toutes-equipes" className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
@@ -847,47 +950,6 @@ export default function AdminResults() {
                     matchs={matchsSemaine}
                     onSelectionsChange={handleSelectionsChange}
                   />
-                )}
-              </TabsContent>
-
-              <TabsContent value="results" className="space-y-4">
-                {serieSelectionneeData && (
-                  <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-                    <CardHeader>
-                      <CardTitle className="text-xl text-center flex items-center justify-center gap-2">
-                        <BarChart3 className="h-6 w-6 text-green-600" />
-                        {serieSelectionneeData.nom} - Semaine{' '}
-                        {semaineSelectionnee}
-                      </CardTitle>
-                      <p className="text-center text-sm text-gray-600">
-                        Encodage des résultats de tous les matchs de la série +
-                        compositions et scores individuels pour CTT Frameries
-                      </p>
-                    </CardHeader>
-                    <CardContent>
-                      {matchsSemaine.length > 0 ? (
-                        <div className="space-y-6">
-                          {matchsSemaine.map((match) => (
-                            <MatchCard
-                              key={match.id}
-                              match={match}
-                              membres={membres}
-                              onUpdateMatch={updateMatch}
-                              showIndividualScores
-                              scoreInputRef={(el) => (scoreRefs.current[match.id] = el)}
-                              onKeyDown={(e) => handleKeyDown(e, match.id)}
-                            />
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-12 text-gray-500">
-                          <CalendarDays className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                          <p className="text-lg">Aucun match programmé</p>
-                          <p className="text-sm">pour cette sélection</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
                 )}
               </TabsContent>
 
@@ -1048,7 +1110,7 @@ export default function AdminResults() {
                   Sélectionnez une série
                 </h3>
                 <p className="text-gray-500">
-                  Choisissez une série pour commencer l'encodage des résultats ou voir toutes les équipes en sélectionnant n'importe quelle série
+                  Choisissez une série pour commencer les sélections ou voir toutes les équipes
                 </p>
               </CardContent>
             </Card>

@@ -1,5 +1,7 @@
 /* eslint-disable */
 import axios from 'axios';
+import { fetchSaisonEnCours } from '@/services/api';
+import type { Match as UIMatch, Joueur } from '@/services/type';
 
 export type TabtRankingEntry = {
   position: number;
@@ -246,3 +248,215 @@ export async function fetchMatches(params?: {
   });
   return res.data as TabtMatchesResponse;
 }
+
+// ---- Clubs & Salles (via script PHP) ----
+export type ProvinceCode = 'H' | 'Lx' | 'L' | 'BBW' | 'N';
+
+export type TabtClubVenue = {
+  name: string;
+  street: string;
+  town: string;
+  phone: string;
+  comment: string;
+  fullAddress: string;
+};
+
+export type TabtClubWithVenues = {
+  clubId: string;
+  clubName: string;
+  clubLongName: string;
+  venueCount: number;
+  venues: TabtClubVenue[];
+};
+
+export type TabtClubsResponse = {
+  success: boolean;
+  province: ProvinceCode;
+  totalClubsInProvince: number;
+  clubsWithVenues: number;
+  debug?: any;
+  clubs: TabtClubWithVenues[];
+};
+
+export async function fetchClubsWithVenues(params: {
+  province: ProvinceCode;
+  timeoutMs?: number;
+}): Promise<TabtClubsResponse> {
+  const { province, timeoutMs = 20000 } = params;
+
+  // Validation côté client pour aider l'appelant
+  const VALID_PROVINCES: ProvinceCode[] = ['H', 'Lx', 'L', 'BBW', 'N'];
+  if (!VALID_PROVINCES.includes(province)) {
+    throw new Error(
+      `Province invalide: ${province}. Utilisez l'une de: ${VALID_PROVINCES.join(', ')}`
+    );
+  }
+
+  try {
+    const res = await axios.get(`${TABT_API_URL}/venues.php`, {
+      params: { province },
+      timeout: timeoutMs,
+    });
+    return res.data as TabtClubsResponse;
+  } catch (err: any) {
+    const serverMsg = err?.response?.data?.error || err?.message || 'Erreur inconnue';
+    throw new Error(`Échec récupération clubs/venues (${province}) : ${serverMsg}`);
+  }
+}
+
+// ---- Adaptateur: TABT -> Match (app) ----
+export type AppMatch = {
+  id: string;
+  serieId: string;
+  semaine: number;
+  domicile: string;
+  exterieur: string;
+  score: string;
+  date: string;
+  heure?: string;
+  lieu?: string;
+  saisonId?: string;
+  matchUniqueId?: number;
+  divisionName?: string; // Ajout pour affichage "Division <nom>"
+};
+
+export function mapTabtMatchToAppMatch(m: TabtMatch): AppMatch {
+  // Estimation de la semaine si non fournie: extraire numéro de semaine éventuel du label weekName sinon 0
+  const week = typeof m?.weekName === 'string'
+    ? Number(m.weekName.replace(/\D+/g, '')) || 0
+    : 0;
+
+  const score = m.score || '';
+  const date = m.date || m.dateTime || '';
+  const time = m.time || '';
+  const id = String(m.matchUniqueId ?? m.matchId ?? `${m.homeTeam}-${m.awayTeam}-${date}`);
+  const serieId = String(m.divisionId ?? '');
+  const divisionName = m.divisionName || (serieId ? `Division ${serieId}` : 'Division');
+
+  return {
+    id,
+    serieId,
+    semaine: week,
+    domicile: `${m.homeClub ?? ''} ${m.homeTeam ?? ''}`.trim(),
+    exterieur: `${m.awayClub ?? ''} ${m.awayTeam ?? ''}`.trim(),
+    score,
+    date,
+    heure: time,
+    lieu: m.venueClub ?? undefined,
+    matchUniqueId: m.matchUniqueId ?? undefined,
+    divisionName,
+  };
+}
+
+// ---- Helpers fusion TABT + sélections ----
+function normalizeTeamName(name: string): string {
+  return (name || '')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+(Dame|Dames|Vét\.|Veteran)$/i, '')
+    .trim()
+    .toLowerCase();
+}
+
+function toUIMatch(app: AppMatch, saisonId?: string): UIMatch {
+  return {
+    id: app.id,
+    saisonId: saisonId || '',
+    serieId: app.serieId,
+    semaine: app.semaine,
+    domicile: app.domicile,
+    exterieur: app.exterieur,
+    score: app.score,
+    date: app.date,
+    heure: app.heure,
+    lieu: app.lieu,
+  };
+}
+
+function ensureWo(j: Joueur[] | undefined): Joueur[] | undefined {
+  if (!j) return j;
+  return j.map((x) => ({ ...x, wo: x.wo || 'n' }));
+}
+
+function overlaySelection(app: AppMatch, seasonMatch: UIMatch | undefined, saisonId?: string): UIMatch {
+  const base = toUIMatch(app, saisonId);
+  if (!seasonMatch) return base;
+  return {
+    ...base,
+    joueursDomicile: ensureWo((seasonMatch as any).joueursDomicile || (seasonMatch as any).joueur_dom),
+    joueursExterieur: ensureWo((seasonMatch as any).joueursExterieur || (seasonMatch as any).joueur_ext),
+    joueur_dom: ensureWo((seasonMatch as any).joueur_dom),
+    joueur_ext: ensureWo((seasonMatch as any).joueur_ext),
+    scoresIndividuels: (seasonMatch as any).scoresIndividuels || {},
+  } as UIMatch;
+}
+
+function findSelectionMatch(app: AppMatch, seasonList: UIMatch[]): UIMatch | undefined {
+  // 1) Match par ID exact
+  let found = seasonList.find((m) => m.id === app.id);
+  if (found) return found;
+
+  // 2) Match par équipes normalisées (+ date si disponible)
+  const d1 = normalizeTeamName(app.domicile);
+  const e1 = normalizeTeamName(app.exterieur);
+  const date1 = (app.date || '').split('T')[0];
+
+  found = seasonList.find((m) => {
+    const d2 = normalizeTeamName(m.domicile);
+    const e2 = normalizeTeamName(m.exterieur);
+    const date2 = (m.date || '').split('T')[0];
+    const teamMatch = d1 === d2 && e1 === e2;
+    if (!teamMatch) return false;
+    // Si une date existe des deux côtés, la comparer; sinon ignorer la date
+    if (date1 && date2) return date1 === date2;
+    return true;
+  });
+  return found;
+}
+
+/**
+ * Récupère les matches TABT du club, puis fusionne avec les sélections stockées dans la saison en cours.
+ * Retour: Match[] (type UI) avec éventuelles compositions (joueur_dom/joueur_ext) et scores individuels.
+ */
+export async function fetchMergedUIMatchesForClub(options?: {
+  clubName?: string;
+  season?: string;
+  timeoutMs?: number;
+}): Promise<UIMatch[]> {
+  const saison = await fetchSaisonEnCours();
+  const tabt = await fetchClubMatchesMapped(options);
+  const seasonList: UIMatch[] = Array.isArray(saison?.calendrier) ? saison.calendrier : [];
+
+  return tabt.map((m) => overlaySelection(m, findSelectionMatch(m, seasonList), saison?.id));
+}
+
+/**
+ * Récupère les matches TABT d'un club (nom) et les mappe au type AppMatch
+ * VITE_TABT_CLUB_NAME peut définir le nom du club; fallback: "CTT Frameries".
+ */
+export async function fetchClubMatchesMapped(options?: {
+  clubName?: string;
+  season?: string;
+  timeoutMs?: number;
+  clubCode?: string; // ex: H442
+}): Promise<AppMatch[]> {
+  // 1) Code club prioritaire (plus fiable côté API PHP)
+  const clubCode = options?.clubCode || (import.meta.env.VITE_TABT_CLUB_CODE as string) || '';
+  // 2) Fallback sur le nom du club
+  const clubName = options?.clubName || (import.meta.env.VITE_TABT_CLUB_NAME as string) || '';
+  const timeoutMs = options?.timeoutMs ?? 20000;
+  const season = options?.season;
+
+  const clubParam = clubCode || clubName || 'H442';
+
+  const res = await fetchMatches({ club: clubParam, season, timeoutMs });
+  const list = res?.data || [];
+  return list.map(mapTabtMatchToAppMatch);
+}
+
+// ---- Venues externes (API PHP) ----
+export const fetchExternalVenues = async (province: string = 'H') => {
+  const response = await axios.get(`${TABT_API_URL}/venues.php`, {
+    params: { province },
+  });
+  return response.data;
+};

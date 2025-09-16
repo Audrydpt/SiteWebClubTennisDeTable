@@ -7,6 +7,8 @@ import {
   CommandeItem,
   Joueur,
   Match,
+  InfosPersonnalisees,
+  Saison,
 } from '@/services/type.ts';
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -226,7 +228,24 @@ export const fetchSaisonById = async (id: string) => {
 
 export const fetchSaisonEnCours = async () => {
   const response = await axios.get(`${API_URL}/saisons?statut=En%20cours`);
-  return response.data[0] || null; // Retourne la première saison en cours ou null
+  const saison = response.data[0] || null;
+  // Auto-créer une saison minimale si aucune n'existe
+  if (!saison) {
+    const now = new Date();
+    const y = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1; // saison sportive (août -> juillet)
+    const saisonLabel = `Saison ${y}-${y + 1}`;
+    const creation = await axios.post(`${API_URL}/saisons`, {
+      label: saisonLabel,
+      statut: 'En cours',
+      equipesClub: [],
+      series: [],
+      calendrier: [],
+      clubs: [],
+      infosPersonnalisees: [],
+    });
+    return creation.data;
+  }
+  return saison;
 };
 
 export const updateSaison = async (id: string, data: any) => {
@@ -251,45 +270,63 @@ export const updateSaisonResults = async (
     if (!joueurs) return [];
     return joueurs.map((j) => ({
       ...j,
-      wo: j.wo || 'n', // S'assurer que wo est "y" ou "n"
+      wo: j.wo || 'n',
     }));
   };
 
-  saison.calendrier = saison.calendrier.map((match: Match) => {
+  const originalCalendar: Match[] = Array.isArray(saison.calendrier) ? saison.calendrier : [];
+  const originalIds = new Set(originalCalendar.map((m) => m.id));
+
+  // Mise à jour des matchs existants
+  const updatedCalendar = originalCalendar.map((match: Match) => {
     const updatedMatch = matchesWithScores.find((m) => m.id === match.id);
     if (!updatedMatch) return match;
 
+    // Normaliser joueurs et champs wo
+    const joueur_dom = ensureWoField(
+      updatedMatch.joueursDomicile || updatedMatch.joueur_dom || match.joueur_dom
+    );
+    const joueur_ext = ensureWoField(
+      updatedMatch.joueursExterieur || updatedMatch.joueur_ext || match.joueur_ext
+    );
+
     return {
       ...match,
-      // Mettre à jour le score (même s'il est vide)
-      score: updatedMatch.score,
-      // Mettre à jour les scores individuels (créer l'objet si nécessaire)
-      scoresIndividuels:
-        updatedMatch.scoresIndividuels || match.scoresIndividuels || {},
-      // Mettre à jour les joueurs avec champ wo assuré
-      joueur_dom: ensureWoField(
-        updatedMatch.joueursDomicile ||
-          updatedMatch.joueur_dom ||
-          match.joueur_dom
-      ),
-      joueur_ext: ensureWoField(
-        updatedMatch.joueursExterieur ||
-          updatedMatch.joueur_ext ||
-          match.joueur_ext
-      ),
-      // Conserver la compatibilité avec les nouveaux champs
-      joueursDomicile: ensureWoField(
-        updatedMatch.joueursDomicile ||
-          updatedMatch.joueur_dom ||
-          match.joueursDomicile
-      ),
-      joueursExterieur: ensureWoField(
-        updatedMatch.joueursExterieur ||
-          updatedMatch.joueur_ext ||
-          match.joueursExterieur
-      ),
-    };
+      score: updatedMatch.score ?? match.score ?? '',
+      scoresIndividuels: updatedMatch.scoresIndividuels || match.scoresIndividuels || {},
+      joueursDomicile: joueur_dom,
+      joueursExterieur: joueur_ext,
+      joueur_dom,
+      joueur_ext,
+    } as Match;
   });
+
+  // Ajout des nouveaux matchs (upsert) venant de TABT qui n'existent pas encore dans la saison
+  const newMatches: Match[] = matchesWithScores
+    .filter((m) => !originalIds.has(m.id))
+    .map((m) => {
+      const joueur_dom = ensureWoField(m.joueursDomicile || m.joueur_dom);
+      const joueur_ext = ensureWoField(m.joueursExterieur || m.joueur_ext);
+      return {
+        id: m.id,
+        saisonId: m.saisonId || saison.id,
+        serieId: m.serieId || '',
+        semaine: m.semaine || 0,
+        domicile: m.domicile || m.homeTeam || '',
+        exterieur: m.exterieur || m.awayTeam || '',
+        score: m.score || '',
+        date: m.date || '',
+        heure: m.heure,
+        lieu: m.lieu,
+        joueursDomicile: joueur_dom,
+        joueursExterieur: joueur_ext,
+        joueur_dom,
+        joueur_ext,
+        scoresIndividuels: m.scoresIndividuels || {},
+      } as Match;
+    });
+
+  saison.calendrier = [...updatedCalendar, ...newMatches];
   return updateSaison(id, saison);
 };
 
@@ -751,3 +788,48 @@ export const updateFacebookConfig = async (data: {
   return response.data;
 };
 
+
+
+// ---- Infos Exceptionnelles (helpers) ----
+export const upsertInfosPersonnalisees = async (
+  saisonId: string,
+  payload: Omit<InfosPersonnalisees, 'id' | 'dateCreation' | 'dateModification'> & { id?: string }
+): Promise<Saison> => {
+  const saison = await fetchSaisonById(saisonId);
+  const list: InfosPersonnalisees[] = Array.isArray(saison.infosPersonnalisees)
+    ? saison.infosPersonnalisees
+    : [];
+
+  const nowIso = new Date().toISOString();
+  const idx = list.findIndex((i) => i.matchId === payload.matchId);
+
+  if (idx >= 0) {
+    list[idx] = {
+      ...list[idx],
+      ...payload,
+      dateModification: nowIso,
+    };
+  } else {
+    list.push({
+      id: `ip_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      ...payload,
+      dateCreation: nowIso,
+      dateModification: nowIso,
+    } as InfosPersonnalisees);
+  }
+
+  saison.infosPersonnalisees = list;
+  return updateSaison(saisonId, saison);
+};
+
+export const deleteInfosPersonnalisees = async (
+  saisonId: string,
+  matchId: string
+): Promise<Saison> => {
+  const saison = await fetchSaisonById(saisonId);
+  const list: InfosPersonnalisees[] = Array.isArray(saison.infosPersonnalisees)
+    ? saison.infosPersonnalisees
+    : [];
+  saison.infosPersonnalisees = list.filter((i) => i.matchId !== matchId);
+  return updateSaison(saisonId, saison);
+};

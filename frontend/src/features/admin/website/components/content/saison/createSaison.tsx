@@ -40,6 +40,8 @@ export default function CreateSaison() {
     equipesClub: [],
     series: [],
     calendrier: [],
+    clubs: [],
+    infosPersonnalisees: [],
   });
 
   const [nbHommes, setNbHommes] = useState(0);
@@ -210,6 +212,8 @@ export default function CreateSaison() {
           equipesClub: [],
           series: [],
           calendrier: [],
+          clubs: [],
+          infosPersonnalisees: [],
         });
         setEtape(1);
       } else {

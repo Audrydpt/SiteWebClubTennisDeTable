@@ -61,14 +61,25 @@ export interface ActualiteData {
 export type SaisonStatut = 'En cours' | 'Terminée' | 'Archivée';
 
 export interface ClubInfo {
-  id: string;
-  nom: string; // Nom du club (ex: "Sporting Frameries")
+  id?: string;
+  nom: string;
   localite?: string;
   salle?: string;
   adresse?: string;
   telephone?: string;
   email?: string;
   site?: string;
+  // Nouvelles propriétés depuis TABT
+  clubId?: string;
+  clubLongName?: string;
+  venues?: VenueInfo[];
+}
+
+export interface VenueInfo {
+  name: string;
+  fullAddress: string;
+  phone?: string;
+  comment?: string;
 }
 
 export interface Equipe {
@@ -115,12 +126,15 @@ export interface Match {
 export interface Saison {
   id: string;
   label: string;
-  statut: SaisonStatut;
-  equipesClub: Equipe[];
+  statut: 'En cours' | 'Archivée' | 'À venir';
+  equipesClub: { id: string; nom: string; serieId: string; clubId?: string }[];
   series: Serie[];
   calendrier: Match[];
-  clubs?: ClubInfo[]; // Nouvelle propriété pour stocker les infos des clubs
-  infosPersonnalisees?: InfosPersonnalisees[]; // Nouvelle propriété
+  clubs: ClubInfo[];
+  infosPersonnalisees: InfosPersonnalisees[];
+  // Nouvelle propriété pour stocker les données TABT
+  clubsTabt?: ClubInfo[];
+  dateMAJClubsTabt?: string;
 }
 
 export interface ClassementEntry {

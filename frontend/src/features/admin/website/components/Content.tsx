@@ -1,3 +1,4 @@
+/* eslint-disable */
 import type React from 'react';
 import { useState } from 'react';
 import {
@@ -10,6 +11,8 @@ import {
   CalendarX,
   Dumbbell,
   UtensilsCrossed,
+  Building,
+  MapPin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +24,7 @@ import {
 } from '@/components/ui/card';
 
 import ActualitesManager from '@/features/admin/website/components/content/actu.tsx';
-import ResultatsManager from '@/features/admin/website/components/content/result.tsx';
+import VenuesAndMatchInfos from '@/features/admin/website/components/content/venuesInfos.tsx';
 import SponsorsManager from '@/features/admin/website/components/content/sponsor.tsx';
 import GaleryManager from '@/features/admin/website/components/content/galery.tsx';
 import EventManager from '@/features/admin/website/components/content/event.tsx';
@@ -43,6 +46,23 @@ export default function AdminContent() {
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
   const contentSections: ContentSection[] = [
+    {
+      id: 'clubs-infos',
+      title: 'Clubs & Infos Matchs',
+      description:
+        'Adresses des clubs (province H) et infos exceptionnelles par match',
+      icon: <MapPin className="h-6 w-6" />,
+      component: <VenuesAndMatchInfos />,
+      color: 'from-red-500 to-red-600',
+    },
+    {
+      id: 'absences',
+      title: 'Absences',
+      description: 'Gérer toutes les absences des membres',
+      icon: <CalendarX className="h-6 w-6" />,
+      component: <AbsenceManager />,
+      color: 'from-red-500 to-red-600',
+    },
     {
       id: 'actualites',
       title: 'Actualités',
@@ -75,22 +95,7 @@ export default function AdminContent() {
       component: <SponsorsManager />,
       color: 'from-orange-500 to-orange-600',
     },
-    {
-      id: 'resultats',
-      title: 'Saisons',
-      description: 'Gérer les saisons et informations des équipes',
-      icon: <Trophy className="h-6 w-6" />,
-      component: <ResultatsManager />,
-      color: 'from-red-500 to-red-600',
-    },
-    {
-      id: 'absences',
-      title: 'Absences',
-      description: 'Gérer toutes les absences des membres',
-      icon: <CalendarX className="h-6 w-6" />,
-      component: <AbsenceManager />,
-      color: 'from-red-500 to-red-600',
-    },
+
     {
       id: 'training',
       title: 'Entraînements',
