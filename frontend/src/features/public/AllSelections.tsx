@@ -17,13 +17,26 @@ export default function AllSelections() {
   const CLUB_KEYWORD = (import.meta.env.VITE_TABT_CLUB_KEYWORD as string)?.toLowerCase() || 'frameries';
   const isClubTeam = (label?: string) => !!label && label.toLowerCase().includes(CLUB_KEYWORD);
   const hasTeamLetter = (label?: string) => !!label && /\s[A-Z]$/.test(label.trim());
-  const isVeteranTeam = (label?: string) => !!label && /(vét|vet|veteran|vétéran)/i.test(label);
+  const isVeteranTeam = (label?: string) => !!label && /(v[ée]t[ée]r?an?s?\.?)/i.test(label); // regex élargie (vet, vét., vétéran(s), etc.)
 
   const [saison, setSaison] = useState<Saison | null>(null);
   const [matchs, setMatchs] = useState<Match[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [semaine, setSemaine] = useState<number | null>(null);
+
+  // --- NEW: parser robuste pour semaines pouvant être sous forme 'V1', 'R02', etc. ---
+  const parseWeek = (value: any): number => {
+    if (value === null || value === undefined) return 0;
+    const direct = Number(value);
+    if (!isNaN(direct) && direct > 0) return direct;
+    const m = String(value).match(/(\d{1,2})/); // capture un nombre jusqu'à 2 chiffres (adapter si besoin)
+    if (m) {
+      const n = Number(m[1]);
+      return isNaN(n) ? 0 : n;
+    }
+    return 0;
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -44,11 +57,11 @@ export default function AllSelections() {
             const joueurs = isClubTeam(m.domicile) ? (m.joueur_dom || m.joueursDomicile || []) : (m.joueur_ext || m.joueursExterieur || []);
             return Array.isArray(joueurs) && joueurs.length > 0;
           })
-          .reduce((acc: number, m: any) => Math.max(acc, Number(m.semaine || 0)), 0);
+          .reduce((acc: number, m: any) => Math.max(acc, parseWeek(m.semaine)), 0);
 
         // Fallback: si aucune sélection trouvée, prendre la dernière semaine connue dans les matchs
         const lastWeek = (Array.isArray(merged) ? merged : [])
-          .reduce((acc: number, m: any) => Math.max(acc, Number(m.semaine || 0)), 0);
+          .reduce((acc: number, m: any) => Math.max(acc, parseWeek(m.semaine)), 0);
 
         setSemaine(lastWithSel || lastWeek || 1);
       } catch (e) {
@@ -62,11 +75,17 @@ export default function AllSelections() {
   }, []);
 
   const maxWeek = useMemo(() => {
-    const max = (matchs || []).reduce((acc, m: any) => Math.max(acc, Number(m.semaine || 0)), 0);
+    const numbers = (matchs || []).map(m => parseWeek((m as any).semaine));
+    const max = numbers.reduce((acc, n) => Math.max(acc, n), 0);
     return max || 22;
   }, [matchs]);
 
-  const weeks = useMemo(() => Array.from({ length: maxWeek }, (_, i) => i + 1), [maxWeek]);
+  const hasWeekZero = useMemo(() => (matchs || []).some(m => parseWeek((m as any).semaine) === 0), [matchs]);
+
+  const weeks = useMemo(() => {
+    const base = Array.from({ length: maxWeek }, (_, i) => i + 1);
+    return hasWeekZero ? [0, ...base] : base;
+  }, [maxWeek, hasWeekZero]);
 
   useEffect(() => {
     if (semaine && semaine > maxWeek) {
@@ -75,11 +94,11 @@ export default function AllSelections() {
   }, [maxWeek, semaine]);
 
   const equipesSemaine = useMemo(() => {
-    if (!saison || !semaine) return [] as Array<{ key: string; equipe: string; serie: string; estDomicile: boolean; adversaire: string; date?: string; heure?: string; lieu?: string; joueurs: any[] }>;
+    if (!saison || !semaine) return [] as Array<{ key: string; equipe: string; serie: string; estDomicile: boolean; adversaire: string; date?: string; heure?: string; lieu?: string; joueurs: any[]; veteran?: boolean }>;
 
-    const semaineMatches = (matchs || []).filter(m => Number(m.semaine) === Number(semaine));
+    const semaineMatches = (matchs || []).filter(m => parseWeek(m.semaine) === Number(semaine));
 
-    const map = new Map<string, { equipe: string; serie: string; estDomicile: boolean; adversaire: string; date?: string; heure?: string; lieu?: string; joueurs: any[] }>();
+    const entries: Array<{ key: string; equipe: string; serie: string; estDomicile: boolean; adversaire: string; date?: string; heure?: string; lieu?: string; joueurs: any[]; veteran?: boolean }> = [];
 
     semaineMatches.forEach((m) => {
       const clubHome = isClubTeam(m.domicile);
@@ -87,8 +106,13 @@ export default function AllSelections() {
       if (!clubHome && !clubAway) return;
 
       const estDomicile = clubHome;
-      const equipe = estDomicile ? m.domicile : m.exterieur;
-      if (!hasTeamLetter(equipe) && !isVeteranTeam(equipe)) return; // inclure vétérans même sans lettre
+      const equipeBrute = estDomicile ? m.domicile : m.exterieur;
+      // Heuristique vétéran: id contient PHV, ou date jeudi, ou divisionId/sérieId dans un set connu, ou mot clé dans équipes
+      const dateObj = m.date ? new Date(m.date) : null;
+      const isThursday = dateObj ? dateObj.getDay() === 4 : false; // 4 = jeudi
+      const veteranHeuristic = /PHV/i.test(m.id || '') || /v[ée]t/i.test(equipeBrute) || isThursday;
+      const equipe = veteranHeuristic ? `${equipeBrute} (Vétérans)` : equipeBrute;
+      if (!hasTeamLetter(equipeBrute) && !veteranHeuristic && !isVeteranTeam(equipeBrute)) return;
 
       const serie = saison.series?.find((s) => s.id === m.serieId);
       const serieName = serie ? serie.nom : (/^\d+$/.test(String(m.serieId || '')) ? `Division ${m.serieId}` : String(m.serieId || 'Série'));
@@ -96,7 +120,10 @@ export default function AllSelections() {
       const adversaire = estDomicile ? m.exterieur : m.domicile;
       const joueurs = estDomicile ? (m.joueursDomicile || m.joueur_dom || []) : (m.joueursExterieur || m.joueur_ext || []);
 
-      map.set(equipe, {
+      try { console.log('[AllSelections] match', { id: m.id, semaine: m.semaine, equipe: equipeBrute, veteranHeuristic, equipeAffiche: equipe, joueurs: joueurs.length }); } catch {}
+
+      entries.push({
+        key: `${m.id}-${equipe}`,
         equipe,
         serie: serieName,
         estDomicile,
@@ -105,16 +132,19 @@ export default function AllSelections() {
         heure: m.heure,
         lieu: (m as any).lieu,
         joueurs: Array.isArray(joueurs) ? joueurs : [],
+        veteran: veteranHeuristic,
       });
     });
 
-    // Ajouter les équipes du club (même sans match cette semaine) mais inclure vétérans sans lettre
+    // Ajouter équipes sans match cette semaine (une seule entrée par nom de base qui n a pas déjà une occurrence)
+    const existingBaseNames = new Set(entries.map(e => e.equipe.replace(/ \(Vétérans\)$/,'')));
     (saison.equipesClub || []).forEach((eq: any) => {
       if (!hasTeamLetter(eq.nom) && !isVeteranTeam(eq.nom)) return;
-      if (map.has(eq.nom)) return;
+      if (existingBaseNames.has(eq.nom)) return;
       const serie = saison.series?.find((s) => s.id === eq.serieId);
       const serieName = serie ? serie.nom : 'Série';
-      map.set(eq.nom, {
+      entries.push({
+        key: `no-match-${eq.nom}`,
         equipe: eq.nom,
         serie: serieName,
         estDomicile: true,
@@ -123,15 +153,13 @@ export default function AllSelections() {
         heure: undefined,
         lieu: undefined,
         joueurs: [],
+        veteran: false,
       });
     });
 
-    const all = Array.from(map.values());
-    const regular = all.filter(e => !isVeteranTeam(e.equipe)).sort((a, b) => a.equipe.localeCompare(b.equipe));
-    const veterans = all.filter(e => isVeteranTeam(e.equipe)).sort((a, b) => a.equipe.localeCompare(b.equipe));
-    const ordered = [...regular, ...veterans];
-
-    return ordered.map((e, idx) => ({ key: `${idx}-${e.equipe}`, ...e }));
+    const regular = entries.filter(e => !e.veteran && !isVeteranTeam(e.equipe)).sort((a,b)=>a.equipe.localeCompare(b.equipe));
+    const veterans = entries.filter(e => e.veteran || isVeteranTeam(e.equipe)).sort((a,b)=>a.equipe.localeCompare(b.equipe));
+    return [...regular, ...veterans];
   }, [saison, matchs, semaine]);
 
   const formatDate = (date?: string) => {
@@ -160,15 +188,15 @@ export default function AllSelections() {
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Select
-            value={String(semaine || 1)}
-            onValueChange={(v) => setSemaine(Math.min(maxWeek, Math.max(1, Number(v))))}
+            value={String(semaine || (hasWeekZero ? 0 : 1))}
+            onValueChange={(v) => setSemaine(Math.min(maxWeek, Math.max(hasWeekZero ? 0 : 1, Number(v))))}
           >
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Semaine" />
             </SelectTrigger>
             <SelectContent>
               {weeks.map((w) => (
-                <SelectItem key={w} value={String(w)}>Semaine {w}</SelectItem>
+                <SelectItem key={w} value={String(w)}>{w === 0 ? 'Vétérans/Autres' : `Semaine ${w}`}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -181,7 +209,7 @@ export default function AllSelections() {
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <Badge variant="outline">sur {maxWeek}</Badge>
+          <Badge variant="outline">{hasWeekZero ? `0-${maxWeek}` : `sur ${maxWeek}`}</Badge>
           <Button variant="outline" size="sm" onClick={() => navigate('/espace-membre')}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Retour
           </Button>
@@ -209,7 +237,7 @@ export default function AllSelections() {
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full gap-2 text-left">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-blue-700">{eq.equipe}</span>
-                        <Badge variant="outline" className="text-xs">{eq.serie}</Badge>
+                        <Badge variant="outline" className="text-xs">{eq.serie}{eq.veteran || isVeteranTeam(eq.equipe) ? ' • Vétérans' : ''}</Badge>
                         <Badge variant={eq.estDomicile ? 'default' : 'secondary'} className="text-xs">
                           {eq.estDomicile ? 'Domicile' : 'Extérieur'}
                         </Badge>

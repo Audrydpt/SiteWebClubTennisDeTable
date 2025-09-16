@@ -37,7 +37,7 @@ export type TabtRankingResponse = {
 const TABT_API_URL: string = import.meta.env.VITE_API_TABT_URL as string
 
 const CACHE_KEY = 'tabt_all_rankings_cache_v1';
-const DEFAULT_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const DEFAULT_TTL_MS = 2 * 60 * 1000; // 2 minutes
 
 function normalizeResponse(resp: TabtRankingResponse): TabtRankingResponse {
   const seen = new Map<number, TabtDivisionRanking>();
@@ -426,7 +426,32 @@ export async function fetchMergedUIMatchesForClub(options?: {
   const tabt = await fetchClubMatchesMapped(options);
   const seasonList: UIMatch[] = Array.isArray(saison?.calendrier) ? saison.calendrier : [];
 
-  return tabt.map((m) => overlaySelection(m, findSelectionMatch(m, seasonList), saison?.id));
+  const overlayed = tabt.map((m) => overlaySelection(m, findSelectionMatch(m, seasonList), saison?.id));
+
+  // DEBUG: log tailles initiales
+  try {
+    // eslint-disable-next-line no-console
+    console.log('[TABT] Matches TABT:', tabt.length, 'Season calendrier:', seasonList.length, 'Overlayed:', overlayed.length);
+  } catch {}
+
+  // Ajouter les matchs présents dans le calendrier de la saison mais absents de TABT (ex: vétérans si non retournés par l API)
+  const tabtIds = new Set(overlayed.map(m => m.id));
+  const seasonOnly: UIMatch[] = seasonList
+    .filter(m => !tabtIds.has(m.id))
+    .map(m => ({ ...m }));
+
+  if (seasonOnly.length) {
+    try {
+      console.log('[TABT] Ajout de', seasonOnly.length, 'match(s) uniquement saison (probablement vétérans ou spéciaux)');
+      // Log spécifique vétérans: heuristique sur date en semaine (jeudi) ou identifiants type PHV
+      const veteransGuess = seasonOnly.filter(m => /v[ée]t|PHV/i.test(JSON.stringify(m)) || [/thu/i, /jeudi/i].some(rx => rx.test(new Date(m.date || '').toString())));
+      if (veteransGuess.length) {
+        console.log('[TABT] Saison-only potentiels vétérans:', veteransGuess.map(v => ({ id: v.id, eq: v.domicile + ' vs ' + v.exterieur, semaine: v.semaine })));
+      }
+    } catch {}
+  }
+
+  return [...overlayed, ...seasonOnly];
 }
 
 /**
