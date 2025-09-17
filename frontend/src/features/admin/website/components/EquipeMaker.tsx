@@ -76,9 +76,6 @@ export default function AdminResults() {
     return saison.series.find((s) => s.id === serieSelectionnee);
   }, [saison, serieSelectionnee]);
 
-  // Référence pour la navigation entre les champs de score
-  const scoreRefs = useRef<Record<string, HTMLInputElement | null>>({});
-
   // Nouvelles références pour stocker les valeurs précédentes des filtres
   const previousSerieRef = useRef<string>('');
   const previousSemaineRef = useRef<number>(1);
@@ -850,11 +847,12 @@ export default function AdminResults() {
                   disabled={!serieSelectionnee || isAutoSaving}
                   maxWeeks={22}
                 />
-                <div className="flex items-end gap-2">
+                {/* Change: make buttons stack on mobile to avoid overflow */}
+                <div className="flex flex-col sm:flex-row items-end gap-2">
                   <Button
                     onClick={handleSaveData}
                     disabled={!serieSelectionnee || isSaving || isAutoSaving}
-                    className="flex-1"
+                    className="w-full sm:flex-1"
                   >
                     {isSaving ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -868,7 +866,7 @@ export default function AdminResults() {
                     onClick={handleOpenShareDialog}
                     disabled={!serieSelectionnee}
                     variant="outline"
-                    className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                    className="w-full sm:flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -956,8 +954,8 @@ export default function AdminResults() {
                             }`}
                           >
                             <CardHeader className="pb-3">
-                              <div className="flex items-center justify-between">
-                                <CardTitle className="text-lg text-blue-700">
+                              <div className="flex items-center justify-between min-w-0">
+                                <CardTitle className="text-lg text-blue-700 truncate">
                                   {equipe.equipe}
                                 </CardTitle>
                                 <div className="flex items-center gap-2">

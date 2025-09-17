@@ -26,13 +26,14 @@ export default function AdminHome() {
           className="space-y-4 sm:space-y-6"
         >
           {/* Navigation responsive avec icônes seulement sur mobile */}
-          <TabsList className="grid w-full grid-cols-5 bg-white shadow rounded-lg overflow-hidden mb-1 h-auto">
+          {/* Ajout de text-gray-700 pour forcer la couleur par défaut (icons héritent de currentColor) */}
+          <TabsList className="grid w-full grid-cols-5 bg-white shadow rounded-lg overflow-hidden mb-1 h-auto text-gray-700">
             <TabsTrigger
               value="users"
               className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-1 sm:px-3 transition-all data-[state=active]:bg-gray-200 data-[state=active]:text-white text-xs sm:text-sm"
             >
               <Users className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-              <span className="hidden xs:inline sm:inline text-xs sm:text-sm truncate">
+              <span className="hidden sm:inline text-xs sm:text-sm truncate">
                 Équipes
               </span>
             </TabsTrigger>
@@ -41,7 +42,7 @@ export default function AdminHome() {
               className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-1 sm:px-3 transition-all data-[state=active]:bg-gray-200 data-[state=active]:text-white text-xs sm:text-sm"
             >
               <FileText className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-              <span className="hidden xs:inline sm:inline text-xs sm:text-sm truncate">
+              <span className="hidden sm:inline text-xs sm:text-sm truncate">
                 Contenu
               </span>
             </TabsTrigger>
@@ -50,7 +51,7 @@ export default function AdminHome() {
               className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-1 sm:px-3 transition-all data-[state=active]:bg-gray-200 data-[state=active]:text-white text-xs sm:text-sm"
             >
               <AppWindow className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-              <span className="hidden xs:inline sm:inline text-xs sm:text-sm truncate">
+              <span className="hidden sm:inline text-xs sm:text-sm truncate">
                 Pages
               </span>
             </TabsTrigger>
@@ -59,7 +60,7 @@ export default function AdminHome() {
               className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-1 sm:px-3 transition-all data-[state=active]:bg-gray-200 data-[state=active]:text-white text-xs sm:text-sm"
             >
               <Camera className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-              <span className="hidden xs:inline sm:inline text-xs sm:text-sm truncate">
+              <span className="hidden sm:inline text-xs sm:text-sm truncate">
                 Médias
               </span>
             </TabsTrigger>
@@ -68,7 +69,7 @@ export default function AdminHome() {
               className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-1 sm:px-3 transition-all data-[state=active]:bg-gray-200 data-[state=active]:text-white text-xs sm:text-sm"
             >
               <Settings className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-              <span className="hidden xs:inline sm:inline text-xs sm:text-sm truncate">
+              <span className="hidden sm:inline text-xs sm:text-sm truncate">
                 Paramètres
               </span>
             </TabsTrigger>

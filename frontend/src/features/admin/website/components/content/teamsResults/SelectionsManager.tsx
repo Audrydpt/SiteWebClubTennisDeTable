@@ -725,12 +725,13 @@ export function SelectionsManager({
               <UserCheck className="h-6 w-6 text-blue-600" />
               Sélections - {serie.nom} - Semaine {semaine}
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-col sm:flex-row">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={copyFromPreviousWeek}
                 disabled={isLoading || semaine <= 1}
+                className="w-full sm:w-auto"
               >
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
