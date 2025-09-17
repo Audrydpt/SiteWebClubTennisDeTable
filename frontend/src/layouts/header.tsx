@@ -1,7 +1,7 @@
 /* eslint-disable */
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogIn, UserCircle, Settings } from 'lucide-react';
+import { LogIn, UserCircle, Settings, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils.ts';
 import { useAuth } from '@/lib/authContext.tsx';
 import {
@@ -41,6 +41,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   // États pour la gestion des menus (supprimer evenementsOpen)
@@ -602,16 +603,29 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                       >
                         Mot de passe
                       </label>
-                      <input
-                        id="password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-3 py-2 bg-[#4A4A4A] border border-[#555] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#F1C40F] focus:border-transparent"
-                        placeholder="••••••••"
-                        required
-                        autoComplete={isAdminLogin ? "current-password" : "password"}
-                      />
+                      <div className="relative">
+                        <input
+                          id="password"
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#4A4A4A] border border-[#555] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#F1C40F] focus:border-transparent"
+                          placeholder="••••••••"
+                          required
+                          autoComplete={isAdminLogin ? "current-password" : "password"}
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-0 flex items-center pr-3"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-5 w-5 text-gray-400" />
+                          ) : (
+                            <Eye className="h-5 w-5 text-gray-400" />
+                          )}
+                        </button>
+                      </div>
                     </div>
 
                     {error && <p className="text-sm text-red-400">{error}</p>}
@@ -977,15 +991,28 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                         >
                           Mot de passe
                         </label>
-                        <input
-                          id="mobile-password"
-                          type="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="w-full px-3 py-2 bg-[#555] border border-[#666] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#F1C40F] focus:border-transparent"
-                          placeholder="••••••••"
-                          required
-                        />
+                        <div className="relative">
+                          <input
+                            id="mobile-password"
+                            type={showPassword ? 'text' : 'password'}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full px-3 py-2 bg-[#555] border border-[#666] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#F1C40F] focus:border-transparent"
+                            placeholder="••••••••"
+                            required
+                          />
+                          <button
+                            type="button"
+                            className="absolute inset-y-0 right-0 flex items-center pr-3"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-5 w-5 text-gray-400" />
+                            ) : (
+                              <Eye className="h-5 w-5 text-gray-400" />
+                            )}
+                          </button>
+                        </div>
                       </div>
 
                       {error && <p className="text-sm text-red-400">{error}</p>}

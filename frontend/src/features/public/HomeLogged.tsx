@@ -67,7 +67,7 @@ export default function HomeLogged() {
   const [loadingMatches, setLoadingMatches] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  // 3 petits cadres : Absences, Entraînement, Menu
+  // 3 petits cadres : Absences, Entraînement
   const [showAbsences, setShowAbsences] = useState(false);
   const [showTraining, setShowTraining] = useState(false);
 
@@ -289,141 +289,134 @@ export default function HomeLogged() {
   if (!member) return <div>Aucun membre trouvé.</div>;
 
   return (
-    <div className="space-y-6 p-6 max-w-6xl mx-auto">
-      {/* En-tête joueur simplifié */}
-      <div className="bg-gradient-to-r from-[#F1C40F] to-[#D4AC0D] text-white p-6 rounded-lg">
-        <div className="relative p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            {/* Section principale avec avatar et nom */}
-            <div className="flex items-center gap-6">
-              {/* Avatar stylisé */}
-              <div className="flex-shrink-0">
-                <div className="relative">
-                  <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border-2 border-white/30">
-                    <User className="w-8 h-8 text-white" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Informations principales */}
-              <div className="flex-1">
-                <h1 className="text-2xl font-bold tracking-tight mb-3 text-white drop-shadow-sm">
-                  {member.prenom} {member.nom}
-                </h1>
-
-                {/* Badges d'informations */}
-                <div className="flex flex-wrap items-center gap-2">
-                  {member.classement && (
-                    <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/30">
-                      <Award className="w-4 h-4" />
-                      <span className="text-sm font-medium">Classement: {member.classement}</span>
-                    </div>
-                  )}
-
-                  {member.indexListeForce && member.indexListeForce > 0 && (
-                    <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/30">
-                      <Target className="w-4 h-4" />
-                      <span className="text-sm font-medium">Index: {member.indexListeForce}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-6 max-w-6xl mx-auto">
+      {/* En-tête joueur simplifié - adapté mobile */}
+      <div className="bg-gradient-to-r from-[#F1C40F] to-[#D4AC0D] text-white p-4 sm:p-6 rounded-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+          {/* Avatar et nom - stack sur mobile */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border-2 border-white/30 flex-shrink-0">
+              <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white drop-shadow-sm">
+                {member.prenom} {member.nom}
+              </h1>
+            </div>
+          </div>
+
+          {/* Badges d'informations - wrap sur mobile */}
+          <div className="flex flex-wrap items-center gap-2">
+            {member.classement && (
+              <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2 sm:px-3 py-1 rounded-full border border-white/30">
+                <Award className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="text-xs sm:text-sm font-medium">Classement: {member.classement}</span>
+              </div>
+            )}
+            {member.indexListeForce && member.indexListeForce > 0 && (
+              <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2 sm:px-3 py-1 rounded-full border border-white/30">
+                <Target className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="text-xs sm:text-sm font-medium">Index: {member.indexListeForce}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Accès rapide: Toutes les sélections du club */}
+      {/* Accès rapide: Toutes les sélections du club - adapté mobile */}
       <Card className="bg-white border border-[#E0E0E0]">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center text-sm">
+        <CardHeader className="pb-2 sm:pb-3">
+          <CardTitle className="flex items-center text-sm sm:text-base">
             <Users className="mr-2 h-4 w-4 text-blue-500" />
             Toutes les sélections du club
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <p className="text-gray-600 text-sm">Consultez les compositions de toutes les équipes A, B, C, D… dans un accordéon.</p>
-            <Button size="sm" onClick={() => navigate('/espace-membre/selections')}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+            <p className="text-gray-600 text-xs sm:text-sm">Consultez les compositions de toutes les équipes A, B, C, D…</p>
+            <Button size="sm" onClick={() => navigate('/espace-membre/selections')} className="w-full sm:w-auto">
               Voir toutes les sélections
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Prochains matchs */}
+      {/* Grid principal - responsive */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+        {/* Prochains matchs - adapté mobile */}
         <Card className="bg-white border border-[#E0E0E0]">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Calendar className="mr-2 h-5 w-5" />
+          <CardHeader className="pb-3 sm:pb-4">
+            <CardTitle className="flex items-center text-sm sm:text-base">
+              <Calendar className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               Mes prochains matchs
             </CardTitle>
           </CardHeader>
           <CardContent>
             {loadingMatches ? (
-              <div className="space-y-4">
-                <div className="p-4 border border-[#E0E0E0] rounded-lg bg-[#F9F9F9]">
-                  <div className="flex items-center justify-between mb-2">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="p-3 sm:p-4 border border-[#E0E0E0] rounded-lg bg-[#F9F9F9]">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-0 mb-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <div className="h-5 w-16 bg-gray-200 rounded animate-pulse" />
-                      <div className="h-5 w-40 bg-gray-200 rounded animate-pulse" />
-                      <div className="h-5 w-6 bg-gray-200 rounded animate-pulse" />
-                      <div className="h-5 w-32 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-4 sm:h-5 w-12 sm:w-16 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-4 sm:h-5 w-32 sm:w-40 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-4 sm:h-5 w-4 sm:w-6 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-4 sm:h-5 w-24 sm:w-32 bg-gray-200 rounded animate-pulse" />
                     </div>
-                    <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-3 sm:h-4 w-20 sm:w-24 bg-gray-200 rounded animate-pulse" />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <div className="h-4 w-4 bg-gray-200 rounded-full animate-pulse" />
-                      <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
-                      <div className="h-4 w-4 bg-gray-200 rounded-full animate-pulse ml-2" />
-                      <div className="h-4 w-14 bg-gray-200 rounded animate-pulse" />
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+                      <div className="h-3 sm:h-4 w-3 sm:w-4 bg-gray-200 rounded-full animate-pulse" />
+                      <div className="h-3 sm:h-4 w-24 sm:w-28 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-3 sm:h-4 w-3 sm:w-4 bg-gray-200 rounded-full animate-pulse ml-2" />
+                      <div className="h-3 sm:h-4 w-12 sm:w-14 bg-gray-200 rounded animate-pulse" />
                     </div>
-                    <div className="h-7 w-28 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-6 sm:h-7 w-24 sm:w-28 bg-gray-200 rounded animate-pulse" />
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {mesMatchs.map((match) => {
                   const isHomeMatch = isClubTeam(match.domicile);
                   const equipeFrameries = isHomeMatch ? match.domicile : match.exterieur;
                   const adversaire = isHomeMatch ? match.exterieur : match.domicile;
 
                   return (
-                    <div key={match.id} className="p-4 border border-[#E0E0E0] rounded-lg bg-[#F9F9F9]">
-                      <div className="flex items-center justify-between mb-2">
+                    <div key={match.id} className="p-3 sm:p-4 border border-[#E0E0E0] rounded-lg bg-[#F9F9F9]">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-0 mb-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           {isHomeMatch ? (
                             <>
-                              <Badge variant="secondary">Domicile</Badge>
-                              <span className="font-semibold">{equipeFrameries}</span>
-                              <span>vs</span>
-                              <span>{adversaire}</span>
+                              <Badge variant="secondary" className="text-xs">Domicile</Badge>
+                              <span className="font-semibold text-sm">{equipeFrameries}</span>
+                              <span className="text-sm">vs</span>
+                              <span className="text-sm">{adversaire}</span>
                             </>
                           ) : (
                             <>
-                              <Badge variant="outline">Extérieur</Badge>
-                              <span>{match.domicile}</span>
-                              <span>vs</span>
-                              <span className="font-semibold">{equipeFrameries}</span>
+                              <Badge variant="outline" className="text-xs">Extérieur</Badge>
+                              <span className="text-sm">{match.domicile}</span>
+                              <span className="text-sm">vs</span>
+                              <span className="font-semibold text-sm">{equipeFrameries}</span>
                             </>
                           )}
                         </div>
-                        <div className="text-sm text-gray-600">
+                        <div className="text-xs sm:text-sm text-gray-600">
                           {formatDateFR(match.date)}
                         </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <MapPin className="h-4 w-4" />
-                          <span>{match.domicile}</span>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-600">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
+                            <span>{match.domicile}</span>
+                          </div>
                           {match.heure && (
-                            <>
-                              <Clock className="h-4 w-4 ml-2" />
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
                               <span>{match.heure}</span>
-                            </>
+                            </div>
                           )}
                         </div>
                         {(!isHomeMatch || hasExceptionalInfo(match)) && (
@@ -431,7 +424,7 @@ export default function HomeLogged() {
                             variant={hasExceptionalInfo(match) ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => handleShowClubInfo(match)}
-                            className={`text-xs ${hasExceptionalInfo(match) ? 'bg-orange-500 hover:bg-orange-600 text-white animate-pulse border-orange-400 shadow-lg' : ''}`}
+                            className={`text-xs w-full sm:w-auto ${hasExceptionalInfo(match) ? 'bg-orange-500 hover:bg-orange-600 text-white animate-pulse border-orange-400 shadow-lg' : ''}`}
                           >
                             <Info className="h-3 w-3 mr-1" />
                             {hasExceptionalInfo(match) ? '⚠️ Infos importantes' : 'Infos club'}
@@ -443,18 +436,18 @@ export default function HomeLogged() {
                 })}
 
                 {mesMatchs.length === 0 && (
-                  <div className="text-gray-500 text-center p-4">Aucun match prévu.</div>
+                  <div className="text-gray-500 text-center p-4 text-sm">Aucun match prévu.</div>
                 )}
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Mon équipe */}
+        {/* Mon équipe - adapté mobile */}
         <Card className="bg-white border border-[#E0E0E0]">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Users className="mr-2 h-5 w-5" />
+          <CardHeader className="pb-3 sm:pb-4">
+            <CardTitle className="flex items-center text-sm sm:text-base">
+              <Users className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               Mon équipe
             </CardTitle>
           </CardHeader>
@@ -462,13 +455,13 @@ export default function HomeLogged() {
             {loadingMatches ? (
               <div className="space-y-2">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="flex items-center space-x-3 p-3 rounded-lg bg-[#FFF8DC]">
-                    <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse" />
+                  <div key={i} className="flex items-center space-x-3 p-2 sm:p-3 rounded-lg bg-[#FFF8DC]">
+                    <div className="h-6 w-6 sm:h-8 sm:w-8 bg-gray-200 rounded-full animate-pulse" />
                     <div className="flex-1">
-                      <div className="h-4 w-40 bg-gray-200 rounded animate-pulse" />
-                      <div className="flex items-center gap-2 mt-2">
-                        <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
-                        <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-3 sm:h-4 w-32 sm:w-40 bg-gray-200 rounded animate-pulse" />
+                      <div className="flex items-center gap-2 mt-1 sm:mt-2">
+                        <div className="h-3 sm:h-4 w-12 sm:w-16 bg-gray-200 rounded animate-pulse" />
+                        <div className="h-3 sm:h-4 w-16 sm:w-20 bg-gray-200 rounded animate-pulse" />
                       </div>
                     </div>
                   </div>
@@ -478,15 +471,20 @@ export default function HomeLogged() {
               <>
                 {mesMatchs.length > 1 ? (
                   <Tabs defaultValue={mesMatchs[0].id}>
-                    <TabsList className="grid w-full grid-cols-2 h-8 mb-3">
+                    <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 h-auto sm:h-8 mb-3 gap-1 sm:gap-0">
                       {mesMatchs.map((match) => {
                         const isHomeMatch = isClubTeam(match.domicile);
                         const adversaire = isHomeMatch ? match.exterieur : match.domicile;
 
                         return (
-                          <TabsTrigger key={match.id} value={match.id} className="text-xs py-1 px-2 h-auto">
-                            vs {adversaire} - {formatDateCourte(match.date)}
-                            {match.heure && <span className="ml-1">({match.heure})</span>}
+                          <TabsTrigger key={match.id} value={match.id} className="text-xs py-2 px-2 h-auto">
+                            <div className="text-center">
+                              <div>vs {adversaire}</div>
+                              <div className="text-xs opacity-70">
+                                {formatDateCourte(match.date)}
+                                {match.heure && <span className="ml-1">({match.heure})</span>}
+                              </div>
+                            </div>
                           </TabsTrigger>
                         );
                       })}
@@ -503,18 +501,16 @@ export default function HomeLogged() {
                             {joueurs.map((e) => {
                               const isMe = e.id === member.id;
                               const isWo = e.wo === 'y';
-
-                              // Récupérer l'index depuis les données du joueur ou par recherche
                               const playerIndex = e.indexListeForce || 0;
 
                               return (
                                 <div key={`${match.id}-${e.id}`} className={`flex items-center space-x-2 p-2 rounded-lg ${isMe ? 'bg-[#F1C40F]' : isWo ? 'bg-red-50' : 'bg-[#FFF8DC]'}`}>
-                                  <Avatar className="h-8 w-8">
+                                  <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
                                     <AvatarFallback className="text-xs">{getInitials(e.nom, e.prenom || '')}</AvatarFallback>
                                   </Avatar>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1">
-                                      <p className={`font-semibold text-sm truncate ${isMe ? 'underline font-bold' : ''} ${isWo ? 'line-through text-red-700' : ''}`}>{e.nom}</p>
+                                      <p className={`font-semibold text-xs sm:text-sm truncate ${isMe ? 'underline font-bold' : ''} ${isWo ? 'line-through text-red-700' : ''}`}>{e.nom}</p>
                                       {isWo && (
                                         <Badge variant="destructive" className="text-xs flex items-center ml-1">
                                           <Ban className="mr-1 h-2 w-2" /> WO
@@ -535,46 +531,42 @@ export default function HomeLogged() {
                     })}
                   </Tabs>
                 ) : mesMatchs.length === 1 ? (
-                  <div>
-                    <div className="space-y-3">
-                      {[
-                        ...(mesMatchs[0].joueur_dom || []),
-                        ...(mesMatchs[0].joueur_ext || []),
-                      ]
-                        .sort((a, b) => a.classement.localeCompare(b.classement))
-                        .map((e) => {
-                          const isMe = e.id === member.id;
-                          const isWo = e.wo === 'y';
+                  <div className="space-y-2 sm:space-y-3">
+                    {[
+                      ...(mesMatchs[0].joueur_dom || []),
+                      ...(mesMatchs[0].joueur_ext || []),
+                    ]
+                      .sort((a, b) => a.classement.localeCompare(b.classement))
+                      .map((e) => {
+                        const isMe = e.id === member.id;
+                        const isWo = e.wo === 'y';
+                        const playerIndex = e.indexListeForce || 0;
 
-                          // Récupérer l'index depuis les données du joueur
-                          const playerIndex = e.indexListeForce || 0;
-
-                          return (
-                            <div key={`${mesMatchs[0].id}-${e.id}`} className={`flex items-center space-x-3 p-3 rounded-lg ${isMe ? 'bg-[#F1C40F]' : isWo ? 'bg-red-50' : 'bg-[#FFF8DC]'}`}>
-                              <Avatar>
-                                <AvatarFallback>{getInitials(e.nom, e.prenom || '')}</AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <p className={`font-semibold ${isMe ? 'underline font-bold' : ''} ${isWo ? 'line-through text-red-700' : ''}`}>{e.nom}</p>
-                                  {isWo && (
-                                    <Badge variant="destructive" className="text-xs flex items-center">
-                                      <Ban className="mr-1 h-3 w-3" /> WO
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                                  <Badge variant="secondary" className="text-xs">{e.classement}</Badge>
-                                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">Index: {playerIndex > 0 ? playerIndex : 'N/A'}</Badge>
-                                </div>
+                        return (
+                          <div key={`${mesMatchs[0].id}-${e.id}`} className={`flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 rounded-lg ${isMe ? 'bg-[#F1C40F]' : isWo ? 'bg-red-50' : 'bg-[#FFF8DC]'}`}>
+                            <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
+                              <AvatarFallback className="text-xs">{getInitials(e.nom, e.prenom || '')}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className={`font-semibold text-xs sm:text-base ${isMe ? 'underline font-bold' : ''} ${isWo ? 'line-through text-red-700' : ''}`}>{e.nom}</p>
+                                {isWo && (
+                                  <Badge variant="destructive" className="text-xs flex items-center">
+                                    <Ban className="mr-1 h-2 w-2 sm:h-3 sm:w-3" /> WO
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 mt-1">
+                                <Badge variant="secondary" className="text-xs">{e.classement}</Badge>
+                                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">Index: {playerIndex > 0 ? playerIndex : 'N/A'}</Badge>
                               </div>
                             </div>
-                          );
-                        })}
-                    </div>
+                          </div>
+                        );
+                      })}
                   </div>
                 ) : (
-                  <div className="text-gray-500 text-center p-4">Aucun match prévu.</div>
+                  <div className="text-gray-500 text-center p-4 text-sm">Aucun match prévu.</div>
                 )}
               </>
             )}
@@ -582,9 +574,9 @@ export default function HomeLogged() {
         </Card>
       </div>
 
-      {/* 2 petits cadres : Absences et Entraînement */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Calendrier des absences */}
+      {/* Grid 3 colonnes sur desktop, stack sur mobile */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {/* Calendrier des absences - adapté mobile */}
         <Card className="bg-white border border-[#E0E0E0]">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center text-sm">
@@ -611,7 +603,7 @@ export default function HomeLogged() {
           </CardContent>
         </Card>
 
-        {/* Calendrier d'entraînement */}
+        {/* Calendrier d'entraînement - adapté mobile */}
         <Card className="bg-white border border-[#E0E0E0]">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center text-sm">
@@ -621,12 +613,12 @@ export default function HomeLogged() {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="text-center py-2">
-              <div className="text-gray-500">
+              <div className="text-gray-500 text-xs mb-2">
                 Les groupes d'entraînement seront bientôt disponibles ici.
               </div>
               <Dialog open={showTraining} onOpenChange={setShowTraining}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-full mt-2" disabled>
+                  <Button variant="outline" size="sm" className="w-full" disabled>
                     Voir les entraînements
                   </Button>
                 </DialogTrigger>
@@ -640,24 +632,24 @@ export default function HomeLogged() {
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Menu du samedi - plus large pour une meilleure lisibilité */}
-      <Card className="bg-white border border-[#E0E0E0]">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center text-lg">
-            <UtensilsCrossed className="mr-2 h-5 w-5 text-green-500" />
-            Menu du samedi
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <FoodMenuSaturday member={member} />
-        </CardContent>
-      </Card>
+        {/* Menu du samedi - s'étend sur 2 colonnes sur mobile large */}
+        <Card className="bg-white border border-[#E0E0E0] sm:col-span-2 xl:col-span-1">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center text-sm">
+              <UtensilsCrossed className="mr-2 h-4 w-4 text-green-500" />
+              Menu du samedi
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <FoodMenuSaturday member={member} />
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Modal des informations du club */}
       <Dialog open={showClubInfoModal} onOpenChange={setShowClubInfoModal}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Building className="h-5 w-5" />

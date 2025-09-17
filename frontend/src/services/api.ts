@@ -788,7 +788,43 @@ export const updateFacebookConfig = async (data: {
   return response.data;
 };
 
+/* Logging API Endpoints */
 
+export const createLog = async (data: {
+  action: string;
+  details?: string;
+  userId?: string;
+  userName?: string;
+  userAgent?: string;
+  timestamp?: string;
+}) => {
+  const logEntry = {
+    ...data,
+    timestamp: data.timestamp || new Date().toISOString(),
+    userAgent: data.userAgent || navigator.userAgent,
+  };
+
+  const response = await axios.post(`${API_URL}/logs`, logEntry);
+  return response.data;
+};
+
+export const logSelectionsAccess = async (userId?: string, userName?: string) => {
+  return createLog({
+    action: 'selections_access',
+    details: `Utilisateur ${userName || 'anonyme'} a ouvert la page Toutes les sélections du club`,
+    userId,
+    userName,
+  });
+};
+
+export const logAccordionOpen = async (equipe: string, userId?: string, userName?: string) => {
+  return createLog({
+    action: 'accordion_open',
+    details: `${userName || 'Utilisateur anonyme'} a ouvert l'accordéon pour l'équipe: ${equipe}`,
+    userId,
+    userName,
+  });
+};
 
 // ---- Infos Exceptionnelles (helpers) ----
 export const upsertInfosPersonnalisees = async (
