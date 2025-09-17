@@ -1,6 +1,16 @@
 /* eslint-disable */
 import { useState, useEffect, useRef } from 'react';
-import { UserCheck, Users, Copy, PlusCircle, X, AlertCircle, Loader2, Ban, Search } from 'lucide-react';
+import {
+  UserCheck,
+  Users,
+  Copy,
+  PlusCircle,
+  X,
+  AlertCircle,
+  Loader2,
+  Ban,
+  Search,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +19,12 @@ import MultiSelect from '@/components/multi-select';
 import { Serie, Match, Member, Joueur } from '@/services/type.ts';
 import { fetchJoueursBySemaineAndEquipe } from '@/services/api';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface SelectionsManagerProps {
   serie: Serie;
@@ -31,8 +46,11 @@ export function SelectionsManager({
   onSelectionsChange,
 }: SelectionsManagerProps) {
   // Détection robuste du club
-  const CLUB_KEYWORD = (import.meta.env.VITE_TABT_CLUB_KEYWORD as string)?.toLowerCase() || 'frameries';
-  const isClubTeam = (label?: string) => !!label && label.toLowerCase().includes(CLUB_KEYWORD);
+  const CLUB_KEYWORD =
+    (import.meta.env.VITE_TABT_CLUB_KEYWORD as string)?.toLowerCase() ||
+    'frameries';
+  const isClubTeam = (label?: string) =>
+    !!label && label.toLowerCase().includes(CLUB_KEYWORD);
 
   const [matchsWithPlayers, setMatchsWithPlayers] = useState<
     MatchWithPlayers[]
@@ -86,7 +104,7 @@ export function SelectionsManager({
         players = match.joueursExterieur || match.joueur_ext || [];
       }
       if (players.length > 0) {
-        initialSelections[match.id] = players.map(p => p.id);
+        initialSelections[match.id] = players.map((p) => p.id);
       }
     });
 
@@ -94,10 +112,11 @@ export function SelectionsManager({
     const selectionsAsString = JSON.stringify(initialSelections);
 
     // N'envoyer au parent que si les sélections ont changé
-    if (onSelectionsChange &&
-        Object.keys(initialSelections).length > 0 &&
-        lastSelectionsSent.current !== selectionsAsString) {
-
+    if (
+      onSelectionsChange &&
+      Object.keys(initialSelections).length > 0 &&
+      lastSelectionsSent.current !== selectionsAsString
+    ) {
       // Mettre à jour la référence avec les nouvelles sélections
       lastSelectionsSent.current = selectionsAsString;
 
@@ -134,7 +153,9 @@ export function SelectionsManager({
         if (availableSlots <= 0) return match;
 
         // Construire la liste des nouveaux joueurs à ajouter (sans doublons)
-        const toAddIds = selectedJoueurIds.filter((id) => !currentIds.has(id)).slice(0, availableSlots);
+        const toAddIds = selectedJoueurIds
+          .filter((id) => !currentIds.has(id))
+          .slice(0, availableSlots);
         if (toAddIds.length === 0) return match;
 
         const nouveauxJoueurs: Joueur[] = toAddIds.map((id) => {
@@ -149,35 +170,51 @@ export function SelectionsManager({
           } as Joueur;
         });
 
-        const updatedList = [...currentPlayers, ...nouveauxJoueurs].sort((a, b) =>
-          trierClassements(a.classement || 'ZZ', b.classement || 'ZZ')
+        const updatedList = [...currentPlayers, ...nouveauxJoueurs].sort(
+          (a, b) => trierClassements(a.classement || 'ZZ', b.classement || 'ZZ')
         );
 
-        const updatedMatch: MatchWithPlayers = { ...match, selectedPlayers: updatedList };
+        const updatedMatch: MatchWithPlayers = {
+          ...match,
+          selectedPlayers: updatedList,
+        };
 
         // Déclencher la mise à jour du parent et l’événement
         if (isClubTeam(match.domicile)) {
           updatedMatch.joueursDomicile = updatedList;
           updatedMatch.joueur_dom = updatedList;
-          window.dispatchEvent(new CustomEvent('updateMatch', {
-            detail: {
-              matchId: match.id,
-              updates: { joueursDomicile: updatedList, joueur_dom: updatedList },
-            },
-          }));
+          window.dispatchEvent(
+            new CustomEvent('updateMatch', {
+              detail: {
+                matchId: match.id,
+                updates: {
+                  joueursDomicile: updatedList,
+                  joueur_dom: updatedList,
+                },
+              },
+            })
+          );
         } else if (isClubTeam(match.exterieur)) {
           updatedMatch.joueursExterieur = updatedList;
           updatedMatch.joueur_ext = updatedList;
-          window.dispatchEvent(new CustomEvent('updateMatch', {
-            detail: {
-              matchId: match.id,
-              updates: { joueursExterieur: updatedList, joueur_ext: updatedList },
-            },
-          }));
+          window.dispatchEvent(
+            new CustomEvent('updateMatch', {
+              detail: {
+                matchId: match.id,
+                updates: {
+                  joueursExterieur: updatedList,
+                  joueur_ext: updatedList,
+                },
+              },
+            })
+          );
         }
 
         // Mettre à jour les sélections pour le parent
-        updateSelections(match.id, updatedList.map((j) => j.id));
+        updateSelections(
+          match.id,
+          updatedList.map((j) => j.id)
+        );
 
         // Vider la sélection multiple après ajout
         setSelectedJoueurIds([]);
@@ -197,31 +234,35 @@ export function SelectionsManager({
 
           const updatedMatch = {
             ...match,
-            selectedPlayers: nouveauxJoueurs
+            selectedPlayers: nouveauxJoueurs,
           };
 
           // Déclencher une mise à jour du match parent avec les nouveaux joueurs
           console.log('Envoi événement updateMatch pour suppression joueur');
           if (isClubTeam(match.domicile)) {
-            window.dispatchEvent(new CustomEvent('updateMatch', {
-              detail: {
-                matchId: matchId,
-                updates: {
-                  joueursDomicile: nouveauxJoueurs,
-                  joueur_dom: nouveauxJoueurs
-                }
-              }
-            }));
+            window.dispatchEvent(
+              new CustomEvent('updateMatch', {
+                detail: {
+                  matchId,
+                  updates: {
+                    joueursDomicile: nouveauxJoueurs,
+                    joueur_dom: nouveauxJoueurs,
+                  },
+                },
+              })
+            );
           } else if (isClubTeam(match.exterieur)) {
-            window.dispatchEvent(new CustomEvent('updateMatch', {
-              detail: {
-                matchId: matchId,
-                updates: {
-                  joueursExterieur: nouveauxJoueurs,
-                  joueur_ext: nouveauxJoueurs
-                }
-              }
-            }));
+            window.dispatchEvent(
+              new CustomEvent('updateMatch', {
+                detail: {
+                  matchId,
+                  updates: {
+                    joueursExterieur: nouveauxJoueurs,
+                    joueur_ext: nouveauxJoueurs,
+                  },
+                },
+              })
+            );
           }
 
           // Mettre à jour les sélections pour le parent
@@ -238,31 +279,34 @@ export function SelectionsManager({
   };
 
   const toggleJoueurWO = (matchId: string, joueurId: string) => {
-    console.log(`=== DÉBUT toggleJoueurWO ===`);
+    console.log('=== DÉBUT toggleJoueurWO ===');
     console.log(`Match ID: ${matchId}, Joueur ID: ${joueurId}`);
 
     setMatchsWithPlayers((prev) =>
       prev.map((match) => {
         if (match.id === matchId) {
-          console.log('Match trouvé, joueurs avant modification:', match.selectedPlayers);
-
-          const nouveauxJoueurs = (match.selectedPlayers || []).map(
-            (j) => {
-              if (j.id === joueurId) {
-                // Inverser l'état WO du joueur : "y" <-> "n"
-                const newWoState = j.wo === "y" ? "n" : "y";
-                console.log(`Changement WO pour ${j.nom}: ${j.wo} -> ${newWoState}`);
-                return { ...j, wo: newWoState };
-              }
-              return j;
-            }
+          console.log(
+            'Match trouvé, joueurs avant modification:',
+            match.selectedPlayers
           );
+
+          const nouveauxJoueurs = (match.selectedPlayers || []).map((j) => {
+            if (j.id === joueurId) {
+              // Inverser l'état WO du joueur : "y" <-> "n"
+              const newWoState = j.wo === 'y' ? 'n' : 'y';
+              console.log(
+                `Changement WO pour ${j.nom}: ${j.wo} -> ${newWoState}`
+              );
+              return { ...j, wo: newWoState };
+            }
+            return j;
+          });
 
           console.log('Nouveaux joueurs après modification:', nouveauxJoueurs);
 
           const updatedMatch = {
             ...match,
-            selectedPlayers: nouveauxJoueurs
+            selectedPlayers: nouveauxJoueurs,
           };
 
           // Mettre à jour les sélections pour le parent avec les nouveaux états WO
@@ -278,8 +322,8 @@ export function SelectionsManager({
 
           // S'assurer que les scores individuels des joueurs WO sont à 0
           if (updatedMatch.scoresIndividuels) {
-            nouveauxJoueurs.forEach(joueur => {
-              if (joueur.wo === "y") {
+            nouveauxJoueurs.forEach((joueur) => {
+              if (joueur.wo === 'y') {
                 updatedMatch.scoresIndividuels![joueur.id] = 0;
                 console.log(`Score mis à 0 pour joueur WO: ${joueur.nom}`);
               }
@@ -290,27 +334,31 @@ export function SelectionsManager({
           console.log('Envoi événement updateMatch vers EquipeMaker');
           const matchToUpdate = match;
           if (isClubTeam(matchToUpdate.domicile)) {
-            window.dispatchEvent(new CustomEvent('updateMatch', {
-              detail: {
-                matchId: matchId,
-                updates: {
-                  joueursDomicile: nouveauxJoueurs,
-                  joueur_dom: nouveauxJoueurs,
-                  scoresIndividuels: updatedMatch.scoresIndividuels
-                }
-              }
-            }));
+            window.dispatchEvent(
+              new CustomEvent('updateMatch', {
+                detail: {
+                  matchId,
+                  updates: {
+                    joueursDomicile: nouveauxJoueurs,
+                    joueur_dom: nouveauxJoueurs,
+                    scoresIndividuels: updatedMatch.scoresIndividuels,
+                  },
+                },
+              })
+            );
           } else if (isClubTeam(matchToUpdate.exterieur)) {
-            window.dispatchEvent(new CustomEvent('updateMatch', {
-              detail: {
-                matchId: matchId,
-                updates: {
-                  joueursExterieur: nouveauxJoueurs,
-                  joueur_ext: nouveauxJoueurs,
-                  scoresIndividuels: updatedMatch.scoresIndividuels
-                }
-              }
-            }));
+            window.dispatchEvent(
+              new CustomEvent('updateMatch', {
+                detail: {
+                  matchId,
+                  updates: {
+                    joueursExterieur: nouveauxJoueurs,
+                    joueur_ext: nouveauxJoueurs,
+                    scoresIndividuels: updatedMatch.scoresIndividuels,
+                  },
+                },
+              })
+            );
           }
 
           // Mettre à jour les sélections normalement aussi
@@ -362,22 +410,27 @@ export function SelectionsManager({
       const nom = (membre.nom || '').toLowerCase();
       const prenom = (membre.prenom || '').toLowerCase();
       const classement = (membre.classement || '').toLowerCase();
-      return nom.includes(search) || prenom.includes(search) || classement.includes(search) || `${prenom} ${nom}`.toLowerCase().includes(search);
+      return (
+        nom.includes(search) ||
+        prenom.includes(search) ||
+        classement.includes(search) ||
+        `${prenom} ${nom}`.toLowerCase().includes(search)
+      );
     });
 
     const availableSlots = Math.max(0, 4 - joueurs.length);
 
     return (
-      <div className="mt-4 space-y-3 sm:space-y-4">
+      <div className="mt-4 space-y-4">
         {/* Barre de recherche */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             type="text"
             placeholder="Rechercher par nom, prénom ou classement..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8 sm:pl-10 text-sm"
+            className="pl-10"
           />
         </div>
 
@@ -386,30 +439,51 @@ export function SelectionsManager({
           <div className="min-w-[240px]">
             <MultiSelect
               options={filteredMembres
-                .sort((a, b) => trierClassements(a.classement || 'ZZ', b.classement || 'ZZ'))
-                .map((m) => ({ value: m.id, label: `${m.prenom} ${m.nom} (${m.classement || 'N/A'})` }))}
+                .sort((a, b) =>
+                  trierClassements(a.classement || 'ZZ', b.classement || 'ZZ')
+                )
+                .map((m) => ({
+                  value: m.id,
+                  label: `${m.prenom} ${m.nom} (${m.classement || 'N/A'})`,
+                }))}
               selected={selectedJoueurIds}
               onChange={setSelectedJoueurIds}
-              placeholder={filteredMembres.length === 0 ? (searchTerm ? 'Aucun résultat...' : 'Aucun joueur disponible') : 'Choisir des joueurs...'}
+              placeholder={
+                filteredMembres.length === 0
+                  ? searchTerm
+                    ? 'Aucun résultat...'
+                    : 'Aucun joueur disponible'
+                  : 'Choisir des joueurs...'
+              }
               maxSelected={availableSlots > 0 ? availableSlots : 0}
             />
           </div>
           <Button
             onClick={() => ajouterJoueurs(match.id)}
-            disabled={selectedJoueurIds.length === 0 || joueurs.length >= 4 || filteredMembres.length === 0}
-            className="w-full sm:w-auto text-xs sm:text-sm"
+            disabled={
+              selectedJoueurIds.length === 0 ||
+              joueurs.length >= 4 ||
+              filteredMembres.length === 0
+            }
+            className="w-full sm:w-auto"
           >
-            <PlusCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Ajouter {selectedJoueurIds.length > 0 ? `(${selectedJoueurIds.length})` : ''}</span>
-            <span className="sm:hidden">+ {selectedJoueurIds.length > 0 ? `(${selectedJoueurIds.length})` : ''}</span>
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Ajouter{' '}
+            {selectedJoueurIds.length > 0
+              ? `(${selectedJoueurIds.length})`
+              : ''}
           </Button>
         </div>
-        <p className="text-xs text-gray-500 mt-1">{availableSlots} place(s) restante(s)</p>
+        <p className="text-xs text-gray-500 mt-1">
+          {availableSlots} place(s) restante(s)
+        </p>
 
         {/* Afficher le nombre de résultats si recherche active */}
         {searchTerm && (
           <p className="text-xs text-gray-500">
-            {filteredMembres.length} joueur{filteredMembres.length > 1 ? 's' : ''} trouvé{filteredMembres.length > 1 ? 's' : ''}
+            {filteredMembres.length} joueur
+            {filteredMembres.length > 1 ? 's' : ''} trouvé
+            {filteredMembres.length > 1 ? 's' : ''}
           </p>
         )}
 
@@ -418,7 +492,8 @@ export function SelectionsManager({
           {joueurs.length > 0 ? (
             joueurs.map((joueur) => {
               const membre = membres.find((m) => m.id === joueur.id);
-              const classement = joueur.classement || membre?.classement || 'N/A';
+              const classement =
+                joueur.classement || membre?.classement || 'N/A';
               if (!joueur.wo) joueur.wo = 'n';
               const nomAffiche = joueur.nom
                 ? joueur.nom.trim()
@@ -430,26 +505,36 @@ export function SelectionsManager({
               return (
                 <div
                   key={joueur.id}
-                  className={`flex flex-col sm:flex-row sm:items-center justify-between py-2 px-3 rounded gap-2 ${joueur.wo === 'y' ? 'bg-red-50 border border-red-200' : 'bg-gray-50'}`}
+                  className={`flex items-center justify-between py-2 px-3 rounded ${joueur.wo === 'y' ? 'bg-red-50 border border-red-200' : 'bg-gray-50'}`}
                 >
-                  <span className={`truncate flex-1 mr-2 text-sm ${joueur.wo === 'y' ? 'text-red-700 line-through' : ''}`}>
+                  <span
+                    className={`truncate flex-1 mr-2 ${joueur.wo === 'y' ? 'text-red-700 line-through' : ''}`}
+                  >
                     {nomAffiche} ({classement})
-                    {joueur.wo === 'y' && <Badge variant="destructive" className="ml-2 text-xs">WO</Badge>}
+                    {joueur.wo === 'y' && (
+                      <Badge variant="destructive" className="ml-2 text-xs">
+                        WO
+                      </Badge>
+                    )}
                   </span>
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          variant={joueur.wo === 'y' ? 'destructive' : 'outline'}
+                          variant={
+                            joueur.wo === 'y' ? 'destructive' : 'outline'
+                          }
                           size="sm"
                           onClick={() => toggleJoueurWO(match.id, joueur.id)}
-                          className="h-6 w-6 sm:h-8 sm:w-8 p-0 shrink-0"
+                          className="h-8 w-8 p-0 shrink-0 mr-1"
                         >
-                          <Ban className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <Ban className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        {joueur.wo === 'y' ? 'Annuler le forfait (WO)' : 'Marquer comme forfait (WO)'}
+                        {joueur.wo === 'y'
+                          ? 'Annuler le forfait (WO)'
+                          : 'Marquer comme forfait (WO)'}
                       </TooltipContent>
                     </Tooltip>
 
@@ -457,16 +542,16 @@ export function SelectionsManager({
                       variant="ghost"
                       size="sm"
                       onClick={() => supprimerJoueur(match.id, joueur.id)}
-                      className="h-6 w-6 sm:h-8 sm:w-8 p-0 shrink-0"
+                      className="h-8 w-8 p-0 shrink-0"
                     >
-                      <X className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
+                      <X className="h-4 w-4 text-red-500" />
                     </Button>
                   </div>
                 </div>
               );
             })
           ) : (
-            <p className="text-gray-400 text-xs sm:text-sm italic text-center py-4">
+            <p className="text-gray-400 text-sm italic text-center py-4">
               Aucun joueur sélectionné
             </p>
           )}
@@ -491,18 +576,16 @@ export function SelectionsManager({
 
       // Récupérer tous les matchs du club de la semaine actuelle
       const cttFrameriesMatches = matchsWithPlayers.filter(
-        (match) =>
-          isClubTeam(match.domicile) ||
-          isClubTeam(match.exterieur)
+        (match) => isClubTeam(match.domicile) || isClubTeam(match.exterieur)
       );
 
       // Extraire l'ID de saison à partir d'un match
       const saisonId = matchs[0]?.saisonId || serie.saisonId;
 
-      console.log("Récupération des joueurs avec les paramètres:", {
+      console.log('Récupération des joueurs avec les paramètres:', {
         saisonId,
         serieId: serie.id,
-        semaine: semaine - 1
+        semaine: semaine - 1,
       });
 
       // Pour chaque match du club, récupérer les joueurs de la semaine précédente
@@ -520,34 +603,41 @@ export function SelectionsManager({
               equipeFrameries
             );
 
-            console.log(`Joueurs récupérés pour ${equipeFrameries}:`, previousPlayers);
+            console.log(
+              `Joueurs récupérés pour ${equipeFrameries}:`,
+              previousPlayers
+            );
 
             if (previousPlayers.length > 0) {
               if (isClubTeam(match.domicile)) {
-                window.dispatchEvent(new CustomEvent('updateMatch', {
-                  detail: {
-                    matchId: match.id,
-                    updates: {
-                      joueursDomicile: previousPlayers,
-                      joueur_dom: previousPlayers
-                    }
-                  }
-                }));
+                window.dispatchEvent(
+                  new CustomEvent('updateMatch', {
+                    detail: {
+                      matchId: match.id,
+                      updates: {
+                        joueursDomicile: previousPlayers,
+                        joueur_dom: previousPlayers,
+                      },
+                    },
+                  })
+                );
               } else if (isClubTeam(match.exterieur)) {
-                window.dispatchEvent(new CustomEvent('updateMatch', {
-                  detail: {
-                    matchId: match.id,
-                    updates: {
-                      joueursExterieur: previousPlayers,
-                      joueur_ext: previousPlayers
-                    }
-                  }
-                }));
+                window.dispatchEvent(
+                  new CustomEvent('updateMatch', {
+                    detail: {
+                      matchId: match.id,
+                      updates: {
+                        joueursExterieur: previousPlayers,
+                        joueur_ext: previousPlayers,
+                      },
+                    },
+                  })
+                );
               }
 
               return {
                 ...match,
-                selectedPlayers: previousPlayers
+                selectedPlayers: previousPlayers,
               };
             }
             return match;
@@ -559,9 +649,11 @@ export function SelectionsManager({
       );
 
       // Mettre à jour l'état local avec les nouvelles compositions
-      setMatchsWithPlayers(prev =>
-        prev.map(existingMatch => {
-          const updatedMatch = updatedMatches.find(m => m.id === existingMatch.id);
+      setMatchsWithPlayers((prev) =>
+        prev.map((existingMatch) => {
+          const updatedMatch = updatedMatches.find(
+            (m) => m.id === existingMatch.id
+          );
           return updatedMatch || existingMatch;
         })
       );
@@ -571,14 +663,18 @@ export function SelectionsManager({
 
       updatedMatches.forEach((match) => {
         if (match.selectedPlayers && match.selectedPlayers.length > 0) {
-          newSelections[match.id] = match.selectedPlayers.map(p => p.id);
+          newSelections[match.id] = match.selectedPlayers.map((p) => p.id);
         }
       });
 
       // Préserver les sélections des autres matchs
       matchsWithPlayers.forEach((match) => {
-        if (!newSelections[match.id] && match.selectedPlayers && match.selectedPlayers.length > 0) {
-          newSelections[match.id] = match.selectedPlayers.map(p => p.id);
+        if (
+          !newSelections[match.id] &&
+          match.selectedPlayers &&
+          match.selectedPlayers.length > 0
+        ) {
+          newSelections[match.id] = match.selectedPlayers.map((p) => p.id);
         }
       });
 
@@ -589,10 +685,14 @@ export function SelectionsManager({
       }
 
       setErrorMessage(null);
-      console.log('Compositions de la semaine précédente copiées avec succès !');
+      console.log(
+        'Compositions de la semaine précédente copiées avec succès !'
+      );
     } catch (error) {
       console.error('Erreur lors de la copie des compositions:', error);
-      setErrorMessage('Erreur lors de la récupération des compositions précédentes');
+      setErrorMessage(
+        'Erreur lors de la récupération des compositions précédentes'
+      );
       setTimeout(() => setErrorMessage(null), 3000);
     } finally {
       setIsLoading(false);
@@ -620,11 +720,10 @@ export function SelectionsManager({
     <TooltipProvider>
       <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
         <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-              <UserCheck className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-              <span className="hidden sm:inline">Sélections - {serie.nom} - Semaine {semaine}</span>
-              <span className="sm:hidden">{serie.nom} - S{semaine}</span>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <UserCheck className="h-6 w-6 text-blue-600" />
+              Sélections - {serie.nom} - Semaine {semaine}
             </CardTitle>
             <div className="flex gap-2">
               <Button
@@ -632,54 +731,49 @@ export function SelectionsManager({
                 size="sm"
                 onClick={copyFromPreviousWeek}
                 disabled={isLoading || semaine <= 1}
-                className="text-xs sm:text-sm"
               >
                 {isLoading ? (
-                  <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
-                  <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <Copy className="h-4 w-4 mr-2" />
                 )}
-                <span className="hidden sm:inline">{isLoading ? "Chargement..." : "Copier semaine précédente"}</span>
-                <span className="sm:hidden">{isLoading ? "..." : "Copier S-1"}</span>
+                {isLoading ? 'Chargement...' : 'Copier semaine précédente'}
               </Button>
             </div>
           </div>
-          <p className="text-xs sm:text-sm text-gray-600">
-            <span className="hidden sm:inline">Sélection des compositions d'équipe pour les matchs de CTT Frameries uniquement</span>
-            <span className="sm:hidden">Compositions CTT Frameries</span>
+          <p className="text-sm text-gray-600">
+            Sélection des compositions d'équipe pour les matchs de CTT Frameries
+            uniquement
           </p>
         </CardHeader>
         <CardContent>
           {errorMessage && (
             <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-              <AlertDescription className="text-sm">{errorMessage}</AlertDescription>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{errorMessage}</AlertDescription>
             </Alert>
           )}
 
           {cttFrameriesMatchs.length > 0 ? (
-            <div className="space-y-4 sm:space-y-6">
+            <div className="space-y-6">
               {cttFrameriesMatchs.map((match) => (
                 <Card key={match.id} className="border-l-4 border-l-blue-500">
                   <CardHeader className="pb-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold text-base sm:text-lg">
+                        <h3 className="font-semibold text-lg">
                           {match.domicile} vs {match.exterieur}
                         </h3>
-                        <p className="text-xs sm:text-sm text-gray-600">{formatDateEuropean(match.date)}</p>
+                        <p className="text-sm text-gray-600">
+                          {formatDateEuropean(match.date)}
+                        </p>
                       </div>
                       <Badge
                         variant={
-                          isClubTeam(match.domicile)
-                            ? 'default'
-                            : 'secondary'
+                          isClubTeam(match.domicile) ? 'default' : 'secondary'
                         }
-                        className="text-xs"
                       >
-                        {isClubTeam(match.domicile)
-                          ? 'Domicile'
-                          : 'Extérieur'}
+                        {isClubTeam(match.domicile) ? 'Domicile' : 'Extérieur'}
                       </Badge>
                     </div>
                   </CardHeader>
@@ -688,10 +782,10 @@ export function SelectionsManager({
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 sm:py-12 text-gray-500">
-              <Users className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-base sm:text-lg">Aucun match CTT Frameries</p>
-              <p className="text-xs sm:text-sm">pour cette semaine</p>
+            <div className="text-center py-12 text-gray-500">
+              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg">Aucun match CTT Frameries</p>
+              <p className="text-sm">pour cette semaine</p>
             </div>
           )}
         </CardContent>
@@ -699,135 +793,3 @@ export function SelectionsManager({
     </TooltipProvider>
   );
 }
-
-  const renderJoueursList = (match: MatchWithPlayers) => {
-    const joueurs = match.selectedPlayers || [];
-
-    // Filtrer les membres selon le terme de recherche et exclure ceux déjà sélectionnés (éviter doublons)
-    const selectedIdsSet = new Set(joueurs.map((j) => j.id));
-    const filteredMembres = membres.filter((membre) => {
-      const notAlready = !selectedIdsSet.has(membre.id);
-      if (!notAlready) return false;
-      if (!searchTerm) return true;
-      const search = searchTerm.toLowerCase();
-      const nom = (membre.nom || '').toLowerCase();
-      const prenom = (membre.prenom || '').toLowerCase();
-      const classement = (membre.classement || '').toLowerCase();
-      return nom.includes(search) || prenom.includes(search) || classement.includes(search) || `${prenom} ${nom}`.toLowerCase().includes(search);
-    });
-
-    const availableSlots = Math.max(0, 4 - joueurs.length);
-
-    return (
-      <div className="mt-4 space-y-3 sm:space-y-4">
-        {/* Barre de recherche */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-          <Input
-            type="text"
-            placeholder="Rechercher par nom, prénom ou classement..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8 sm:pl-10 text-sm"
-          />
-        </div>
-
-        {/* Sélecteur multiple des membres */}
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
-          <div className="min-w-[240px]">
-            <MultiSelect
-              options={filteredMembres
-                .sort((a, b) => trierClassements(a.classement || 'ZZ', b.classement || 'ZZ'))
-                .map((m) => ({ value: m.id, label: `${m.prenom} ${m.nom} (${m.classement || 'N/A'})` }))}
-              selected={selectedJoueurIds}
-              onChange={setSelectedJoueurIds}
-              placeholder={filteredMembres.length === 0 ? (searchTerm ? 'Aucun résultat...' : 'Aucun joueur disponible') : 'Choisir des joueurs...'}
-              maxSelected={availableSlots > 0 ? availableSlots : 0}
-            />
-          </div>
-          <Button
-            onClick={() => ajouterJoueurs(match.id)}
-            disabled={selectedJoueurIds.length === 0 || joueurs.length >= 4 || filteredMembres.length === 0}
-            className="w-full sm:w-auto text-xs sm:text-sm"
-          >
-            <PlusCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Ajouter {selectedJoueurIds.length > 0 ? `(${selectedJoueurIds.length})` : ''}</span>
-            <span className="sm:hidden">+ {selectedJoueurIds.length > 0 ? `(${selectedJoueurIds.length})` : ''}</span>
-          </Button>
-        </div>
-        <p className="text-xs text-gray-500 mt-1">{availableSlots} place(s) restante(s)</p>
-
-        {/* Afficher le nombre de résultats si recherche active */}
-        {searchTerm && (
-          <p className="text-xs text-gray-500">
-            {filteredMembres.length} joueur{filteredMembres.length > 1 ? 's' : ''} trouvé{filteredMembres.length > 1 ? 's' : ''}
-          </p>
-        )}
-
-        {/* Liste des joueurs sélectionnés */}
-        <div className="space-y-2">
-          {joueurs.length > 0 ? (
-            joueurs.map((joueur) => {
-              const membre = membres.find((m) => m.id === joueur.id);
-              const classement = joueur.classement || membre?.classement || 'N/A';
-              if (!joueur.wo) joueur.wo = 'n';
-              const nomAffiche = joueur.nom
-                ? joueur.nom.trim()
-                : joueur.prenom && joueur.prenom.trim()
-                  ? `${joueur.prenom.trim()} ${joueur.nom || ''}`.trim()
-                  : membre
-                    ? `${membre.prenom || ''} ${membre.nom || ''}`.trim()
-                    : 'Joueur inconnu';
-              return (
-                <div
-                  key={joueur.id}
-                  className={`flex flex-col sm:flex-row sm:items-center justify-between py-2 px-3 rounded gap-2 ${joueur.wo === 'y' ? 'bg-red-50 border border-red-200' : 'bg-gray-50'}`}
-                >
-                  <span className={`truncate flex-1 mr-2 text-sm ${joueur.wo === 'y' ? 'text-red-700 line-through' : ''}`}>
-                    {nomAffiche} ({classement})
-                    {joueur.wo === 'y' && <Badge variant="destructive" className="ml-2 text-xs">WO</Badge>}
-                  </span>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant={joueur.wo === 'y' ? 'destructive' : 'outline'}
-                          size="sm"
-                          onClick={() => toggleJoueurWO(match.id, joueur.id)}
-                          className="h-6 w-6 sm:h-8 sm:w-8 p-0 shrink-0"
-                        >
-                          <Ban className="h-3 w-3 sm:h-4 sm:w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {joueur.wo === 'y' ? 'Annuler le forfait (WO)' : 'Marquer comme forfait (WO)'}
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => supprimerJoueur(match.id, joueur.id)}
-                      className="h-6 w-6 sm:h-8 sm:w-8 p-0 shrink-0"
-                    >
-                      <X className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <p className="text-gray-400 text-xs sm:text-sm italic text-center py-4">
-              Aucun joueur sélectionné
-            </p>
-          )}
-        </div>
-
-        <div className="text-xs text-gray-500 text-center">
-          {joueurs.length}/4 joueurs sélectionnés
-        </div>
-      </div>
-    );
-  };
-
-
