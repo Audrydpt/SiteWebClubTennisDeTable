@@ -124,16 +124,16 @@ const ProgressStep = ({
 };
 
 const InfoBox = () => (
-  <div className="max-w-4xl mx-auto mb-8">
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
-      <div className="bg-blue-100 rounded-full p-2 flex-shrink-0 mt-0.5">
+  <div className="max-w-4xl mx-auto mb-8 px-4">
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+      <div className="bg-blue-100 rounded-full p-2 flex-shrink-0 mt-0.5 sm:mt-0">
         <Star className="h-4 w-4 text-blue-600" />
       </div>
-      <div>
+      <div className="min-w-0">
         <h4 className="text-blue-900 font-semibold text-sm mb-1">
           💡 Astuce
         </h4>
-        <p className="text-blue-800 text-sm">
+        <p className="text-blue-800 text-sm leading-relaxed break-words">
           Cliquez sur une équipe de notre club (marquée avec ⭐) pour consulter tous ses matchs de la saison
         </p>
       </div>

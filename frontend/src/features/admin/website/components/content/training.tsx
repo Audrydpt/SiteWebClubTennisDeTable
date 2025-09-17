@@ -1,6 +1,6 @@
 /* eslint-disable */
 import React, { useState, useEffect } from 'react';
-import { Dumbbell, Plus, Edit, Trash2, Users, Eye, Copy, Share, X, AlertTriangle, ClipboardCopy, Check, Info } from 'lucide-react';
+import { Dumbbell, Plus, Edit, Trash2, Users, Copy, AlertTriangle, ClipboardCopy, Check, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,10 +24,11 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Training } from '@/services/type';
-import { fetchTraining, createTraining, updateTraining, deleteTraining, fetchInformations } from '@/services/api';
+import { fetchTraining, createTraining, updateTraining, deleteTraining, fetchInformations, fetchUsers } from '@/services/api';
 
 export default function TrainingManager() {
   const [trainings, setTrainings] = useState<Training[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showFacebookDialog, setShowFacebookDialog] = useState(false);
@@ -45,6 +46,8 @@ export default function TrainingManager() {
     description: '',
     responsable: '',
     statut: 'planifie' as 'planifie' | 'en_cours' | 'termine' | 'annule',
+    groupe: 'Tous' as string,
+    participants: [] as string[],
   });
   const [facebookMessage, setFacebookMessage] = useState('');
   const [publishingToFacebook, setPublishingToFacebook] = useState(false);
@@ -57,6 +60,7 @@ export default function TrainingManager() {
   useEffect(() => {
     loadTrainings();
     loadFacebookConfig();
+    loadUsers();
   }, []);
 
   const loadFacebookConfig = async () => {
@@ -94,6 +98,15 @@ export default function TrainingManager() {
     }
   };
 
+  const loadUsers = async () => {
+    try {
+      const data = await fetchUsers();
+      setUsers(data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des utilisateurs:', error);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       titre: '',
@@ -107,6 +120,8 @@ export default function TrainingManager() {
       description: '',
       responsable: '',
       statut: 'planifie',
+      groupe: 'Tous',
+      participants: [],
     });
     setEditingTraining(null);
   };
@@ -118,7 +133,8 @@ export default function TrainingManager() {
       const trainingData = {
         ...formData,
         maxParticipants: formData.maxParticipants ? parseInt(formData.maxParticipants) : undefined,
-        participants: editingTraining ? editingTraining.participants : [],
+        participants: formData.participants || (editingTraining ? editingTraining.participants : []),
+        groupe: formData.groupe || 'Tous',
       };
 
       if (editingTraining) {
@@ -149,6 +165,8 @@ export default function TrainingManager() {
       description: training.description || '',
       responsable: training.responsable,
       statut: training.statut,
+      groupe: training.groupe || 'Tous',
+      participants: training.participants || [],
     });
     setShowForm(true);
   };
@@ -171,6 +189,7 @@ export default function TrainingManager() {
         titre: `${training.titre} (Copie)`,
         participants: [], // Réinitialiser les participants
         statut: 'planifie' as const,
+        groupe: training.groupe || 'Tous',
       };
 
       // Supprimer l'ID pour créer un nouveau training
@@ -324,6 +343,18 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
 
   const formatTime = (time: string) => time.substring(0, 5);
 
+  const addParticipantsFromGroup = () => {
+    const group = (formData as any).groupe || 'Tous';
+    if (group === 'Tous') {
+      const ids = users.map((u: any) => u.id);
+      setFormData({ ...formData, participants: Array.from(new Set([...(formData.participants || []), ...ids])) });
+      return;
+    }
+
+    const ids = users.filter((u: any) => (u.groupe || 'Tous') === group).map((u: any) => u.id);
+    setFormData({ ...formData, participants: Array.from(new Set([...(formData.participants || []), ...ids])) });
+  };
+
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'entrainement': return 'bg-blue-100 text-blue-800';
@@ -377,7 +408,7 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 sm:px-0">{/* Ajout de padding horizontal pour éviter débordement sur mobile */}
       {/* En-tête avec statistiques */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -429,12 +460,12 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
       {/* Actions principales */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">{/* Responsive: empiler sur mobile */}
             <span className="flex items-center gap-2">
               <Dumbbell className="h-5 w-5" />
               Gestion des entraînements
             </span>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">{/* Permet au groupe de boutons de revenir à la ligne sur mobile */}
               <Button
                 onClick={publishGlobalToFacebook}
                 disabled={trainings.filter(t => {
@@ -466,12 +497,12 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
                     Nouvel entraînement
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingTraining ? 'Modifier l\'entraînement' : 'Nouvel entraînement'}
-                    </DialogTitle>
-                  </DialogHeader>
+                <DialogContent className="w-full max-w-full sm:max-w-2xl mx-4">{/* Responsive: max-width limité sur sm+, plein largeur sur mobile avec marge */}
+                   <DialogHeader>
+                     <DialogTitle>
+                       {editingTraining ? 'Modifier l\'entraînement' : 'Nouvel entraînement'}
+                     </DialogTitle>
+                   </DialogHeader>
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -593,6 +624,29 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                      <div>
+                        <Label htmlFor="groupe">Groupe cible</Label>
+                        <Select value={formData.groupe} onValueChange={(value: string) => setFormData({...formData, groupe: value})}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Tous">Tous</SelectItem>
+                            <SelectItem value="A">Groupe A</SelectItem>
+                            <SelectItem value="B">Groupe B</SelectItem>
+                            <SelectItem value="C">Groupe C</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-end gap-2">
+                        <p className="text-xs text-muted-foreground">Choisissez le groupe de joueurs visé par cet entraînement. Les joueurs peuvent être assignés aux groupes dans les paramètres.</p>
+                        <Button size="sm" variant="outline" onClick={() => addParticipantsFromGroup()}>
+                          Ajouter membres du groupe
+                        </Button>
+                      </div>
+                    </div>
+
                     <div>
                       <Label htmlFor="description">Description</Label>
                       <Textarea
@@ -642,7 +696,7 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
                             <div className="flex items-center gap-3 mb-2">
                               <h4 className={`font-semibold text-lg ${
                                 training.statut === 'annule' ? 'line-through text-red-600' : ''
-                              }`}>
+                              } break-words`}>{/* Empêcher débordement horizontal du titre */}
                                 {training.titre}
                                 {training.statut === 'annule' && (
                                   <span className="ml-2 text-red-600 font-normal">(ANNULÉ)</span>
@@ -651,6 +705,11 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
                               <Badge className={getTypeColor(training.type)}>
                                 {training.type}
                               </Badge>
+                              {training.groupe && (
+                                <Badge className="bg-indigo-100 text-indigo-800">
+                                  {training.groupe}
+                                </Badge>
+                              )}
                               <Badge className={getStatutColor(training.statut)}>
                                 {training.statut}
                               </Badge>
@@ -681,7 +740,7 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
                               </div>
                             </div>
                           </div>
-                          <div className="flex gap-1">
+                          <div className="flex gap-1 flex-shrink-0">{/* Empêcher que les boutons forcents le conteneur à dépasser */}
                             <Button
                               size="sm"
                               variant="outline"
@@ -711,7 +770,7 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
                         {training.description && (
                           <p className={`text-sm text-gray-600 mt-2 ${
                             training.statut === 'annule' ? 'line-through' : ''
-                          }`}>
+                          } break-words`}>
                             {training.description}
                           </p>
                         )}
@@ -735,83 +794,83 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
 
       {/* Dialogue de partage Facebook */}
       <Dialog open={showFacebookDialog} onOpenChange={setShowFacebookDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Publier sur le groupe Facebook</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="flex items-center gap-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="#1877F2"
-              >
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-              </svg>
-              <p className="text-sm text-gray-600">
-                {selectedTrainingForFacebook
-                  ? `Publication pour l'entraînement "${selectedTrainingForFacebook.titre}"`
-                  : 'Publication globale des entraînements'
-                }
-              </p>
-            </div>
+        <DialogContent className="w-full max-w-full sm:max-w-md mx-4">{/* Responsive: plein largeur sur mobile avec marge */}
+           <DialogHeader>
+             <DialogTitle>Publier sur le groupe Facebook</DialogTitle>
+           </DialogHeader>
+           <div className="space-y-4 py-4">
+             <div className="flex items-center gap-2">
+               <svg
+                 xmlns="http://www.w3.org/2000/svg"
+                 width="24"
+                 height="24"
+                 viewBox="0 0 24 24"
+                 fill="#1877F2"
+               >
+                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+               </svg>
+               <p className="text-sm text-gray-600">
+                 {selectedTrainingForFacebook
+                   ? `Publication pour l'entraînement "${selectedTrainingForFacebook.titre}"`
+                   : 'Publication globale des entraînements'
+                 }
+               </p>
+             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="fb-message">Message à publier</Label>
-              <Textarea
-                id="fb-message"
-                value={facebookMessage}
-                onChange={(e) => setFacebookMessage(e.target.value)}
-                rows={8}
-                className="resize-none"
-              />
-            </div>
+             <div className="space-y-2">
+               <Label htmlFor="fb-message">Message à publier</Label>
+               <Textarea
+                 id="fb-message"
+                 value={facebookMessage}
+                 onChange={(e) => setFacebookMessage(e.target.value)}
+                 rows={8}
+                 className="resize-none"
+               />
+             </div>
 
-            <div className="rounded-md bg-blue-50 p-3">
-              <div className="flex items-start">
-                <Info className="h-5 w-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
-                <div className="text-blue-700 text-sm">
-                  <p className="font-medium mb-1">Comment publier facilement :</p>
-                  <ol className="list-decimal pl-5 space-y-1">
-                    <li>Cliquez sur le bouton "Copier et ouvrir Facebook"</li>
-                    <li>Le message sera automatiquement copié</li>
-                    <li>Collez le message (Ctrl+V) dans la fenêtre de publication Facebook qui s'ouvre</li>
-                  </ol>
-                  <p className="mt-2 text-xs">
-                    Groupe configuré: ID {groupId}
-                  </p>
-                  <p className="mt-1 text-xs">
-                    Type: {selectedTrainingForFacebook ? 'Entraînement individuel' : 'Publication globale (mois en cours)'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="sm:justify-between">
-            <DialogClose asChild>
-              <Button variant="secondary">Annuler</Button>
-            </DialogClose>
-            <Button
-              onClick={handleCopyAndOpenFacebook}
-              className="bg-[#1877F2] hover:bg-[#166FE5] text-white"
-            >
-              {isMessageCopied ? (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Copié !
-                </>
-              ) : (
-                <>
-                  <ClipboardCopy className="h-4 w-4 mr-2" />
-                  Copier et ouvrir Facebook
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+             <div className="rounded-md bg-blue-50 p-3">
+               <div className="flex items-start">
+                 <Info className="h-5 w-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
+                 <div className="text-blue-700 text-sm">
+                   <p className="font-medium mb-1">Comment publier facilement :</p>
+                   <ol className="list-decimal pl-5 space-y-1">
+                     <li>Cliquez sur le bouton "Copier et ouvrir Facebook"</li>
+                     <li>Le message sera automatiquement copié</li>
+                     <li>Collez le message (Ctrl+V) dans la fenêtre de publication Facebook qui s'ouvre</li>
+                   </ol>
+                   <p className="mt-2 text-xs">
+                     Groupe configuré: ID {groupId}
+                   </p>
+                   <p className="mt-1 text-xs">
+                     Type: {selectedTrainingForFacebook ? 'Entraînement individuel' : 'Publication globale (mois en cours)'}
+                   </p>
+                 </div>
+               </div>
+             </div>
+           </div>
+           <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-2">{/* Empiler les boutons sur mobile */}
+             <DialogClose asChild>
+               <Button variant="secondary">Annuler</Button>
+             </DialogClose>
+             <Button
+               onClick={handleCopyAndOpenFacebook}
+               className="bg-[#1877F2] hover:bg-[#166FE5] text-white"
+             >
+               {isMessageCopied ? (
+                 <>
+                   <Check className="h-4 w-4 mr-2" />
+                   Copié !
+                 </>
+               ) : (
+                 <>
+                   <ClipboardCopy className="h-4 w-4 mr-2" />
+                   Copier et ouvrir Facebook
+                 </>
+               )}
+             </Button>
+           </DialogFooter>
+         </DialogContent>
+       </Dialog>
     </div>
   );
 }

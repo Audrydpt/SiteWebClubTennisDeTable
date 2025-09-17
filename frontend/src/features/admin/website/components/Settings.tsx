@@ -83,6 +83,7 @@ type User = {
   role: 'joueur' | 'admin';
   dateInscription: string;
   indexListeForce: number;
+  groupe?: string;
 };
 
 export default function AdminSettings() {
@@ -134,10 +135,11 @@ export default function AdminSettings() {
     role: 'joueur',
     dateInscription: new Date().toISOString(),
     indexListeForce: 0,
+    groupe: 'Tous',
   });
 
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [editForm, setEditForm] = useState<Partial<User & { role?: string; dateInscription?: string; indexListeForce?: number }>>({});
+  const [editForm, setEditForm] = useState<Partial<User & { role?: string; dateInscription?: string; indexListeForce?: number; groupe?: string }>>({});
 
   // Fetch users from API
   const fetchUsersFromApi = async () => {
@@ -272,6 +274,7 @@ export default function AdminSettings() {
         role: newUser.role || 'joueur',
         dateInscription: new Date().toISOString(),
         indexListeForce: newUser.classement ? (newUser.indexListeForce || 0) : 0,
+        groupe: newUser.groupe || 'Tous',
       };
 
       await createUserProfile(profil);
@@ -287,6 +290,7 @@ export default function AdminSettings() {
         role: 'joueur',
         dateInscription: new Date().toISOString(),
         indexListeForce: 0,
+        groupe: 'Tous',
       });
       setShowCreateDialog(false);
     } catch (err: any) {
@@ -306,6 +310,7 @@ export default function AdminSettings() {
         ...editingUser,
         ...editForm,
         indexListeForce: editForm.classement ? (editForm.indexListeForce || 0) : 0,
+        groupe: editForm.groupe || editingUser.groupe || 'Tous',
       };
       await updateUserProfile(editingUser.id, updated);
       const updatedUsers = await fetchUsers();
@@ -616,6 +621,14 @@ export default function AdminSettings() {
                                     {user.classement}
                                   </Badge>
                                 )}
+                                {user.groupe && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs flex-shrink-0 bg-indigo-50 text-indigo-700 border-indigo-100"
+                                  >
+                                    {user.groupe}
+                                  </Badge>
+                                )}
                                 {user.classement && (
                                   <Badge
                                     variant="outline"
@@ -830,6 +843,23 @@ export default function AdminSettings() {
                     </Select>
                   </div>
                   <div>
+                    <Label>Groupe</Label>
+                    <Select
+                      value={newUser.groupe}
+                      onValueChange={(value) => setNewUser({ ...newUser, groupe: value })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Groupe" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Tous">Tous</SelectItem>
+                        <SelectItem value="A">A</SelectItem>
+                        <SelectItem value="B">B</SelectItem>
+                        <SelectItem value="C">C</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
                     <Label>Date d'inscription</Label>
                     <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
                       <span>Date d'inscription : {formatDateFR(newUser.dateInscription)}</span>
@@ -944,6 +974,23 @@ export default function AdminSettings() {
                       <SelectContent>
                         <SelectItem value="joueur">Joueur</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Groupe</Label>
+                    <Select
+                      value={editForm.groupe || 'Tous'}
+                      onValueChange={(value) => setEditForm({ ...editForm, groupe: value })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Groupe" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Tous">Tous</SelectItem>
+                        <SelectItem value="A">A</SelectItem>
+                        <SelectItem value="B">B</SelectItem>
+                        <SelectItem value="C">C</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

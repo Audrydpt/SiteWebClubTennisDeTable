@@ -103,6 +103,7 @@ export interface Joueur {
   classement: string;
   wo?: string; // "y" pour forfait, "n" pour normal (ou undefined)
   indexListeForce: number;
+  groupe?: string; // Nouveau : permet d'assigner un joueur à un groupe d'entraînement
 }
 
 export interface Match {
@@ -192,6 +193,7 @@ export type Member = {
   role?: string; // Optionnel pour les membres
   dateInscription?: string; // Optionnel pour les membres
   indexListeForce: number; // Maintenant requis
+  groupe?: string; // Nouveau : permet d'assigner un membre à un groupe
 };
 
 export interface Mousse {
@@ -257,6 +259,7 @@ export interface Training {
   description?: string;
   responsable: string;
   statut: 'planifie' | 'en_cours' | 'termine' | 'annule';
+  groupe?: string; // Nouveau : identifie le groupe cible de l'entraînement (ex: 'A', 'B', 'Tous')
 }
 
 export interface Plat {

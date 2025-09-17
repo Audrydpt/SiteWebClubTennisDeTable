@@ -435,8 +435,8 @@ export function SelectionsManager({
         </div>
 
         {/* Sélecteur multiple des membres */}
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
-          <div className="min-w-[240px]">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center w-full">
+          <div className="w-full min-w-0">
             <MultiSelect
               options={filteredMembres
                 .sort((a, b) =>
@@ -465,7 +465,7 @@ export function SelectionsManager({
               joueurs.length >= 4 ||
               filteredMembres.length === 0
             }
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto text-sm px-2 py-2"
           >
             <PlusCircle className="h-4 w-4 mr-2" />
             Ajouter{' '}
@@ -488,7 +488,7 @@ export function SelectionsManager({
         )}
 
         {/* Liste des joueurs sélectionnés */}
-        <div className="space-y-2">
+        <div className="space-y-2 w-full">
           {joueurs.length > 0 ? (
             joueurs.map((joueur) => {
               const membre = membres.find((m) => m.id === joueur.id);
@@ -505,10 +505,10 @@ export function SelectionsManager({
               return (
                 <div
                   key={joueur.id}
-                  className={`flex items-center justify-between py-2 px-3 rounded ${joueur.wo === 'y' ? 'bg-red-50 border border-red-200' : 'bg-gray-50'}`}
+                  className={`flex flex-col sm:flex-row items-center justify-between py-2 px-2 rounded w-full ${joueur.wo === 'y' ? 'bg-red-50 border border-red-200' : 'bg-gray-50'}`}
                 >
                   <span
-                    className={`truncate flex-1 mr-2 ${joueur.wo === 'y' ? 'text-red-700 line-through' : ''}`}
+                    className={`truncate flex-1 mr-2 text-sm ${joueur.wo === 'y' ? 'text-red-700 line-through' : ''}`}
                   >
                     {nomAffiche} ({classement})
                     {joueur.wo === 'y' && (
@@ -517,7 +517,7 @@ export function SelectionsManager({
                       </Badge>
                     )}
                   </span>
-                  <div className="flex items-center">
+                  <div className="flex items-center gap-1 mt-2 sm:mt-0">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
