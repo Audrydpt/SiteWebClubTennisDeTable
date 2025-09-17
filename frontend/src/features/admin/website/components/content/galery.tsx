@@ -417,89 +417,105 @@ export default function GaleryManager() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="animate-spin w-6 h-6 mr-2" />
-        Chargement de la galerie...
+      <div className="flex items-center justify-center py-8 sm:py-12">
+        <Loader2 className="animate-spin w-6 h-6 sm:w-8 sm:w-8 mr-2" />
+        <span className="text-sm">Chargement de la galerie...</span>
       </div>
     );
   }
 
   if (!eventData) {
-    return <div>Aucune donnée trouvée.</div>;
+    return <div className="text-center py-6 sm:py-8 text-sm">Aucune donnée trouvée.</div>;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Card>
-        <CardHeader className="flex justify-between items-center">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <CardTitle>Gestion de la Galerie</CardTitle>
-            <CardDescription>
-              Gérer les photos, vidéos et filtres de la galerie
+            <CardTitle className="text-lg sm:text-xl">Gestion de la Galerie</CardTitle>
+            <CardDescription className="text-sm">
+              <span className="hidden sm:inline">Gérer les photos, vidéos et filtres de la galerie</span>
+              <span className="sm:hidden">Photos, vidéos et filtres</span>
             </CardDescription>
           </div>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving && <Loader2 className="animate-spin w-4 h-4 mr-2" />}
-            <Save className="w-4 h-4 mr-2" />
-            Sauvegarder
+          <Button onClick={handleSave} disabled={saving} className="text-xs sm:text-sm">
+            {saving && <Loader2 className="animate-spin w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />}
+            <Save className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Sauvegarder</span>
+            <span className="sm:hidden">Save</span>
           </Button>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="gallery" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="gallery">Galerie</TabsTrigger>
-              <TabsTrigger value="content">Filtres contenu</TabsTrigger>
-              <TabsTrigger value="categories">Catégories</TabsTrigger>
+              <TabsTrigger value="gallery" className="text-xs sm:text-sm">
+                <span className="hidden sm:inline">Galerie</span>
+                <span className="sm:hidden">Galerie</span>
+              </TabsTrigger>
+              <TabsTrigger value="content" className="text-xs sm:text-sm">
+                <span className="hidden sm:inline">Filtres contenu</span>
+                <span className="sm:hidden">Filtres</span>
+              </TabsTrigger>
+              <TabsTrigger value="categories" className="text-xs sm:text-sm">
+                <span className="hidden sm:inline">Catégories</span>
+                <span className="sm:hidden">Catégories</span>
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="gallery" className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Éléments de la galerie</h3>
-                <Button onClick={handleAddGalleryItem} variant="outline">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Ajouter un élément
+            <TabsContent value="gallery" className="space-y-4 sm:space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h3 className="text-base sm:text-lg font-semibold">
+                  <span className="hidden sm:inline">Éléments de la galerie</span>
+                  <span className="sm:hidden">Éléments</span>
+                </h3>
+                <Button onClick={handleAddGalleryItem} variant="outline" className="text-xs sm:text-sm">
+                  <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Ajouter un élément</span>
+                  <span className="sm:hidden">Ajouter</span>
                 </Button>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {eventData.gallery.map((item: any) => (
                   <div
                     key={item.id}
-                    className="p-4 border rounded-lg space-y-4 bg-gray-50 relative"
+                    className="p-3 sm:p-4 border rounded-lg space-y-3 sm:space-y-4 bg-gray-50 relative"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
                         {item.type === "photo" ? (
-                          <Image className="w-5 h-5 text-blue-500" />
+                          <Image className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 shrink-0" />
                         ) : (
-                          <Video className="w-5 h-5 text-red-500" />
+                          <Video className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 shrink-0" />
                         )}
-                        <span className="font-medium">{item.title}</span>
+                        <span className="font-medium text-sm sm:text-base truncate">{item.title}</span>
                         {/* Prévisualisation miniature */}
-                        <div className="ml-4">
+                        <div className="hidden sm:block ml-4">
                           <img
                             src={getPreviewThumbnail(item)}
                             alt={`Aperçu ${item.title}`}
-                            className="w-20 h-16 object-cover rounded border"
+                            className="w-16 h-12 sm:w-20 sm:h-16 object-cover rounded border"
                             onError={handleImageError}
                           />
                         </div>
                       </div>
                       <button
                         onClick={() => handleDeleteGalleryItem(item.id)}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-red-500 hover:text-red-700 shrink-0"
                       >
-                        <Trash className="w-5 h-5" />
+                        <Trash className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <Input
                         value={item.title}
                         onChange={(e) =>
                           handleChangeGalleryItem(item.id, "title", e.target.value)
                         }
                         placeholder="Titre"
+                        className="text-sm"
                       />
                       <Input
                         type="date"
@@ -507,6 +523,7 @@ export default function GaleryManager() {
                         onChange={(e) =>
                           handleChangeGalleryItem(item.id, "date", e.target.value)
                         }
+                        className="text-sm"
                       />
                       <Select
                         value={item.category}
@@ -514,7 +531,7 @@ export default function GaleryManager() {
                           handleChangeGalleryItem(item.id, "category", val)
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="text-sm">
                           <SelectValue placeholder="Catégorie" />
                         </SelectTrigger>
                         <SelectContent>
@@ -533,7 +550,7 @@ export default function GaleryManager() {
                           handleChangeGalleryItem(item.id, "type", val)
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -589,12 +606,6 @@ export default function GaleryManager() {
                                     : ''}
                           </div>
                         )}
-
-                        {!item.autoThumbnail && !item.thumbnail && (
-                          <div className="text-xs text-orange-600 bg-orange-100 p-2 rounded">
-                            ⚠️ Aucune miniature définie. Veuillez ajouter une URL de miniature ou activer la génération automatique.
-                          </div>
-                        )}
                       </div>
                     )}
 
@@ -604,6 +615,7 @@ export default function GaleryManager() {
                         handleChangeGalleryItem(item.id, "description", e.target.value)
                       }
                       placeholder="Description"
+                      className="text-sm"
                     />
 
                     <div className="space-y-2">
@@ -621,7 +633,7 @@ export default function GaleryManager() {
                           </Badge>
                         ))}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <Input
                           id={`tag-input-${item.id}`}
                           placeholder="Nouveau tag..."
@@ -632,6 +644,7 @@ export default function GaleryManager() {
                               input.value = "";
                             }
                           }}
+                          className="text-sm"
                         />
                         <Button
                           variant="outline"
@@ -641,8 +654,9 @@ export default function GaleryManager() {
                             handleAddTag(item.id, input.value);
                             input.value = "";
                           }}
+                          className="w-full sm:w-auto"
                         >
-                          <Plus className="w-4 h-4" />
+                          <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                         </Button>
                       </div>
                     </div>
@@ -651,58 +665,61 @@ export default function GaleryManager() {
               </div>
             </TabsContent>
 
-            <TabsContent value="content" className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Filtres de contenu</h3>
-                <Button onClick={handleAddContentFilter} variant="outline">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Ajouter un filtre
+            <TabsContent value="content" className="space-y-4 sm:space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h3 className="text-base sm:text-lg font-semibold">Filtres de contenu</h3>
+                <Button onClick={handleAddContentFilter} variant="outline" className="text-xs sm:text-sm">
+                  <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Ajouter un filtre</span>
+                  <span className="sm:hidden">Ajouter</span>
                 </Button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {eventData.galleryFilters.content.map((filter: any, index: number) => (
                   <div
                     key={index}
-                    className="p-4 border rounded-lg space-y-4 bg-gray-50 relative"
+                    className="p-3 sm:p-4 border rounded-lg space-y-3 sm:space-y-4 bg-gray-50 relative"
                   >
                     <button
                       onClick={() => handleDeleteContentFilter(index)}
                       className="absolute top-2 right-2 text-red-500 hover:text-red-700"
                     >
-                      <Trash className="w-5 h-5" />
+                      <Trash className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pr-8">
                       <div>
-                        <label className="text-sm font-medium">Clé</label>
+                        <label className="text-xs sm:text-sm font-medium">Clé</label>
                         <Input
                           value={filter.key}
                           onChange={(e) =>
                             handleChangeContentFilter(index, "key", e.target.value)
                           }
                           placeholder="Clé du filtre"
+                          className="text-sm"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium">Label</label>
+                        <label className="text-xs sm:text-sm font-medium">Label</label>
                         <Input
                           value={filter.label}
                           onChange={(e) =>
                             handleChangeContentFilter(index, "label", e.target.value)
                           }
                           placeholder="Label du filtre"
+                          className="text-sm"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium">Icône</label>
+                        <label className="text-xs sm:text-sm font-medium">Icône</label>
                         <Select
                           value={filter.icon}
                           onValueChange={(val) =>
                             handleChangeContentFilter(index, "icon", val)
                           }
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="text-sm">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -720,56 +737,58 @@ export default function GaleryManager() {
               </div>
             </TabsContent>
 
-            <TabsContent value="categories" className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Catégories</h3>
-                <Button onClick={handleAddCategoryFilter} variant="outline">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Ajouter une catégorie
+            <TabsContent value="categories" className="space-y-4 sm:space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h3 className="text-base sm:text-lg font-semibold">Catégories</h3>
+                <Button onClick={handleAddCategoryFilter} variant="outline" className="text-xs sm:text-sm">
+                  <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Ajouter une catégorie</span>
+                  <span className="sm:hidden">Ajouter</span>
                 </Button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {Object.entries(eventData.galleryFilters.categories).map(([key, category]: any) => (
                   <div
                     key={key}
-                    className="p-4 border rounded-lg space-y-4 bg-gray-50 relative"
+                    className="p-3 sm:p-4 border rounded-lg space-y-3 sm:space-y-4 bg-gray-50 relative"
                   >
                     <button
                       onClick={() => handleDeleteCategoryFilter(key)}
                       className="absolute top-2 right-2 text-red-500 hover:text-red-700"
                     >
-                      <Trash className="w-5 h-5" />
+                      <Trash className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pr-8">
                       <div>
-                        <label className="text-sm font-medium">Clé</label>
+                        <label className="text-xs sm:text-sm font-medium">Clé</label>
                         <Input
                           value={key}
                           disabled
-                          className="bg-gray-100"
+                          className="bg-gray-100 text-sm"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium">Label</label>
+                        <label className="text-xs sm:text-sm font-medium">Label</label>
                         <Input
                           value={category.label}
                           onChange={(e) =>
                             handleChangeCategoryFilter(key, "label", e.target.value)
                           }
                           placeholder="Label de la catégorie"
+                          className="text-sm"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium">Icône</label>
+                        <label className="text-xs sm:text-sm font-medium">Icône</label>
                         <Select
                           value={category.icon}
                           onValueChange={(val) =>
                             handleChangeCategoryFilter(key, "icon", val)
                           }
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="text-sm">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>

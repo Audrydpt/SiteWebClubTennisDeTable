@@ -25,7 +25,7 @@ export function WeekSelector({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="week-select" className="text-sm font-medium">
+      <Label htmlFor="week-select" className="text-xs sm:text-sm font-medium">
         Semaine
       </Label>
       <Select
@@ -33,12 +33,16 @@ export function WeekSelector({
         onValueChange={(v) => onWeekChange(Number.parseInt(v, 10))}
         disabled={disabled}
       >
-        <SelectTrigger id="week-select" className="bg-white">
+        <SelectTrigger id="week-select" className="bg-white text-sm">
           <SelectValue placeholder="Choisir une semaine..." />
         </SelectTrigger>
         <SelectContent>
           {semaines.map((semaine) => (
-            <SelectItem key={semaine} value={semaine.toString()}>
+            <SelectItem
+              key={semaine}
+              value={semaine.toString()}
+              className="text-sm"
+            >
               Semaine {semaine}
             </SelectItem>
           ))}

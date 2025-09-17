@@ -368,16 +368,16 @@ export function SelectionsManager({
     const availableSlots = Math.max(0, 4 - joueurs.length);
 
     return (
-      <div className="mt-4 space-y-4">
+      <div className="mt-4 space-y-3 sm:space-y-4">
         {/* Barre de recherche */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
           <Input
             type="text"
             placeholder="Rechercher par nom, prénom ou classement..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-8 sm:pl-10 text-sm"
           />
         </div>
 
@@ -397,10 +397,11 @@ export function SelectionsManager({
           <Button
             onClick={() => ajouterJoueurs(match.id)}
             disabled={selectedJoueurIds.length === 0 || joueurs.length >= 4 || filteredMembres.length === 0}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto text-xs sm:text-sm"
           >
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Ajouter {selectedJoueurIds.length > 0 ? `(${selectedJoueurIds.length})` : ''}
+            <PlusCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Ajouter {selectedJoueurIds.length > 0 ? `(${selectedJoueurIds.length})` : ''}</span>
+            <span className="sm:hidden">+ {selectedJoueurIds.length > 0 ? `(${selectedJoueurIds.length})` : ''}</span>
           </Button>
         </div>
         <p className="text-xs text-gray-500 mt-1">{availableSlots} place(s) restante(s)</p>
@@ -429,22 +430,22 @@ export function SelectionsManager({
               return (
                 <div
                   key={joueur.id}
-                  className={`flex items-center justify-between py-2 px-3 rounded ${joueur.wo === 'y' ? 'bg-red-50 border border-red-200' : 'bg-gray-50'}`}
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between py-2 px-3 rounded gap-2 ${joueur.wo === 'y' ? 'bg-red-50 border border-red-200' : 'bg-gray-50'}`}
                 >
-                  <span className={`truncate flex-1 mr-2 ${joueur.wo === 'y' ? 'text-red-700 line-through' : ''}`}>
+                  <span className={`truncate flex-1 mr-2 text-sm ${joueur.wo === 'y' ? 'text-red-700 line-through' : ''}`}>
                     {nomAffiche} ({classement})
                     {joueur.wo === 'y' && <Badge variant="destructive" className="ml-2 text-xs">WO</Badge>}
                   </span>
-                  <div className="flex items-center">
+                  <div className="flex items-center gap-1 shrink-0">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
                           variant={joueur.wo === 'y' ? 'destructive' : 'outline'}
                           size="sm"
                           onClick={() => toggleJoueurWO(match.id, joueur.id)}
-                          className="h-8 w-8 p-0 shrink-0 mr-1"
+                          className="h-6 w-6 sm:h-8 sm:w-8 p-0 shrink-0"
                         >
-                          <Ban className="h-4 w-4" />
+                          <Ban className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -456,16 +457,16 @@ export function SelectionsManager({
                       variant="ghost"
                       size="sm"
                       onClick={() => supprimerJoueur(match.id, joueur.id)}
-                      className="h-8 w-8 p-0 shrink-0"
+                      className="h-6 w-6 sm:h-8 sm:w-8 p-0 shrink-0"
                     >
-                      <X className="h-4 w-4 text-red-500" />
+                      <X className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
                     </Button>
                   </div>
                 </div>
               );
             })
           ) : (
-            <p className="text-gray-400 text-sm italic text-center py-4">
+            <p className="text-gray-400 text-xs sm:text-sm italic text-center py-4">
               Aucun joueur sélectionné
             </p>
           )}
@@ -619,10 +620,11 @@ export function SelectionsManager({
     <TooltipProvider>
       <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl flex items-center gap-2">
-              <UserCheck className="h-6 w-6 text-blue-600" />
-              Sélections - {serie.nom} - Semaine {semaine}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+              <UserCheck className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+              <span className="hidden sm:inline">Sélections - {serie.nom} - Semaine {semaine}</span>
+              <span className="sm:hidden">{serie.nom} - S{semaine}</span>
             </CardTitle>
             <div className="flex gap-2">
               <Button
@@ -630,39 +632,42 @@ export function SelectionsManager({
                 size="sm"
                 onClick={copyFromPreviousWeek}
                 disabled={isLoading || semaine <= 1}
+                className="text-xs sm:text-sm"
               >
                 {isLoading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
                 ) : (
-                  <Copy className="h-4 w-4 mr-2" />
+                  <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 )}
-                {isLoading ? "Chargement..." : "Copier semaine précédente"}
+                <span className="hidden sm:inline">{isLoading ? "Chargement..." : "Copier semaine précédente"}</span>
+                <span className="sm:hidden">{isLoading ? "..." : "Copier S-1"}</span>
               </Button>
             </div>
           </div>
-          <p className="text-sm text-gray-600">
-            Sélection des compositions d'équipe pour les matchs de CTT Frameries uniquement
+          <p className="text-xs sm:text-sm text-gray-600">
+            <span className="hidden sm:inline">Sélection des compositions d'équipe pour les matchs de CTT Frameries uniquement</span>
+            <span className="sm:hidden">Compositions CTT Frameries</span>
           </p>
         </CardHeader>
         <CardContent>
           {errorMessage && (
             <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{errorMessage}</AlertDescription>
+              <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+              <AlertDescription className="text-sm">{errorMessage}</AlertDescription>
             </Alert>
           )}
 
           {cttFrameriesMatchs.length > 0 ? (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {cttFrameriesMatchs.map((match) => (
                 <Card key={match.id} className="border-l-4 border-l-blue-500">
                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
-                        <h3 className="font-semibold text-lg">
+                        <h3 className="font-semibold text-base sm:text-lg">
                           {match.domicile} vs {match.exterieur}
                         </h3>
-                        <p className="text-sm text-gray-600">{formatDateEuropean(match.date)}</p>
+                        <p className="text-xs sm:text-sm text-gray-600">{formatDateEuropean(match.date)}</p>
                       </div>
                       <Badge
                         variant={
@@ -670,6 +675,7 @@ export function SelectionsManager({
                             ? 'default'
                             : 'secondary'
                         }
+                        className="text-xs"
                       >
                         {isClubTeam(match.domicile)
                           ? 'Domicile'
@@ -682,10 +688,10 @@ export function SelectionsManager({
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 text-gray-500">
-              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg">Aucun match CTT Frameries</p>
-              <p className="text-sm">pour cette semaine</p>
+            <div className="text-center py-8 sm:py-12 text-gray-500">
+              <Users className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-base sm:text-lg">Aucun match CTT Frameries</p>
+              <p className="text-xs sm:text-sm">pour cette semaine</p>
             </div>
           )}
         </CardContent>
@@ -693,3 +699,135 @@ export function SelectionsManager({
     </TooltipProvider>
   );
 }
+
+  const renderJoueursList = (match: MatchWithPlayers) => {
+    const joueurs = match.selectedPlayers || [];
+
+    // Filtrer les membres selon le terme de recherche et exclure ceux déjà sélectionnés (éviter doublons)
+    const selectedIdsSet = new Set(joueurs.map((j) => j.id));
+    const filteredMembres = membres.filter((membre) => {
+      const notAlready = !selectedIdsSet.has(membre.id);
+      if (!notAlready) return false;
+      if (!searchTerm) return true;
+      const search = searchTerm.toLowerCase();
+      const nom = (membre.nom || '').toLowerCase();
+      const prenom = (membre.prenom || '').toLowerCase();
+      const classement = (membre.classement || '').toLowerCase();
+      return nom.includes(search) || prenom.includes(search) || classement.includes(search) || `${prenom} ${nom}`.toLowerCase().includes(search);
+    });
+
+    const availableSlots = Math.max(0, 4 - joueurs.length);
+
+    return (
+      <div className="mt-4 space-y-3 sm:space-y-4">
+        {/* Barre de recherche */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Rechercher par nom, prénom ou classement..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8 sm:pl-10 text-sm"
+          />
+        </div>
+
+        {/* Sélecteur multiple des membres */}
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
+          <div className="min-w-[240px]">
+            <MultiSelect
+              options={filteredMembres
+                .sort((a, b) => trierClassements(a.classement || 'ZZ', b.classement || 'ZZ'))
+                .map((m) => ({ value: m.id, label: `${m.prenom} ${m.nom} (${m.classement || 'N/A'})` }))}
+              selected={selectedJoueurIds}
+              onChange={setSelectedJoueurIds}
+              placeholder={filteredMembres.length === 0 ? (searchTerm ? 'Aucun résultat...' : 'Aucun joueur disponible') : 'Choisir des joueurs...'}
+              maxSelected={availableSlots > 0 ? availableSlots : 0}
+            />
+          </div>
+          <Button
+            onClick={() => ajouterJoueurs(match.id)}
+            disabled={selectedJoueurIds.length === 0 || joueurs.length >= 4 || filteredMembres.length === 0}
+            className="w-full sm:w-auto text-xs sm:text-sm"
+          >
+            <PlusCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Ajouter {selectedJoueurIds.length > 0 ? `(${selectedJoueurIds.length})` : ''}</span>
+            <span className="sm:hidden">+ {selectedJoueurIds.length > 0 ? `(${selectedJoueurIds.length})` : ''}</span>
+          </Button>
+        </div>
+        <p className="text-xs text-gray-500 mt-1">{availableSlots} place(s) restante(s)</p>
+
+        {/* Afficher le nombre de résultats si recherche active */}
+        {searchTerm && (
+          <p className="text-xs text-gray-500">
+            {filteredMembres.length} joueur{filteredMembres.length > 1 ? 's' : ''} trouvé{filteredMembres.length > 1 ? 's' : ''}
+          </p>
+        )}
+
+        {/* Liste des joueurs sélectionnés */}
+        <div className="space-y-2">
+          {joueurs.length > 0 ? (
+            joueurs.map((joueur) => {
+              const membre = membres.find((m) => m.id === joueur.id);
+              const classement = joueur.classement || membre?.classement || 'N/A';
+              if (!joueur.wo) joueur.wo = 'n';
+              const nomAffiche = joueur.nom
+                ? joueur.nom.trim()
+                : joueur.prenom && joueur.prenom.trim()
+                  ? `${joueur.prenom.trim()} ${joueur.nom || ''}`.trim()
+                  : membre
+                    ? `${membre.prenom || ''} ${membre.nom || ''}`.trim()
+                    : 'Joueur inconnu';
+              return (
+                <div
+                  key={joueur.id}
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between py-2 px-3 rounded gap-2 ${joueur.wo === 'y' ? 'bg-red-50 border border-red-200' : 'bg-gray-50'}`}
+                >
+                  <span className={`truncate flex-1 mr-2 text-sm ${joueur.wo === 'y' ? 'text-red-700 line-through' : ''}`}>
+                    {nomAffiche} ({classement})
+                    {joueur.wo === 'y' && <Badge variant="destructive" className="ml-2 text-xs">WO</Badge>}
+                  </span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={joueur.wo === 'y' ? 'destructive' : 'outline'}
+                          size="sm"
+                          onClick={() => toggleJoueurWO(match.id, joueur.id)}
+                          className="h-6 w-6 sm:h-8 sm:w-8 p-0 shrink-0"
+                        >
+                          <Ban className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {joueur.wo === 'y' ? 'Annuler le forfait (WO)' : 'Marquer comme forfait (WO)'}
+                      </TooltipContent>
+                    </Tooltip>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => supprimerJoueur(match.id, joueur.id)}
+                      className="h-6 w-6 sm:h-8 sm:w-8 p-0 shrink-0"
+                    >
+                      <X className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-gray-400 text-xs sm:text-sm italic text-center py-4">
+              Aucun joueur sélectionné
+            </p>
+          )}
+        </div>
+
+        <div className="text-xs text-gray-500 text-center">
+          {joueurs.length}/4 joueurs sélectionnés
+        </div>
+      </div>
+    );
+  };
+
+

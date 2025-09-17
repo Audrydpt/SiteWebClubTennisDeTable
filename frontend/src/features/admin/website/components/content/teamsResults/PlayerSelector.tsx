@@ -84,24 +84,25 @@ export function PlayerSelector({
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {title && (
-        <h4 className="font-medium flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          {title}
+        <h4 className="font-medium flex items-center gap-2 text-sm sm:text-base">
+          <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">{title}</span>
+          <span className="sm:hidden">Joueur</span>
         </h4>
       )}
 
       <div className="space-y-2">
         {/* Barre de recherche */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
           <Input
             type="text"
             placeholder="Rechercher par nom, prénom ou classement..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-8 sm:pl-10 text-sm"
             disabled={disabled}
           />
         </div>
@@ -113,7 +114,7 @@ export function PlayerSelector({
             onValueChange={setJoueurSelectionne}
             disabled={disabled}
           >
-            <SelectTrigger className="flex-1">
+            <SelectTrigger className="flex-1 text-sm">
               <SelectValue
                 placeholder={
                   filteredMembers.length === 0
@@ -127,7 +128,7 @@ export function PlayerSelector({
             <SelectContent>
               {filteredMembers.length > 0 ? (
                 filteredMembers.map((membre) => (
-                  <SelectItem key={membre.id} value={membre.id}>
+                  <SelectItem key={membre.id} value={membre.id} className="text-sm">
                     <div className="flex items-center gap-2">
                       <span>
                         {membre.prenom} {membre.nom}
@@ -140,7 +141,7 @@ export function PlayerSelector({
                 ))
               ) : (
                 <SelectItem value="no-results" disabled>
-                  <span className="text-gray-400 italic">
+                  <span className="text-gray-400 italic text-sm">
                     {searchTerm
                       ? 'Aucun joueur trouvé'
                       : 'Aucun joueur disponible'}
@@ -159,9 +160,11 @@ export function PlayerSelector({
               filteredMembers.length === 0
             }
             size="sm"
+            className="w-full sm:w-auto text-xs sm:text-sm"
           >
-            <PlusCircle className="h-4 w-4 mr-1" />
-            Ajouter
+            <PlusCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            <span className="hidden sm:inline">Ajouter</span>
+            <span className="sm:hidden">+</span>
           </Button>
         </div>
 
@@ -187,14 +190,14 @@ export function PlayerSelector({
                 key={playerId}
                 className="flex items-center justify-between bg-gray-50 p-2 rounded-lg"
               >
-                <span className="text-sm">
+                <span className="text-xs sm:text-sm truncate">
                   {member.prenom} {member.nom} ({member.classement || 'N/A'})
                 </span>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => removePlayer(playerId)}
-                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700 shrink-0"
                 >
                   ×
                 </Button>

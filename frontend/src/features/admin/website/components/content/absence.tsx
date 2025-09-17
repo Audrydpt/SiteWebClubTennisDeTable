@@ -115,73 +115,76 @@ export default function AbsenceManager() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* En-tête avec statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      {/* En-tête avec statistiques responsive */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
-              <CalendarX className="h-5 w-5 text-blue-500" />
+              <CalendarX className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
               <div>
-                <p className="text-sm text-gray-600">Total</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Total</p>
+                <p className="text-xl sm:text-2xl font-bold">{stats.total}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
-              <CalendarX className="h-5 w-5 text-green-500" />
+              <CalendarX className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
               <div>
-                <p className="text-sm text-gray-600">À venir</p>
-                <p className="text-2xl font-bold">{stats.upcoming}</p>
+                <p className="text-xs sm:text-sm text-gray-600">À venir</p>
+                <p className="text-xl sm:text-2xl font-bold">{stats.upcoming}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
-              <CalendarX className="h-5 w-5 text-gray-500" />
+              <CalendarX className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
               <div>
-                <p className="text-sm text-gray-600">Passées</p>
-                <p className="text-2xl font-bold">{stats.past}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Passées</p>
+                <p className="text-xl sm:text-2xl font-bold">{stats.past}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filtres et actions */}
+      {/* Filtres et actions responsive */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <CalendarX className="h-5 w-5" />
-              Gestion des absences
+          <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <span className="flex items-center gap-2 text-lg sm:text-xl">
+              <CalendarX className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">Gestion des absences</span>
+              <span className="sm:hidden">Absences</span>
             </span>
-            <Button onClick={exportToExcel} variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Exporter Excel
+            <Button onClick={exportToExcel} variant="outline" size="sm" className="text-xs sm:text-sm">
+              <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Exporter Excel</span>
+              <span className="sm:hidden">Export</span>
             </Button>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
+        <CardContent className="space-y-3 sm:space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
             <div className="flex-1">
-              <Label htmlFor="search">Rechercher par membre</Label>
+              <Label htmlFor="search" className="text-xs sm:text-sm">Rechercher par membre</Label>
               <Input
                 id="search"
                 placeholder="Nom du membre..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                className="text-sm"
               />
             </div>
-            <div className="w-full md:w-52">
-              <Label htmlFor="status">Filtrer</Label>
+            <div className="w-full sm:w-52">
+              <Label htmlFor="status" className="text-xs sm:text-sm">Filtrer</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Filtre" />
                 </SelectTrigger>
                 <SelectContent>
@@ -193,15 +196,15 @@ export default function AbsenceManager() {
             </div>
           </div>
 
-          {/* Liste des absences */}
+          {/* Liste des absences responsive */}
           {loading ? (
-            <div className="text-center py-8">Chargement...</div>
+            <div className="text-center py-6 sm:py-8 text-sm">Chargement...</div>
           ) : filteredAndSortedAbsences.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-6 sm:py-8 text-gray-500 text-sm">
               Aucune absence trouvée
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {filteredAndSortedAbsences.map((absence) => {
                 const isPast = isDatePast(absence.date);
                 const dLeft = daysUntil(absence.date);
@@ -209,72 +212,74 @@ export default function AbsenceManager() {
                 return (
                   <div
                     key={absence.id}
-                    className={`p-4 border rounded-lg ${
+                    className={`p-3 sm:p-4 border rounded-lg ${
                       isPast ? 'bg-gray-50 opacity-75' : 'bg-white'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2 flex-wrap">
-                          <h3 className="font-semibold">{absence.memberName}</h3>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-sm sm:text-base truncate">{absence.memberName}</h3>
                           <Badge
                             variant={isPast ? 'secondary' : 'destructive'}
-                            className="flex items-center gap-1"
+                            className="text-xs"
                           >
                             {formatDate(absence.date)}
                           </Badge>
                           {!isPast && (
-                            <Badge variant="outline" className="text-green-700 border-green-200 bg-green-50">
+                            <Badge variant="outline" className="text-green-700 border-green-200 bg-green-50 text-xs">
                               {dLeft === 0 ? "Aujourd'hui" : dLeft === 1 ? 'Dans 1 jour' : `Dans ${dLeft} jours`}
                             </Badge>
                           )}
                           {isPast && (
-                            <Badge variant="outline" className="text-gray-500">
+                            <Badge variant="outline" className="text-gray-500 text-xs">
                               Passée
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">
-                          {absence.details.length > 160
-                            ? `${absence.details.substring(0, 160)}...`
+                        <p className="text-xs sm:text-sm text-gray-600 mb-2 break-words">
+                          {absence.details.length > 120
+                            ? `${absence.details.substring(0, 120)}...`
                             : absence.details}
                         </p>
                         <p className="text-xs text-gray-500">
                           Créée le {new Date(absence.dateCreation).toLocaleDateString('fr-FR')}
                         </p>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 sm:gap-2 shrink-0">
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => setSelectedAbsence(absence)}
+                              className="text-xs"
                             >
                               <Eye className="h-3 w-3" />
+                              <span className="hidden sm:inline ml-1">Voir</span>
                             </Button>
                           </DialogTrigger>
-                          <DialogContent>
+                          <DialogContent className="max-w-[95vw] sm:max-w-lg">
                             <DialogHeader>
-                              <DialogTitle>Détails de l'absence</DialogTitle>
+                              <DialogTitle className="text-lg">Détails de l'absence</DialogTitle>
                             </DialogHeader>
                             {selectedAbsence && (
-                              <div className="space-y-4">
+                              <div className="space-y-3 sm:space-y-4">
                                 <div>
-                                  <Label>Membre</Label>
-                                  <p className="font-semibold">{selectedAbsence.memberName}</p>
+                                  <Label className="text-sm">Membre</Label>
+                                  <p className="font-semibold text-sm sm:text-base">{selectedAbsence.memberName}</p>
                                 </div>
                                 <div>
-                                  <Label>Date d'absence</Label>
-                                  <p>{formatDate(selectedAbsence.date)}</p>
+                                  <Label className="text-sm">Date d'absence</Label>
+                                  <p className="text-sm sm:text-base">{formatDate(selectedAbsence.date)}</p>
                                 </div>
                                 <div>
-                                  <Label>Détails</Label>
-                                  <p className="whitespace-pre-wrap">{selectedAbsence.details}</p>
+                                  <Label className="text-sm">Détails</Label>
+                                  <p className="whitespace-pre-wrap text-sm sm:text-base break-words">{selectedAbsence.details}</p>
                                 </div>
                                 <div>
-                                  <Label>Date de création</Label>
-                                  <p>{new Date(selectedAbsence.dateCreation).toLocaleString('fr-FR')}</p>
+                                  <Label className="text-sm">Date de création</Label>
+                                  <p className="text-sm sm:text-base">{new Date(selectedAbsence.dateCreation).toLocaleString('fr-FR')}</p>
                                 </div>
                               </div>
                             )}
@@ -284,8 +289,10 @@ export default function AbsenceManager() {
                           size="sm"
                           variant="destructive"
                           onClick={() => handleDelete(absence.id)}
+                          className="text-xs"
                         >
                           <Trash2 className="h-3 w-3" />
+                          <span className="hidden sm:inline ml-1">Suppr.</span>
                         </Button>
                       </div>
                     </div>

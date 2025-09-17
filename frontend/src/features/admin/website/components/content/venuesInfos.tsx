@@ -241,24 +241,26 @@ export default function VenuesAndMatchInfos() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[300px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-[200px] sm:min-h-[300px]">
+        <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
       {/* Venues */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 justify-between">
-            <span className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" /> Adresses des clubs (Province {province})
+          <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <span className="flex items-center gap-2 text-base sm:text-lg">
+              <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">Adresses des clubs (Province {province})</span>
+              <span className="sm:hidden">Clubs ({province})</span>
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <Select value={province} onValueChange={(v) => setProvince(v as any)}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-full sm:w-[120px] text-sm">
                   <SelectValue placeholder="Province" />
                 </SelectTrigger>
                 <SelectContent>
@@ -269,49 +271,55 @@ export default function VenuesAndMatchInfos() {
                   <SelectItem value="N">Namur</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" onClick={onUpdateFromTabt} disabled={updatingTabt}>
-                {updatingTabt ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-                Mettre à jour depuis TABT
+              <Button variant="outline" onClick={onUpdateFromTabt} disabled={updatingTabt} className="text-xs sm:text-sm">
+                {updatingTabt ? <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" /> : <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />}
+                <span className="hidden sm:inline">Mettre à jour depuis TABT</span>
+                <span className="sm:hidden">MAJ TABT</span>
               </Button>
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 sm:space-y-4">
           <Input
             placeholder="Rechercher club, ville ou adresse..."
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
+            className="text-sm"
           />
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+          <div className="space-y-3 max-h-[50vh] sm:max-h-[60vh] overflow-y-auto">
             {filteredVenues.length === 0 && (
-              <div className="text-sm text-muted-foreground">Aucun résultat</div>
+              <div className="text-sm text-muted-foreground text-center py-4">Aucun résultat</div>
             )}
             {filteredVenues.map((club: any) => (
               <div key={club.clubId} className="p-3 border rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">{club.clubName}</div>
-                    <div className="text-xs text-muted-foreground">{club.clubLongName}</div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-sm sm:text-base truncate">{club.clubName}</div>
+                    <div className="text-xs text-muted-foreground truncate">{club.clubLongName}</div>
                   </div>
-                  <Badge variant="outline">{club.venueCount} salle(s)</Badge>
+                  <Badge variant="outline" className="text-xs shrink-0">{club.venueCount} salle(s)</Badge>
                 </div>
                 <div className="mt-2 space-y-2">
                   {(club.venues || []).map((v: any, idx: number) => (
-                    <div key={idx} className="text-sm grid grid-cols-1 sm:grid-cols-2 gap-1">
+                    <div key={idx} className="text-sm grid grid-cols-1 gap-1">
                       <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4" /> {v.name}
+                        <Building2 className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                        <span className="truncate">{v.name}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" /> {v.fullAddress}
+                        <MapPin className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                        <span className="truncate">{v.fullAddress}</span>
                       </div>
                       {v.phone && (
                         <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4" /> {v.phone}
+                          <Phone className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                          <span className="truncate">{v.phone}</span>
                         </div>
                       )}
                       {v.comment && (
                         <div className="flex items-center gap-2">
-                          <Info className="h-4 w-4" /> {v.comment}
+                          <Info className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                          <span className="truncate">{v.comment}</span>
                         </div>
                       )}
                     </div>
@@ -326,16 +334,18 @@ export default function VenuesAndMatchInfos() {
       {/* Infos exceptionnelles */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" /> Infos exceptionnelles par match
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="hidden sm:inline">Infos exceptionnelles par match</span>
+            <span className="sm:hidden">Infos match</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 sm:space-y-4">
           {/* Sélecteur de semaine pour trier/filtrer les matchs */}
           <div className="space-y-2">
-            <Label>Semaine</Label>
+            <Label className="text-xs sm:text-sm">Semaine</Label>
             <Select value={String(selectedWeek)} onValueChange={(v) => setSelectedWeek(Number(v))}>
-              <SelectTrigger>
+              <SelectTrigger className="text-sm">
                 <SelectValue placeholder="Toutes les semaines" />
               </SelectTrigger>
               <SelectContent>
@@ -348,66 +358,73 @@ export default function VenuesAndMatchInfos() {
           </div>
 
           <div className="space-y-2">
-            <Label>Match</Label>
+            <Label className="text-xs sm:text-sm">Match</Label>
             <Select value={selectedMatchId} onValueChange={setSelectedMatchId}>
-              <SelectTrigger>
+              <SelectTrigger className="text-sm">
                 <SelectValue placeholder="Choisir un match" />
               </SelectTrigger>
-              <SelectContent className="max-h-[50vh]">
+              <SelectContent className="max-h-[40vh] sm:max-h-[50vh]">
                 {matchesOptions
                   .filter((m) => selectedWeek === 0 || m.semaine === selectedWeek)
                   .map((m) => (
-                    <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>
+                    <SelectItem key={m.id} value={m.id} className="text-xs sm:text-sm">{m.label}</SelectItem>
                   ))}
               </SelectContent>
             </Select>
           </div>
 
           {selectedMatchId && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label>Salle</Label>
-                <Input value={form.salle} onChange={(e) => setForm({ ...form, salle: e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label>Horaire spécial</Label>
-                <Input value={form.horaire} onChange={(e) => setForm({ ...form, horaire: e.target.value })} />
-              </div>
-              <div className="space-y-1 md:col-span-2">
-                <Label>Adresse</Label>
-                <Input value={form.adresse} onChange={(e) => setForm({ ...form, adresse: e.target.value })} />
+                <Label className="text-xs sm:text-sm">Salle</Label>
+                <Input value={form.salle} onChange={(e) => setForm({ ...form, salle: e.target.value })} className="text-sm" />
               </div>
               <div className="space-y-1">
-                <Label>Téléphone</Label>
-                <Input value={form.telephone} onChange={(e) => setForm({ ...form, telephone: e.target.value })} />
+                <Label className="text-xs sm:text-sm">Horaire spécial</Label>
+                <Input value={form.horaire} onChange={(e) => setForm({ ...form, horaire: e.target.value })} className="text-sm" />
+              </div>
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-xs sm:text-sm">Adresse</Label>
+                <Input value={form.adresse} onChange={(e) => setForm({ ...form, adresse: e.target.value })} className="text-sm" />
               </div>
               <div className="space-y-1">
-                <Label>Email</Label>
-                <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                <Label className="text-xs sm:text-sm">Téléphone</Label>
+                <Input value={form.telephone} onChange={(e) => setForm({ ...form, telephone: e.target.value })} className="text-sm" />
               </div>
-              <div className="space-y-1 md:col-span-2">
-                <Label>Commentaire</Label>
-                <Input value={form.commentaire} onChange={(e) => setForm({ ...form, commentaire: e.target.value })} />
+              <div className="space-y-1">
+                <Label className="text-xs sm:text-sm">Email</Label>
+                <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="text-sm" />
               </div>
-              <div className="flex gap-2 md:col-span-2 justify-end">
-                <Button variant="destructive" onClick={onDelete} disabled={saving}>
-                  <Trash2 className="h-4 w-4 mr-2" /> Supprimer
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-xs sm:text-sm">Commentaire</Label>
+                <Input value={form.commentaire} onChange={(e) => setForm({ ...form, commentaire: e.target.value })} className="text-sm" />
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 sm:col-span-2 sm:justify-end">
+                <Button variant="destructive" onClick={onDelete} disabled={saving} className="text-sm w-full sm:w-auto">
+                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Supprimer</span>
+                  <span className="sm:hidden">Suppr.</span>
                 </Button>
-                <Button onClick={onSave} disabled={saving}>
-                  {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                  Enregistrer
+                <Button onClick={onSave} disabled={saving} className="text-sm w-full sm:w-auto">
+                  {saving ? <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" /> : null}
+                  <span className="hidden sm:inline">Enregistrer</span>
+                  <span className="sm:hidden">Save</span>
                 </Button>
               </div>
             </div>
           )}
 
           {!selectedMatchId && (
-            <div className="text-sm text-muted-foreground">Sélectionnez un match pour encoder des infos exceptionnelles.</div>
+            <div className="text-sm text-muted-foreground text-center py-4">
+              <span className="hidden sm:inline">Sélectionnez un match pour encoder des infos exceptionnelles.</span>
+              <span className="sm:hidden">Choisir un match</span>
+            </div>
           )}
 
           {/* Aide */}
-          <div className="mt-2 text-xs text-muted-foreground">
-            Ces informations s'afficheront automatiquement dans l'espace membre (HomeLogged) pour le match sélectionné.
+          <div className="mt-2 text-xs text-muted-foreground bg-blue-50 p-2 sm:p-3 rounded">
+            <span className="hidden sm:inline">Ces informations s'afficheront automatiquement dans l'espace membre (HomeLogged) pour le match sélectionné.</span>
+            <span className="sm:hidden">Infos visibles dans l'espace membre</span>
           </div>
         </CardContent>
       </Card>

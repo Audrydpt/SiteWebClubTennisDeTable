@@ -371,70 +371,71 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
 
       acc[monthKey].trainings.push(training);
       return acc;
-    }, {} as Record<string, { name: string; trainings: Training[] }>);
+    }, {} as Record<string, { name: string; trainings: Training }>);
 
     return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b));
   };
 
   return (
-    <div className="space-y-6">
-      {/* En-tête avec statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      {/* En-tête avec statistiques responsive */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
-              <Dumbbell className="h-5 w-5 text-blue-500" />
+              <Dumbbell className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
               <div>
-                <p className="text-sm text-gray-600">Total</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Total</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.total}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
-              <Dumbbell className="h-5 w-5 text-green-500" />
+              <Dumbbell className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
               <div>
-                <p className="text-sm text-gray-600">Planifiés</p>
-                <p className="text-2xl font-bold">{stats.planifies}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Planifiés</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.planifies}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
-              <Dumbbell className="h-5 w-5 text-gray-500" />
+              <Dumbbell className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
               <div>
-                <p className="text-sm text-gray-600">Terminés</p>
-                <p className="text-2xl font-bold">{stats.termines}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Terminés</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.termines}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
-              <Dumbbell className="h-5 w-5 text-red-500" />
+              <Dumbbell className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
               <div>
-                <p className="text-sm text-gray-600">Annulés</p>
-                <p className="text-2xl font-bold">{stats.annules}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Annulés</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.annules}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Actions principales */}
+      {/* Actions principales responsive */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Dumbbell className="h-5 w-5" />
-              Gestion des entraînements
+          <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <span className="flex items-center gap-2 text-lg sm:text-xl">
+              <Dumbbell className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">Gestion des entraînements</span>
+              <span className="sm:hidden">Entraînements</span>
             </span>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button
                 onClick={publishGlobalToFacebook}
                 disabled={trainings.filter(t => {
@@ -444,7 +445,7 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
                   return trainingDate.getMonth() === today.getMonth() &&
                          trainingDate.getFullYear() === today.getFullYear();
                 }).length === 0}
-                className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300 text-xs sm:text-sm"
                 variant="outline"
               >
                 <svg
@@ -453,96 +454,104 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
                   height="16"
                   viewBox="0 0 24 24"
                   fill="#1877F2"
-                  className="mr-2"
+                  className="mr-1 sm:mr-2"
                 >
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                 </svg>
-                Publier sur Facebook
+                <span className="hidden sm:inline">Publier sur Facebook</span>
+                <span className="sm:hidden">Facebook</span>
               </Button>
               <Dialog open={showForm} onOpenChange={setShowForm}>
                 <DialogTrigger asChild>
-                  <Button onClick={resetForm}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nouvel entraînement
+                  <Button onClick={resetForm} className="text-xs sm:text-sm">
+                    <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Nouvel entraînement</span>
+                    <span className="sm:hidden">Nouveau</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-[95vw] sm:max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>
+                    <DialogTitle className="text-lg sm:text-xl">
                       {editingTraining ? 'Modifier l\'entraînement' : 'Nouvel entraînement'}
                     </DialogTitle>
                   </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                  <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
-                        <Label htmlFor="titre">Titre</Label>
+                        <Label htmlFor="titre" className="text-xs sm:text-sm">Titre</Label>
                         <Input
                           id="titre"
                           value={formData.titre}
                           onChange={(e) => setFormData({...formData, titre: e.target.value})}
                           required
+                          className="text-sm"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="responsable">Responsable</Label>
+                        <Label htmlFor="responsable" className="text-xs sm:text-sm">Responsable</Label>
                         <Input
                           id="responsable"
                           value={formData.responsable}
                           onChange={(e) => setFormData({...formData, responsable: e.target.value})}
                           required
+                          className="text-sm"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                       <div>
-                        <Label htmlFor="date">Date</Label>
+                        <Label htmlFor="date" className="text-xs sm:text-sm">Date</Label>
                         <Input
                           id="date"
                           type="date"
                           value={formData.date}
                           onChange={(e) => setFormData({...formData, date: e.target.value})}
                           required
+                          className="text-sm"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="heureDebut">Heure début</Label>
+                        <Label htmlFor="heureDebut" className="text-xs sm:text-sm">Début</Label>
                         <Input
                           id="heureDebut"
                           type="time"
                           value={formData.heureDebut}
                           onChange={(e) => setFormData({...formData, heureDebut: e.target.value})}
                           required
+                          className="text-sm"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="heureFin">Heure fin</Label>
+                        <Label htmlFor="heureFin" className="text-xs sm:text-sm">Fin</Label>
                         <Input
                           id="heureFin"
                           type="time"
                           value={formData.heureFin}
                           onChange={(e) => setFormData({...formData, heureFin: e.target.value})}
                           required
+                          className="text-sm"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <Label htmlFor="lieu">Lieu</Label>
+                      <Label htmlFor="lieu" className="text-xs sm:text-sm">Lieu</Label>
                       <Input
                         id="lieu"
                         value={formData.lieu}
                         onChange={(e) => setFormData({...formData, lieu: e.target.value})}
                         required
+                        className="text-sm"
                       />
                     </div>
 
-                    <div className="grid grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                       <div>
-                        <Label htmlFor="type">Type</Label>
+                        <Label htmlFor="type" className="text-xs sm:text-sm">Type</Label>
                         <Select value={formData.type} onValueChange={(value: 'entrainement' | 'stage' | 'competition') =>
                           setFormData({...formData, type: value})}>
-                          <SelectTrigger>
+                          <SelectTrigger className="text-sm">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -553,10 +562,10 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
                         </Select>
                       </div>
                       <div>
-                        <Label htmlFor="niveau">Niveau</Label>
+                        <Label htmlFor="niveau" className="text-xs sm:text-sm">Niveau</Label>
                         <Select value={formData.niveau} onValueChange={(value: 'debutant' | 'intermediaire' | 'avance' | 'tous') =>
                           setFormData({...formData, niveau: value})}>
-                          <SelectTrigger>
+                          <SelectTrigger className="text-sm">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -568,19 +577,20 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
                         </Select>
                       </div>
                       <div>
-                        <Label htmlFor="maxParticipants">Max participants</Label>
+                        <Label htmlFor="maxParticipants" className="text-xs sm:text-sm">Max</Label>
                         <Input
                           id="maxParticipants"
                           type="number"
                           value={formData.maxParticipants}
                           onChange={(e) => setFormData({...formData, maxParticipants: e.target.value})}
+                          className="text-sm"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="statut">Statut</Label>
+                        <Label htmlFor="statut" className="text-xs sm:text-sm">Statut</Label>
                         <Select value={formData.statut} onValueChange={(value: 'planifie' | 'en_cours' | 'termine' | 'annule') =>
                           setFormData({...formData, statut: value})}>
-                          <SelectTrigger>
+                          <SelectTrigger className="text-sm">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -594,20 +604,21 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
                     </div>
 
                     <div>
-                      <Label htmlFor="description">Description</Label>
+                      <Label htmlFor="description" className="text-xs sm:text-sm">Description</Label>
                       <Textarea
                         id="description"
                         value={formData.description}
                         onChange={(e) => setFormData({...formData, description: e.target.value})}
                         rows={3}
+                        className="text-sm"
                       />
                     </div>
 
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                    <div className="flex flex-col sm:flex-row justify-end gap-2">
+                      <Button type="button" variant="outline" onClick={() => setShowForm(false)} className="text-sm">
                         Annuler
                       </Button>
-                      <Button type="submit">
+                      <Button type="submit" className="text-sm">
                         {editingTraining ? 'Modifier' : 'Créer'}
                       </Button>
                     </div>
@@ -618,44 +629,44 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Liste des entraînements groupés par mois */}
+          {/* Liste des entraînements groupés par mois responsive */}
           {loading ? (
-            <div className="text-center py-8">Chargement...</div>
+            <div className="text-center py-6 sm:py-8 text-sm">Chargement...</div>
           ) : trainings.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-6 sm:py-8 text-gray-500 text-sm">
               Aucun entraînement programmé
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {groupTrainingsByMonth(trainings).map(([monthKey, monthData]) => (
-                <div key={monthKey} className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 capitalize">
+                <div key={monthKey} className="space-y-3 sm:space-y-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-800 border-b pb-2 capitalize">
                     {monthData.name}
                   </h3>
-                  <div className="space-y-3 pl-4">
+                  <div className="space-y-2 sm:space-y-3 pl-2 sm:pl-4">
                     {monthData.trainings.map((training) => (
-                      <div key={training.id} className={`p-4 border rounded-lg ${
+                      <div key={training.id} className={`p-3 sm:p-4 border rounded-lg ${
                         training.statut === 'annule' ? 'bg-red-50 border-red-200' : 'bg-white'
                       }`}>
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h4 className={`font-semibold text-lg ${
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                              <h4 className={`font-semibold text-sm sm:text-lg truncate ${
                                 training.statut === 'annule' ? 'line-through text-red-600' : ''
                               }`}>
                                 {training.titre}
                                 {training.statut === 'annule' && (
-                                  <span className="ml-2 text-red-600 font-normal">(ANNULÉ)</span>
+                                  <span className="ml-2 text-red-600 font-normal text-xs sm:text-sm">(ANNULÉ)</span>
                                 )}
                               </h4>
-                              <Badge className={getTypeColor(training.type)}>
+                              <Badge className={getTypeColor(training.type) + ' text-xs'}>
                                 {training.type}
                               </Badge>
-                              <Badge className={getStatutColor(training.statut)}>
+                              <Badge className={getStatutColor(training.statut) + ' text-xs'}>
                                 {training.statut}
                               </Badge>
                             </div>
-                            <div className="text-sm text-gray-600 space-y-1">
+                            <div className="text-xs sm:text-sm text-gray-600 space-y-1">
                               <p className={training.statut === 'annule' ? 'line-through' : ''}>
                                 📅 {formatDate(training.date)} • {formatTime(training.heureDebut)} - {formatTime(training.heureFin)}
                               </p>
@@ -666,7 +677,7 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
                                 👨‍🏫 {training.responsable}
                               </p>
                               <div className="flex items-center gap-2">
-                                <Users className="h-4 w-4" />
+                                <Users className="h-3 w-3 sm:h-4 sm:w-4" />
                                 <span className={training.statut === 'annule' ? 'line-through' : ''}>
                                   {training.participants.length} participant(s)
                                   {training.maxParticipants && (
@@ -681,43 +692,49 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
                               </div>
                             </div>
                           </div>
-                          <div className="flex gap-1">
+                          <div className="flex gap-1 shrink-0">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => handleDuplicate(training)}
                               title="Dupliquer l'entraînement"
                               disabled={training.statut === 'annule'}
+                              className="text-xs"
                             >
                               <Copy className="h-3 w-3" />
+                              <span className="hidden sm:inline ml-1">Dupliquer</span>
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => handleEdit(training)}
                               disabled={training.statut === 'annule'}
+                              className="text-xs"
                             >
                               <Edit className="h-3 w-3" />
+                              <span className="hidden sm:inline ml-1">Edit</span>
                             </Button>
                             <Button
                               size="sm"
                               variant="destructive"
                               onClick={() => handleDelete(training.id)}
+                              className="text-xs"
                             >
                               <Trash2 className="h-3 w-3" />
+                              <span className="hidden sm:inline ml-1">Suppr.</span>
                             </Button>
                           </div>
                         </div>
                         {training.description && (
-                          <p className={`text-sm text-gray-600 mt-2 ${
+                          <p className={`text-xs sm:text-sm text-gray-600 mt-2 break-words ${
                             training.statut === 'annule' ? 'line-through' : ''
                           }`}>
                             {training.description}
                           </p>
                         )}
                         {training.statut === 'annule' && (
-                          <div className="mt-3 p-2 bg-red-100 border border-red-200 rounded text-red-700 text-sm flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4" />
+                          <div className="mt-3 p-2 bg-red-100 border border-red-200 rounded text-red-700 text-xs sm:text-sm flex items-center gap-2">
+                            <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
                             <span>
                               Entraînement annulé. Les participants inscrits ont été automatiquement notifiés.
                             </span>
@@ -733,13 +750,13 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
         </CardContent>
       </Card>
 
-      {/* Dialogue de partage Facebook */}
+      {/* Dialogue de partage Facebook responsive */}
       <Dialog open={showFacebookDialog} onOpenChange={setShowFacebookDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Publier sur le groupe Facebook</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">Publier sur le groupe Facebook</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-3 sm:space-y-4 py-4">
             <div className="flex items-center gap-2">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -750,7 +767,7 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
               >
                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
               </svg>
-              <p className="text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600">
                 {selectedTrainingForFacebook
                   ? `Publication pour l'entraînement "${selectedTrainingForFacebook.titre}"`
                   : 'Publication globale des entraînements'
@@ -759,22 +776,22 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="fb-message">Message à publier</Label>
+              <Label htmlFor="fb-message" className="text-xs sm:text-sm">Message à publier</Label>
               <Textarea
                 id="fb-message"
                 value={facebookMessage}
                 onChange={(e) => setFacebookMessage(e.target.value)}
                 rows={8}
-                className="resize-none"
+                className="resize-none text-sm"
               />
             </div>
 
-            <div className="rounded-md bg-blue-50 p-3">
+            <div className="rounded-md bg-blue-50 p-2 sm:p-3">
               <div className="flex items-start">
-                <Info className="h-5 w-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
-                <div className="text-blue-700 text-sm">
+                <Info className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
+                <div className="text-blue-700 text-xs sm:text-sm">
                   <p className="font-medium mb-1">Comment publier facilement :</p>
-                  <ol className="list-decimal pl-5 space-y-1">
+                  <ol className="list-decimal pl-4 sm:pl-5 space-y-1">
                     <li>Cliquez sur le bouton "Copier et ouvrir Facebook"</li>
                     <li>Le message sera automatiquement copié</li>
                     <li>Collez le message (Ctrl+V) dans la fenêtre de publication Facebook qui s'ouvre</li>
@@ -789,23 +806,25 @@ ${plannedTrainingsThisMonth.slice(0, 8).map(training => {
               </div>
             </div>
           </div>
-          <DialogFooter className="sm:justify-between">
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <DialogClose asChild>
-              <Button variant="secondary">Annuler</Button>
+              <Button variant="secondary" className="w-full sm:w-auto text-sm">Annuler</Button>
             </DialogClose>
             <Button
               onClick={handleCopyAndOpenFacebook}
-              className="bg-[#1877F2] hover:bg-[#166FE5] text-white"
+              className="bg-[#1877F2] hover:bg-[#166FE5] text-white w-full sm:w-auto text-sm"
             >
               {isMessageCopied ? (
                 <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Copié !
+                  <Check className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Copié !</span>
+                  <span className="sm:hidden">Copié !</span>
                 </>
               ) : (
                 <>
-                  <ClipboardCopy className="h-4 w-4 mr-2" />
-                  Copier et ouvrir Facebook
+                  <ClipboardCopy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Copier et ouvrir Facebook</span>
+                  <span className="sm:hidden">Copier et ouvrir</span>
                 </>
               )}
             </Button>

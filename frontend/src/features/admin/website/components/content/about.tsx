@@ -1076,47 +1076,57 @@ export default function AboutManager() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="animate-spin w-8 h-8 text-muted-foreground" />
+      <div className="flex items-center justify-center p-4 sm:p-8">
+        <Loader2 className="animate-spin w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 lg:p-6">
+      {/* En-tête responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">
-            Gestion de la section "À propos"
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">
+            <span className="hidden sm:inline">Gestion de la section "À propos"</span>
+            <span className="sm:hidden">À propos</span>
           </h1>
-          <p className="text-muted-foreground">
-            Modifiez les informations et statistiques du club
+          <p className="text-sm sm:text-base text-muted-foreground">
+            <span className="hidden sm:inline">Modifiez les informations et statistiques du club</span>
+            <span className="sm:hidden">Infos du club</span>
           </p>
         </div>
         <Button
           onClick={handleSave}
           disabled={saving}
-          className="min-w-[120px]"
+          className="min-w-[100px] sm:min-w-[120px] text-sm"
         >
-          <Save className="w-4 h-4 mr-2" />
-          {saving ? 'Enregistrement...' : 'Sauvegarder'}
+          <Save className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+          {saving ? (
+            <span className="hidden sm:inline">Enregistrement...</span>
+          ) : (
+            <span className="hidden sm:inline">Sauvegarder</span>
+          )}
+          <span className="sm:hidden">{saving ? 'Save...' : 'Save'}</span>
         </Button>
       </div>
 
-      {/* Section Statistiques */}
+      {/* Section Statistiques responsive */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="w-5 h-5" />
-            Statistiques du Club
+        <CardHeader className="pb-3 sm:pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">Statistiques du Club</span>
+            <span className="sm:hidden">Stats</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                Membres Actifs
+              <Label className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Membres Actifs</span>
+                <span className="sm:hidden">Membres</span>
               </Label>
               <Input
                 value={statsData?.membresActif || ''}
@@ -1127,12 +1137,14 @@ export default function AboutManager() {
                   }))
                 }
                 placeholder="50+"
+                className="text-sm"
               />
             </div>
             <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Table className="w-4 h-4" />
-                Tables Disponibles
+              <Label className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                <Table className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Tables Disponibles</span>
+                <span className="sm:hidden">Tables</span>
               </Label>
               <Input
                 value={statsData?.tablesDispo || ''}
@@ -1143,12 +1155,14 @@ export default function AboutManager() {
                   }))
                 }
                 placeholder="8"
+                className="text-sm"
               />
             </div>
             <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Trophy className="w-4 h-4" />
-                Nombre d'Équipes
+              <Label className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                <Trophy className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Nombre d'Équipes</span>
+                <span className="sm:hidden">Équipes</span>
               </Label>
               <Input
                 value={statsData?.nbrEquipes || ''}
@@ -1159,12 +1173,14 @@ export default function AboutManager() {
                   }))
                 }
                 placeholder="13"
+                className="text-sm"
               />
             </div>
             <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Ancienneté (années)
+              <Label className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Ancienneté (années)</span>
+                <span className="sm:hidden">Années</span>
               </Label>
               <Input
                 value={statsData?.anciennete || ''}
@@ -1175,6 +1191,7 @@ export default function AboutManager() {
                   }))
                 }
                 placeholder="10"
+                className="text-sm"
               />
             </div>
           </div>
@@ -1183,39 +1200,48 @@ export default function AboutManager() {
 
       <Separator />
 
-      {/* Sections About */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Sections de contenu</h2>
-          <Button onClick={addNewSection} variant="outline">
-            <Plus className="w-4 h-4 mr-2" />
-            Ajouter une section
+      {/* Sections About responsive */}
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 className="text-lg sm:text-xl font-semibold">
+            <span className="hidden sm:inline">Sections de contenu</span>
+            <span className="sm:hidden">Contenu</span>
+          </h2>
+          <Button onClick={addNewSection} variant="outline" size="sm" className="text-xs sm:text-sm">
+            <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Ajouter une section</span>
+            <span className="sm:hidden">Ajouter</span>
           </Button>
         </div>
 
         {aboutData.map((section) => (
           <Card key={section.id}>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <CardTitle className="text-lg">{section.id}</CardTitle>
-                  {renderSectionPreview(section)}
+            <CardHeader className="pb-3">
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-base sm:text-lg truncate">{section.id}</CardTitle>
+                  <div className="text-sm text-gray-600 space-y-1">
+                    {renderSectionPreview(section)}
+                  </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 shrink-0">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleSectionEdit(section)}
+                    className="text-xs sm:text-sm"
                   >
-                    <Edit size={16} />
+                    <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline ml-1">Éditer</span>
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => removeSection(section.id)}
-                    className="text-destructive hover:text-destructive"
+                    className="text-destructive hover:text-destructive text-xs sm:text-sm"
                   >
-                    <Trash size={16} />
+                    <Trash className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline ml-1">Suppr.</span>
                   </Button>
                 </div>
               </div>
@@ -1224,11 +1250,11 @@ export default function AboutManager() {
         ))}
       </div>
 
-      {/* Modal d'édition */}
+      {/* Modal d'édition responsive */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">
               {editingSection?.id
                 ? `Éditer ${editingSection.id}`
                 : 'Nouvelle section'}
@@ -1236,16 +1262,25 @@ export default function AboutManager() {
           </DialogHeader>
 
           {editingSection && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {renderFieldsForSection(editingSection.id)}
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsModalOpen(false)}
+              className="w-full sm:w-auto text-sm"
+            >
               Annuler
             </Button>
-            <Button onClick={handleSectionSave}>Sauvegarder la section</Button>
+            <Button
+              onClick={handleSectionSave}
+              className="w-full sm:w-auto text-sm"
+            >
+              Sauvegarder la section
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

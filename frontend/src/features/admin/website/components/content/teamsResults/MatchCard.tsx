@@ -355,20 +355,20 @@ export function MatchCard({
   return (
     <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h3 className="font-semibold text-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-base sm:text-lg truncate">
               {match.domicile} vs {match.exterieur}
             </h3>
-            <p className="text-sm text-gray-600">{formatDateEuropean(match.date)}</p>
+            <p className="text-xs sm:text-sm text-gray-600">{formatDateEuropean(match.date)}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <Badge variant="outline" className="text-xs">
               Semaine {match.semaine}
             </Badge>
             {/* Afficher le badge CTT Frameries si applicable */}
             {isFrameriesMatch && (
-              <Badge variant={isFrameriesHome ? 'default' : 'secondary'}>
+              <Badge variant={isFrameriesHome ? 'default' : 'secondary'} className="text-xs">
                 {isFrameriesHome ? 'Domicile' : 'Extérieur'}
               </Badge>
             )}
@@ -436,20 +436,21 @@ export function MatchCard({
           </div>
         ) : (
           /* Afficher seulement les infos du match pour les autres équipes */
-          <div className="text-center py-8">
-            <div className="flex items-center justify-center gap-4 mb-4">
+          <div className="text-center py-6 sm:py-8">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-4">
               <div className="text-center">
-                <h4 className="font-medium text-lg">{match.domicile}</h4>
-                <Badge variant="outline" className="mt-1">Domicile</Badge>
+                <h4 className="font-medium text-base sm:text-lg">{match.domicile}</h4>
+                <Badge variant="outline" className="mt-1 text-xs">Domicile</Badge>
               </div>
-              <div className="text-2xl font-bold text-gray-400">vs</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-400">vs</div>
               <div className="text-center">
-                <h4 className="font-medium text-lg">{match.exterieur}</h4>
-                <Badge variant="outline" className="mt-1">Extérieur</Badge>
+                <h4 className="font-medium text-base sm:text-lg">{match.exterieur}</h4>
+                <Badge variant="outline" className="mt-1 text-xs">Extérieur</Badge>
               </div>
             </div>
-            <p className="text-sm text-gray-500">
-              Match entre équipes externes - Saisie du score uniquement
+            <p className="text-xs sm:text-sm text-gray-500">
+              <span className="hidden sm:inline">Match entre équipes externes - Saisie du score uniquement</span>
+              <span className="sm:hidden">Match externe - Score uniquement</span>
             </p>
           </div>
         )}
@@ -505,11 +506,12 @@ function PlayerManagement({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h4 className="font-medium flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          Composition - {teamName.split(' ').slice(-1)[0]}
+    <div className="space-y-3 sm:space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <h4 className="font-medium flex items-center gap-2 text-sm sm:text-base">
+          <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Composition - {teamName.split(' ').slice(-1)[0]}</span>
+          <span className="sm:hidden">{teamName.split(' ').slice(-1)[0]}</span>
         </h4>
         <Badge variant="outline" className="text-xs">
           {players.length}/4 joueurs
@@ -527,18 +529,18 @@ function PlayerManagement({
       )}
 
       {showIndividualScores && teamName.includes('CTT Frameries') && (
-        <div className={`p-2 rounded-md ${
+        <div className={`p-2 sm:p-3 rounded-md ${
           isValidTotal ? 'bg-green-50' : 'bg-amber-50'
         }`}>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-2">
               {isValidTotal ? (
-                <CheckCircle className="h-4 w-4 text-green-500" />
+                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
               ) : (
-                <AlertCircle className="h-4 w-4 text-amber-500" />
+                <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-amber-500" />
               )}
-              <span className="text-sm font-medium">
-                Total des scores: {currentTotalScore}/{expectedTotalScore}
+              <span className="text-xs sm:text-sm font-medium">
+                Total: {currentTotalScore}/{expectedTotalScore}
               </span>
             </div>
             <div className="flex gap-2">
@@ -549,7 +551,8 @@ function PlayerManagement({
                 onClick={onResetScores}
               >
                 <RefreshCw className="h-3 w-3 mr-1" />
-                Réinitialiser
+                <span className="hidden sm:inline">Réinitialiser</span>
+                <span className="sm:hidden">Reset</span>
               </Button>
             </div>
           </div>
@@ -557,7 +560,8 @@ function PlayerManagement({
           {!isValidTotal && (
             <div className="text-xs text-amber-600 flex items-center gap-1 mt-1">
               <AlertCircle className="h-3 w-3" />
-              <span>Le total des scores individuels doit être égal au score de l'équipe</span>
+              <span className="hidden sm:inline">Le total des scores individuels doit être égal au score de l'équipe</span>
+              <span className="sm:hidden">Total incorrect</span>
             </div>
           )}
         </div>
@@ -596,13 +600,13 @@ function PlayerManagement({
             return (
               <div
                 key={player.id}
-                className={`flex items-center justify-between ${player.wo === "y" ? 'bg-red-50' : 'bg-gray-50'} p-3 rounded-lg`}
+                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 ${player.wo === "y" ? 'bg-red-50' : 'bg-gray-50'} p-2 sm:p-3 rounded-lg`}
               >
-                <div className="flex items-center gap-3">
-                  <Badge variant="secondary" className="text-xs">
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                  <Badge variant="secondary" className="text-xs shrink-0">
                     {classement}
                   </Badge>
-                  <span className={`font-medium ${player.wo === "y" ? 'line-through text-red-700' : ''}`}>
+                  <span className={`font-medium text-sm truncate ${player.wo === "y" ? 'line-through text-red-700' : ''}`}>
                     {nomAffiche}
                     {player.wo === "y" &&
                       <Badge variant="destructive" className="ml-2 text-xs">WO</Badge>
@@ -610,7 +614,7 @@ function PlayerManagement({
                   </span>
                   <Badge
                     variant="outline"
-                    className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                    className="text-xs bg-blue-50 text-blue-700 border-blue-200 hidden sm:inline-flex"
                   >
                     Index: {playerIndex > 0 ? playerIndex : 'N/A'}
                   </Badge>
@@ -619,12 +623,12 @@ function PlayerManagement({
                   {showIndividualScores &&
                     teamName.includes('CTT Frameries') && (
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">Score:</span>
+                        <span className="text-xs text-gray-500 hidden sm:inline">Score:</span>
                         <div className="flex items-center">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0"
+                            className="h-6 w-6 sm:h-8 sm:w-8 p-0"
                             disabled={playerScore === 0 || player.wo === "y"}
                             onClick={() => onIndividualScoreChange?.(player.id, playerScore - 1)}
                           >
@@ -653,7 +657,7 @@ function PlayerManagement({
                               }
                             }}
                             onKeyDown={(e) => handleKeyDown?.(e, player.id)}
-                            className={`w-12 h-8 text-center text-sm mx-1 ${player.wo === "y" ? 'bg-red-50 cursor-not-allowed' : ''}`}
+                            className={`w-10 h-6 sm:w-12 sm:h-8 text-center text-xs sm:text-sm mx-1 ${player.wo === "y" ? 'bg-red-50 cursor-not-allowed' : ''}`}
                             placeholder="0"
                             disabled={player.wo === "y"}
                           />
@@ -661,7 +665,7 @@ function PlayerManagement({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0"
+                            className="h-6 w-6 sm:h-8 sm:w-8 p-0"
                             disabled={playerScore >= 4 ||
                                     currentTotalScore >= expectedTotalScore ||
                                     player.wo === "y"}
@@ -677,9 +681,9 @@ function PlayerManagement({
                       variant="ghost"
                       size="sm"
                       onClick={() => onRemovePlayer(player.id)}
-                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                      className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-red-500 hover:text-red-700"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   )}
                 </div>
@@ -687,9 +691,9 @@ function PlayerManagement({
             );
           })
         ) : (
-          <div className="text-center py-6 text-gray-500">
-            <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Aucun joueur sélectionné</p>
+          <div className="text-center py-4 sm:py-6 text-gray-500">
+            <Users className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-xs sm:text-sm">Aucun joueur sélectionné</p>
           </div>
         )}
       </div>

@@ -271,46 +271,58 @@ export default function EventManager() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center py-8 sm:py-12">
         <Loader2 className="animate-spin w-6 h-6 mr-2" />
-        Chargement des événements...
+        <span className="text-sm">Chargement des événements...</span>
       </div>
     );
   }
 
   if (!eventData) {
-    return <div>Aucune donnée trouvée.</div>;
+    return <div className="text-center py-6 sm:py-8 text-sm">Aucune donnée trouvée.</div>;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Card>
-        <CardHeader className="flex justify-between items-center">
+        <CardHeader className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div>
-            <CardTitle>Gestion des Événements</CardTitle>
-            <CardDescription>
-              Modifier le calendrier et les types d'événements du site
+            <CardTitle className="text-lg sm:text-xl">Gestion des Événements</CardTitle>
+            <CardDescription className="text-sm">
+              <span className="hidden sm:inline">Modifier le calendrier et les types d'événements du site</span>
+              <span className="sm:hidden">Calendrier et événements</span>
             </CardDescription>
           </div>
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto text-sm">
             {saving && <Loader2 className="animate-spin w-4 h-4 mr-2" />}
             <Save className="w-4 h-4 mr-2" />
-            Sauvegarder
+            <span className="hidden sm:inline">Sauvegarder</span>
+            <span className="sm:hidden">Save</span>
           </Button>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="calendar" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="calendar">Calendrier</TabsTrigger>
-              <TabsTrigger value="types">Types d'événements</TabsTrigger>
+              <TabsTrigger value="calendar" className="text-xs sm:text-sm">
+                <span className="hidden sm:inline">Calendrier</span>
+                <span className="sm:hidden">Calendrier</span>
+              </TabsTrigger>
+              <TabsTrigger value="types" className="text-xs sm:text-sm">
+                <span className="hidden sm:inline">Types d'événements</span>
+                <span className="sm:hidden">Types</span>
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="calendar" className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Événements du calendrier</h3>
-                <Button onClick={handleOpenAddEventDialog} variant="outline">
+            <TabsContent value="calendar" className="space-y-4 sm:space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h3 className="text-base sm:text-lg font-semibold">
+                  <span className="hidden sm:inline">Événements du calendrier</span>
+                  <span className="sm:hidden">Événements</span>
+                </h3>
+                <Button onClick={handleOpenAddEventDialog} variant="outline" className="text-xs sm:text-sm">
                   <Plus className="w-4 h-4 mr-2" />
-                  Ajouter un événement
+                  <span className="hidden sm:inline">Ajouter un événement</span>
+                  <span className="sm:hidden">Ajouter</span>
                 </Button>
               </div>
 
@@ -320,17 +332,17 @@ export default function EventManager() {
                   placeholder="Rechercher un événement (titre, description, lieu, type...)"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 text-sm"
                 />
               </div>
 
               {searchTerm && (
-                <div className="text-sm text-gray-600">
+                <div className="text-xs sm:text-sm text-gray-600">
                   {Object.values(groupEventsByType()).flat().length} événement(s) trouvé(s) pour "{searchTerm}"
                 </div>
               )}
 
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {Object.entries(groupEventsByType()).map(([typeKey, events]: [string, any[]]) => {
                   const isCollapsed = collapsedCategories.has(typeKey);
                   const typeLabel = eventData.eventTypes?.[typeKey]?.label || typeKey;
@@ -341,16 +353,16 @@ export default function EventManager() {
                       <div className="border-b bg-white/50 rounded-t-lg">
                         <button
                           type="button"
-                          className="w-full p-4 flex items-center justify-between hover:bg-black/5 rounded-t-lg transition-colors"
+                          className="w-full p-3 sm:p-4 flex items-center justify-between hover:bg-black/5 rounded-t-lg transition-colors"
                           onClick={() => toggleCategory(typeKey)}
                         >
-                          <div className="flex items-center space-x-3">
+                          <div className="flex items-center space-x-2 sm:space-x-3">
                             {isCollapsed ? (
-                              <ChevronRight className="w-5 h-5 flex-shrink-0" />
+                              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                             ) : (
-                              <ChevronDown className="w-5 h-5 flex-shrink-0" />
+                              <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                             )}
-                            <h4 className="text-lg font-semibold text-left">
+                            <h4 className="text-sm sm:text-lg font-semibold text-left">
                               {typeLabel} ({events.length} événement{events.length > 1 ? 's' : ''})
                             </h4>
                             {searchTerm && events.length > 0 && (
@@ -377,50 +389,52 @@ export default function EventManager() {
                       </div>
 
                       {!isCollapsed && (
-                        <div className="p-4 space-y-4">
+                        <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
                           {events.map((ev: any) => (
                             <div
                               key={ev.id}
-                              className="p-4 bg-white border rounded-lg space-y-4 relative shadow-sm"
+                              className="p-3 sm:p-4 bg-white border rounded-lg space-y-3 sm:space-y-4 relative shadow-sm"
                             >
                               <button
                                 type="button"
                                 onClick={() => handleDeleteEvent(ev.id)}
                                 className="absolute top-2 right-2 text-red-500 hover:text-red-700 z-10"
                               >
-                                <Trash className="w-5 h-5" />
+                                <Trash className="w-4 h-4 sm:w-5 sm:h-5" />
                               </button>
 
-                              <div className="grid grid-cols-2 gap-4 pr-10">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pr-8 sm:pr-10">
                                 <div>
-                                  <label className="block text-sm font-medium mb-1">Titre</label>
+                                  <label className="block text-xs sm:text-sm font-medium mb-1">Titre</label>
                                   <Input
                                     value={ev.title}
                                     onChange={(e) =>
                                       handleChangeCalendar(ev.id, "title", e.target.value)
                                     }
                                     placeholder="Titre"
+                                    className="text-sm"
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-sm font-medium mb-1">Date</label>
+                                  <label className="block text-xs sm:text-sm font-medium mb-1">Date</label>
                                   <Input
                                     type="date"
                                     value={ev.date}
                                     onChange={(e) =>
                                       handleChangeCalendar(ev.id, "date", e.target.value)
                                     }
+                                    className="text-sm"
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-sm font-medium mb-1">Type</label>
+                                  <label className="block text-xs sm:text-sm font-medium mb-1">Type</label>
                                   <Select
                                     value={ev.type}
                                     onValueChange={(val) =>
                                       handleChangeCalendar(ev.id, "type", val)
                                     }
                                   >
-                                    <SelectTrigger>
+                                    <SelectTrigger className="text-sm">
                                       <SelectValue placeholder="Sélectionner un type" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -435,28 +449,30 @@ export default function EventManager() {
                                   </Select>
                                 </div>
                                 <div>
-                                  <label className="block text-sm font-medium mb-1">Heure</label>
+                                  <label className="block text-xs sm:text-sm font-medium mb-1">Heure</label>
                                   <Input
                                     value={ev.time}
                                     onChange={(e) =>
                                       handleChangeCalendar(ev.id, "time", e.target.value)
                                     }
                                     placeholder="Heure"
+                                    className="text-sm"
                                   />
                                 </div>
-                                <div className="col-span-2">
-                                  <label className="block text-sm font-medium mb-1">Lieu</label>
+                                <div className="col-span-1 sm:col-span-2">
+                                  <label className="block text-xs sm:text-sm font-medium mb-1">Lieu</label>
                                   <Input
                                     value={ev.location}
                                     onChange={(e) =>
                                       handleChangeCalendar(ev.id, "location", e.target.value)
                                     }
                                     placeholder="Lieu"
+                                    className="text-sm"
                                   />
                                 </div>
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-1">Description</label>
+                                <label className="block text-xs sm:text-sm font-medium mb-1">Description</label>
                                 <Textarea
                                   value={ev.description}
                                   onChange={(e) =>
@@ -464,6 +480,7 @@ export default function EventManager() {
                                   }
                                   placeholder="Description"
                                   rows={3}
+                                  className="text-sm"
                                 />
                               </div>
                             </div>
@@ -475,64 +492,69 @@ export default function EventManager() {
                 })}
 
                 {searchTerm && Object.keys(groupEventsByType()).length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-6 sm:py-8 text-gray-500 text-sm">
                     Aucun événement trouvé pour "{searchTerm}"
                   </div>
                 )}
               </div>
             </TabsContent>
 
-            <TabsContent value="types" className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Types d'événements</h3>
-                <Button onClick={handleAddEventType} variant="outline">
+            <TabsContent value="types" className="space-y-4 sm:space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h3 className="text-base sm:text-lg font-semibold">
+                  <span className="hidden sm:inline">Types d'événements</span>
+                  <span className="sm:hidden">Types</span>
+                </h3>
+                <Button onClick={handleAddEventType} variant="outline" className="text-xs sm:text-sm">
                   <Plus className="w-4 h-4 mr-2" />
-                  Ajouter un type
+                  <span className="hidden sm:inline">Ajouter un type</span>
+                  <span className="sm:hidden">+ Type</span>
                 </Button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {Object.entries(eventData.eventTypes).map(([key, type]: any) => (
                   <div
                     key={key}
-                    className="p-4 border rounded-lg space-y-4 bg-gray-50 relative"
+                    className="p-3 sm:p-4 border rounded-lg space-y-3 sm:space-y-4 bg-gray-50 relative"
                   >
                     <button
                       type="button"
                       onClick={() => handleDeleteEventType(key)}
                       className="absolute top-2 right-2 text-red-500 hover:text-red-700"
                     >
-                      <Trash className="w-5 h-5" />
+                      <Trash className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
 
-                    <div className="grid grid-cols-3 gap-4 pr-10">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pr-8 sm:pr-10">
                       <div>
-                        <label className="block text-sm font-medium mb-1">Clé</label>
+                        <label className="block text-xs sm:text-sm font-medium mb-1">Clé</label>
                         <Input
                           value={key}
                           disabled
-                          className="bg-gray-100"
+                          className="bg-gray-100 text-sm"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Label</label>
+                        <label className="block text-xs sm:text-sm font-medium mb-1">Label</label>
                         <Input
                           value={type.label}
                           onChange={(e) =>
                             handleChangeEventType(key, "label", e.target.value)
                           }
                           placeholder="Label du type"
+                          className="text-sm"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Icône</label>
+                        <label className="block text-xs sm:text-sm font-medium mb-1">Icône</label>
                         <Select
                           value={type.icon}
                           onValueChange={(val) =>
                             handleChangeEventType(key, "icon", val)
                           }
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="text-sm">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -558,32 +580,37 @@ export default function EventManager() {
 
       {/* Dialogue d'ajout d'événement */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Ajouter un nouvel événement</DialogTitle>
-            <DialogDescription>
-              Remplissez les informations pour créer un nouvel événement dans le calendrier.
+            <DialogTitle className="text-lg sm:text-xl">
+              <span className="hidden sm:inline">Ajouter un nouvel événement</span>
+              <span className="sm:hidden">Nouvel événement</span>
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              <span className="hidden sm:inline">Remplissez les informations pour créer un nouvel événement dans le calendrier.</span>
+              <span className="sm:hidden">Créer un événement</span>
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-2 gap-4 py-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Titre</Label>
+              <Label htmlFor="title" className="text-xs sm:text-sm">Titre</Label>
               <Input
                 id="title"
                 value={newEvent.title}
                 onChange={(e) => handleNewEventChange("title", e.target.value)}
                 placeholder="Titre de l'événement"
+                className="text-sm"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="type">Type d'événement</Label>
+              <Label htmlFor="type" className="text-xs sm:text-sm">Type d'événement</Label>
               <Select
                 value={newEvent.type}
                 onValueChange={(val) => handleNewEventChange("type", val)}
               >
-                <SelectTrigger id="type">
+                <SelectTrigger id="type" className="text-sm">
                   <SelectValue placeholder="Sélectionner un type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -599,53 +626,58 @@ export default function EventManager() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
+              <Label htmlFor="date" className="text-xs sm:text-sm">Date</Label>
               <Input
                 id="date"
                 type="date"
                 value={newEvent.date}
                 onChange={(e) => handleNewEventChange("date", e.target.value)}
+                className="text-sm"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="time">Heure</Label>
+              <Label htmlFor="time" className="text-xs sm:text-sm">Heure</Label>
               <Input
                 id="time"
                 value={newEvent.time}
                 onChange={(e) => handleNewEventChange("time", e.target.value)}
                 placeholder="ex: 14h30"
+                className="text-sm"
               />
             </div>
 
-            <div className="col-span-2 space-y-2">
-              <Label htmlFor="location">Lieu</Label>
+            <div className="col-span-1 sm:col-span-2 space-y-2">
+              <Label htmlFor="location" className="text-xs sm:text-sm">Lieu</Label>
               <Input
                 id="location"
                 value={newEvent.location}
                 onChange={(e) => handleNewEventChange("location", e.target.value)}
                 placeholder="Lieu de l'événement"
+                className="text-sm"
               />
             </div>
 
-            <div className="col-span-2 space-y-2">
-              <Label htmlFor="description">Description</Label>
+            <div className="col-span-1 sm:col-span-2 space-y-2">
+              <Label htmlFor="description" className="text-xs sm:text-sm">Description</Label>
               <Textarea
                 id="description"
                 value={newEvent.description}
                 onChange={(e) => handleNewEventChange("description", e.target.value)}
                 placeholder="Description détaillée de l'événement"
                 rows={3}
+                className="text-sm"
               />
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <DialogClose asChild>
-              <Button variant="outline">Annuler</Button>
+              <Button variant="outline" className="w-full sm:w-auto text-sm">Annuler</Button>
             </DialogClose>
-            <Button onClick={handleAddEvent}>
-              Ajouter l'événement
+            <Button onClick={handleAddEvent} className="w-full sm:w-auto text-sm">
+              <span className="hidden sm:inline">Ajouter l'événement</span>
+              <span className="sm:hidden">Ajouter</span>
             </Button>
           </DialogFooter>
         </DialogContent>

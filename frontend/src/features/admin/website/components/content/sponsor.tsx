@@ -161,25 +161,36 @@ export default function SponsorsManager() {
     }
   };
 
-  if (isLoading) return <div>Chargement...</div>;
+  if (isLoading)
+    return (
+      <div className="text-center py-6 sm:py-8 text-sm">Chargement...</div>
+    );
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Gestion des sponsors</h2>
-        <Button onClick={() => handleOpenDialog()}>
-          <Plus className="mr-2 h-4 w-4" /> Ajouter un sponsor
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h2 className="text-xl sm:text-2xl font-bold">
+          <span className="hidden sm:inline">Gestion des sponsors</span>
+          <span className="sm:hidden">Sponsors</span>
+        </h2>
+        <Button
+          onClick={() => handleOpenDialog()}
+          className="text-xs sm:text-sm"
+        >
+          <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Ajouter un sponsor</span>
+          <span className="sm:hidden">Ajouter</span>
         </Button>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-3 sm:gap-4">
         {sponsors.map((sponsor) => (
           <div
             key={sponsor.id}
-            className="bg-white p-4 rounded-lg shadow-sm border flex items-center justify-between"
+            className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border flex flex-col sm:flex-row sm:items-center justify-between gap-3"
           >
-            <div className="flex items-center gap-4">
-              <div className="h-16 w-16 overflow-hidden rounded-md flex-shrink-0">
+            <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+              <div className="h-12 w-12 sm:h-16 sm:w-16 overflow-hidden rounded-md flex-shrink-0">
                 <img
                   src={sponsor.logoUrl || '/placeholder.svg'}
                   alt={sponsor.name}
@@ -189,41 +200,48 @@ export default function SponsorsManager() {
                   }}
                 />
               </div>
-              <div>
-                <h3 className="font-medium text-lg">{sponsor.name}</h3>
-                <p className="text-sm text-gray-500">{sponsor.texte}</p>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-sm sm:text-lg truncate">
+                  {sponsor.name}
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-500 truncate">
+                  {sponsor.texte}
+                </p>
                 <p className="text-xs text-gray-400">Ordre: {sponsor.order}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               <Button
                 size="icon"
                 variant="outline"
                 onClick={() => handleChangeOrder(sponsor, 'up')}
+                className="h-8 w-8"
               >
-                <ArrowUp className="h-4 w-4" />
+                <ArrowUp className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
               <Button
                 size="icon"
                 variant="outline"
                 onClick={() => handleChangeOrder(sponsor, 'down')}
+                className="h-8 w-8"
               >
-                <ArrowDown className="h-4 w-4" />
+                <ArrowDown className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
               <Button
                 size="icon"
                 variant="outline"
                 onClick={() => handleOpenDialog(sponsor)}
+                className="h-8 w-8"
               >
-                <Edit className="h-4 w-4" />
+                <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
               <Button
                 size="icon"
                 variant="outline"
-                className="text-red-500"
+                className="text-red-500 h-8 w-8"
                 onClick={() => handleDelete(sponsor.id)}
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </div>
@@ -231,73 +249,91 @@ export default function SponsorsManager() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">
               {isEditing ? 'Modifier un sponsor' : 'Ajouter un sponsor'}
             </DialogTitle>
           </DialogHeader>
 
           {/* Formulaire en grille responsive */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-h-[80vh] overflow-y-auto pr-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 py-4 max-h-[80vh] overflow-y-auto pr-2">
             <div className="grid gap-2">
-              <Label htmlFor="name">Nom</Label>
+              <Label htmlFor="name" className="text-xs sm:text-sm">
+                Nom
+              </Label>
               <Input
                 id="name"
                 name="name"
                 value={currentSponsor.name || ''}
                 onChange={handleChange}
+                className="text-sm"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="texte">Mini descriptif (2-3 mots)</Label>
+              <Label htmlFor="texte" className="text-xs sm:text-sm">
+                Mini descriptif (2-3 mots)
+              </Label>
               <Input
                 id="texte"
                 name="texte"
                 value={currentSponsor.texte || ''}
                 onChange={handleChange}
+                className="text-sm"
               />
             </div>
             <div className="grid gap-2 md:col-span-2">
-              <Label htmlFor="description">Description (À propos)</Label>
+              <Label htmlFor="description" className="text-xs sm:text-sm">
+                Description (À propos)
+              </Label>
               <Textarea
                 id="description"
                 name="description"
                 value={currentSponsor.description || ''}
                 onChange={handleChange}
+                className="text-sm"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-xs sm:text-sm">
+                Email
+              </Label>
               <Input
                 id="email"
                 name="email"
                 value={currentSponsor.email || ''}
                 onChange={handleChange}
+                className="text-sm"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="telephone">Téléphone</Label>
+              <Label htmlFor="telephone" className="text-xs sm:text-sm">
+                Téléphone
+              </Label>
               <Input
                 id="telephone"
                 name="telephone"
                 value={currentSponsor.telephone || ''}
                 onChange={handleChange}
+                className="text-sm"
               />
             </div>
             <div className="grid gap-2 md:col-span-2">
-              <Label htmlFor="adresse">Adresse</Label>
+              <Label htmlFor="adresse" className="text-xs sm:text-sm">
+                Adresse
+              </Label>
               <Input
                 id="adresse"
                 name="adresse"
                 value={currentSponsor.adresse || ''}
                 onChange={handleChange}
+                className="text-sm"
               />
             </div>
             {['facebook', 'instagram', 'twitter', 'youtube', 'linkedin'].map(
               (field) => (
                 <div className="grid gap-2" key={field}>
-                  <Label htmlFor={field}>
+                  <Label htmlFor={field} className="text-xs sm:text-sm">
                     {field.charAt(0).toUpperCase() + field.slice(1)}
                   </Label>
                   <Input
@@ -305,18 +341,21 @@ export default function SponsorsManager() {
                     name={field}
                     value={(currentSponsor as any)[field] || ''}
                     onChange={handleChange}
+                    className="text-sm"
                   />
                 </div>
               )
             )}
             <div className="grid gap-2">
-              <Label htmlFor="logoUrl">Logo</Label>
+              <Label htmlFor="logoUrl" className="text-xs sm:text-sm">
+                Logo
+              </Label>
               <select
                 id="logoUrl"
                 name="logoUrl"
                 value={currentSponsor.logoUrl || ''}
                 onChange={handleChange}
-                className="w-full border rounded p-2"
+                className="w-full border rounded p-2 text-sm"
               >
                 <option value="">-- Choisir une image --</option>
                 {images.map((img) => (
@@ -326,7 +365,7 @@ export default function SponsorsManager() {
                 ))}
               </select>
               {currentSponsor.logoUrl && (
-                <div className="mt-2 h-20 w-20">
+                <div className="mt-2 h-16 w-16 sm:h-20 sm:w-20">
                   <img
                     src={currentSponsor.logoUrl}
                     alt="Aperçu du logo"
@@ -336,31 +375,41 @@ export default function SponsorsManager() {
               )}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="redirectUrl">URL de redirection</Label>
+              <Label htmlFor="redirectUrl" className="text-xs sm:text-sm">
+                URL de redirection
+              </Label>
               <Input
                 id="redirectUrl"
                 name="redirectUrl"
                 value={currentSponsor.redirectUrl || ''}
                 onChange={handleChange}
+                className="text-sm"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="order">Ordre</Label>
+              <Label htmlFor="order" className="text-xs sm:text-sm">
+                Ordre
+              </Label>
               <Input
                 id="order"
                 name="order"
                 type="number"
                 value={currentSponsor.order || ''}
                 onChange={handleChange}
+                className="text-sm"
               />
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={handleCloseDialog}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={handleCloseDialog}
+              className="w-full sm:w-auto text-sm"
+            >
               Annuler
             </Button>
-            <Button onClick={handleSubmit}>
+            <Button onClick={handleSubmit} className="w-full sm:w-auto text-sm">
               {isEditing ? 'Mettre à jour' : 'Créer'}
             </Button>
           </DialogFooter>

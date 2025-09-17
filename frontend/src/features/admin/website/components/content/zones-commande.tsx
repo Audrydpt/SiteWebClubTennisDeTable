@@ -228,49 +228,49 @@ export default function ZonesCommandeManager() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* En-tête avec statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      {/* En-tête avec statistiques responsive */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-blue-500" />
+              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
               <div>
-                <p className="text-sm text-gray-600">Total zones</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Total zones</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.total}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
-              <Power className="h-5 w-5 text-green-500" />
+              <Power className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
               <div>
-                <p className="text-sm text-gray-600">Ouvertes</p>
-                <p className="text-2xl font-bold">{stats.ouvertes}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Ouvertes</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.ouvertes}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
-              <PowerOff className="h-5 w-5 text-orange-500" />
+              <PowerOff className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
               <div>
-                <p className="text-sm text-gray-600">Fermées</p>
-                <p className="text-2xl font-bold">{stats.fermees}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Fermées</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.fermees}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-purple-500" />
+              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
               <div>
-                <p className="text-sm text-gray-600">Commandes</p>
-                <p className="text-2xl font-bold">{stats.totalCommandes}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Commandes</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.totalCommandes}</p>
               </div>
             </div>
           </CardContent>
@@ -280,62 +280,67 @@ export default function ZonesCommandeManager() {
       {/* Zones de commande */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
-              Zones de commande
+          <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <span className="flex items-center gap-2 text-lg sm:text-xl">
+              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">Zones de commande</span>
+              <span className="sm:hidden">Zones</span>
             </span>
             <Dialog open={showForm} onOpenChange={setShowForm}>
               <DialogTrigger asChild>
-                <Button onClick={resetForm}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouvelle zone
+                <Button onClick={resetForm} className="text-xs sm:text-sm">
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Nouvelle zone</span>
+                  <span className="sm:hidden">Nouvelle</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>
+                  <DialogTitle className="text-lg sm:text-xl">
                     {editingZone ? 'Modifier la zone' : 'Nouvelle zone de commande'}
                   </DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                   <div>
-                    <Label htmlFor="nom">Nom de la zone</Label>
+                    <Label htmlFor="nom" className="text-xs sm:text-sm">Nom de la zone</Label>
                     <Input
                       id="nom"
                       value={formData.nom}
                       onChange={(e) => setFormData({...formData, nom: e.target.value})}
                       placeholder="Ex: Menu du samedi 15 décembre"
                       required
+                      className="text-sm"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <Label htmlFor="date">Date</Label>
+                      <Label htmlFor="date" className="text-xs sm:text-sm">Date</Label>
                       <Input
                         id="date"
                         type="date"
                         value={formData.date}
                         onChange={(e) => setFormData({...formData, date: e.target.value})}
                         required
+                        className="text-sm"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="dateLimiteCommande">Date limite</Label>
+                      <Label htmlFor="dateLimiteCommande" className="text-xs sm:text-sm">Date limite</Label>
                       <Input
                         id="dateLimiteCommande"
                         type="datetime-local"
                         value={formData.dateLimiteCommande}
                         onChange={(e) => setFormData({...formData, dateLimiteCommande: e.target.value})}
                         required
+                        className="text-sm"
                       />
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="statut">Statut</Label>
+                    <Label htmlFor="statut" className="text-xs sm:text-sm">Statut</Label>
                     <Select value={formData.statut} onValueChange={(value: 'ouvert' | 'ferme' | 'termine') =>
                       setFormData({...formData, statut: value})}>
-                      <SelectTrigger>
+                      <SelectTrigger className="text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -346,15 +351,15 @@ export default function ZonesCommandeManager() {
                     </Select>
                   </div>
                   <div>
-                    <Label>Plats disponibles</Label>
-                    <div className="border rounded-lg p-4 max-h-60 overflow-y-auto space-y-3">
+                    <Label className="text-xs sm:text-sm">Plats disponibles</Label>
+                    <div className="border rounded-lg p-3 sm:p-4 max-h-48 sm:max-h-60 overflow-y-auto space-y-3">
                       {['entree', 'plat', 'dessert', 'boisson'].map(categorie => {
                         const platsCategorie = plats.filter(p => p.categorie === categorie && p.disponible);
                         if (platsCategorie.length === 0) return null;
 
                         return (
                           <div key={categorie}>
-                            <h4 className="font-semibold mb-2 capitalize">{categorie}s</h4>
+                            <h4 className="font-semibold mb-2 capitalize text-sm">{categorie}s</h4>
                             <div className="space-y-2">
                               {platsCategorie.map(plat => (
                                 <div key={plat.id} className="flex items-center space-x-2">
@@ -363,9 +368,9 @@ export default function ZonesCommandeManager() {
                                     checked={formData.platsDisponibles.some(id => String(id) === String(plat.id))}
                                     onCheckedChange={(checked) => handlePlatToggle(String(plat.id), checked as boolean)}
                                   />
-                                  <Label htmlFor={String(plat.id)} className="flex-1 cursor-pointer">
+                                  <Label htmlFor={String(plat.id)} className="flex-1 cursor-pointer text-sm">
                                     <span className="font-medium">{plat.nom}</span>
-                                    <span className="text-sm text-gray-500 ml-2">({plat.prix.toFixed(2)} €)</span>
+                                    <span className="text-xs sm:text-sm text-gray-500 ml-2">({plat.prix.toFixed(2)} €)</span>
                                   </Label>
                                 </div>
                               ))}
@@ -375,11 +380,11 @@ export default function ZonesCommandeManager() {
                       })}
                     </div>
                   </div>
-                  <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                  <div className="flex flex-col sm:flex-row justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setShowForm(false)} className="text-sm">
                       Annuler
                     </Button>
-                    <Button type="submit">
+                    <Button type="submit" className="text-sm">
                       {editingZone ? 'Modifier' : 'Créer'}
                     </Button>
                   </div>
@@ -390,9 +395,9 @@ export default function ZonesCommandeManager() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8">Chargement...</div>
+            <div className="text-center py-6 sm:py-8 text-sm">Chargement...</div>
           ) : zones.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-6 sm:py-8 text-gray-500 text-sm">
               Aucune zone de commande
             </div>
           ) : (
@@ -405,40 +410,41 @@ export default function ZonesCommandeManager() {
 
                   return (
                     <div key={zone.id} className="border rounded-lg bg-white">
-                      {/* En-tête de la zone */}
-                      <div className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 flex-1">
+                      {/* En-tête de la zone responsive */}
+                      <div className="p-3 sm:p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => toggleExpanded(zone.id)}
-                              className="p-0 h-auto"
+                              className="p-0 h-auto shrink-0"
                             >
                               {isExpanded ? (
-                                <ChevronDown className="h-4 w-4" />
+                                <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />
                               ) : (
-                                <ChevronRight className="h-4 w-4" />
+                                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
                               )}
                             </Button>
 
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-semibold">{zone.nom}</h3>
-                                <Badge className={getStatutColor(zone.statut)}>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2 mb-1">
+                                <h3 className="font-semibold text-sm sm:text-base truncate">{zone.nom}</h3>
+                                <Badge className={getStatutColor(zone.statut) + ' text-xs'}>
                                   {zone.statut}
                                 </Badge>
                               </div>
-                              <div className="flex items-center gap-4 text-sm text-gray-600">
+                              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                                 <span>{formatDate(zone.date)}</span>
-                                <span>Limite: {formatLimitDate(zone.dateLimiteCommande)}</span>
-                                <span>{zone.commandes.length} commande(s)</span>
+                                <span className="hidden sm:inline">Limite: {formatLimitDate(zone.dateLimiteCommande)}</span>
+                                <span className="sm:hidden">Limite: {formatLimitDate(zone.dateLimiteCommande)}</span>
+                                <span>{zone.commandes.length} cmd(s)</span>
                                 <span>{zone.platsDisponibles.length} plat(s)</span>
                               </div>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 shrink-0">
                             {/* Bouton pour fermer/ouvrir la zone */}
                             {zone.statut !== 'termine' && (
                               <Button
@@ -450,12 +456,14 @@ export default function ZonesCommandeManager() {
                                 {zone.statut === 'ouvert' ? (
                                   <>
                                     <PowerOff className="h-3 w-3 mr-1" />
-                                    Fermer
+                                    <span className="hidden sm:inline">Fermer</span>
+                                    <span className="sm:hidden">Fermer</span>
                                   </>
                                 ) : (
                                   <>
                                     <Power className="h-3 w-3 mr-1" />
-                                    Ouvrir
+                                    <span className="hidden sm:inline">Ouvrir</span>
+                                    <span className="sm:hidden">Ouvrir</span>
                                   </>
                                 )}
                               </Button>
@@ -465,37 +473,41 @@ export default function ZonesCommandeManager() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleEdit(zone)}
+                              className="text-xs"
                             >
                               <Edit className="h-3 w-3" />
+                              <span className="hidden sm:inline ml-1">Edit</span>
                             </Button>
                             <Button
                               size="sm"
                               variant="destructive"
                               onClick={() => handleDelete(zone.id)}
+                              className="text-xs"
                             >
                               <Trash2 className="h-3 w-3" />
+                              <span className="hidden sm:inline ml-1">Suppr.</span>
                             </Button>
                           </div>
                         </div>
                       </div>
 
-                      {/* Détails de la zone (dépliable) */}
+                      {/* Détails de la zone (dépliable) responsive */}
                       {isExpanded && (
-                        <div className="border-t bg-gray-50 p-4 space-y-4">
+                        <div className="border-t bg-gray-50 p-3 sm:p-4 space-y-3 sm:space-y-4">
                           {/* Plats disponibles par catégorie */}
                           <div>
-                            <h4 className="font-semibold mb-3">Plats disponibles</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <h4 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">Plats disponibles</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                               {Object.entries(platsParCategorie).map(([categorie, platsCategorie]) => {
                                 if (platsCategorie.length === 0) return null;
                                 return (
-                                  <div key={categorie} className="bg-white p-3 rounded border">
-                                    <h5 className="font-medium mb-2 capitalize">{categorie}s ({platsCategorie.length})</h5>
+                                  <div key={categorie} className="bg-white p-2 sm:p-3 rounded border">
+                                    <h5 className="font-medium mb-2 capitalize text-xs sm:text-sm">{categorie}s ({platsCategorie.length})</h5>
                                     <div className="space-y-1">
                                       {platsCategorie.map(plat => (
-                                        <div key={plat.id} className="flex items-center justify-between text-sm">
-                                          <span>{plat.nom}</span>
-                                          <span className="font-semibold">{plat.prix.toFixed(2)} €</span>
+                                        <div key={plat.id} className="flex items-center justify-between text-xs sm:text-sm">
+                                          <span className="truncate">{plat.nom}</span>
+                                          <span className="font-semibold shrink-0 ml-2">{plat.prix.toFixed(2)} €</span>
                                         </div>
                                       ))}
                                     </div>
@@ -505,30 +517,30 @@ export default function ZonesCommandeManager() {
                             </div>
                           </div>
 
-                          {/* Commandes */}
+                          {/* Commandes responsive */}
                           <div>
-                            <h4 className="font-semibold mb-3">Commandes ({zone.commandes.length})</h4>
+                            <h4 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">Commandes ({zone.commandes.length})</h4>
                             {zone.commandes.length === 0 ? (
-                              <p className="text-sm text-gray-500 italic bg-white p-3 rounded border">Aucune commande</p>
+                              <p className="text-xs sm:text-sm text-gray-500 italic bg-white p-2 sm:p-3 rounded border">Aucune commande</p>
                             ) : (
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
                                 {zone.commandes.map((commande, index) => (
-                                  <div key={index} className="bg-white p-3 border rounded">
-                                    <div className="flex items-center justify-between mb-2">
-                                      <span className="font-medium text-sm">{commande.memberName}</span>
+                                  <div key={index} className="bg-white p-2 sm:p-3 border rounded">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                                      <span className="font-medium text-xs sm:text-sm truncate">{commande.memberName}</span>
                                       <div className="flex items-center gap-2">
                                         <Badge
-                                          className={getCommandeStatutColor(commande.statut)}
+                                          className={getCommandeStatutColor(commande.statut) + ' text-xs'}
                                           variant="outline"
                                         >
                                           {getCommandeStatutLabel(commande.statut)}
                                         </Badge>
-                                        <span className="font-semibold text-sm">{commande.total.toFixed(2)} €</span>
+                                        <span className="font-semibold text-xs sm:text-sm">{commande.total.toFixed(2)} €</span>
                                       </div>
                                     </div>
                                     <div className="text-xs text-gray-600">
                                       {commande.items.map((item, itemIndex) => (
-                                        <span key={itemIndex}>
+                                        <span key={itemIndex} className="break-words">
                                           {item.platNom} x{item.quantite}
                                           {itemIndex < commande.items.length - 1 && ', '}
                                         </span>

@@ -156,54 +156,54 @@ export default function PlatsManager() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* En-tête avec statistiques */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      {/* En-tête avec statistiques responsive */}
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 sm:gap-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="text-center">
-              <p className="text-2xl font-bold">{stats.total}</p>
-              <p className="text-sm text-gray-600">Total</p>
+              <p className="text-xl sm:text-2xl font-bold">{stats.total}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Total</p>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{stats.disponibles}</p>
-              <p className="text-sm text-gray-600">Disponibles</p>
+              <p className="text-xl sm:text-2xl font-bold text-green-600">{stats.disponibles}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Disponibles</p>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{stats.entrees}</p>
-              <p className="text-sm text-gray-600">Entrées</p>
+              <p className="text-xl sm:text-2xl font-bold text-green-600">{stats.entrees}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Entrées</p>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">{stats.plats}</p>
-              <p className="text-sm text-gray-600">Plats</p>
+              <p className="text-xl sm:text-2xl font-bold text-blue-600">{stats.plats}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Plats</p>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-pink-600">{stats.desserts}</p>
-              <p className="text-sm text-gray-600">Desserts</p>
+              <p className="text-xl sm:text-2xl font-bold text-pink-600">{stats.desserts}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Desserts</p>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-yellow-600">{stats.boissons}</p>
-              <p className="text-sm text-gray-600">Boissons</p>
+              <p className="text-xl sm:text-2xl font-bold text-yellow-600">{stats.boissons}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Boissons</p>
             </div>
           </CardContent>
         </Card>
@@ -212,40 +212,43 @@ export default function PlatsManager() {
       {/* Gestion des plats */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <UtensilsCrossed className="h-5 w-5" />
-              Gestion des plats
+          <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <span className="flex items-center gap-2 text-lg sm:text-xl">
+              <UtensilsCrossed className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">Gestion des plats</span>
+              <span className="sm:hidden">Plats</span>
             </span>
             <Dialog open={showForm} onOpenChange={setShowForm}>
               <DialogTrigger asChild>
-                <Button onClick={resetForm}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouveau plat
+                <Button onClick={resetForm} className="text-xs sm:text-sm">
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Nouveau plat</span>
+                  <span className="sm:hidden">Nouveau</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-[95vw] sm:max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>
+                  <DialogTitle className="text-lg sm:text-xl">
                     {editingPlat ? 'Modifier le plat' : 'Nouveau plat'}
                   </DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <Label htmlFor="nom">Nom du plat</Label>
+                      <Label htmlFor="nom" className="text-xs sm:text-sm">Nom du plat</Label>
                       <Input
                         id="nom"
                         value={formData.nom}
                         onChange={(e) => setFormData({...formData, nom: e.target.value})}
                         required
+                        className="text-sm"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="categorie">Catégorie</Label>
+                      <Label htmlFor="categorie" className="text-xs sm:text-sm">Catégorie</Label>
                       <Select value={formData.categorie} onValueChange={(value: 'entree' | 'plat' | 'dessert' | 'boisson') =>
                         setFormData({...formData, categorie: value})}>
-                        <SelectTrigger>
+                        <SelectTrigger className="text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -258,16 +261,17 @@ export default function PlatsManager() {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="description">Description</Label>
+                    <Label htmlFor="description" className="text-xs sm:text-sm">Description</Label>
                     <Textarea
                       id="description"
                       value={formData.description}
                       onChange={(e) => setFormData({...formData, description: e.target.value})}
                       rows={2}
+                      className="text-sm"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="prix">Prix (€)</Label>
+                    <Label htmlFor="prix" className="text-xs sm:text-sm">Prix (€)</Label>
                     <Input
                       id="prix"
                       type="number"
@@ -276,15 +280,17 @@ export default function PlatsManager() {
                       value={formData.prix}
                       onChange={(e) => setFormData({...formData, prix: e.target.value})}
                       required
+                      className="text-sm"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="allergenes">Allergènes (séparés par des virgules)</Label>
+                    <Label htmlFor="allergenes" className="text-xs sm:text-sm">Allergènes (séparés par des virgules)</Label>
                     <Input
                       id="allergenes"
                       value={formData.allergenes}
                       onChange={(e) => setFormData({...formData, allergenes: e.target.value})}
                       placeholder="Gluten, Lactose, Noix..."
+                      className="text-sm"
                     />
                   </div>
                   <div className="flex items-center space-x-2">
@@ -293,13 +299,13 @@ export default function PlatsManager() {
                       checked={formData.disponible}
                       onCheckedChange={(checked) => setFormData({...formData, disponible: checked})}
                     />
-                    <Label htmlFor="disponible">Disponible</Label>
+                    <Label htmlFor="disponible" className="text-xs sm:text-sm">Disponible</Label>
                   </div>
-                  <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                  <div className="flex flex-col sm:flex-row justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setShowForm(false)} className="text-sm">
                       Annuler
                     </Button>
-                    <Button type="submit">
+                    <Button type="submit" className="text-sm">
                       {editingPlat ? 'Modifier' : 'Créer'}
                     </Button>
                   </div>
@@ -308,19 +314,20 @@ export default function PlatsManager() {
             </Dialog>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 sm:space-y-4">
           {/* Filtres */}
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col md:flex-row gap-3 sm:gap-4">
             <div className="flex-1">
               <Input
                 placeholder="Rechercher un plat..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                className="text-sm"
               />
             </div>
             <div className="w-full md:w-48">
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Catégorie" />
                 </SelectTrigger>
                 <SelectContent>
@@ -336,34 +343,34 @@ export default function PlatsManager() {
 
           {/* Liste des plats */}
           {loading ? (
-            <div className="text-center py-8">Chargement...</div>
+            <div className="text-center py-6 sm:py-8 text-sm">Chargement...</div>
           ) : filteredPlats.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-6 sm:py-8 text-gray-500 text-sm">
               Aucun plat trouvé
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {filteredPlats.map((plat) => (
-                <div key={plat.id} className="p-4 border rounded-lg bg-white">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold">{plat.nom}</h3>
-                        <Badge className={getCategorieColor(plat.categorie)}>
+                <div key={plat.id} className="p-3 sm:p-4 border rounded-lg bg-white">
+                  <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                        <h3 className="font-semibold text-sm sm:text-base">{plat.nom}</h3>
+                        <Badge className={getCategorieColor(plat.categorie) + ' text-xs'}>
                           {getCategorieLabel(plat.categorie)}
                         </Badge>
-                        <span className="font-bold text-green-600">
+                        <span className="font-bold text-green-600 text-sm sm:text-base">
                           {plat.prix.toFixed(2)} €
                         </span>
                         {!plat.disponible && (
-                          <Badge variant="secondary">Indisponible</Badge>
+                          <Badge variant="secondary" className="text-xs">Indisponible</Badge>
                         )}
                       </div>
                       {plat.description && (
-                        <p className="text-sm text-gray-600 mb-2">{plat.description}</p>
+                        <p className="text-xs sm:text-sm text-gray-600 mb-2">{plat.description}</p>
                       )}
                       {plat.allergenes && plat.allergenes.length > 0 && (
-                        <div className="flex gap-1">
+                        <div className="flex flex-wrap gap-1">
                           {plat.allergenes.map((allergene) => (
                             <Badge key={allergene} variant="outline" className="text-xs">
                               {allergene}
@@ -372,20 +379,24 @@ export default function PlatsManager() {
                         </div>
                       )}
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 sm:gap-2 shrink-0">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleEdit(plat)}
+                        className="text-xs"
                       >
                         <Edit className="h-3 w-3" />
+                        <span className="hidden sm:inline ml-1">Edit</span>
                       </Button>
                       <Button
                         size="sm"
                         variant="destructive"
                         onClick={() => handleDelete(plat.id)}
+                        className="text-xs"
                       >
                         <Trash2 className="h-3 w-3" />
+                        <span className="hidden sm:inline ml-1">Suppr.</span>
                       </Button>
                     </div>
                   </div>

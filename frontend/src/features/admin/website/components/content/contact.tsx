@@ -40,8 +40,12 @@ export default function ContactManager() {
     loadData();
   }, []);
 
-  if (loading) return <p>Chargement...</p>;
-  if (!contact || contact.length === 0) return <p>Aucun contact trouvé</p>;
+  if (loading)
+    return <p className="text-center py-6 sm:py-8 text-sm">Chargement...</p>;
+  if (!contact || contact.length === 0)
+    return (
+      <p className="text-center py-6 sm:py-8 text-sm">Aucun contact trouvé</p>
+    );
 
   const contactInfo = contact[0];
 
@@ -109,31 +113,39 @@ export default function ContactManager() {
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Gestion de la section contact</h2>
+    <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto px-2 sm:px-4">
+      <h2 className="text-xl sm:text-2xl font-bold">
+        <span className="hidden sm:inline">Gestion de la section contact</span>
+        <span className="sm:hidden">Contact</span>
+      </h2>
 
       {/* Texte d'introduction */}
       <Card>
-        <CardContent className="space-y-4">
-          <h3 className="font-semibold">Texte d&#39;introduction</h3>
+        <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6">
+          <h3 className="font-semibold text-base sm:text-lg">
+            <span className="hidden sm:inline">Texte d&#39;introduction</span>
+            <span className="sm:hidden">Introduction</span>
+          </h3>
           <Input
             value={contactInfo.texte}
             onChange={(e) => handleContactChange('texte', e.target.value)}
             placeholder="Texte d'introduction"
+            className="text-sm"
           />
         </CardContent>
       </Card>
 
       {/* Horaires */}
       <Card>
-        <CardContent className="space-y-4">
-          <h3 className="font-semibold">Horaires</h3>
+        <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6">
+          <h3 className="font-semibold text-base sm:text-lg">Horaires</h3>
           {contactInfo.horaires.map((h: any, i: number) => (
-            <div key={i} className="flex gap-2">
+            <div key={i} className="flex flex-col sm:flex-row gap-2">
               <Input
                 value={h.jour}
                 onChange={(e) => handleHoraireChange(i, 'jour', e.target.value)}
                 placeholder="Jour"
+                className="text-sm"
               />
               <Input
                 value={h.horaire}
@@ -141,57 +153,85 @@ export default function ContactManager() {
                   handleHoraireChange(i, 'horaire', e.target.value)
                 }
                 placeholder="Horaire"
+                className="text-sm"
               />
               <Button
                 variant="destructive"
                 type="button"
                 onClick={() => removeHoraire(i)}
+                className="text-sm w-full sm:w-auto"
               >
-                Supprimer
+                <span className="hidden sm:inline">Supprimer</span>
+                <span className="sm:hidden">Suppr.</span>
               </Button>
             </div>
           ))}
-          <Button type="button" onClick={addHoraire}>
-            Ajouter un horaire
+          <Button
+            type="button"
+            onClick={addHoraire}
+            className="w-full sm:w-auto text-sm"
+          >
+            <span className="hidden sm:inline">Ajouter un horaire</span>
+            <span className="sm:hidden">+ Horaire</span>
           </Button>
         </CardContent>
       </Card>
 
       {/* FAQ */}
       <Card>
-        <CardContent className="space-y-4">
-          <h3 className="font-semibold">FAQ</h3>
+        <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6">
+          <h3 className="font-semibold text-base sm:text-lg">FAQ</h3>
           {contactInfo.faq.map((f: any, i: number) => (
-            <div key={i} className="space-y-2">
+            <div key={i} className="space-y-2 p-3 bg-gray-50 rounded-lg">
               <Input
                 value={f.question}
                 onChange={(e) => handleFaqChange(i, 'question', e.target.value)}
                 placeholder="Question"
+                className="text-sm"
               />
               <Input
                 value={f.reponse}
                 onChange={(e) => handleFaqChange(i, 'reponse', e.target.value)}
                 placeholder="Réponse"
+                className="text-sm"
               />
               <Button
                 variant="destructive"
                 type="button"
                 onClick={() => removeFaq(i)}
+                className="w-full sm:w-auto text-sm"
               >
-                Supprimer
+                <span className="hidden sm:inline">Supprimer</span>
+                <span className="sm:hidden">Suppr.</span>
               </Button>
             </div>
           ))}
-          <Button type="button" onClick={addFaq}>
-            Ajouter une question
+          <Button
+            type="button"
+            onClick={addFaq}
+            className="w-full sm:w-auto text-sm"
+          >
+            <span className="hidden sm:inline">Ajouter une question</span>
+            <span className="sm:hidden">+ Question</span>
           </Button>
         </CardContent>
       </Card>
 
       {/* Sauvegarde */}
-      <Button onClick={saveChanges} disabled={saving}>
-        {saving ? 'Enregistrement...' : 'Enregistrer'}
-      </Button>
+      <div className="text-center">
+        <Button
+          onClick={saveChanges}
+          disabled={saving}
+          className="w-full sm:w-auto min-w-[120px] text-sm"
+        >
+          {saving ? (
+            <span className="hidden sm:inline">Enregistrement...</span>
+          ) : (
+            <span className="hidden sm:inline">Enregistrer</span>
+          )}
+          <span className="sm:hidden">{saving ? 'Save...' : 'Save'}</span>
+        </Button>
+      </div>
     </div>
   );
 }

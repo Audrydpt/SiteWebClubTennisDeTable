@@ -40,10 +40,11 @@ function ActualitePreview({
   redirectUrl: string;
 }) {
   return (
-    <div className="border rounded-lg p-4 bg-gray-50">
-      <h4 className="font-semibold mb-3 flex items-center gap-2">
-        <Eye className="h-4 w-4" />
-        Aperçu de la publication
+    <div className="border rounded-lg p-3 sm:p-4 bg-gray-50">
+      <h4 className="font-semibold mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
+        <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+        <span className="hidden sm:inline">Aperçu de la publication</span>
+        <span className="sm:hidden">Aperçu</span>
       </h4>
       <div className="bg-white rounded-lg overflow-hidden shadow-sm">
         {/* Simulation de l'affichage carousel */}
@@ -70,11 +71,11 @@ function ActualitePreview({
         </div>
 
         {/* Simulation de la modal - optimisée pour mobile */}
-        <div className="p-3 sm:p-4 max-h-48 sm:max-h-64 overflow-hidden">
+        <div className="p-3 sm:p-4 max-h-32 sm:max-h-64 overflow-hidden">
           <h6 className="font-bold mb-2 text-sm sm:text-base">
             {title || "Titre de l'actualité"}
           </h6>
-          <div className="text-xs sm:text-sm text-gray-700 space-y-1 max-h-24 sm:max-h-32 overflow-hidden">
+          <div className="text-xs sm:text-sm text-gray-700 space-y-1 max-h-16 sm:max-h-32 overflow-hidden">
             {content ? (
               <p className="whitespace-pre-line leading-tight">{content}</p>
             ) : (
@@ -215,31 +216,38 @@ export default function ActualitesManager() {
   };
 
   if (loading) {
-    return <div className="text-center py-10">Chargement...</div>;
+    return (
+      <div className="text-center py-6 sm:py-10 text-sm">Chargement...</div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Formulaire */}
+    <div className="space-y-4 sm:space-y-6">
+      {/* Formulaire responsive */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5" /> Ajouter une actualité
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="hidden sm:inline">Ajouter une actualité</span>
+            <span className="sm:hidden">Nouvelle actu</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-4">
+        <CardContent className="space-y-3 sm:space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            <div className="space-y-3 sm:space-y-4">
               <Input
                 placeholder="Titre *"
                 value={newItem.title}
                 onChange={(e) =>
                   setNewItem({ ...newItem, title: e.target.value })
                 }
+                className="text-sm"
               />
 
               <div className="space-y-2">
-                <Label>Contenu (optimisé pour mobile)</Label>
+                <Label className="text-xs sm:text-sm">
+                  Contenu (optimisé pour mobile)
+                </Label>
                 <Textarea
                   placeholder="Contenu de l'actualité - gardez-le court pour un affichage optimal sur mobile"
                   value={newItem.content}
@@ -249,10 +257,10 @@ export default function ActualitesManager() {
                       setNewItem({ ...newItem, content: value });
                     }
                   }}
-                  className="min-h-24 resize-none"
+                  className="min-h-20 sm:min-h-24 resize-none text-sm"
                   maxLength={MAX_CONTENT_LENGTH}
                 />
-                <div className="flex justify-between items-center text-sm">
+                <div className="flex justify-between items-center text-xs sm:text-sm">
                   <span
                     className={`${
                       newItem.content.length > MAX_CONTENT_LENGTH * 0.9
@@ -280,16 +288,17 @@ export default function ActualitesManager() {
                 onChange={(e) =>
                   setNewItem({ ...newItem, redirectUrl: e.target.value })
                 }
+                className="text-sm"
               />
 
               <div className="space-y-2">
-                <Label>Image</Label>
+                <Label className="text-xs sm:text-sm">Image</Label>
                 <select
                   value={newItem.imageUrl}
                   onChange={(e) =>
                     setNewItem({ ...newItem, imageUrl: e.target.value })
                   }
-                  className="w-full border rounded p-2"
+                  className="w-full border rounded p-2 text-sm"
                 >
                   <option value="">-- Choisir une image -- *</option>
                   {images.map((img) => (
@@ -302,14 +311,14 @@ export default function ActualitesManager() {
                   <img
                     src={newItem.imageUrl}
                     alt="aperçu"
-                    className="h-24 object-contain rounded border"
+                    className="h-20 sm:h-24 object-contain rounded border"
                   />
                 )}
               </div>
             </div>
 
             {/* Aperçu en temps réel */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <ActualitePreview
                 title={newItem.title}
                 content={newItem.content}
@@ -319,42 +328,47 @@ export default function ActualitesManager() {
             </div>
           </div>
 
-          <Button onClick={handleCreate} className="w-full">
+          <Button onClick={handleCreate} className="w-full text-sm">
             Créer l&apos;actualité
           </Button>
         </CardContent>
       </Card>
 
-      {/* Liste déroulante */}
+      {/* Liste déroulante responsive */}
       <div className="text-center">
         <Button
           variant="outline"
           onClick={() => setShowList(!showList)}
-          className="mx-auto"
+          className="mx-auto text-sm"
         >
           {showList ? (
             <>
-              <ChevronUp className="mr-2 h-4 w-4" /> Masquer les actualités
+              <ChevronUp className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Masquer les actualités</span>
+              <span className="sm:hidden">Masquer</span>
             </>
           ) : (
             <>
-              <ChevronDown className="mr-2 h-4 w-4" /> Voir les actualités
+              <ChevronDown className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Voir les actualités</span>
+              <span className="sm:hidden">Voir tout</span>
             </>
           )}
         </Button>
       </div>
       {showList && (
-        <div className="space-y-4">
-          <p>
-            Premier slide <ArrowDown className="h-4 w-4" />
+        <div className="space-y-3 sm:space-y-4">
+          <p className="text-xs sm:text-sm text-center text-gray-600">
+            Premier slide{' '}
+            <ArrowDown className="h-3 w-3 sm:h-4 sm:w-4 inline ml-1" />
           </p>
 
           {actualites.map((actu, index) => (
             <Card key={actu.id}>
-              <CardContent className="p-4">
+              <CardContent className="p-3 sm:p-4">
                 {editingItem?.id === actu.id ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="space-y-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="space-y-3 sm:space-y-4">
                       <Input
                         value={editingItem.title}
                         onChange={(e) =>
@@ -363,6 +377,7 @@ export default function ActualitesManager() {
                             title: e.target.value,
                           })
                         }
+                        className="text-sm"
                       />
 
                       <div className="space-y-2">
@@ -377,10 +392,10 @@ export default function ActualitesManager() {
                               });
                             }
                           }}
-                          className="min-h-24 resize-none"
+                          className="min-h-20 sm:min-h-24 resize-none text-sm"
                           maxLength={MAX_CONTENT_LENGTH}
                         />
-                        <div className="flex justify-between items-center text-sm">
+                        <div className="flex justify-between items-center text-xs sm:text-sm">
                           <span className="text-gray-500">
                             {editingItem.content.length} / {MAX_CONTENT_LENGTH}{' '}
                             caractères
@@ -402,7 +417,7 @@ export default function ActualitesManager() {
                             imageUrl: e.target.value,
                           })
                         }
-                        className="w-full border rounded p-2"
+                        className="w-full border rounded p-2 text-sm"
                       >
                         <option value="">-- Choisir une image --</option>
                         {images.map((img) => (
@@ -421,13 +436,17 @@ export default function ActualitesManager() {
                           })
                         }
                         placeholder="URL de redirection"
+                        className="text-sm"
                       />
 
-                      <div className="flex gap-2">
-                        <Button onClick={handleUpdate}>Enregistrer</Button>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button onClick={handleUpdate} className="text-sm">
+                          Enregistrer
+                        </Button>
                         <Button
                           variant="outline"
                           onClick={() => setEditingItem(null)}
+                          className="text-sm"
                         >
                           Annuler
                         </Button>
@@ -445,17 +464,19 @@ export default function ActualitesManager() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-start gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
                     {actu.imageUrl && (
                       <img
                         src={actu.imageUrl}
                         alt={actu.title}
-                        className="w-20 h-20 object-cover rounded"
+                        className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded shrink-0"
                       />
                     )}
-                    <div className="flex-1">
-                      <h4 className="font-semibold mb-1">{actu.title}</h4>
-                      <p className="text-sm text-gray-600 line-clamp-2 mb-1">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold mb-1 text-sm sm:text-base truncate">
+                        {actu.title}
+                      </h4>
+                      <p className="text-xs sm:text-sm text-gray-600 line-clamp-2 mb-1 break-words">
                         {actu.content}
                       </p>
                       <p className="text-xs text-gray-400 mb-1">
@@ -470,46 +491,50 @@ export default function ActualitesManager() {
                         <a
                           href={actu.redirectUrl}
                           target="_blank"
-                          className="text-blue-600 text-xs underline"
+                          className="text-blue-600 text-xs underline truncate block"
                           rel="noreferrer"
                         >
                           Voir le lien
                         </a>
                       )}
                     </div>
-                    <div className="flex flex-col gap-2 items-end">
+                    <div className="flex flex-col gap-2 items-end shrink-0">
                       <div className="flex gap-1">
                         <Button
                           size="icon"
                           variant="ghost"
                           onClick={() => moveItem(index, 'up')}
                           disabled={index === 0}
+                          className="h-8 w-8"
                         >
-                          <ArrowUp className="h-4 w-4" />
+                          <ArrowUp className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                         <Button
                           size="icon"
                           variant="ghost"
                           onClick={() => moveItem(index, 'down')}
                           disabled={index === actualites.length - 1}
+                          className="h-8 w-8"
                         >
-                          <ArrowDown className="h-4 w-4" />
+                          <ArrowDown className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1 sm:gap-2">
                         <Button
                           size="icon"
                           variant="outline"
                           onClick={() => setEditingItem(actu)}
+                          className="h-8 w-8"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                         <Button
                           size="icon"
                           variant="destructive"
                           onClick={() => handleDelete(actu.id)}
+                          className="h-8 w-8"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                       </div>
                     </div>

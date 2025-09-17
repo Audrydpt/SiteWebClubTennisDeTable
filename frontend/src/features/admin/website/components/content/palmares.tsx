@@ -223,19 +223,20 @@ export default function PalmaresManager() {
   ) => (
     <Card key={key}>
       <CardHeader>
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
           <div>
-            <CardTitle className="text-lg">{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
-            <div className="text-sm text-gray-500 mt-2">
+            <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
+            <CardDescription className="text-sm">{description}</CardDescription>
+            <div className="text-xs sm:text-sm text-gray-500 mt-2">
               {Array.isArray(data)
                 ? `${data.length} élément(s)`
                 : 'Non configuré'}
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => handleEdit(key)}>
-            <Edit size={16} />
-            Éditer
+          <Button variant="outline" size="sm" onClick={() => handleEdit(key)} className="text-xs sm:text-sm">
+            <Edit size={16} className="mr-1" />
+            <span className="hidden sm:inline">Éditer</span>
+            <span className="sm:hidden">Edit</span>
           </Button>
         </div>
       </CardHeader>
@@ -244,38 +245,45 @@ export default function PalmaresManager() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="animate-spin w-8 h-8 text-muted-foreground" />
+      <div className="flex items-center justify-center p-6 sm:p-8">
+        <Loader2 className="animate-spin w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Trophy className="w-8 h-8" />
-            Gestion du Palmarès
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold flex items-center gap-2">
+            <Trophy className="w-6 h-6 sm:w-8 sm:h-8" />
+            <span className="hidden sm:inline">Gestion du Palmarès</span>
+            <span className="sm:hidden">Palmarès</span>
           </h1>
-          <p className="text-muted-foreground">
-            Gérez les récompenses et distinctions du club
+          <p className="text-sm sm:text-base text-muted-foreground">
+            <span className="hidden sm:inline">Gérez les récompenses et distinctions du club</span>
+            <span className="sm:hidden">Récompenses du club</span>
           </p>
         </div>
         <Button
           onClick={handleSave}
           disabled={saving}
-          className="min-w-[120px]"
+          className="min-w-[100px] sm:min-w-[120px] text-sm"
         >
-          <Save className="w-4 h-4 mr-2" />
-          {saving ? 'Enregistrement...' : 'Sauvegarder'}
+          <Save className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+          {saving ? (
+            <span className="hidden sm:inline">Enregistrement...</span>
+          ) : (
+            <span className="hidden sm:inline">Sauvegarder</span>
+          )}
+          <span className="sm:hidden">{saving ? 'Save...' : 'Save'}</span>
         </Button>
       </div>
 
       {/* Objectif Global */}
       <Card>
         <CardHeader>
-          <CardTitle>Objectif Global</CardTitle>
+          <CardTitle className="text-base sm:text-lg">Objectif Global</CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
@@ -288,12 +296,13 @@ export default function PalmaresManager() {
             }
             placeholder="Objectif principal du club..."
             rows={3}
+            className="text-sm"
           />
         </CardContent>
       </Card>
 
       {/* Sections du palmarès */}
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         {renderCategoryCard(
           'stats',
           'Statistiques',
@@ -325,9 +334,9 @@ export default function PalmaresManager() {
 
       {/* Modal d'édition */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">
               Éditer{' '}
               {editingCategory === 'stats'
                 ? 'Statistiques'
@@ -339,9 +348,9 @@ export default function PalmaresManager() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <h3 className="text-base sm:text-lg font-semibold">
                 {Array.isArray(editingData)
                   ? `${editingData.length} élément(s)`
                   : '0 élément'}
@@ -349,57 +358,63 @@ export default function PalmaresManager() {
               <Button
                 onClick={() => addItem(editingCategory)}
                 variant="outline"
+                className="text-xs sm:text-sm"
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Ajouter
+                <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Ajouter</span>
+                <span className="sm:hidden">+</span>
               </Button>
             </div>
 
             {editingData?.map((item: any, index: number) => (
               <Card key={index}>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-4">
-                    <h4 className="font-medium">Élément {index + 1}</h4>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-4">
+                    <h4 className="font-medium text-sm sm:text-base">Élément {index + 1}</h4>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => removeItem(index)}
-                      className="text-destructive"
+                      className="text-destructive text-xs sm:text-sm"
                     >
-                      <Trash size={16} />
+                      <Trash size={14} className="mr-1" />
+                      <span className="hidden sm:inline">Suppr.</span>
                     </Button>
                   </div>
 
                   {modalType === 'stats' && (
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
-                        <Label>Valeur</Label>
+                        <Label className="text-xs sm:text-sm">Valeur</Label>
                         <Input
                           value={item.value || ''}
                           onChange={(e) =>
                             updateItem(index, 'value', e.target.value)
                           }
                           placeholder="50+"
+                          className="text-sm"
                         />
                       </div>
                       <div>
-                        <Label>Label</Label>
+                        <Label className="text-xs sm:text-sm">Label</Label>
                         <Input
                           value={item.label || ''}
                           onChange={(e) =>
                             updateItem(index, 'label', e.target.value)
                           }
                           placeholder="Membres actifs"
+                          className="text-sm"
                         />
                       </div>
                       <div>
-                        <Label>Sous-label</Label>
+                        <Label className="text-xs sm:text-sm">Sous-label</Label>
                         <Input
                           value={item.sublabel || ''}
                           onChange={(e) =>
                             updateItem(index, 'sublabel', e.target.value)
                           }
                           placeholder="De tous âges"
+                          className="text-sm"
                         />
                       </div>
                     </div>
@@ -407,38 +422,40 @@ export default function PalmaresManager() {
 
                   {modalType === 'clubAchievements' && (
                     <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <Label>Année</Label>
+                          <Label className="text-xs sm:text-sm">Année</Label>
                           <Input
                             value={item.annee || ''}
                             onChange={(e) =>
                               updateItem(index, 'annee', e.target.value)
                             }
                             placeholder="2023"
+                            className="text-sm"
                           />
                         </div>
                         <div>
-                          <Label>Titre</Label>
+                          <Label className="text-xs sm:text-sm">Titre</Label>
                           <Input
                             value={item.titre || ''}
                             onChange={(e) =>
                               updateItem(index, 'titre', e.target.value)
                             }
                             placeholder="Champion provincial"
+                            className="text-sm"
                           />
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <Label>Catégorie</Label>
+                          <Label className="text-xs sm:text-sm">Catégorie</Label>
                           <Select
                             value={item.categorie || 'Équipe Senior'}
                             onValueChange={(value) =>
                               updateItem(index, 'categorie', value)
                             }
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="text-sm">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -454,14 +471,14 @@ export default function PalmaresManager() {
                           </Select>
                         </div>
                         <div>
-                          <Label>Niveau</Label>
+                          <Label className="text-xs sm:text-sm">Niveau</Label>
                           <Select
                             value={item.niveau || 'Régional'}
                             onValueChange={(value) =>
                               updateItem(index, 'niveau', value)
                             }
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="text-sm">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -478,7 +495,7 @@ export default function PalmaresManager() {
                         </div>
                       </div>
                       <div>
-                        <Label>Description</Label>
+                        <Label className="text-xs sm:text-sm">Description</Label>
                         <Textarea
                           value={item.description || ''}
                           onChange={(e) =>
@@ -486,6 +503,7 @@ export default function PalmaresManager() {
                           }
                           placeholder="Description de la réalisation..."
                           rows={2}
+                          className="text-sm"
                         />
                       </div>
                     </div>
@@ -493,26 +511,27 @@ export default function PalmaresManager() {
 
                   {modalType === 'individualAchievements' && (
                     <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <Label>Nom du joueur</Label>
+                          <Label className="text-xs sm:text-sm">Nom du joueur</Label>
                           <Input
                             value={item.nom || ''}
                             onChange={(e) =>
                               updateItem(index, 'nom', e.target.value)
                             }
                             placeholder="Jean Dupont"
+                            className="text-sm"
                           />
                         </div>
                         <div>
-                          <Label>Catégorie</Label>
+                          <Label className="text-xs sm:text-sm">Catégorie</Label>
                           <Select
                             value={item.categorie || 'Senior'}
                             onValueChange={(value) =>
                               updateItem(index, 'categorie', value)
                             }
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="text-sm">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -529,16 +548,18 @@ export default function PalmaresManager() {
                         </div>
                       </div>
                       <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <Label>Titres</Label>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                          <Label className="text-xs sm:text-sm">Titres</Label>
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             onClick={() => addTitre(index)}
+                            className="text-xs"
                           >
-                            <Plus className="w-4 h-4 mr-1" />
-                            Titre
+                            <Plus className="w-3 h-3 mr-1" />
+                            <span className="hidden sm:inline">Titre</span>
+                            <span className="sm:hidden">+</span>
                           </Button>
                         </div>
                         {item.titres?.map(
@@ -550,7 +571,7 @@ export default function PalmaresManager() {
                                   updateTitre(index, titreIndex, e.target.value)
                                 }
                                 placeholder="Champion provincial 2023"
-                                className="flex-1"
+                                className="flex-1 text-sm"
                               />
                               <Button
                                 variant="ghost"
@@ -558,7 +579,7 @@ export default function PalmaresManager() {
                                 onClick={() => removeTitre(index, titreIndex)}
                                 className="text-destructive"
                               >
-                                <X className="w-4 h-4" />
+                                <X className="w-3 h-3 sm:w-4 sm:h-4" />
                               </Button>
                             </div>
                           )
@@ -570,17 +591,18 @@ export default function PalmaresManager() {
                   {modalType === 'objectifs' && (
                     <div className="space-y-3">
                       <div>
-                        <Label>Titre</Label>
+                        <Label className="text-xs sm:text-sm">Titre</Label>
                         <Input
                           value={item.titre || ''}
                           onChange={(e) =>
                             updateItem(index, 'titre', e.target.value)
                           }
                           placeholder="Montée en division supérieure"
+                          className="text-sm"
                         />
                       </div>
                       <div>
-                        <Label>Description</Label>
+                        <Label className="text-xs sm:text-sm">Description</Label>
                         <Textarea
                           value={item.description || ''}
                           onChange={(e) =>
@@ -588,6 +610,7 @@ export default function PalmaresManager() {
                           }
                           placeholder="Description de l'objectif..."
                           rows={3}
+                          className="text-sm"
                         />
                       </div>
                     </div>
@@ -597,11 +620,13 @@ export default function PalmaresManager() {
             ))}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setIsModalOpen(false)} className="w-full sm:w-auto text-sm">
               Annuler
             </Button>
-            <Button onClick={handleSaveModal}>Sauvegarder</Button>
+            <Button onClick={handleSaveModal} className="w-full sm:w-auto text-sm">
+              Sauvegarder
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
