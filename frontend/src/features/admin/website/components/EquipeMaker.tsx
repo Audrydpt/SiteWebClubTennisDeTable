@@ -809,14 +809,6 @@ export default function AdminResults() {
                 <CalendarDays className="h-4 w-4 mr-1" />
                 {saison.label}
               </Badge>
-              <Badge
-                variant={saison.statut === 'En cours' ? 'default' : 'secondary'}
-              >
-                {saison.statut}
-              </Badge>
-              <Badge variant="outline" className="bg-white">
-                22 semaines • {matchs.length} matchs total
-              </Badge>
             </div>
           </div>
 

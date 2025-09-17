@@ -738,7 +738,7 @@ export function SelectionsManager({
                 ) : (
                   <Copy className="h-4 w-4 mr-2" />
                 )}
-                {isLoading ? 'Chargement...' : 'Copier semaine précédente'}
+                {isLoading ? 'Chargement...' : 'Copier'}
               </Button>
             </div>
           </div>
