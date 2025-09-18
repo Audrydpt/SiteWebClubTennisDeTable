@@ -725,172 +725,190 @@ export default function AdminSettings() {
 
           {/* CREATE DIALOG */}
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogContent className="sm:max-w-[425px] mx-2 p-2 sm:p-6 overflow-y-auto max-h-screen">
+            {/* Ajout d'une hauteur max et scroll interne pour le formulaire */}
+            <DialogContent
+              className="sm:max-w-[400px] mx-2 p-2 sm:p-4"
+              style={{
+                maxHeight: '90vh',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
               <DialogHeader>
                 <DialogTitle>Créer un utilisateur</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleCreateUser} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col w-full">
-                    <Label className="mb-1">Nom</Label>
-                    <Input
-                      className="w-full"
-                      value={newUser.nom}
-                      onChange={(e) =>
-                        setNewUser({ ...newUser, nom: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-                  <div className="flex flex-col w-full">
-                    <Label className="mb-1">Prénom</Label>
-                    <Input
-                      className="w-full"
-                      value={newUser.prenom}
-                      onChange={(e) =>
-                        setNewUser({ ...newUser, prenom: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-col w-full">
-                  <Label className="mb-1">Email</Label>
-                  <Input
-                    className="w-full"
-                    type="email"
-                    value={newUser.email}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, email: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="flex flex-col w-full">
-                  <Label className="mb-1">Mot de passe</Label>
-                  <div className="relative">
-                    <Input
-                      className="w-full pr-10"
-                      type={showPassword ? 'text' : 'password'}
-                      value={newUser.password}
-                      onChange={(e) =>
-                        setNewUser({ ...newUser, password: e.target.value })
-                      }
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col w-full">
-                    <Label className="mb-1">Téléphone</Label>
-                    <Input
-                      className="w-full"
-                      value={newUser.telephone}
-                      onChange={(e) =>
-                        setNewUser({ ...newUser, telephone: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="flex flex-col w-full">
-                    <Label className="mb-1">Classement</Label>
-                    <Input
-                      className="w-full"
-                      value={newUser.classement}
-                      onChange={(e) =>
-                        setNewUser({ ...newUser, classement: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="flex flex-col w-full">
-                    <Label className="mb-1">Index Liste Force</Label>
-                    <Input
-                      className="w-full"
-                      type="number"
-                      min="0"
-                      value={newUser.indexListeForce}
-                      onChange={(e) =>
-                        setNewUser({ ...newUser, indexListeForce: parseInt(e.target.value) || 0 })
-                      }
-                      disabled={!newUser.classement}
-                      placeholder={!newUser.classement ? "Sélectionnez d'abord un classement" : "0"}
-                    />
-                    {!newUser.classement && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Un classement est requis pour définir un index
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex flex-col w-full">
-                    <Label className="mb-1">Rôle</Label>
-                    <Select
-                      value={newUser.role}
-                      onValueChange={(value) =>
-                        setNewUser({ ...newUser, role: value as 'joueur' | 'admin' })
-                      }
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Rôle" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="joueur">Joueur</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex flex-col w-full">
-                    <Label className="mb-1">Groupe</Label>
-                    <Select
-                      value={newUser.groupe}
-                      onValueChange={(value) => setNewUser({ ...newUser, groupe: value })}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Groupe" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Tous">Tous</SelectItem>
-                        <SelectItem value="A">A</SelectItem>
-                        <SelectItem value="B">B</SelectItem>
-                        <SelectItem value="C">C</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex flex-col w-full">
-                    <Label className="mb-1">Date d'inscription</Label>
-                    <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
-                      <span>Date d'inscription : {formatDateFR(newUser.dateInscription)}</span>
+              {/* Scroll uniquement sur le contenu du formulaire */}
+              <div
+                style={{
+                  overflowY: 'auto',
+                  maxHeight: '70vh',
+                  paddingRight: '4px',
+                }}
+              >
+                <form onSubmit={handleCreateUser} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col w-full">
+                      <Label className="mb-1">Nom</Label>
+                      <Input
+                        className="w-full"
+                        value={newUser.nom}
+                        onChange={(e) =>
+                          setNewUser({ ...newUser, nom: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="flex flex-col w-full">
+                      <Label className="mb-1">Prénom</Label>
+                      <Input
+                        className="w-full"
+                        value={newUser.prenom}
+                        onChange={(e) =>
+                          setNewUser({ ...newUser, prenom: e.target.value })
+                        }
+                        required
+                      />
                     </div>
                   </div>
-                </div>
-                <DialogFooter className="flex-col sm:flex-row gap-2 w-full">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowCreateDialog(false)}
-                    className="w-full sm:w-auto"
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full sm:w-auto"
-                  >
-                    {isLoading ? 'Création...' : 'Créer'}
-                  </Button>
-                </DialogFooter>
-              </form>
+                  <div className="flex flex-col w-full">
+                    <Label className="mb-1">Email</Label>
+                    <Input
+                      className="w-full"
+                      type="email"
+                      value={newUser.email}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, email: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="flex flex-col w-full">
+                    <Label className="mb-1">Mot de passe</Label>
+                    <div className="relative">
+                      <Input
+                        className="w-full pr-10"
+                        type={showPassword ? 'text' : 'password'}
+                        value={newUser.password}
+                        onChange={(e) =>
+                          setNewUser({ ...newUser, password: e.target.value })
+                        }
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col w-full">
+                      <Label className="mb-1">Téléphone</Label>
+                      <Input
+                        className="w-full"
+                        value={newUser.telephone}
+                        onChange={(e) =>
+                          setNewUser({ ...newUser, telephone: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="flex flex-col w-full">
+                      <Label className="mb-1">Classement</Label>
+                      <Input
+                        className="w-full"
+                        value={newUser.classement}
+                        onChange={(e) =>
+                          setNewUser({ ...newUser, classement: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="flex flex-col w-full">
+                      <Label className="mb-1">Index Liste Force</Label>
+                      <Input
+                        className="w-full"
+                        type="number"
+                        min="0"
+                        value={newUser.indexListeForce}
+                        onChange={(e) =>
+                          setNewUser({ ...newUser, indexListeForce: parseInt(e.target.value) || 0 })
+                        }
+                        disabled={!newUser.classement}
+                        placeholder={!newUser.classement ? "Sélectionnez d'abord un classement" : "0"}
+                      />
+                      {!newUser.classement && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Un classement est requis pour définir un index
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-col w-full">
+                      <Label className="mb-1">Rôle</Label>
+                      <Select
+                        value={newUser.role}
+                        onValueChange={(value) =>
+                          setNewUser({ ...newUser, role: value as 'joueur' | 'admin' })
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Rôle" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="joueur">Joueur</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex flex-col w-full">
+                      <Label className="mb-1">Groupe</Label>
+                      <Select
+                        value={newUser.groupe}
+                        onValueChange={(value) => setNewUser({ ...newUser, groupe: value })}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Groupe" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Tous">Tous</SelectItem>
+                          <SelectItem value="A">A</SelectItem>
+                          <SelectItem value="B">B</SelectItem>
+                          <SelectItem value="C">C</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex flex-col w-full">
+                      <Label className="mb-1">Date d'inscription</Label>
+                      <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
+                        <span>Date d'inscription : {formatDateFR(newUser.dateInscription)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter className="flex-col sm:flex-row gap-2 w-full">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowCreateDialog(false)}
+                      className="w-full sm:w-auto"
+                    >
+                      Annuler
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={isLoading}
+                      className="w-full sm:w-auto"
+                    >
+                      {isLoading ? 'Création...' : 'Créer'}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </div>
             </DialogContent>
           </Dialog>
 
