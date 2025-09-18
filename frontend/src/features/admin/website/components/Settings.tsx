@@ -725,7 +725,7 @@ export default function AdminSettings() {
 
           {/* CREATE DIALOG */}
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogContent className="sm:max-w-[425px] mx-4">
+            <DialogContent className="sm:max-w-[425px] mx-4 overflow-y-auto max-h-screen">
               <DialogHeader>
                 <DialogTitle>Créer un utilisateur</DialogTitle>
               </DialogHeader>
