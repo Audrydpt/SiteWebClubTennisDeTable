@@ -594,6 +594,7 @@ export default function AdminResults() {
     );
 
     // Créer un Map pour grouper par équipe notre club
+    // Correction : clé unique par équipe ET série
     const equipesMap = new Map<string, {
       equipe: string;
       serie: string;
@@ -625,9 +626,10 @@ export default function AdminResults() {
       // Filtrer: afficher uniquement les équipes avec lettre (A, B, C, …)
       if (!hasTeamLetter(equipeFrameries)) return;
 
-      // Ajouter l'équipe à la Map (même si elle n'a pas de joueurs)
+      // Correction : clé unique par équipe ET série
       if (equipeFrameries) {
-        equipesMap.set(equipeFrameries, {
+        const key = `${equipeFrameries}__${serie.id}`;
+        equipesMap.set(key, {
           equipe: equipeFrameries,
           serie: serie.nom,
           serieId: serie.id,
@@ -650,13 +652,15 @@ export default function AdminResults() {
       // Filtrer: uniquement les équipes avec lettre
       if (!hasTeamLetter(equipeClub.nom)) return;
 
+      // Correction : clé unique par équipe ET série
+      const key = `${equipeClub.nom}__${equipeClub.serieId}`;
       // Vérifier si cette équipe a déjà un match cette semaine
-      const aDejaMatch = Array.from(equipesMap.values()).some(e => e.equipe === equipeClub.nom);
+      const aDejaMatch = equipesMap.has(key);
 
       if (!aDejaMatch && equipeClub.serieId) {
         const serie = saison.series.find(s => s.id === equipeClub.serieId);
         if (serie) {
-          equipesMap.set(equipeClub.nom, {
+          equipesMap.set(key, {
             equipe: equipeClub.nom,
             serie: serie.nom,
             serieId: serie.id,
@@ -667,9 +671,27 @@ export default function AdminResults() {
       }
     });
 
-    // Convertir en array et trier par nom d'équipe notre club
+    // Convertir en array et trier par type (Homme/Vétéran) puis lettre puis série
+    const extractLetter = (nom: string) => {
+      const tokens = nom.trim().split(/\s+/);
+      const last = tokens[tokens.length - 1] || '';
+      return /^[A-Za-z]$/.test(last) ? last.toUpperCase() : '';
+    };
+    const isVeteran = (serie: string) => {
+      const s = serie.toLowerCase();
+      return s.includes('vétéran') || s.includes('veteran');
+    };
     return Array.from(equipesMap.values()).sort((a, b) => {
-      return a.equipe.localeCompare(b.equipe);
+      // Trier d'abord par type (Homme avant Vétéran)
+      const typeA = isVeteran(a.serie) ? 1 : 0;
+      const typeB = isVeteran(b.serie) ? 1 : 0;
+      if (typeA !== typeB) return typeA - typeB;
+      // Puis par lettre d'équipe
+      const letterA = extractLetter(a.equipe);
+      const letterB = extractLetter(b.equipe);
+      if (letterA !== letterB) return letterA.localeCompare(letterB);
+      // Enfin par nom de série
+      return a.serie.localeCompare(b.serie);
     });
   }, [saison, matchs, semaineSelectionnee, isClubTeam, hasTeamLetter]);
 

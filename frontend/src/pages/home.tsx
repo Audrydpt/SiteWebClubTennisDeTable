@@ -525,7 +525,30 @@ export default function HomePage() {
             <div className="bg-white p-6 rounded-xl shadow-lg h-full">
               <h2 className="text-3xl font-bold text-gray-800 mb-4 flex items-center gap-3">
                 <Award style={{ color: '#F1C40F' }} />
-                Derniers Résultats
+                {/* Titre dynamique selon le type du plus récent (score total) */}
+                {(() => {
+                  const resList = resultatsABC.slice(0, 3);
+                  const getTypeByScore = (res: any) => {
+                    if (!res || !res.score || res.score === '-') return 'inconnu';
+                    const parts = res.score
+                      .split('-')
+                      .map((x: string) => parseInt(x, 10));
+                    if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) return 'inconnu';
+                    const total = parts[0] + parts[1];
+                    if (total === 10) return 'vet';
+                    if (total === 16) return 'homme';
+                    return 'inconnu';
+                  };
+                  if (!resList.length) return 'Derniers Résultats';
+                  const typeRecent = getTypeByScore(resList[0]);
+                  if (typeRecent === 'vet') {
+                    return 'Derniers Résultats Vétérans';
+                  } else if (typeRecent === 'homme') {
+                    return 'Derniers Résultats Hommes';
+                  } else {
+                    return 'Derniers Résultats';
+                  }
+                })()}
               </h2>
               <div className="space-y-4">
                 {loadingResults ? (
@@ -555,9 +578,26 @@ export default function HomePage() {
                         );
                       }
 
+                      // Nouvelle logique : filtrer selon le type du plus récent (score total)
+                      const resList = resultatsABC.slice(0, 3);
+                      const getTypeByScore = (res: any) => {
+                        if (!res || !res.score || res.score === '-') return 'inconnu';
+                        const parts = res.score
+                          .split('-')
+                          .map((x: string) => parseInt(x, 10));
+                        if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) return 'inconnu';
+                        const total = parts[0] + parts[1];
+                        if (total === 10) return 'vet';
+                        if (total === 16) return 'homme';
+                        return 'inconnu';
+                      };
+                      if (!resList.length) return null;
+                      const typeRecent = getTypeByScore(resList[0]);
+                      const toShow = resList.filter(r => getTypeByScore(r) === typeRecent);
+
                       return (
                         <>
-                          {resultatsABC.slice(0, 3).map(
+                          {toShow.map(
                             (res) => (
                               <div
                                 key={res.id}

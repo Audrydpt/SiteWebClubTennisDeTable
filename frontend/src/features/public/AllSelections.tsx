@@ -163,7 +163,8 @@ export default function AllSelections() {
 
     const semaineMatches = (matchs || []).filter(m => parseWeek(m.semaine) === Number(semaine));
 
-    const entries: Array<{ key: string; equipe: string; serie: string; estDomicile: boolean; adversaire: string; date?: string; heure?: string; lieu?: string; joueurs: any[]; veteran?: boolean }> = [];
+    // Utiliser un Map pour dédupliquer par clé unique
+    const entriesMap = new Map<string, { key: string; equipe: string; serie: string; estDomicile: boolean; adversaire: string; date?: string; heure?: string; lieu?: string; joueurs: any[]; veteran?: boolean }>();
 
     semaineMatches.forEach((m) => {
       const clubHome = isClubTeam(m.domicile);
@@ -172,7 +173,6 @@ export default function AllSelections() {
 
       const estDomicile = clubHome;
       const equipeBrute = estDomicile ? m.domicile : m.exterieur;
-      // Heuristique vétéran: id contient PHV, ou date jeudi, ou divisionId/sérieId dans un set connu, ou mot clé dans équipes
       const dateObj = m.date ? new Date(m.date) : null;
       const isThursday = dateObj ? dateObj.getDay() === 4 : false; // 4 = jeudi
       const veteranHeuristic = /PHV/i.test(m.id || '') || /v[ée]t/i.test(equipeBrute) || isThursday;
@@ -185,43 +185,49 @@ export default function AllSelections() {
       const adversaire = estDomicile ? m.exterieur : m.domicile;
       const joueurs = estDomicile ? (m.joueursDomicile || m.joueur_dom || []) : (m.joueursExterieur || m.joueur_ext || []);
 
-      try { console.log('[AllSelections] match', { id: m.id, semaine: m.semaine, equipe: equipeBrute, veteranHeuristic, equipeAffiche: equipe, joueurs: joueurs.length }); } catch {}
-
-      entries.push({
-        key: `${m.id}-${equipe}`,
-        equipe,
-        serie: serieName,
-        estDomicile,
-        adversaire,
-        date: m.date,
-        heure: m.heure,
-        lieu: (m as any).lieu,
-        joueurs: Array.isArray(joueurs) ? joueurs : [],
-        veteran: veteranHeuristic,
-      });
+      // Clé unique : équipe + série + date + adversaire
+      const uniqueKey = `${equipe}__${serieName}__${m.date || ''}__${adversaire}`;
+      if (!entriesMap.has(uniqueKey)) {
+        entriesMap.set(uniqueKey, {
+          key: uniqueKey,
+          equipe,
+          serie: serieName,
+          estDomicile,
+          adversaire,
+          date: m.date,
+          heure: m.heure,
+          lieu: (m as any).lieu,
+          joueurs: Array.isArray(joueurs) ? joueurs : [],
+          veteran: veteranHeuristic,
+        });
+      }
     });
 
     // Ajouter équipes sans match cette semaine (une seule entrée par nom de base qui n a pas déjà une occurrence)
-    const existingBaseNames = new Set(entries.map(e => e.equipe.replace(/ \(Vétérans\)$/,'')));
+    const existingBaseNames = new Set(Array.from(entriesMap.values()).map(e => e.equipe.replace(/ \(Vétérans\)$/,'')));
     (saison.equipesClub || []).forEach((eq: any) => {
       if (!hasTeamLetter(eq.nom) && !isVeteranTeam(eq.nom)) return;
       if (existingBaseNames.has(eq.nom)) return;
       const serie = saison.series?.find((s) => s.id === eq.serieId);
       const serieName = serie ? serie.nom : 'Série';
-      entries.push({
-        key: `no-match-${eq.nom}`,
-        equipe: eq.nom,
-        serie: serieName,
-        estDomicile: true,
-        adversaire: '—',
-        date: undefined,
-        heure: undefined,
-        lieu: undefined,
-        joueurs: [],
-        veteran: false,
-      });
+      const uniqueKey = `no-match-${eq.nom}__${serieName}`;
+      if (!entriesMap.has(uniqueKey)) {
+        entriesMap.set(uniqueKey, {
+          key: uniqueKey,
+          equipe: eq.nom,
+          serie: serieName,
+          estDomicile: true,
+          adversaire: '—',
+          date: undefined,
+          heure: undefined,
+          lieu: undefined,
+          joueurs: [],
+          veteran: false,
+        });
+      }
     });
 
+    const entries = Array.from(entriesMap.values());
     const regular = entries.filter(e => !e.veteran && !isVeteranTeam(e.equipe)).sort((a,b)=>a.equipe.localeCompare(b.equipe));
     const veterans = entries.filter(e => e.veteran || isVeteranTeam(e.equipe)).sort((a,b)=>a.equipe.localeCompare(b.equipe));
     return [...regular, ...veterans];
