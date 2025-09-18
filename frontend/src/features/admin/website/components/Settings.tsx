@@ -725,15 +725,16 @@ export default function AdminSettings() {
 
           {/* CREATE DIALOG */}
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogContent className="sm:max-w-[425px] mx-4 overflow-y-auto max-h-screen">
+            <DialogContent className="sm:max-w-[425px] mx-2 p-2 sm:p-6 overflow-y-auto max-h-screen">
               <DialogHeader>
                 <DialogTitle>Créer un utilisateur</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleCreateUser} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Nom</Label>
+                  <div className="flex flex-col w-full">
+                    <Label className="mb-1">Nom</Label>
                     <Input
+                      className="w-full"
                       value={newUser.nom}
                       onChange={(e) =>
                         setNewUser({ ...newUser, nom: e.target.value })
@@ -741,9 +742,10 @@ export default function AdminSettings() {
                       required
                     />
                   </div>
-                  <div>
-                    <Label>Prénom</Label>
+                  <div className="flex flex-col w-full">
+                    <Label className="mb-1">Prénom</Label>
                     <Input
+                      className="w-full"
                       value={newUser.prenom}
                       onChange={(e) =>
                         setNewUser({ ...newUser, prenom: e.target.value })
@@ -752,9 +754,10 @@ export default function AdminSettings() {
                     />
                   </div>
                 </div>
-                <div>
-                  <Label>Email</Label>
+                <div className="flex flex-col w-full">
+                  <Label className="mb-1">Email</Label>
                   <Input
+                    className="w-full"
                     type="email"
                     value={newUser.email}
                     onChange={(e) =>
@@ -763,10 +766,11 @@ export default function AdminSettings() {
                     required
                   />
                 </div>
-                <div>
-                  <Label>Mot de passe</Label>
+                <div className="flex flex-col w-full">
+                  <Label className="mb-1">Mot de passe</Label>
                   <div className="relative">
                     <Input
+                      className="w-full pr-10"
                       type={showPassword ? 'text' : 'password'}
                       value={newUser.password}
                       onChange={(e) =>
@@ -790,27 +794,30 @@ export default function AdminSettings() {
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Téléphone</Label>
+                  <div className="flex flex-col w-full">
+                    <Label className="mb-1">Téléphone</Label>
                     <Input
+                      className="w-full"
                       value={newUser.telephone}
                       onChange={(e) =>
                         setNewUser({ ...newUser, telephone: e.target.value })
                       }
                     />
                   </div>
-                  <div>
-                    <Label>Classement</Label>
+                  <div className="flex flex-col w-full">
+                    <Label className="mb-1">Classement</Label>
                     <Input
+                      className="w-full"
                       value={newUser.classement}
                       onChange={(e) =>
                         setNewUser({ ...newUser, classement: e.target.value })
                       }
                     />
                   </div>
-                  <div>
-                    <Label>Index Liste Force</Label>
+                  <div className="flex flex-col w-full">
+                    <Label className="mb-1">Index Liste Force</Label>
                     <Input
+                      className="w-full"
                       type="number"
                       min="0"
                       value={newUser.indexListeForce}
@@ -826,8 +833,8 @@ export default function AdminSettings() {
                       </p>
                     )}
                   </div>
-                  <div>
-                    <Label>Rôle</Label>
+                  <div className="flex flex-col w-full">
+                    <Label className="mb-1">Rôle</Label>
                     <Select
                       value={newUser.role}
                       onValueChange={(value) =>
@@ -842,8 +849,8 @@ export default function AdminSettings() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label>Groupe</Label>
+                  <div className="flex flex-col w-full">
+                    <Label className="mb-1">Groupe</Label>
                     <Select
                       value={newUser.groupe}
                       onValueChange={(value) => setNewUser({ ...newUser, groupe: value })}
@@ -859,14 +866,14 @@ export default function AdminSettings() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label>Date d'inscription</Label>
+                  <div className="flex flex-col w-full">
+                    <Label className="mb-1">Date d'inscription</Label>
                     <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
                       <span>Date d'inscription : {formatDateFR(newUser.dateInscription)}</span>
                     </div>
                   </div>
                 </div>
-                <DialogFooter className="flex-col sm:flex-row gap-2">
+                <DialogFooter className="flex-col sm:flex-row gap-2 w-full">
                   <Button
                     type="button"
                     variant="outline"
