@@ -94,7 +94,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: data.user.email,
       });
       setIsAuthenticated(true);
-      await requestNotificationPermission(membre.id);
       return true;
     } catch (err) {
       console.error('Erreur login membre :', err);
