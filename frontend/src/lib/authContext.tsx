@@ -7,6 +7,7 @@ import React, {
   useMemo,
 } from 'react';
 import supabase from './supabaseClient';
+import { requestNotificationPermission } from './js/firebase-config'
 
 // Type pour l'utilisateur membre
 type Member = {
@@ -93,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: data.user.email,
       });
       setIsAuthenticated(true);
+      await requestNotificationPermission(membre.id);
       return true;
     } catch (err) {
       console.error('Erreur login membre :', err);
