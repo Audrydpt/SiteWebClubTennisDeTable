@@ -186,7 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Durée d'inactivité avant déconnexion (en ms)
-  const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+  const INACTIVITY_TIMEOUT = 60 * 60 * 1000;
 
   useEffect(() => {
     let inactivityTimer: NodeJS.Timeout;

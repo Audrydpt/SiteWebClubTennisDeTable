@@ -158,6 +158,10 @@ export default function AllSelections() {
     }
   }, [maxWeek, semaine]);
 
+  // Helpers pour détecter et afficher les équipes "Bye"
+  const isByeTeam = (name?: string | null) => !!(name && /\b(vrij|bye)\b/i.test(name));
+  const displayTeam = (name?: string | null) => isByeTeam(name) ? 'Bye' : (name || '');
+
   const equipesSemaine = useMemo(() => {
     if (!saison || !semaine) return [] as Array<{ key: string; equipe: string; serie: string; estDomicile: boolean; adversaire: string; date?: string; heure?: string; lieu?: string; joueurs: any[]; veteran?: boolean }>;
 
@@ -171,12 +175,66 @@ export default function AllSelections() {
       const clubAway = isClubTeam(m.exterieur);
       if (!clubHome && !clubAway) return;
 
+      // Si les deux équipes sont du club, créer deux entrées (domicile et extérieur)
+      if (clubHome && clubAway) {
+        // Entrée pour l'équipe domicile
+        const equipeBruteDom = m.domicile;
+        const veteranHeuristicDom = /PHV/i.test(m.id || '') || /v[ée]t/i.test(equipeBruteDom);
+        const equipeDom = veteranHeuristicDom ? `${displayTeam(equipeBruteDom)} (Vétérans)` : displayTeam(equipeBruteDom);
+        if (hasTeamLetter(equipeBruteDom) || veteranHeuristicDom || isVeteranTeam(equipeBruteDom)) {
+          const serieDom = saison.series?.find((s) => s.id === m.serieId);
+          const serieNameDom = serieDom ? serieDom.nom : (/^\d+$/.test(String(m.serieId || '')) ? `Division ${m.serieId}` : String(m.serieId || 'Série'));
+          const joueursDom = m.joueursDomicile || m.joueur_dom || [];
+          const uniqueKeyDom = `${equipeDom}__${serieNameDom}__${m.date || ''}__${displayTeam(m.exterieur)}`;
+          if (!entriesMap.has(uniqueKeyDom)) {
+            entriesMap.set(uniqueKeyDom, {
+              key: uniqueKeyDom,
+              equipe: equipeDom,
+              serie: serieNameDom,
+              estDomicile: true,
+              adversaire: displayTeam(m.exterieur),
+              date: m.date,
+              heure: m.heure,
+              lieu: (m as any).lieu,
+              joueurs: Array.isArray(joueursDom) ? joueursDom : [],
+              veteran: veteranHeuristicDom,
+            });
+          }
+        }
+        // Entrée pour l'équipe extérieur
+        const equipeBruteExt = m.exterieur;
+        const veteranHeuristicExt = /PHV/i.test(m.id || '') || /v[ée]t/i.test(equipeBruteExt);
+        const equipeExt = veteranHeuristicExt ? `${displayTeam(equipeBruteExt)} (Vétérans)` : displayTeam(equipeBruteExt);
+        if (hasTeamLetter(equipeBruteExt) || veteranHeuristicExt || isVeteranTeam(equipeBruteExt)) {
+          const serieExt = saison.series?.find((s) => s.id === m.serieId);
+          const serieNameExt = serieExt ? serieExt.nom : (/^\d+$/.test(String(m.serieId || '')) ? `Division ${m.serieId}` : String(m.serieId || 'Série'));
+          const joueursExt = m.joueursExterieur || m.joueur_ext || [];
+          const uniqueKeyExt = `${equipeExt}__${serieNameExt}__${m.date || ''}__${displayTeam(m.domicile)}`;
+          if (!entriesMap.has(uniqueKeyExt)) {
+            entriesMap.set(uniqueKeyExt, {
+              key: uniqueKeyExt,
+              equipe: equipeExt,
+              serie: serieNameExt,
+              estDomicile: false,
+              adversaire: displayTeam(m.domicile),
+              date: m.date,
+              heure: m.heure,
+              lieu: (m as any).lieu,
+              joueurs: Array.isArray(joueursExt) ? joueursExt : [],
+              veteran: veteranHeuristicExt,
+            });
+          }
+        }
+        return;
+      }
+
+      // Cas normal : une seule équipe du club
       const estDomicile = clubHome;
       const equipeBrute = estDomicile ? m.domicile : m.exterieur;
       const dateObj = m.date ? new Date(m.date) : null;
       const isThursday = dateObj ? dateObj.getDay() === 4 : false; // 4 = jeudi
       const veteranHeuristic = /PHV/i.test(m.id || '') || /v[ée]t/i.test(equipeBrute) || isThursday;
-      const equipe = veteranHeuristic ? `${equipeBrute} (Vétérans)` : equipeBrute;
+      const equipe = veteranHeuristic ? `${displayTeam(equipeBrute)} (Vétérans)` : displayTeam(equipeBrute);
       if (!hasTeamLetter(equipeBrute) && !veteranHeuristic && !isVeteranTeam(equipeBrute)) return;
 
       const serie = saison.series?.find((s) => s.id === m.serieId);
@@ -186,14 +244,14 @@ export default function AllSelections() {
       const joueurs = estDomicile ? (m.joueursDomicile || m.joueur_dom || []) : (m.joueursExterieur || m.joueur_ext || []);
 
       // Clé unique : équipe + série + date + adversaire
-      const uniqueKey = `${equipe}__${serieName}__${m.date || ''}__${adversaire}`;
+      const uniqueKey = `${equipe}__${serieName}__${m.date || ''}__${displayTeam(adversaire)}`;
       if (!entriesMap.has(uniqueKey)) {
         entriesMap.set(uniqueKey, {
           key: uniqueKey,
           equipe,
           serie: serieName,
           estDomicile,
-          adversaire,
+          adversaire: displayTeam(adversaire),
           date: m.date,
           heure: m.heure,
           lieu: (m as any).lieu,
@@ -214,7 +272,7 @@ export default function AllSelections() {
       if (!entriesMap.has(uniqueKey)) {
         entriesMap.set(uniqueKey, {
           key: uniqueKey,
-          equipe: eq.nom,
+          equipe: displayTeam(eq.nom),
           serie: serieName,
           estDomicile: true,
           adversaire: '—',
