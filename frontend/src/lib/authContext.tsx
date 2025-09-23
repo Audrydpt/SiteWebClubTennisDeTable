@@ -7,7 +7,7 @@ import React, {
   useMemo,
 } from 'react';
 import supabase from './supabaseClient';
-import { requestNotificationPermission } from './js/firebase-config'
+import { requestNotificationPermission } from './firebase-config.ts'
 
 // Type pour l'utilisateur membre
 type Member = {

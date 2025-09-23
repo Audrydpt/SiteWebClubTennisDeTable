@@ -1,36 +1,36 @@
 /* eslint-disable */
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import {
-  CalendarDays,
-  Trophy,
-  Target,
-  UserCheck,
-  Loader2,
-  Save,
-  CheckCircle,
-  AlertCircle,
-  Info,
-  Users,
-  User,
-  ClipboardCopy,
-  Check,
-  RefreshCw,
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { SelectionsManager } from '@/features/admin/website/components/content/teamsResults/SelectionsManager.tsx';
 import { SerieSelector } from '@/features/admin/website/components/content/teamsResults/SeriesSelector.tsx';
 import { WeekSelector } from '@/features/admin/website/components/content/teamsResults/WeeksSelector.tsx';
-import { Saison, Member, Match, Serie } from '@/services/type.ts';
-import { fetchUsers, updateSaisonResults, fetchInformations, fetchSaisonEnCours, createSaison } from '@/services/api';
-import { fetchMergedUIMatchesForClub, fetchMatches } from '@/services/tabt';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { createSaison, fetchInformations, fetchSaisonEnCours, fetchUsers, updateSaisonResults } from '@/services/api';
+import { fetchMatches, fetchMergedUIMatchesForClub } from '@/services/tabt';
+import { Match, Member, Saison, Serie } from '@/services/type.ts';
+import {
+  AlertCircle,
+  CalendarDays,
+  Check,
+  CheckCircle,
+  ClipboardCopy,
+  Info,
+  Loader2,
+  RefreshCw,
+  Save,
+  Target,
+  Trophy,
+  User,
+  UserCheck,
+  Users,
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export default function AdminResults() {
   // --- Helper robust pour détecter notre club dans un label d'équipe TABT ---

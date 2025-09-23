@@ -47,15 +47,6 @@ export default function AdminContent() {
 
   const contentSections: ContentSection[] = [
     {
-      id: 'clubs-infos',
-      title: 'Clubs & Infos Matchs',
-      description:
-        'Adresses des clubs (province H) et infos exceptionnelles par match',
-      icon: <MapPin className="h-6 w-6" />,
-      component: <VenuesAndMatchInfos />,
-      color: 'from-red-500 to-red-600',
-    },
-    {
       id: 'absences',
       title: 'Absences',
       description: 'Gérer toutes les absences des membres',
@@ -64,12 +55,21 @@ export default function AdminContent() {
       color: 'from-red-500 to-red-600',
     },
     {
-      id: 'actualites',
-      title: 'Actualités',
-      description: 'Gérer les actualités du club',
-      icon: <FileText className="h-6 w-6" />,
-      component: <ActualitesManager />,
-      color: 'from-blue-500 to-blue-600',
+      id: 'plats',
+      title: 'Plats',
+      description: 'Gérer les plats disponibles',
+      icon: <UtensilsCrossed className="h-6 w-6" />,
+      component: <PlatsManager />,
+      color: 'from-green-500 to-green-600',
+    },
+    {
+      id: 'clubs-infos',
+      title: 'Clubs & Infos Matchs',
+      description:
+        'Adresses des clubs (province H) et infos exceptionnelles par match',
+      icon: <MapPin className="h-6 w-6" />,
+      component: <VenuesAndMatchInfos />,
+      color: 'from-red-500 to-red-600',
     },
     {
       id: 'evenements',
@@ -104,14 +104,7 @@ export default function AdminContent() {
       component: <TrainingManager />,
       color: 'from-blue-500 to-blue-600',
     },
-    {
-      id: 'plats',
-      title: 'Plats',
-      description: 'Gérer les plats disponibles',
-      icon: <UtensilsCrossed className="h-6 w-6" />,
-      component: <PlatsManager />,
-      color: 'from-green-500 to-green-600',
-    },
+
     {
       id: 'zones-commande',
       title: 'Zones de commande',

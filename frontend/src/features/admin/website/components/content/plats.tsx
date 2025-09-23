@@ -1,29 +1,31 @@
 /* eslint-disable */
-import React, { useState, useEffect } from 'react';
-import { UtensilsCrossed, Plus, Edit, Trash2, Filter } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { createPlat, deletePlat, fetchInformations, fetchPlats, updatePlat } from '@/services/api';
 import { Plat } from '@/services/type';
-import { fetchPlats, createPlat, updatePlat, deletePlat } from '@/services/api';
+import { Check, ClipboardCopy, Edit, Info, Plus, Trash2, UtensilsCrossed } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 export default function PlatsManager() {
   const [plats, setPlats] = useState<Plat[]>([]);
@@ -32,6 +34,11 @@ export default function PlatsManager() {
   const [editingPlat, setEditingPlat] = useState<Plat | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFacebookDialog, setShowFacebookDialog] = useState(false);
+  const [facebookMessage, setFacebookMessage] = useState('');
+  const [groupId, setGroupId] = useState('1414350289649865');
+  const [messageTemplate, setMessageTemplate] = useState('Bonjour @tout le monde\n\n🍽️ Menu du moment au club !\n\n{listePlats}\n\nVenez vous régaler au club, ambiance conviviale garantie !\n\n🔗 https://cttframeries.com\n\n#CTTFrameries #Convivialité #Restauration');
+  const [isMessageCopied, setIsMessageCopied] = useState(false);
   const [formData, setFormData] = useState({
     nom: '',
     description: '',
@@ -43,7 +50,29 @@ export default function PlatsManager() {
 
   useEffect(() => {
     loadPlats();
+    loadFacebookConfig();
   }, []);
+
+  const loadFacebookConfig = async () => {
+    try {
+      const infosData = await fetchInformations();
+      if (infosData && infosData.length > 0) {
+        if (infosData[0].facebookGroupePriveUrl) {
+          const url = infosData[0].facebookGroupePriveUrl;
+          const match = url.match(/groups\/(\d+)/);
+          if (match && match[1]) {
+            setGroupId(match[1]);
+          }
+        }
+
+        if (infosData[0].facebookMessageMenu) {
+          setMessageTemplate(infosData[0].facebookMessageMenu);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement de la configuration Facebook:', error);
+    }
+  };
 
   const loadPlats = async () => {
     setLoading(true);
@@ -146,6 +175,32 @@ export default function PlatsManager() {
     return matchesSearch && matchesCategory;
   });
 
+  const generateFacebookMessage = () => {
+    const disponibles = plats.filter(p => p.disponible);
+    const lines = disponibles.slice(0, 12).map(p => `• ${p.nom}${p.prix ? ` - ${p.prix.toFixed(2)} €` : ''}`);
+    const listePlats = lines.join('\n');
+    return messageTemplate.replace(/{listePlats}/g, listePlats || 'À découvrir au club !');
+  };
+
+  const handleFacebookShare = () => {
+    setFacebookMessage(generateFacebookMessage());
+    setIsMessageCopied(false);
+    setShowFacebookDialog(true);
+  };
+
+  const handleCopyAndOpenFacebook = () => {
+    navigator.clipboard.writeText(facebookMessage)
+      .then(() => {
+        setIsMessageCopied(true);
+        window.open(`https://www.facebook.com/groups/${groupId}`, '_blank');
+        setTimeout(() => {
+          setShowFacebookDialog(false);
+          setTimeout(() => setIsMessageCopied(false), 500);
+        }, 1000);
+      })
+      .catch(err => console.error('Erreur lors de la copie du message:', err));
+  };
+
   const stats = {
     total: plats.length,
     disponibles: plats.filter(p => p.disponible).length,
@@ -218,7 +273,19 @@ export default function PlatsManager() {
               <span className="hidden sm:inline">Gestion des plats</span>
               <span className="sm:hidden">Plats</span>
             </span>
-            <Dialog open={showForm} onOpenChange={setShowForm}>
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                onClick={handleFacebookShare}
+                variant="outline"
+                size="sm"
+                className="text-xs sm:text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#1877F2" className="mr-2">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+                Publier Menu sur Facebook
+              </Button>
+              <Dialog open={showForm} onOpenChange={setShowForm}>
               <DialogTrigger asChild>
                 <Button onClick={resetForm} className="text-xs sm:text-sm">
                   <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
@@ -312,6 +379,7 @@ export default function PlatsManager() {
                 </form>
               </DialogContent>
             </Dialog>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 sm:space-y-4">
@@ -406,6 +474,58 @@ export default function PlatsManager() {
           )}
         </CardContent>
       </Card>
+      {/* Dialogue de partage Facebook */}
+      <Dialog open={showFacebookDialog} onOpenChange={setShowFacebookDialog}>
+        <DialogContent className="w-full max-w-full sm:max-w-md mx-4">
+          <DialogHeader>
+            <DialogTitle>Publier le menu sur le groupe Facebook</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="fb-message">Message à publier</Label>
+              <Textarea
+                id="fb-message"
+                value={facebookMessage}
+                onChange={(e) => setFacebookMessage(e.target.value)}
+                rows={8}
+                className="resize-none"
+              />
+            </div>
+            <div className="rounded-md bg-blue-50 p-3">
+              <div className="flex items-start">
+                <Info className="h-5 w-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
+                <div className="text-blue-700 text-sm">
+                  <p className="font-medium mb-1">Comment publier facilement :</p>
+                  <ol className="list-decimal pl-5 space-y-1">
+                    <li>Cliquez sur le bouton "Copier et ouvrir Facebook"</li>
+                    <li>Le message sera automatiquement copié</li>
+                    <li>Collez le message (Ctrl+V) dans la fenêtre de publication Facebook qui s'ouvre</li>
+                  </ol>
+                  <p className="mt-2 text-xs">Groupe configuré: ID {groupId}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-2">
+            <DialogClose asChild>
+              <Button variant="secondary">Annuler</Button>
+            </DialogClose>
+            <Button onClick={handleCopyAndOpenFacebook} className="bg-[#1877F2] hover:bg-[#166FE5] text-white">
+              {isMessageCopied ? (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Copié !
+                </>
+              ) : (
+                <>
+                  <ClipboardCopy className="h-4 w-4 mr-2" />
+                  Copier et ouvrir Facebook
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

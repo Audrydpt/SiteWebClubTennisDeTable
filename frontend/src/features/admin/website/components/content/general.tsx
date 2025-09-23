@@ -1,9 +1,9 @@
 /* eslint-disable */
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
 import { fetchInformations, updateInformations } from '@/services/api.ts';
+import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface GeneralInfos {
   adresse?: string;
@@ -17,6 +17,8 @@ interface GeneralInfos {
   facebookMessageDefaut?: string;
   facebookMessageVeteran?: string;
   facebookMessageEntrainement?: string; // Nouveau message pour les entraînements
+  facebookMessageAbsence?: string; // Nouveau message pour les absences
+  facebookMessageMenu?: string; // Nouveau message pour les menus
   footer?: {
     aboutText?: string;
     year?: string;
@@ -50,6 +52,8 @@ export default function GeneralManager() {
             facebookMessageDefaut: data[0].facebookMessageDefaut || 'Bonjour @tout le monde\n\n📢 Les sélections pour la semaine {semaine} sont disponibles ! 🏓\n\nChaque membre peut consulter sa sélection personnelle et les compositions d\'équipes complètes dans son espace personnel sur notre site :\n🔗 https://cttframeries.com\n\nN\'oubliez pas de vérifier régulièrement vos sélections, et notez qu\'elles peuvent être mises à jour jusqu\'au jour de la rencontre.\n\nEn cas de problème ou si vous ne pouvez pas participer à une rencontre, merci de contacter rapidement un membre du comité.\n\nBonne semaine à tous et bon match ! 🏓',
             facebookMessageVeteran: data[0].facebookMessageVeteran || 'Bonjour @tout le monde\n\n🏓 Sélections vétérans pour la semaine {semaine} ! 🏓\n\nChaque membre peut consulter sa sélection personnelle dans son espace personnel sur notre site :\n🔗 https://cttframeries.com\n\nN\'hésitez pas à vérifier régulièrement vos sélections.\n\nEn cas de problème ou d\'indisponibilité, contactez rapidement un membre du comité.\n\nBonne semaine et bon jeu ! 🏓',
             facebookMessageEntrainement: data[0].facebookMessageEntrainement || '🏓 {titre}\n\n📅 {date}\n⏰ {heures}\n📍 {lieu}\n👨‍🏫 Responsable: {responsable}\n\n{description}\n\n{maxParticipants}Inscrivez-vous directement sur notre site web !\n🔗 https://cttframeries.com\n\nVenez nombreux ! 🎯\n\n#CTTFrameries #TennisDeTable #Entraînement #Sport',
+            facebookMessageAbsence: data[0].facebookMessageAbsence || 'Bonjour @tout le monde\n\n🗓️ Merci de compléter vos absences à venir pour {mois} sur votre espace personnel.\n\nCela nous aide à préparer au mieux les sélections et les compositions d\'équipes.\n\n🔗 https://cttframeries.com\n\nMerci pour votre collaboration ! 🙏',
+            facebookMessageMenu: data[0].facebookMessageMenu || 'Bonjour @tout le monde\n\n🍽️ Menu du moment au club !\n\n{listePlats}\n\nVenez vous régaler au club, ambiance conviviale garantie !\n\n🔗 https://cttframeries.com\n\n#CTTFrameries #Convivialité #Restauration',
             footer: {
               aboutText: data[0].footer?.aboutText || '',
               year: data[0].footer?.year || '',
@@ -101,6 +105,8 @@ export default function GeneralManager() {
         facebookMessageDefaut: infos.facebookMessageDefaut,
         facebookMessageVeteran: infos.facebookMessageVeteran,
         facebookMessageEntrainement: infos.facebookMessageEntrainement, // Ajouté
+        facebookMessageAbsence: infos.facebookMessageAbsence,
+        facebookMessageMenu: infos.facebookMessageMenu,
       };
       await updateInformations(mergedData.id, mergedData);
       alert('Infos générales sauvegardées !');
@@ -290,6 +296,42 @@ export default function GeneralManager() {
           <p className="text-xs text-gray-500 mt-1">
             Variables disponibles : {'{titre}'}, {'{date}'}, {'{heures}'}, {'{lieu}'}, {'{responsable}'}, {'{description}'}, {'{maxParticipants}'} seront remplacées automatiquement.
             Utilisez "Bonjour @tout le monde" en début de message pour notifier tous les membres du groupe.
+          </p>
+        </div>
+
+        {/* Nouveau: Message par défaut pour les absences */}
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            <span className="hidden sm:inline">Message par défaut pour les absences</span>
+            <span className="sm:hidden">Message absences</span>
+          </label>
+          <textarea
+            placeholder="Message de publication par défaut pour les absences"
+            value={infos.facebookMessageAbsence || ''}
+            onChange={(e) => handleChange('facebookMessageAbsence', e.target.value)}
+            className="w-full border p-2 rounded text-sm"
+            rows={5}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Variables disponibles : {'{mois}'} (ex: "mars 2025"). Utilisez "Bonjour @tout le monde" en début de message pour notifier tous les membres.
+          </p>
+        </div>
+
+        {/* Nouveau: Message par défaut pour le menu / plats */}
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            <span className="hidden sm:inline">Message par défaut pour le menu / plats</span>
+            <span className="sm:hidden">Message menu</span>
+          </label>
+          <textarea
+            placeholder="Message de publication par défaut pour le menu"
+            value={infos.facebookMessageMenu || ''}
+            onChange={(e) => handleChange('facebookMessageMenu', e.target.value)}
+            className="w-full border p-2 rounded text-sm"
+            rows={5}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Variable disponible : {'{listePlats}'} sera remplacée par la liste des plats générée automatiquement.
           </p>
         </div>
       </div>
