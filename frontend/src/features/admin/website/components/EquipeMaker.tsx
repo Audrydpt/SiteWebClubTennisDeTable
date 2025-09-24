@@ -31,6 +31,7 @@ import {
   Users,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { syncTabtScores } from '@/lib/syncTabtScores';
 
 export default function AdminResults() {
   // --- Helper robust pour détecter notre club dans un label d'équipe TABT ---
@@ -696,6 +697,10 @@ export default function AdminResults() {
   }, [saison, matchs, semaineSelectionnee, isClubTeam, hasTeamLetter]);
 
 
+  // Déplacez ces hooks ici, AVANT tout return ou condition
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ updated: number; errors: string[] } | null>(null);
+
   // Condition d'affichage optimiste
   if (isInitialLoading) {
     return (
@@ -820,6 +825,20 @@ export default function AdminResults() {
     );
   }
 
+
+  const handleSyncScores = async () => {
+    setSyncLoading(true);
+    setSyncResult(null);
+    try {
+      const result = await syncTabtScores();
+      setSyncResult(result);
+    } catch (err: any) {
+      setSyncResult({ updated: 0, errors: [err?.message || 'Erreur inconnue lors de la synchronisation'] });
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -910,6 +929,41 @@ export default function AdminResults() {
                     <AlertCircle className="h-4 w-4" />
                   )}
                   <AlertDescription>{saveMessage.message}</AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Synchronisation des scores officiels */}
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-700">
+                  Reset de la sélection de la semaine précédente
+                </h3>
+                <Button
+                  onClick={handleSyncScores}
+                  disabled={syncLoading}
+                  variant="outline"
+                  className="text-sm"
+                >
+                  {syncLoading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
+                  {syncLoading ? 'Synchronisation...' : 'Synchroniser'}
+                </Button>
+              </div>
+
+              {/* Affichage des logs de synchronisation */}
+              {syncResult && (
+                <Alert variant={syncResult.errors.length ? 'destructive' : 'default'} className="mt-4">
+                  <AlertDescription>
+                    {syncResult.errors.length
+                      ? syncResult.errors.map((e, i) => <div key={i}>{e}</div>)
+                      : `${syncResult.updated} match(s) mis à jour.`}
+                  </AlertDescription>
                 </Alert>
               )}
             </CardContent>
