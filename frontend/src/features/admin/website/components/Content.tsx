@@ -113,6 +113,14 @@ export default function AdminContent() {
       component: <ZonesCommandeManager />,
       color: 'from-purple-500 to-purple-600',
     },
+    {
+      id: 'actualites',
+      title: 'Actualités',
+      description: 'Gérer les actualités du site',
+      icon: <FileText className="h-6 w-6" />,
+      component: <ActualitesManager />,
+      color: 'from-teal-500 to-teal-600',
+    }
   ];
 
   // Si une section est active, afficher uniquement cette section
