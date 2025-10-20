@@ -80,6 +80,7 @@ export default function HomePage() {
   const [loadingSponsors, setLoadingSponsors] = useState(true);
   const [saison, setSaison] = useState<SaisonData | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<ActualiteData | null>(null);
+  const [isImageZoomed, setIsImageZoomed] = useState(false);
   const [divisionNameById, setDivisionNameById] = useState<Record<string, string>>({});
 
   // Helpers club/équipes
@@ -445,29 +446,42 @@ export default function HomePage() {
         {selectedArticle && (
           <div
             className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-2 sm:p-4 animate-fadeIn"
-            onClick={(e) =>
-              e.target === e.currentTarget && setSelectedArticle(null)
-            }
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setSelectedArticle(null);
+                setIsImageZoomed(false);
+              }
+            }}
           >
             <div className="relative max-w-4xl w-full bg-white rounded-lg overflow-hidden shadow-lg animate-slideUp max-h-[95vh] sm:max-h-[90vh]">
               {/* Bouton fermer */}
               <button
                 className="absolute top-2 right-2 sm:top-4 sm:right-4 text-white text-2xl sm:text-3xl z-50 bg-black/50 rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center hover:bg-black/70"
-                onClick={() => setSelectedArticle(null)}
+                onClick={() => {
+                  setSelectedArticle(null);
+                  setIsImageZoomed(false);
+                }}
               >
                 ✕
               </button>
 
-              {/* Image - hauteur adaptative selon l'écran */}
-              <div className="w-full h-[200px] sm:h-[300px] md:h-[400px] bg-black overflow-hidden flex items-center justify-center">
+              {/* Image - hauteur adaptative selon l'écran avec zoom */}
+              <div
+                className="w-full h-[200px] sm:h-[300px] md:h-[400px] bg-black overflow-hidden flex items-center justify-center relative cursor-zoom-in group"
+                onClick={() => setIsImageZoomed(true)}
+              >
                 <img
                   src={selectedArticle.imageUrl || '/placeholder.svg'}
                   alt={selectedArticle.title}
-                  className="max-h-full max-w-full object-contain transition-transform duration-500"
+                  className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
                 />
+                {/* Indicateur de zoom */}
+                <div className="absolute bottom-2 right-2 bg-black/60 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                  🔍 Cliquer pour agrandir
+                </div>
               </div>
 
-              {/* Contenu - hauteur adaptative pour éviter le scroll */}
+              {/* Contenu - hauteur adapative pour éviter le scroll */}
               <div className="p-3 sm:p-4 md:p-6 text-black h-[250px] sm:h-[300px] md:h-[400px] flex flex-col">
                 <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-3 md:mb-4 flex-shrink-0 leading-tight">
                   {selectedArticle.title}
@@ -494,6 +508,30 @@ export default function HomePage() {
                 )}
               </div>
             </div>
+
+            {/* Modal de zoom plein écran */}
+            {isImageZoomed && (
+              <div
+                className="fixed inset-0 bg-black/95 z-[60] flex items-center justify-center p-4 animate-fadeIn"
+                onClick={() => setIsImageZoomed(false)}
+              >
+                <button
+                  className="absolute top-4 right-4 text-white text-3xl z-[70] bg-black/70 rounded-full w-12 h-12 flex items-center justify-center hover:bg-black/90 transition-colors"
+                  onClick={() => setIsImageZoomed(false)}
+                >
+                  ✕
+                </button>
+                <img
+                  src={selectedArticle.imageUrl || '/placeholder.svg'}
+                  alt={selectedArticle.title}
+                  className="max-h-[95vh] max-w-[95vw] object-contain cursor-zoom-out"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsImageZoomed(false);
+                  }}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>

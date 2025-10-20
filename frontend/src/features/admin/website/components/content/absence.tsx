@@ -21,29 +21,47 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { deleteAbsence, fetchAbsence, fetchInformations } from '@/services/api';
-import { Absence } from '@/services/type';
+import { createAbsence, deleteAbsence, fetchAbsence, fetchInformations, fetchUsers } from '@/services/api';
+import { Absence, Member } from '@/services/type';
 import { exportAbsencesToExcel } from '@/utils/excelExport';
-import { CalendarX, Check, ClipboardCopy, Download, Eye, Info, Trash2 } from 'lucide-react';
+import { CalendarX, Check, ClipboardCopy, Download, Eye, Info, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function AbsenceManager() {
   const [absences, setAbsences] = useState<Absence[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   // Par défaut: afficher uniquement les absences à venir
   const [statusFilter, setStatusFilter] = useState<string>('upcoming');
   const [selectedAbsence, setSelectedAbsence] = useState<Absence | null>(null);
   const [showFacebookDialog, setShowFacebookDialog] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [facebookMessage, setFacebookMessage] = useState('');
   const [groupId, setGroupId] = useState('1414350289649865');
   const [messageTemplate, setMessageTemplate] = useState('Bonjour @tout le monde\n\n🗓️ Merci de compléter vos absences à venir pour {mois} sur votre espace personnel.\n\nCela nous aide à préparer au mieux les sélections et les compositions d\'équipes.\n\n🔗 https://cttframeries.com\n\nMerci pour votre collaboration ! 🙏');
   const [isMessageCopied, setIsMessageCopied] = useState(false);
+  const [formData, setFormData] = useState({
+    memberId: '',
+    memberName: '',
+    date: '',
+    details: '',
+  });
 
   useEffect(() => {
     loadAbsences();
+    loadMembers();
     loadFacebookConfig();
   }, []);
+
+  const loadMembers = async () => {
+    try {
+      const data = await fetchUsers();
+      setMembers(data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des membres:', error);
+    }
+  };
 
   const loadFacebookConfig = async () => {
     try {
@@ -110,8 +128,7 @@ export default function AbsenceManager() {
     // Normaliser à minuit pour l'écart en jours
     d.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
-    const diff = Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return diff;
+    return Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   };
 
   const monthLabel = (date: Date) =>
@@ -170,6 +187,54 @@ export default function AbsenceManager() {
     total: absences.length,
     upcoming: absences.filter((a) => !isDatePast(a.date)).length,
     past: absences.filter((a) => isDatePast(a.date)).length,
+  };
+
+  const resetForm = () => {
+    setFormData({
+      memberId: '',
+      memberName: '',
+      date: '',
+      details: '',
+    });
+  };
+
+  const handleCreateAbsence = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.memberId || !formData.date) {
+      alert('Veuillez sélectionner un membre et une date');
+      return;
+    }
+
+    try {
+      const absenceData = {
+        memberId: formData.memberId,
+        memberName: formData.memberName,
+        date: formData.date,
+        details: formData.details || 'Absence créée par l\'administrateur',
+        statut: 'active',
+        dateCreation: new Date().toISOString(),
+      };
+
+      await createAbsence(absenceData);
+      await loadAbsences();
+      setShowCreateDialog(false);
+      resetForm();
+    } catch (error) {
+      console.error('Erreur lors de la création de l\'absence:', error);
+      alert('Erreur lors de la création de l\'absence');
+    }
+  };
+
+  const handleMemberSelect = (memberId: string) => {
+    const member = members.find(m => m.id === memberId);
+    if (member) {
+      setFormData({
+        ...formData,
+        memberId: member.id,
+        memberName: `${member.prenom} ${member.nom}`,
+      });
+    }
   };
 
   return (
@@ -236,6 +301,15 @@ export default function AbsenceManager() {
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                 </svg>
                 Publier sur Facebook
+              </Button>
+              <Button
+                onClick={() => setShowCreateDialog(true)}
+                variant="outline"
+                size="sm"
+                className="text-xs sm:text-sm bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+              >
+                <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                Ajouter une absence
               </Button>
             </div>
           </CardTitle>
@@ -424,6 +498,64 @@ export default function AbsenceManager() {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialogue de création d'absence */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-[90vw] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Créer une absence</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateAbsence} className="space-y-4">
+            <div>
+              <Label htmlFor="member" className="text-sm">Membre</Label>
+              <Select
+                value={formData.memberId}
+                onValueChange={handleMemberSelect}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un membre" />
+                </SelectTrigger>
+                <SelectContent>
+                  {members.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.prenom} {member.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="date" className="text-sm">Date d'absence</Label>
+              <Input
+                id="date"
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                className="text-sm"
+              />
+            </div>
+            <div>
+              <Label htmlFor="details" className="text-sm">Détails</Label>
+              <Textarea
+                id="details"
+                value={formData.details}
+                onChange={(e) => setFormData({ ...formData, details: e.target.value })}
+                rows={3}
+                placeholder="Raison de l'absence (optionnel)"
+                className="resize-none text-sm"
+              />
+            </div>
+            <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2">
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">Annuler</Button>
+              </DialogClose>
+              <Button type="submit" className="bg-green-600 hover:bg-green-500 text-white">
+                Créer l'absence
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
