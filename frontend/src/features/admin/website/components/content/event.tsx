@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Loader2, Save, Plus, Trash, Edit, ChevronDown, ChevronRight, Search } from "lucide-react";
+import { Loader2, Save, Plus, Trash, ChevronDown, ChevronRight, Search, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,6 +46,7 @@ export default function EventManager() {
     description: "",
     time: "",
     location: "",
+    isHome: true, // Pour les championnats
   });
 
   useEffect(() => {
@@ -103,6 +104,7 @@ export default function EventManager() {
       description: "",
       time: "",
       location: "",
+      isHome: true,
     });
     setIsDialogOpen(true);
   };
@@ -269,6 +271,27 @@ export default function EventManager() {
     }
   }, [searchTerm, eventData]);
 
+  const handleCopyEvent = (event: any) => {
+    // Copier l'événement avec un nouvel ID
+    const copiedEvent = {
+      ...event,
+      id: Date.now().toString(),
+      title: `${event.title} (copie)`,
+    };
+
+    setEventData((prev: any) => ({
+      ...prev,
+      calendar: [...prev.calendar, copiedEvent],
+    }));
+
+    // Ouvrir la catégorie correspondante
+    setCollapsedCategories(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(copiedEvent.type);
+      return newSet;
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8 sm:py-12">
@@ -395,15 +418,26 @@ export default function EventManager() {
                               key={ev.id}
                               className="p-3 sm:p-4 bg-white border rounded-lg space-y-3 sm:space-y-4 relative shadow-sm"
                             >
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteEvent(ev.id)}
-                                className="absolute top-2 right-2 text-red-500 hover:text-red-700 z-10"
-                              >
-                                <Trash className="w-4 h-4 sm:w-5 sm:h-5" />
-                              </button>
+                              <div className="absolute top-2 right-2 flex gap-2 z-10">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyEvent(ev)}
+                                  className="text-blue-500 hover:text-blue-700"
+                                  title="Copier l'événement"
+                                >
+                                  <Copy className="w-4 h-4 sm:w-5 sm:h-5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteEvent(ev.id)}
+                                  className="text-red-500 hover:text-red-700"
+                                  title="Supprimer l'événement"
+                                >
+                                  <Trash className="w-4 h-4 sm:w-5 sm:h-5" />
+                                </button>
+                              </div>
 
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pr-8 sm:pr-10">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pr-16 sm:pr-20">
                                 <div>
                                   <label className="block text-xs sm:text-sm font-medium mb-1">Titre</label>
                                   <Input
@@ -459,17 +493,81 @@ export default function EventManager() {
                                     className="text-sm"
                                   />
                                 </div>
-                                <div className="col-span-1 sm:col-span-2">
-                                  <label className="block text-xs sm:text-sm font-medium mb-1">Lieu</label>
-                                  <Input
-                                    value={ev.location}
-                                    onChange={(e) =>
-                                      handleChangeCalendar(ev.id, "location", e.target.value)
-                                    }
-                                    placeholder="Lieu"
-                                    className="text-sm"
-                                  />
-                                </div>
+
+                                {/* Choix Domicile/Extérieur pour les championnats */}
+                                {ev.type === 'championnat' ? (
+                                  <>
+                                    <div>
+                                      <label className="block text-xs sm:text-sm font-medium mb-1">Match</label>
+                                      <Select
+                                        value={ev.isHome !== undefined ? (ev.isHome ? 'home' : 'away') : 'home'}
+                                        onValueChange={(val) =>
+                                          handleChangeCalendar(ev.id, "isHome", val === 'home' ? 'true' : 'false')
+                                        }
+                                      >
+                                        <SelectTrigger className="text-sm">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="home">🏠 Domicile</SelectItem>
+                                          <SelectItem value="away">✈️ Extérieur</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-xs sm:text-sm font-medium mb-1">Lieu</label>
+                                      <Select
+                                        value={ev.location === 'Frameries' || ev.location === 'Domicile' ? 'domicile' : ev.location === 'Extérieur' ? 'exterieur' : 'autre'}
+                                        onValueChange={(val) => {
+                                          if (val === 'domicile') {
+                                            handleChangeCalendar(ev.id, "location", "Frameries");
+                                          } else if (val === 'exterieur') {
+                                            handleChangeCalendar(ev.id, "location", "Extérieur");
+                                          } else {
+                                            handleChangeCalendar(ev.id, "location", "");
+                                          }
+                                        }}
+                                      >
+                                        <SelectTrigger className="text-sm">
+                                          <SelectValue placeholder="Sélectionner un lieu" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="domicile">🏠 Domicile (Frameries)</SelectItem>
+                                          <SelectItem value="exterieur">✈️ Extérieur</SelectItem>
+                                          <SelectItem value="autre">📍 Autre (saisir manuellement)</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+
+                                    {/* Champ de saisie manuelle si "Autre" est sélectionné */}
+                                    {ev.location !== 'Frameries' && ev.location !== 'Domicile' && ev.location !== 'Extérieur' && (
+                                      <div className="col-span-1 sm:col-span-2">
+                                        <label className="block text-xs sm:text-sm font-medium mb-1">Lieu personnalisé</label>
+                                        <Input
+                                          value={ev.location || ''}
+                                          onChange={(e) =>
+                                            handleChangeCalendar(ev.id, "location", e.target.value)
+                                          }
+                                          placeholder="Entrez le lieu"
+                                          className="text-sm"
+                                        />
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <div className="col-span-1 sm:col-span-2">
+                                    <label className="block text-xs sm:text-sm font-medium mb-1">Lieu</label>
+                                    <Input
+                                      value={ev.location}
+                                      onChange={(e) =>
+                                        handleChangeCalendar(ev.id, "location", e.target.value)
+                                      }
+                                      placeholder="Lieu"
+                                      className="text-sm"
+                                    />
+                                  </div>
+                                )}
                               </div>
                               <div>
                                 <label className="block text-xs sm:text-sm font-medium mb-1">Description</label>

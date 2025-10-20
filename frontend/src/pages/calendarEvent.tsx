@@ -23,6 +23,7 @@ interface Event {
   description: string;
   time?: string;
   location?: string;
+  isHome?: boolean;
 }
 
 export default function EventsCalendar() {
@@ -121,7 +122,7 @@ export default function EventsCalendar() {
 
     // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-24" />);
+      days.push(<div key={`empty-${i}`} className="h-16 sm:h-24" />);
     }
 
     // Days of the month
@@ -132,13 +133,13 @@ export default function EventsCalendar() {
       days.push(
         <div
           key={day}
-          className={`h-24 border border-gray-200 p-1 cursor-pointer hover:bg-gray-50 transition-colors ${
+          className={`h-16 sm:h-24 border border-gray-200 p-0.5 sm:p-1 cursor-pointer hover:bg-gray-50 transition-colors ${
             hasEvents ? 'bg-yellow-50' : ''
           }`}
           onClick={() => hasEvents && setSelectedEvent(dayEvents[0])}
         >
-          <div className="font-semibold text-[#3A3A3A] mb-1">{day}</div>
-          <div className="space-y-1">
+          <div className="font-semibold text-[#3A3A3A] text-xs sm:text-base mb-0.5 sm:mb-1">{day}</div>
+          <div className="space-y-0.5 sm:space-y-1">
             {dayEvents.slice(0, 2).map((event) => {
               const config = eventTypeConfig[event.type] || {
                 color: 'bg-gray-500',
@@ -147,15 +148,20 @@ export default function EventsCalendar() {
               return (
                 <div
                   key={event.id}
-                  className={`text-xs px-1 py-0.5 rounded text-white ${config.color} truncate`}
+                  className={`text-[10px] sm:text-xs px-0.5 sm:px-1 py-0.5 rounded text-white ${config.color} truncate flex items-center gap-1`}
                 >
-                  {event.title}
+                  {event.type === 'championnat' && event.isHome !== undefined && (
+                    <span className="text-[8px] sm:text-xs">
+                      {event.isHome ? '🏠' : '✈️'}
+                    </span>
+                  )}
+                  <span className="truncate">{event.title}</span>
                 </div>
               );
             })}
             {dayEvents.length > 2 && (
-              <div className="text-xs text-gray-500">
-                +{dayEvents.length - 2} autres
+              <div className="text-[10px] sm:text-xs text-gray-500">
+                +{dayEvents.length - 2}
               </div>
             )}
           </div>
