@@ -56,6 +56,7 @@ export interface ActualiteData {
   content: string;
   redirectUrl: string;
   order: number;
+  archived?: boolean; // Nouvelle propriété pour l'archivage
 }
 
 export type SaisonStatut = 'En cours' | 'Terminée' | 'Archivée';

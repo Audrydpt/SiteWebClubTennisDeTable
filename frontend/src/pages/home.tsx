@@ -155,8 +155,13 @@ export default function HomePage() {
         let actualitesData: any[] = [];
         if (Array.isArray(data)) actualitesData = data;
         else if (data && (data as any).actualites && Array.isArray((data as any).actualites)) actualitesData = (data as any).actualites;
-        const sortedActualites = actualitesData.sort((a: ActualiteData, b: ActualiteData) => (a.order || Infinity) - (b.order || Infinity));
-        setActualites(sortedActualites);
+
+        // Filtrer les actualités archivées et trier par ordre
+        const filteredActualites = actualitesData
+          .filter((a: ActualiteData) => !a.archived) // Exclure les actualités archivées
+          .sort((a: ActualiteData, b: ActualiteData) => (a.order || Infinity) - (b.order || Infinity));
+
+        setActualites(filteredActualites);
       } catch (e) {
         setActualites([]);
       } finally {
