@@ -48,6 +48,7 @@ export default function EventsGallery() {
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [categories, setCategories] = useState<Categories>({});
   const [loading, setLoading] = useState(true);
+  const [isImageZoomed, setIsImageZoomed] = useState(false);
 
   useEffect(() => {
     loadGalleryData();
@@ -507,7 +508,10 @@ export default function EventsGallery() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setSelectedItem(null)}
+                onClick={() => {
+                  setSelectedItem(null);
+                  setIsImageZoomed(false);
+                }}
                 className="text-white hover:text-gray-300 hover:bg-white/10"
               >
                 <X className="h-6 w-6" />
@@ -540,12 +544,21 @@ export default function EventsGallery() {
                     </video>
                   </div>
                 ) : (
-                  <img
-                    src={selectedItem.src || '/api/placeholder/400/300'}
-                    alt={selectedItem.title}
-                    className="w-full h-auto max-h-[60vh] object-contain rounded-t-lg"
-                    onError={handleImageError}
-                  />
+                  <div
+                    className="relative bg-black rounded-t-lg cursor-zoom-in group"
+                    onClick={() => setIsImageZoomed(true)}
+                  >
+                    <img
+                      src={selectedItem.src || '/api/placeholder/400/300'}
+                      alt={selectedItem.title}
+                      className="w-full h-auto max-h-[60vh] object-contain rounded-t-lg transition-transform duration-500 group-hover:scale-105"
+                      onError={handleImageError}
+                    />
+                    {/* Indicateur de zoom */}
+                    <div className="absolute bottom-2 right-2 bg-black/60 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                      🔍 Cliquer pour agrandir
+                    </div>
+                  </div>
                 )}
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
@@ -567,6 +580,31 @@ export default function EventsGallery() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Modal de zoom plein écran pour les photos */}
+          {isImageZoomed && selectedItem.type === 'photo' && (
+            <div
+              className="fixed inset-0 bg-black/95 z-[60] flex items-center justify-center p-4 animate-fadeIn"
+              onClick={() => setIsImageZoomed(false)}
+            >
+              <button
+                className="absolute top-4 right-4 text-white text-3xl z-[70] bg-black/70 rounded-full w-12 h-12 flex items-center justify-center hover:bg-black/90 transition-colors"
+                onClick={() => setIsImageZoomed(false)}
+              >
+                ✕
+              </button>
+              <img
+                src={selectedItem.src || '/api/placeholder/400/300'}
+                alt={selectedItem.title}
+                className="max-h-[95vh] max-w-[95vw] object-contain cursor-zoom-out"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsImageZoomed(false);
+                }}
+                onError={handleImageError}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
