@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { fetchMergedUIMatchesForClub } from '@/services/tabt';
-import { fetchSaisonEnCours, logSelectionsAccess, logAccordionOpen } from '@/services/api';
+import { fetchSaisonEnCours, logSelectionsAccess, logAccordionOpen, updateMemberLastLog } from '@/services/api';
 import { Match, Saison } from '@/services/type';
 import supabase from '@/lib/supabaseClient';
 
@@ -62,6 +62,8 @@ export default function AllSelections() {
               setCurrentUserName(fullName);
               // Logger l'accès à la page avec le nom complet
               await logSelectionsAccess(user.id, fullName);
+              // Mettre à jour le lastLog lors de l'accès à cette page
+              await updateMemberLastLog(user.id);
             } else {
               // Logger l'accès avec ID seulement si pas de données membre
               await logSelectionsAccess(user.id, `User ID: ${user.id}`);

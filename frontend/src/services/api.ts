@@ -34,6 +34,23 @@ export const deleteUserProfile = async (id: string) => {
   await axios.delete(`${API_URL}/membres/${id}`);
 };
 
+// Fonction pour mettre à jour la dernière connexion d'un membre
+export const updateMemberLastLog = async (supabaseUid: string) => {
+  try {
+    const membres = await fetchUsers();
+    const membre = membres.find((m: any) => m.supabase_uid === supabaseUid);
+
+    if (membre) {
+      const response = await axios.patch(`${API_URL}/membres/${membre.id}`, {
+        lastLog: new Date().toISOString()
+      });
+      return response.data;
+    }
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du lastLog:', error);
+  }
+};
+
 /* Abscence Calendar/Training Calendar/Food menu - Compatibilité */
 
 export const fetchAbsence = async () => {

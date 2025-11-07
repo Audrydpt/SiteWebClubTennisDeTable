@@ -6,13 +6,12 @@ import {
   Calendar,
   Image as ImageIcon,
   Users,
-  Trophy,
   ArrowLeft,
   CalendarX,
   Dumbbell,
   UtensilsCrossed,
-  Building,
   MapPin,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,6 +31,7 @@ import AbsenceManager from '@/features/admin/website/components/content/absence.
 import TrainingManager from '@/features/admin/website/components/content/training.tsx';
 import PlatsManager from '@/features/admin/website/components/content/plats.tsx';
 import ZonesCommandeManager from '@/features/admin/website/components/content/zones-commande.tsx';
+import CheckLastLog from '@/features/admin/website/components/content/checkLastLog.tsx';
 
 interface ContentSection {
   id: string;
@@ -120,7 +120,15 @@ export default function AdminContent() {
       icon: <FileText className="h-6 w-6" />,
       component: <ActualitesManager />,
       color: 'from-teal-500 to-teal-600',
-    }
+    },
+    {
+      id: 'check-last-log',
+      title: 'Connexions',
+      description: 'Voir les dernières connexions des membres',
+      icon: <Clock className="h-6 w-6" />,
+      component: <CheckLastLog />,
+      color: 'from-indigo-500 to-indigo-600',
+    },
   ];
 
   // Si une section est active, afficher uniquement cette section

@@ -195,6 +195,7 @@ export type Member = {
   dateInscription?: string; // Optionnel pour les membres
   indexListeForce: number; // Maintenant requis
   groupe?: string; // Nouveau : permet d'assigner un membre à un groupe
+  lastLog?: string; // Date et heure de la dernière connexion (ISO string)
 };
 
 export interface Mousse {

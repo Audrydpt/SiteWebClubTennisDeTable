@@ -45,6 +45,7 @@ import AbsenceCalendar from './components/AbsenceCalendar';
 import TrainingCalendar from './components/TrainingCalendar';
 import FoodMenuSaturday from './components/FoodMenuSaturday';
 import { useNavigate } from 'react-router-dom';
+import { updateMemberLastLog } from '@/services/api';
 
 export default function HomeLogged() {
   // Détection robuste du club
@@ -143,6 +144,11 @@ export default function HomeLogged() {
         );
         const users: Member[] = await res.json(); // Changer de Joueur à Member
         setMember(users[0] || null);
+
+        // Mettre à jour le lastLog lors de l'accès à la page
+        if (user?.id) {
+          await updateMemberLastLog(user.id);
+        }
       } catch (err) {
         setError('Erreur de chargement des données.');
       } finally {
