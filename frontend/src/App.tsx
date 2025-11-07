@@ -31,6 +31,7 @@ const MembresListing = lazy(
   () => import('@/features/public/comps/MembresListing.tsx')
 );
 const AllSelections = lazy(() => import('@/features/public/AllSelections.tsx'));
+const SalleView = lazy(() => import('@/features/public/SalleView.tsx'));
 
 export default function App() {
   return (
@@ -111,6 +112,14 @@ export default function App() {
               element={
                 <MemberRoute>
                   <AllSelections />
+                </MemberRoute>
+              }
+            />
+            <Route
+              path="/espace-membre/salle"
+              element={
+                <MemberRoute>
+                  <SalleView />
                 </MemberRoute>
               }
             />

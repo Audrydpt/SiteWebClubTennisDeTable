@@ -12,6 +12,7 @@ import {
   UtensilsCrossed,
   MapPin,
   Clock,
+  LayoutGrid,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,6 +33,7 @@ import TrainingManager from '@/features/admin/website/components/content/trainin
 import PlatsManager from '@/features/admin/website/components/content/plats.tsx';
 import ZonesCommandeManager from '@/features/admin/website/components/content/zones-commande.tsx';
 import CheckLastLog from '@/features/admin/website/components/content/checkLastLog.tsx';
+import SalleConfigEditor from '@/features/admin/website/components/content/salleConfigEditor.tsx';
 
 interface ContentSection {
   id: string;
@@ -95,7 +97,6 @@ export default function AdminContent() {
       component: <SponsorsManager />,
       color: 'from-orange-500 to-orange-600',
     },
-
     {
       id: 'training',
       title: 'Entraînements',
@@ -104,7 +105,6 @@ export default function AdminContent() {
       component: <TrainingManager />,
       color: 'from-blue-500 to-blue-600',
     },
-
     {
       id: 'zones-commande',
       title: 'Zones de commande',
@@ -129,6 +129,14 @@ export default function AdminContent() {
       component: <CheckLastLog />,
       color: 'from-indigo-500 to-indigo-600',
     },
+    {
+      id: 'salle-config-editor',
+      title: 'Éditeur Configuration Salle',
+      description: 'Éditeur avancé pour la configuration de la salle',
+      icon: <LayoutGrid className="h-6 w-6" />,
+      component: <SalleConfigEditor />,
+      color: 'from-yellow-500 to-yellow-600',
+    }
   ];
 
   // Si une section est active, afficher uniquement cette section

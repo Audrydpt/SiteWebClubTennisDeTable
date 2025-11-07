@@ -11,17 +11,6 @@ import "./index.css";
 const basename = import.meta.env.BASE_URL || "";
 const queryClient = new QueryClient();
 
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker
-    .register("/firebase-messaging-sw.js")
-    .then((registration) => {
-      console.log("✅ Service Worker Firebase enregistré", registration);
-    })
-    .catch((err) => {
-      console.error("❌ Erreur Service Worker Firebase", err);
-    });
-}
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
