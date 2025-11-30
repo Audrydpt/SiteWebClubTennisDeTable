@@ -129,14 +129,6 @@ export default function AdminContent() {
       component: <CheckLastLog />,
       color: 'from-indigo-500 to-indigo-600',
     },
-    {
-      id: 'salle-config-editor',
-      title: 'Éditeur Configuration Salle',
-      description: 'Éditeur avancé pour la configuration de la salle',
-      icon: <LayoutGrid className="h-6 w-6" />,
-      component: <SalleConfigEditor />,
-      color: 'from-yellow-500 to-yellow-600',
-    }
   ];
 
   // Si une section est active, afficher uniquement cette section
