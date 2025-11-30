@@ -218,7 +218,6 @@ export default function HomePage() {
         };
         const parseDate = (m: any) => new Date(m.date || m.dateTime || '').getTime() || 0;
         const today = new Date(); today.setHours(0,0,0,0);
-        const teamLetter = (val: any): string => String(val || '').trim().toUpperCase();
         const extractLetter = (team?: string): string => {
           if (!team) return '';
           const tokens = String(team).trim().split(/\s+/);
@@ -228,7 +227,7 @@ export default function HomePage() {
           return found ? found.toUpperCase() : '';
         };
 
-        const pickForLetter = (letter: 'A'|'B'|'C'): ResultatData | null => {
+        const pickForLetter = (letter: 'A'|'B'|'C'): ResultatData[] => {
           // matches où notre club joue et avec la bonne lettre de team
           const list = clubMatches.filter((m) => {
             const homeIsClub = isClubSide(m,'home');
@@ -238,38 +237,109 @@ export default function HomePage() {
             const at = extractLetter(m.awayTeam);
             return (homeIsClub && ht === letter) || (awayIsClub && at === letter);
           });
-          if (!list.length) return null;
+          if (!list.length) return [];
 
-          const withScore = list.filter((m) => m.score && m.score !== '-').sort((a,b) => parseDate(b) - parseDate(a));
-          let chosen: any;
-          if (withScore.length) chosen = withScore[0];
-          else {
-            const upcoming = list.filter((m) => (!m.score || m.score === '-') && parseDate(m) >= today.getTime()).sort((a,b) => parseDate(a) - parseDate(b));
-            chosen = upcoming[0] || list.sort((a,b) => parseDate(b)-parseDate(a))[0];
+          // Grouper par divisionId pour séparer vétérans et hommes
+          // Chaque divisionId représente une équipe unique (ex: A Hommes, A Vétérans)
+          const byDivision = new Map<string, any[]>();
+          for (const m of list) {
+            const divId = String(m.divisionId || '');
+            if (!divId) continue;
+            if (!byDivision.has(divId)) {
+              byDivision.set(divId, []);
+            }
+            byDivision.get(divId)!.push(m);
           }
-          if (!chosen) return null;
 
-          const homeIsClub = isClubSide(chosen,'home');
-          const equipe = mkTeamLabel(chosen, homeIsClub ? 'home' : 'away');
-          const adv = mkTeamLabel(chosen, homeIsClub ? 'away' : 'home');
+          const results: ResultatData[] = [];
 
-          return {
-            id: String(chosen.matchUniqueId || chosen.matchId || `${equipe}-${adv}-${chosen.date}`),
-            division: chosen.divisionName || `Division ${chosen.divisionId || ''}`,
-            equipe,
-            adversaire: adv,
-            score: chosen.score || '-',
-            date: (chosen.date || chosen.dateTime || '') as string,
-            semaine: 0,
-            serieId: String(chosen.divisionId || ''),
-            domicile: !!homeIsClub,
-          } as ResultatData;
+          // Fonction pour détecter les forfaits
+          const isForfait = (score?: string): boolean => {
+            if (!score || score === '-') return false;
+            const s = score.toLowerCase();
+            return s.includes('(af)') || s.includes('(ff)') || s.includes('forfait');
+          };
+
+          // Pour chaque division (équipe unique), prendre le match le plus pertinent
+          for (const [divId, matches] of byDivision) {
+            // Prioriser : 1) dernier match joué (non forfait), 2) prochain match à venir, 3) forfait récent uniquement
+            const now = Date.now();
+            const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+            const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+
+            // Priorité 1 : Matchs joués avec un vrai score (pas forfait)
+            const withRealScore = matches
+              .filter((m) => m.score && m.score !== '-' && !isForfait(m.score))
+              .sort((a, b) => parseDate(b) - parseDate(a));
+
+            // Priorité 2 : Matchs à venir dans les 30 prochains jours
+            const upcomingSoon = matches
+              .filter((m) => {
+                const matchDate = parseDate(m);
+                return (!m.score || m.score === '-') &&
+                       matchDate >= today.getTime() &&
+                       matchDate <= now + thirtyDaysMs;
+              })
+              .sort((a, b) => parseDate(a) - parseDate(b));
+
+            // Priorité 3 : Forfaits UNIQUEMENT s'ils sont récents (passés) ou imminents (dans les 7 jours)
+            const recentForfaits = matches
+              .filter((m) => {
+                if (!m.score || m.score === '-' || !isForfait(m.score)) return false;
+                const matchDate = parseDate(m);
+                // Accepter les forfaits passés (dans les 60 derniers jours) ou à venir dans les 7 prochains jours
+                const sixtyDaysAgo = now - (60 * 24 * 60 * 60 * 1000);
+                const sevenDaysAhead = now + sevenDaysMs;
+                return matchDate >= sixtyDaysAgo && matchDate <= sevenDaysAhead;
+              })
+              .sort((a, b) => parseDate(b) - parseDate(a));
+
+            let chosen: any;
+            if (withRealScore.length) {
+              chosen = withRealScore[0]; // Priorité 1 : Dernier vrai match joué
+            } else if (upcomingSoon.length) {
+              chosen = upcomingSoon[0]; // Priorité 2 : Prochain match dans 30 jours
+            } else if (recentForfaits.length) {
+              chosen = recentForfaits[0]; // Priorité 3 : Forfait récent/imminent uniquement
+            } else {
+              // Dernier recours : aucun match pertinent, ne rien afficher pour cette équipe
+              chosen = null;
+            }
+
+            if (chosen) {
+              const homeIsClub = isClubSide(chosen, 'home');
+              const equipe = mkTeamLabel(chosen, homeIsClub ? 'home' : 'away');
+              const adv = mkTeamLabel(chosen, homeIsClub ? 'away' : 'home');
+
+              results.push({
+                id: String(chosen.matchUniqueId || chosen.matchId || `${equipe}-${adv}-${chosen.date}`),
+                division: chosen.divisionName || `Division ${chosen.divisionId || ''}`,
+                equipe,
+                adversaire: adv,
+                score: chosen.score || '-',
+                date: (chosen.date || chosen.dateTime || '') as string,
+                semaine: 0,
+                serieId: divId,
+                domicile: homeIsClub,
+              } as ResultatData);
+            }
+          }
+
+          return results;
         };
 
         const letters: ('A'|'B'|'C')[] = ['A','B','C'];
         let computed: ResultatData[] = letters
           .map(pickForLetter)
+          .flat()
           .filter((x): x is ResultatData => !!x);
+
+        // Trier par date (plus récent en premier) pour déterminer correctement le type à afficher
+        computed.sort((a, b) => {
+          const dateA = new Date(a.date || '').getTime() || 0;
+          const dateB = new Date(b.date || '').getTime() || 0;
+          return dateB - dateA;
+        });
 
         // Fallback sur ancienne méthode par division si rien trouvé
         if (!computed.length) {
@@ -283,17 +353,58 @@ export default function HomePage() {
 
           const computeFromDivisions = (): ResultatData[] => {
             const out: ResultatData[] = [];
+            const isForfait = (score?: string): boolean => {
+              if (!score || score === '-') return false;
+              const s = score.toLowerCase();
+              return s.includes('(af)') || s.includes('(ff)') || s.includes('forfait');
+            };
+
             DIVISION_IDS_ABC.forEach((divId) => {
               const list = divisionMatches.filter((m) => Number(m.divisionId) === Number(divId));
               if (!list.length) return;
               const clubMatches = list.filter((m) => isClubSide(m,'home') || isClubSide(m,'away'));
               if (!clubMatches.length) return;
-              const withScore = clubMatches.filter((m) => m.score && m.score !== '-').sort((a,b) => parseDate(b) - parseDate(a));
+
+              const now = Date.now();
+              const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+              const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+
+              // Priorité 1 : Matchs joués avec un vrai score (pas forfait)
+              const withRealScore = clubMatches
+                .filter((m) => m.score && m.score !== '-' && !isForfait(m.score))
+                .sort((a, b) => parseDate(b) - parseDate(a));
+
+              // Priorité 2 : Matchs à venir dans les 30 prochains jours
+              const upcomingSoon = clubMatches
+                .filter((m) => {
+                  const matchDate = parseDate(m);
+                  return (!m.score || m.score === '-') &&
+                         matchDate >= today.getTime() &&
+                         matchDate <= now + thirtyDaysMs;
+                })
+                .sort((a, b) => parseDate(a) - parseDate(b));
+
+              // Priorité 3 : Forfaits UNIQUEMENT s'ils sont récents (passés) ou imminents (dans les 7 jours)
+              const recentForfaits = clubMatches
+                .filter((m) => {
+                  if (!m.score || m.score === '-' || !isForfait(m.score)) return false;
+                  const matchDate = parseDate(m);
+                  // Accepter les forfaits passés (dans les 60 derniers jours) ou à venir dans les 7 prochains jours
+                  const sixtyDaysAgo = now - (60 * 24 * 60 * 60 * 1000);
+                  const sevenDaysAhead = now + sevenDaysMs;
+                  return matchDate >= sixtyDaysAgo && matchDate <= sevenDaysAhead;
+                })
+                .sort((a, b) => parseDate(b) - parseDate(a));
+
               let chosen: any;
-              if (withScore.length) chosen = withScore[0];
-              else {
-                const upcoming = clubMatches.filter((m) => (!m.score || m.score === '-') && parseDate(m) >= today.getTime()).sort((a,b) => parseDate(a) - parseDate(b));
-                chosen = upcoming[0] || clubMatches.sort((a,b) => parseDate(b)-parseDate(a))[0];
+              if (withRealScore.length) {
+                chosen = withRealScore[0];
+              } else if (upcomingSoon.length) {
+                chosen = upcomingSoon[0];
+              } else if (recentForfaits.length) {
+                chosen = recentForfaits[0];
+              } else {
+                chosen = null; // Ne rien afficher si pas de match pertinent
               }
               if (!chosen) return;
               const homeIsClub = isClubSide(chosen,'home');
@@ -308,7 +419,7 @@ export default function HomePage() {
                 date: (chosen.date || chosen.dateTime || '') as string,
                 semaine: 0,
                 serieId: String(chosen.divisionId || ''),
-                domicile: !!homeIsClub,
+                domicile: homeIsClub,
               } as ResultatData);
             });
             return out;
@@ -568,9 +679,8 @@ export default function HomePage() {
             <div className="bg-white p-6 rounded-xl shadow-lg h-full">
               <h2 className="text-3xl font-bold text-gray-800 mb-4 flex items-center gap-3">
                 <Award style={{ color: '#F1C40F' }} />
-                {/* Titre dynamique selon le type du plus récent (score total) */}
+                {/* Titre dynamique selon le type du plus récent match JOUÉ (score total) */}
                 {(() => {
-                  const resList = resultatsABC.slice(0, 3);
                   const getTypeByScore = (res: any) => {
                     if (!res || !res.score || res.score === '-') return 'inconnu';
                     const parts = res.score
@@ -582,8 +692,13 @@ export default function HomePage() {
                     if (total === 16) return 'homme';
                     return 'inconnu';
                   };
-                  if (!resList.length) return 'Derniers Résultats';
-                  const typeRecent = getTypeByScore(resList[0]);
+                  if (!resultatsABC || !resultatsABC.length) return 'Derniers Résultats';
+
+                  // Prioriser les matchs joués (avec score) pour déterminer le type
+                  const withScore = resultatsABC.filter(r => r.score && r.score !== '-');
+                  const refResult = withScore.length > 0 ? withScore[0] : resultatsABC[0];
+                  const typeRecent = getTypeByScore(refResult);
+
                   if (typeRecent === 'vet') {
                     return 'Derniers Résultats Vétérans';
                   } else if (typeRecent === 'homme') {
@@ -613,16 +728,7 @@ export default function HomePage() {
                         });
                       };
 
-                      if (!resultatsABC || resultatsABC.length === 0) {
-                        return (
-                          <div className="text-center text-gray-500 py-8">
-                            Aucun résultat ou match prévu pour les équipes Hommes A, B, C.
-                          </div>
-                        );
-                      }
-
-                      // Nouvelle logique : filtrer selon le type du plus récent (score total)
-                      const resList = resultatsABC.slice(0, 3);
+                      // Fonction pour déterminer le type (vétéran ou homme) basé sur le score total
                       const getTypeByScore = (res: any) => {
                         if (!res || !res.score || res.score === '-') return 'inconnu';
                         const parts = res.score
@@ -634,9 +740,33 @@ export default function HomePage() {
                         if (total === 16) return 'homme';
                         return 'inconnu';
                       };
-                      if (!resList.length) return null;
-                      const typeRecent = getTypeByScore(resList[0]);
-                      const toShow = resList.filter(r => getTypeByScore(r) === typeRecent);
+
+                      if (!resultatsABC || resultatsABC.length === 0) {
+                        return (
+                          <div className="text-center text-gray-500 py-8">
+                            Aucun résultat ou match prévu pour les équipes A, B, C.
+                          </div>
+                        );
+                      }
+
+                      // Filtrer selon le type du match le plus récent JOUÉ pour éviter de mélanger vétérans et hommes
+                      // Prioriser les matchs avec score (joués) pour déterminer le type à afficher
+                      const withScore = resultatsABC.filter(r => r.score && r.score !== '-');
+                      const refResult = withScore.length > 0 ? withScore[0] : resultatsABC[0];
+                      const typeRecent = getTypeByScore(refResult);
+
+                      const toShow = resultatsABC
+                        .filter(r => getTypeByScore(r) === typeRecent)
+                        .slice(0, 3);
+
+                      if (toShow.length === 0) {
+                        return (
+                          <div className="text-center text-gray-500 py-8">
+                            Aucun résultat ou match prévu.
+                          </div>
+                        );
+                      }
+
 
                       return (
                         <>

@@ -6,7 +6,7 @@ type ToastProps = {
   variant?: 'default' | 'destructive';
 };
 
-export function useToast() {
+export default function useToast() {
   const [toasts, setToasts] = React.useState<ToastProps[]>([]);
 
   const toast = React.useCallback((props: ToastProps) => {
@@ -23,3 +23,6 @@ export function useToast() {
     toasts,
   };
 }
+
+// Named export for backward compatibility
+export { useToast };
