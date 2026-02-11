@@ -9,6 +9,10 @@ import {
   Match,
   InfosPersonnalisees,
   Saison,
+  ClientCaisse,
+  TransactionCaisse,
+  CompteCaisse,
+  Plat,
 } from '@/services/type.ts';
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -885,4 +889,110 @@ export const deleteInfosPersonnalisees = async (
     : [];
   saison.infosPersonnalisees = list.filter((i) => i.matchId !== matchId);
   return updateSaison(saisonId, saison);
+};
+
+/* ---- CAISSE: Clients Externes ---- */
+
+export const fetchClientsCaisse = async (): Promise<ClientCaisse[]> => {
+  const response = await axios.get(`${API_URL}/clientsCaisse`);
+  return response.data;
+};
+
+export const createClientCaisse = async (
+  data: Omit<ClientCaisse, 'id' | 'dateCreation'>
+): Promise<ClientCaisse> => {
+  const response = await axios.post(`${API_URL}/clientsCaisse`, {
+    ...data,
+    dateCreation: new Date().toISOString(),
+  });
+  return response.data;
+};
+
+export const updateClientCaisse = async (
+  id: string,
+  data: Partial<ClientCaisse>
+): Promise<ClientCaisse> => {
+  const response = await axios.patch(`${API_URL}/clientsCaisse/${id}`, data);
+  return response.data;
+};
+
+export const deleteClientCaisse = async (id: string): Promise<void> => {
+  await axios.delete(`${API_URL}/clientsCaisse/${id}`);
+};
+
+/* ---- CAISSE: Transactions ---- */
+
+export const fetchTransactionsCaisse = async (): Promise<TransactionCaisse[]> => {
+  const response = await axios.get(`${API_URL}/transactionsCaisse`);
+  return response.data;
+};
+
+export const createTransactionCaisse = async (
+  data: Omit<TransactionCaisse, 'id'>
+): Promise<TransactionCaisse> => {
+  const response = await axios.post(`${API_URL}/transactionsCaisse`, data);
+  return response.data;
+};
+
+export const fetchTransactionsByClient = async (
+  clientId: string
+): Promise<TransactionCaisse[]> => {
+  const response = await axios.get(
+    `${API_URL}/transactionsCaisse?clientId=${clientId}`
+  );
+  return response.data;
+};
+
+/* ---- CAISSE: Comptes (Ardoise) ---- */
+
+export const fetchComptesCaisse = async (): Promise<CompteCaisse[]> => {
+  const response = await axios.get(`${API_URL}/comptesCaisse`);
+  return response.data;
+};
+
+export const fetchCompteCaisseByClient = async (
+  clientId: string
+): Promise<CompteCaisse | null> => {
+  const response = await axios.get(
+    `${API_URL}/comptesCaisse?clientId=${clientId}`
+  );
+  return response.data[0] || null;
+};
+
+export const createCompteCaisse = async (
+  data: Omit<CompteCaisse, 'id'>
+): Promise<CompteCaisse> => {
+  const response = await axios.post(`${API_URL}/comptesCaisse`, data);
+  return response.data;
+};
+
+export const updateCompteCaisse = async (
+  id: string,
+  data: CompteCaisse
+): Promise<CompteCaisse> => {
+  const response = await axios.put(`${API_URL}/comptesCaisse/${id}`, data);
+  return response.data;
+};
+
+/* ---- CAISSE: Stock ---- */
+
+export const updatePlatStock = async (
+  id: string,
+  stock: number
+): Promise<Plat> => {
+  const response = await axios.patch(`${API_URL}/menu/${id}`, { stock });
+  return response.data;
+};
+
+export const decrementStock = async (
+  platId: string,
+  quantite: number
+): Promise<Plat> => {
+  const response = await axios.get(`${API_URL}/menu/${platId}`);
+  const plat: Plat = response.data;
+  if (plat.stock !== undefined) {
+    const newStock = Math.max(0, plat.stock - quantite);
+    return updatePlatStock(platId, newStock);
+  }
+  return plat;
 };

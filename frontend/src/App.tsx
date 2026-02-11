@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useLocation } from 'react-router-dom';
 
 import Header from './layouts/header.tsx';
 import LoadingSpinner from './components/loading';
@@ -32,8 +32,27 @@ const MembresListing = lazy(
 );
 const AllSelections = lazy(() => import('@/features/public/AllSelections.tsx'));
 const SalleView = lazy(() => import('@/features/public/SalleView.tsx'));
+const CaissePage = lazy(() => import('@/features/caisse/CaissePage'));
 
 export default function App() {
+  const location = useLocation();
+
+  if (location.pathname.startsWith('/caisse')) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center min-h-screen">
+            <LoadingSpinner />
+          </div>
+        }
+      >
+        <Routes>
+          <Route path="/caisse" element={<CaissePage />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header title="" />

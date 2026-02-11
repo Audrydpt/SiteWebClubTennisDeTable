@@ -273,6 +273,7 @@ export interface Plat {
   allergenes?: string[];
   categorie: 'entree' | 'plat' | 'dessert' | 'boisson';
   dateCreation: string;
+  stock?: number;
 }
 
 export interface ZoneCommande {
@@ -351,4 +352,52 @@ export interface FacebookPost {
   facebookPostId?: string;
   status: 'pending' | 'published' | 'failed';
   error?: string;
+}
+
+/* ---- CAISSE (POS) ---- */
+
+export interface ClientCaisse {
+  id: string;
+  nom: string;
+  prenom: string;
+  telephone?: string;
+  dateCreation: string;
+}
+
+export interface LigneCaisse {
+  platId: string;
+  platNom: string;
+  prixUnitaire: number;
+  quantite: number;
+  sousTotal: number;
+}
+
+export type ModePaiement = 'immediat' | 'ardoise';
+
+export interface TransactionCaisse {
+  id: string;
+  lignes: LigneCaisse[];
+  total: number;
+  modePaiement: ModePaiement;
+  statut: 'payee' | 'ardoise' | 'annulee';
+  clientType: 'membre' | 'externe' | 'anonyme';
+  clientId?: string;
+  clientNom?: string;
+  dateTransaction: string;
+  operateur: string;
+}
+
+export interface CompteCaisse {
+  id: string;
+  clientType: 'membre' | 'externe';
+  clientId: string;
+  clientNom: string;
+  solde: number;
+  derniereActivite: string;
+  historique: {
+    transactionId: string;
+    montant: number;
+    type: 'consommation' | 'paiement';
+    date: string;
+  }[];
 }
