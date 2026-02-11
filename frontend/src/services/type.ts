@@ -271,9 +271,10 @@ export interface Plat {
   prix: number;
   disponible: boolean;
   allergenes?: string[];
-  categorie: 'entree' | 'plat' | 'dessert' | 'boisson';
+  categorie: string;
   dateCreation: string;
   stock?: number;
+  imageUrl?: string;
 }
 
 export interface ZoneCommande {
@@ -400,4 +401,10 @@ export interface CompteCaisse {
     type: 'consommation' | 'paiement';
     date: string;
   }[];
+}
+
+export interface CategorieCaisse {
+  id: string;
+  nom: string;
+  ordre: number;
 }

@@ -1,53 +1,64 @@
-import { useState } from 'react';
-import type { Plat } from '@/services/type';
+import { useState, useEffect } from 'react';
+import type { Plat, CategorieCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';
 import ArticleCard from './ArticleCard';
 
 interface ArticleGridProps {
   plats: Plat[];
+  categories: CategorieCaisse[];
   onAddToCart: (plat: Plat) => void;
 }
 
-const categories = [
-  { id: 'boisson', label: 'Boissons' },
-  { id: 'entree', label: 'Entrees' },
-  { id: 'plat', label: 'Plats' },
-  { id: 'dessert', label: 'Desserts' },
-] as const;
+export default function ArticleGrid({
+  plats,
+  categories,
+  onAddToCart,
+}: ArticleGridProps) {
+  const sortedCategories = [...categories].sort((a, b) => a.ordre - b.ordre);
+  const [activeCategory, setActiveCategory] = useState<string>('');
 
-export default function ArticleGrid({ plats, onAddToCart }: ArticleGridProps) {
-  const [activeCategory, setActiveCategory] = useState<string>('boisson');
+  // Set default category to first one
+  useEffect(() => {
+    if (!activeCategory && sortedCategories.length > 0) {
+      setActiveCategory(sortedCategories[0].nom);
+    }
+  }, [sortedCategories, activeCategory]);
 
   const availablePlats = plats.filter((p) => p.disponible);
-  const filteredPlats = availablePlats.filter(
-    (p) => p.categorie === activeCategory
-  );
+  const filteredPlats = activeCategory
+    ? availablePlats.filter((p) => p.categorie === activeCategory)
+    : availablePlats;
 
-  const categoryCounts = categories.map((cat) => ({
+  const categoryCounts = sortedCategories.map((cat) => ({
     ...cat,
-    count: availablePlats.filter((p) => p.categorie === cat.id).length,
+    count: availablePlats.filter((p) => p.categorie === cat.nom).length,
   }));
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
         {categoryCounts.map((cat) => (
           <Button
             key={cat.id}
             variant="ghost"
-            onClick={() => setActiveCategory(cat.id)}
-            className={`h-11 px-5 rounded-xl text-sm font-medium transition-colors ${
-              activeCategory === cat.id
+            onClick={() => setActiveCategory(cat.nom)}
+            className={`h-11 px-5 rounded-xl text-sm font-medium transition-colors shrink-0 ${
+              activeCategory === cat.nom
                 ? 'bg-[#F1C40F] text-[#2C2C2C] hover:bg-[#F1C40F]/90'
                 : 'bg-[#4A4A4A] text-gray-300 hover:bg-[#555] hover:text-white'
             }`}
           >
-            {cat.label}
+            {cat.nom}
             {cat.count > 0 && (
               <span className="ml-1.5 text-xs opacity-70">({cat.count})</span>
             )}
           </Button>
         ))}
+        {sortedCategories.length === 0 && (
+          <p className="text-gray-500 text-sm">
+            Aucune categorie. Ajoutez-en via l'onglet Stock.
+          </p>
+        )}
       </div>
 
       {filteredPlats.length === 0 ? (

@@ -12,6 +12,7 @@ import {
   ClientCaisse,
   TransactionCaisse,
   CompteCaisse,
+  CategorieCaisse,
   Plat,
 } from '@/services/type.ts';
 
@@ -995,4 +996,37 @@ export const decrementStock = async (
     return updatePlatStock(platId, newStock);
   }
   return plat;
+};
+
+/* ---- CAISSE: Categories ---- */
+
+export const fetchCategoriesCaisse = async (): Promise<CategorieCaisse[]> => {
+  const response = await axios.get(`${API_URL}/categoriesCaisse`);
+  return response.data;
+};
+
+export const createCategorieCaisse = async (
+  data: Omit<CategorieCaisse, 'id'>
+): Promise<CategorieCaisse> => {
+  const response = await axios.post(`${API_URL}/categoriesCaisse`, data);
+  return response.data;
+};
+
+export const updateCategorieCaisse = async (
+  id: string,
+  data: Partial<CategorieCaisse>
+): Promise<CategorieCaisse> => {
+  const response = await axios.patch(`${API_URL}/categoriesCaisse/${id}`, data);
+  return response.data;
+};
+
+export const deleteCategorieCaisse = async (id: string): Promise<void> => {
+  await axios.delete(`${API_URL}/categoriesCaisse/${id}`);
+};
+
+/* ---- CAISSE: Images Cloudinary (dossier Caisse) ---- */
+
+export const fetchImagesCaisse = async (): Promise<Image[]> => {
+  const allImages = await fetchImages();
+  return allImages.filter((img) => img.folder === 'Caisse');
 };

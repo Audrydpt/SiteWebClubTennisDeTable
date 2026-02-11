@@ -7,6 +7,7 @@ import type {
   LigneCaisse,
   TransactionCaisse,
   CompteCaisse,
+  CategorieCaisse,
 } from '@/services/type';
 import {
   fetchPlats,
@@ -14,6 +15,7 @@ import {
   fetchClientsCaisse,
   fetchTransactionsCaisse,
   fetchComptesCaisse,
+  fetchCategoriesCaisse,
   createTransactionCaisse,
   fetchCompteCaisseByClient,
   createCompteCaisse,
@@ -43,6 +45,7 @@ export default function CaissePage() {
 
   // Data
   const [plats, setPlats] = useState<Plat[]>([]);
+  const [categories, setCategories] = useState<CategorieCaisse[]>([]);
   const [membres, setMembres] = useState<Member[]>([]);
   const [clientsExternes, setClientsExternes] = useState<ClientCaisse[]>([]);
   const [transactions, setTransactions] = useState<TransactionCaisse[]>([]);
@@ -64,14 +67,16 @@ export default function CaissePage() {
   // Load data
   const loadData = useCallback(async () => {
     try {
-      const [p, m, ce, tx, cpt] = await Promise.all([
+      const [p, cats, m, ce, tx, cpt] = await Promise.all([
         fetchPlats(),
+        fetchCategoriesCaisse(),
         fetchUsers(),
         fetchClientsCaisse(),
         fetchTransactionsCaisse(),
         fetchComptesCaisse(),
       ]);
       setPlats(p);
+      setCategories(cats);
       setMembres(m);
       setClientsExternes(ce);
       setTransactions(tx);
@@ -81,12 +86,16 @@ export default function CaissePage() {
     }
   }, []);
 
-  const reloadPlats = useCallback(async () => {
+  const reloadPlatsAndCategories = useCallback(async () => {
     try {
-      const p = await fetchPlats();
+      const [p, cats] = await Promise.all([
+        fetchPlats(),
+        fetchCategoriesCaisse(),
+      ]);
       setPlats(p);
+      setCategories(cats);
     } catch (err) {
-      console.error('Erreur rechargement plats:', err);
+      console.error('Erreur rechargement:', err);
     }
   }, []);
 
@@ -295,7 +304,13 @@ export default function CaissePage() {
   const renderLeftPanel = () => {
     switch (activeView) {
       case 'vente':
-        return <ArticleGrid plats={plats} onAddToCart={addToCart} />;
+        return (
+          <ArticleGrid
+            plats={plats}
+            categories={categories}
+            onAddToCart={addToCart}
+          />
+        );
       case 'ardoises':
         return (
           <ArdoisePanel
@@ -306,7 +321,13 @@ export default function CaissePage() {
       case 'historique':
         return <HistoriquePanel transactions={transactions} />;
       case 'stock':
-        return <StockPanel plats={plats} onPlatsUpdated={reloadPlats} />;
+        return (
+          <StockPanel
+            plats={plats}
+            categories={categories}
+            onDataUpdated={reloadPlatsAndCategories}
+          />
+        );
       default:
         return null;
     }

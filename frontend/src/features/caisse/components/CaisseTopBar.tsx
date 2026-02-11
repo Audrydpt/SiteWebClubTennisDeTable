@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/lib/authContext';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   ShoppingCart,
@@ -7,6 +8,8 @@ import {
   History,
   Package,
   LogOut,
+  Maximize,
+  Minimize,
 } from 'lucide-react';
 
 export type CaisseView = 'vente' | 'ardoises' | 'historique' | 'stock';
@@ -28,12 +31,39 @@ export default function CaisseTopBar({
   onViewChange,
 }: CaisseTopBarProps) {
   const { logout } = useAuth();
+  const navigate = useNavigate();
   const [time, setTime] = useState(new Date());
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.error('Fullscreen error:', err);
+    }
+  }, []);
+
+  const handleQuit = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <div className="h-14 bg-[#2C2C2C] flex items-center justify-between px-4 shrink-0">
@@ -63,7 +93,7 @@ export default function CaisseTopBar({
         })}
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         <span className="text-gray-400 text-sm tabular-nums">
           {time.toLocaleTimeString('fr-BE', {
             hour: '2-digit',
@@ -72,7 +102,19 @@ export default function CaisseTopBar({
         </span>
         <Button
           variant="ghost"
-          onClick={logout}
+          onClick={toggleFullscreen}
+          className="h-10 w-10 p-0 text-gray-400 hover:text-white hover:bg-[#3A3A3A] rounded-lg"
+          title={isFullscreen ? 'Quitter plein ecran' : 'Plein ecran'}
+        >
+          {isFullscreen ? (
+            <Minimize className="w-4 h-4" />
+          ) : (
+            <Maximize className="w-4 h-4" />
+          )}
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={handleQuit}
           className="h-10 px-3 text-gray-400 hover:text-red-400 hover:bg-[#3A3A3A] rounded-lg"
         >
           <LogOut className="w-4 h-4 mr-2" />

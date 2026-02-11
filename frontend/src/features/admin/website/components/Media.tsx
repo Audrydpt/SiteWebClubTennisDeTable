@@ -19,6 +19,7 @@ const CLOUDINARY_FOLDERS = [
   { value: 'MediaEvent', label: 'Média Event' },
   { value: 'MediaTournoi', label: 'Média Tournoi' },
   { value: 'Sponsor', label: 'Sponsor' },
+  { value: 'Caisse', label: 'Caisse (Buvette)' },
   { value: 'unclassified', label: '📁 Non classés (anciens médias)' }
 ];
 
