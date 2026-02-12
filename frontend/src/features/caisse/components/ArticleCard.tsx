@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { useState, memo } from 'react';
+import { memo } from 'react';
 import type { Plat } from '@/services/type';
 import { ShoppingBag } from 'lucide-react';
 
@@ -10,8 +10,6 @@ interface ArticleCardProps {
   isEditMode?: boolean;
 }
 
-type ImageShape = 'portrait' | 'landscape' | 'square';
-
 const ArticleCard = memo(function ArticleCard({
   plat,
   onAdd,
@@ -21,31 +19,6 @@ const ArticleCard = memo(function ArticleCard({
   const isOutOfStock = plat.stock !== undefined && plat.stock <= 0;
   const isLowStock =
     plat.stock !== undefined && plat.stock > 0 && plat.stock <= 3;
-  const [imageShape, setImageShape] = useState<ImageShape>('landscape');
-
-  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    const ratio = img.naturalWidth / img.naturalHeight;
-    if (ratio < 0.8) {
-      setImageShape('portrait');
-    } else if (ratio > 1.2) {
-      setImageShape('landscape');
-    } else {
-      setImageShape('square');
-    }
-  };
-
-  const imageContainerClass: Record<ImageShape, string> = {
-    portrait: 'w-full h-24',
-    landscape: 'w-full h-14',
-    square: 'w-full h-16',
-  };
-
-  const imageObjectClass: Record<ImageShape, string> = {
-    portrait: 'object-contain',
-    landscape: 'object-cover',
-    square: 'object-cover',
-  };
 
   const handleClick = (e: React.MouseEvent) => {
     if (isEditMode) {
@@ -83,31 +56,28 @@ const ArticleCard = memo(function ArticleCard({
         </span>
       )}
 
-      {/* Image */}
+      {/* Image - Format vertical fixe */}
       {plat.imageUrl ? (
-        <div
-          className={`${imageContainerClass[imageShape]} bg-[#3A3A3A] overflow-hidden`}
-        >
+        <div className="w-full h-50 bg-[#3A3A3A] overflow-hidden flex items-center justify-center">
           <img
             src={plat.imageUrl}
             alt={plat.nom}
-            className={`w-full h-full ${imageObjectClass[imageShape]}`}
-            onLoad={handleImageLoad}
+            className="w-full h-full object-cover"
             draggable={false}
           />
         </div>
       ) : (
-        <div className="w-full h-16 bg-[#3A3A3A] flex items-center justify-center">
-          <ShoppingBag className="w-6 h-6 text-gray-600" />
+        <div className="w-full h-32 bg-[#3A3A3A] flex items-center justify-center">
+          <ShoppingBag className="w-8 h-8 text-gray-600" />
         </div>
       )}
 
       {/* Info */}
-      <div className="flex flex-col items-center justify-center flex-1 p-2">
-        <span className="text-white font-medium text-xs text-center leading-tight line-clamp-2">
+      <div className="flex flex-col items-center justify-center p-3 w-full">
+        <span className="text-white font-medium text-sm text-center leading-tight line-clamp-2 mb-1">
           {plat.nom}
         </span>
-        <span className="text-[#F1C40F] font-bold text-base mt-0.5">
+        <span className="text-[#F1C40F] font-bold text-lg">
           {plat.prix.toFixed(2)}&euro;
         </span>
       </div>
