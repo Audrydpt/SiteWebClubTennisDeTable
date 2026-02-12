@@ -6,15 +6,13 @@ import { Input } from '@/components/ui/input';
 import { ArrowLeft, CreditCard, Smartphone, X, Check } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
-// Placeholder Payconiq URL - à remplacer par le vrai lien marchand
-const PAYCONIQ_URL = 'https://payconiq.com/merchant/PLACEHOLDER';
-
 interface ArdoiseDetailProps {
   compte: CompteCaisse;
   onBack: () => void;
   onPayment: (compteId: string, montant: number) => void;
   onPaymentPayconiq: (compteId: string, montant: number) => void;
   loading?: boolean;
+  payconiqUrl?: string;
 }
 
 export default function ArdoiseDetail({
@@ -23,6 +21,7 @@ export default function ArdoiseDetail({
   onPayment,
   onPaymentPayconiq,
   loading,
+  payconiqUrl,
 }: ArdoiseDetailProps) {
   const [montant, setMontant] = useState(compte.solde.toFixed(2));
   const [showQR, setShowQR] = useState(false);
@@ -87,7 +86,7 @@ export default function ArdoiseDetail({
             <div className="flex justify-center mb-6">
               <div className="bg-white rounded-xl p-4">
                 <QRCodeSVG
-                  value={PAYCONIQ_URL}
+                  value={payconiqUrl || ''}
                   size={200}
                   level="M"
                   bgColor="#FFFFFF"

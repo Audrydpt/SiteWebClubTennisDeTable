@@ -15,7 +15,24 @@ import {
   Plus,
   Minus,
   User,
+  List,
+  BarChart3,
 } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Cell,
+  ResponsiveContainer,
+  Legend,
+} from 'recharts';
 import {
   startOfDay,
   endOfDay,
@@ -120,7 +137,7 @@ function modePaiementLabel(mode: string) {
     case 'payconiq':
       return 'Payconiq';
     case 'ardoise':
-      return 'Ardoise';
+      return 'Compte';
     default:
       return 'Immediat';
   }
@@ -378,6 +395,7 @@ export default function HistoriquePanel({
   const [modificationTarget, setModificationTarget] =
     useState<TransactionCaisse | null>(null);
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'text' | 'chart'>('text');
 
   const { start, end } = useMemo(
     () => getPeriodRange(periode, refDate),
@@ -432,6 +450,108 @@ export default function HistoriquePanel({
     };
   }, [transactions, start, end]);
 
+  // Chart data computations
+  const periodTransactions = useMemo(
+    () =>
+      transactions.filter((t) => {
+        const d = new Date(t.dateTransaction);
+        return d >= start && d <= end && t.statut !== 'annulee';
+      }),
+    [transactions, start, end]
+  );
+
+  const revenueByPeriod = useMemo(() => {
+    const groups: Record<string, number> = {};
+    periodTransactions.forEach((t) => {
+      const d = new Date(t.dateTransaction);
+      let key: string;
+      switch (periode) {
+        case 'jour':
+          key = format(d, 'HH:00', { locale: fr });
+          break;
+        case 'semaine':
+          key = format(d, 'EEE', { locale: fr });
+          break;
+        case 'mois':
+          key = format(d, 'dd/MM', { locale: fr });
+          break;
+        case 'annee':
+          key = format(d, 'MMM', { locale: fr });
+          break;
+      }
+      groups[key] = (groups[key] || 0) + t.total;
+    });
+    return Object.entries(groups).map(([label, revenue]) => ({
+      label,
+      revenue: Math.round(revenue * 100) / 100,
+    }));
+  }, [periodTransactions, periode]);
+
+  const paymentDistribution = useMemo(() => {
+    const immediat = periodTransactions
+      .filter((t) => t.modePaiement === 'immediat')
+      .reduce((s, t) => s + t.total, 0);
+    const payconiq = periodTransactions
+      .filter((t) => t.modePaiement === 'payconiq')
+      .reduce((s, t) => s + t.total, 0);
+    const ardoise = periodTransactions
+      .filter((t) => t.modePaiement === 'ardoise')
+      .reduce((s, t) => s + t.total, 0);
+    return [
+      { name: 'Immediat', value: Math.round(immediat * 100) / 100, color: '#22C55E' },
+      { name: 'Payconiq', value: Math.round(payconiq * 100) / 100, color: '#FF4785' },
+      { name: 'Compte', value: Math.round(ardoise * 100) / 100, color: '#3B82F6' },
+    ].filter((d) => d.value > 0);
+  }, [periodTransactions]);
+
+  const topProducts = useMemo(() => {
+    const productMap: Record<string, { name: string; total: number; qty: number }> = {};
+    periodTransactions.forEach((t) => {
+      t.lignes.forEach((l) => {
+        if (!productMap[l.platId]) {
+          productMap[l.platId] = { name: l.platNom, total: 0, qty: 0 };
+        }
+        productMap[l.platId].total += l.sousTotal;
+        productMap[l.platId].qty += l.quantite;
+      });
+    });
+    return Object.values(productMap)
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 8)
+      .map((p) => ({
+        ...p,
+        total: Math.round(p.total * 100) / 100,
+      }));
+  }, [periodTransactions]);
+
+  const revenueTrend = useMemo(() => {
+    const groups: Record<string, number> = {};
+    periodTransactions.forEach((t) => {
+      const d = new Date(t.dateTransaction);
+      let key: string;
+      switch (periode) {
+        case 'jour':
+          key = format(d, 'HH:00', { locale: fr });
+          break;
+        case 'semaine':
+          key = format(d, 'EEE', { locale: fr });
+          break;
+        case 'mois':
+          key = format(d, 'dd', { locale: fr });
+          break;
+        case 'annee':
+          key = format(d, 'MMM', { locale: fr });
+          break;
+      }
+      groups[key] = (groups[key] || 0) + t.total;
+    });
+    let cumul = 0;
+    return Object.entries(groups).map(([label, val]) => {
+      cumul += val;
+      return { label, cumul: Math.round(cumul * 100) / 100 };
+    });
+  }, [periodTransactions, periode]);
+
   const periodes: { id: Periode; label: string }[] = [
     { id: 'jour', label: 'Jour' },
     { id: 'semaine', label: 'Semaine' },
@@ -443,7 +563,7 @@ export default function HistoriquePanel({
     { id: 'toutes', label: 'Toutes' },
     { id: 'payee', label: 'Payees' },
     { id: 'payconiq', label: 'Payconiq' },
-    { id: 'ardoise', label: 'Ardoises' },
+    { id: 'ardoise', label: 'Comptes' },
     { id: 'annulee', label: 'Annulees' },
   ];
 
@@ -516,7 +636,7 @@ export default function HistoriquePanel({
           )}
         </div>
         <div className="bg-[#3A3A3A] rounded-xl p-3">
-          <p className="text-gray-400 text-xs">Ardoises</p>
+          <p className="text-gray-400 text-xs">Comptes</p>
           <p className="text-blue-400 text-lg font-bold tabular-nums">
             {stats.ardoises.toFixed(2)}&euro;
           </p>
@@ -528,25 +648,176 @@ export default function HistoriquePanel({
         </div>
       </div>
 
-      {/* Filtres */}
-      <div className="flex gap-1.5 mb-3 flex-wrap">
-        {filtres.map((f) => (
+      {/* Filtres + toggle vue */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex gap-1.5 flex-wrap">
+          {filtres.map((f) => (
+            <Button
+              key={f.id}
+              variant="ghost"
+              onClick={() => setFiltre(f.id)}
+              className={`h-8 px-3 rounded-lg text-xs ${
+                filtre === f.id
+                  ? 'bg-[#F1C40F] text-[#2C2C2C] hover:bg-[#F1C40F]/90'
+                  : 'bg-[#3A3A3A] text-gray-400 hover:bg-[#4A4A4A] hover:text-white'
+              }`}
+            >
+              {f.label}
+            </Button>
+          ))}
+        </div>
+        <div className="flex gap-1 bg-[#3A3A3A] rounded-lg p-1 shrink-0 ml-2">
           <Button
-            key={f.id}
             variant="ghost"
-            onClick={() => setFiltre(f.id)}
-            className={`h-8 px-3 rounded-lg text-xs ${
-              filtre === f.id
-                ? 'bg-[#F1C40F] text-[#2C2C2C] hover:bg-[#F1C40F]/90'
-                : 'bg-[#3A3A3A] text-gray-400 hover:bg-[#4A4A4A] hover:text-white'
+            size="icon"
+            onClick={() => setViewMode('text')}
+            className={`h-7 w-7 rounded ${
+              viewMode === 'text'
+                ? 'bg-[#F1C40F] text-[#2C2C2C]'
+                : 'text-gray-400 hover:text-white'
             }`}
           >
-            {f.label}
+            <List className="w-3.5 h-3.5" />
           </Button>
-        ))}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setViewMode('chart')}
+            className={`h-7 w-7 rounded ${
+              viewMode === 'chart'
+                ? 'bg-[#F1C40F] text-[#2C2C2C]'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
       </div>
 
-      {/* Liste transactions */}
+      {/* Contenu: Graphiques ou Liste */}
+      {viewMode === 'chart' ? (
+        <div className="flex-1 overflow-y-auto space-y-4">
+          {/* Bar chart: Revenue par période */}
+          <div className="bg-[#3A3A3A] rounded-xl p-4">
+            <p className="text-gray-400 text-sm mb-3">Chiffre d'affaires</p>
+            {revenueByPeriod.length > 0 ? (
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={revenueByPeriod}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#4A4A4A" />
+                  <XAxis dataKey="label" stroke="#9CA3AF" fontSize={11} />
+                  <YAxis stroke="#9CA3AF" fontSize={11} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#3A3A3A', border: 'none', borderRadius: '8px' }}
+                    labelStyle={{ color: '#9CA3AF' }}
+                    itemStyle={{ color: '#F1C40F' }}
+                    formatter={(value: number) => [`${value.toFixed(2)}€`, 'CA']}
+                  />
+                  <Bar dataKey="revenue" fill="#F1C40F" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-gray-500 text-sm text-center py-8">Aucune donnee</p>
+            )}
+          </div>
+
+          {/* Pie chart: Répartition paiements */}
+          <div className="bg-[#3A3A3A] rounded-xl p-4">
+            <p className="text-gray-400 text-sm mb-3">Modes de paiement</p>
+            {paymentDistribution.length > 0 ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={paymentDistribution}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={70}
+                    label={({ name, percent }) =>
+                      `${name} ${(percent * 100).toFixed(0)}%`
+                    }
+                    labelLine={false}
+                    fontSize={11}
+                  >
+                    {paymentDistribution.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#3A3A3A', border: 'none', borderRadius: '8px' }}
+                    formatter={(value: number) => [`${value.toFixed(2)}€`]}
+                  />
+                  <Legend
+                    wrapperStyle={{ fontSize: '12px', color: '#9CA3AF' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-gray-500 text-sm text-center py-8">Aucune donnee</p>
+            )}
+          </div>
+
+          {/* Line chart: Tendance cumulative CA */}
+          <div className="bg-[#3A3A3A] rounded-xl p-4">
+            <p className="text-gray-400 text-sm mb-3">Tendance cumulative</p>
+            {revenueTrend.length > 0 ? (
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart data={revenueTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#4A4A4A" />
+                  <XAxis dataKey="label" stroke="#9CA3AF" fontSize={11} />
+                  <YAxis stroke="#9CA3AF" fontSize={11} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#3A3A3A', border: 'none', borderRadius: '8px' }}
+                    labelStyle={{ color: '#9CA3AF' }}
+                    itemStyle={{ color: '#22C55E' }}
+                    formatter={(value: number) => [`${value.toFixed(2)}€`, 'Cumul']}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="cumul"
+                    stroke="#22C55E"
+                    strokeWidth={2}
+                    dot={{ fill: '#22C55E', r: 3 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-gray-500 text-sm text-center py-8">Aucune donnee</p>
+            )}
+          </div>
+
+          {/* Bar chart horizontal: Top produits */}
+          <div className="bg-[#3A3A3A] rounded-xl p-4">
+            <p className="text-gray-400 text-sm mb-3">Top produits (quantite)</p>
+            {topProducts.length > 0 ? (
+              <ResponsiveContainer width="100%" height={Math.max(150, topProducts.length * 32)}>
+                <BarChart data={topProducts} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#4A4A4A" />
+                  <XAxis type="number" stroke="#9CA3AF" fontSize={11} />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    stroke="#9CA3AF"
+                    fontSize={11}
+                    width={90}
+                    tick={{ fill: '#D1D5DB' }}
+                  />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#3A3A3A', border: 'none', borderRadius: '8px' }}
+                    formatter={(value: number, name: string) => {
+                      if (name === 'qty') return [`${value}`, 'Quantite'];
+                      return [`${value.toFixed(2)}€`, 'CA'];
+                    }}
+                  />
+                  <Bar dataKey="qty" fill="#F1C40F" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-gray-500 text-sm text-center py-8">Aucune donnee</p>
+            )}
+          </div>
+        </div>
+      ) : (
       <div className="flex-1 overflow-y-auto space-y-2">
         {filteredTransactions.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-gray-500 text-sm">
@@ -580,7 +851,7 @@ export default function HistoriquePanel({
                       {tx.statut === 'payee'
                         ? 'Payee'
                         : tx.statut === 'ardoise'
-                          ? 'Ardoise'
+                          ? 'Compte'
                           : 'Annulee'}
                     </span>
                     <span className="flex items-center gap-1 text-gray-500 text-xs">
@@ -677,6 +948,7 @@ export default function HistoriquePanel({
           })
         )}
       </div>
+      )}
 
       {/* Modals */}
       {annulationTarget && (

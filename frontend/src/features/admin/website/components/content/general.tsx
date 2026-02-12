@@ -26,6 +26,7 @@ interface GeneralInfos {
   membresActif?: string;
   tablesDispo?: string;
   anciennete?: string;
+  payconiqUrl?: string;
 }
 
 export default function GeneralManager() {
@@ -61,6 +62,7 @@ export default function GeneralManager() {
             membresActif: data[0].membresActif || '',
             tablesDispo: data[0].tablesDispo || '',
             anciennete: data[0].anciennete || '',
+            payconiqUrl: data[0].payconiqUrl || '',
           });
           setInfoId(data[0].id); // on garde l'ID pour la mise à jour
         }
@@ -107,6 +109,7 @@ export default function GeneralManager() {
         facebookMessageEntrainement: infos.facebookMessageEntrainement, // Ajouté
         facebookMessageAbsence: infos.facebookMessageAbsence,
         facebookMessageMenu: infos.facebookMessageMenu,
+        payconiqUrl: infos.payconiqUrl,
       };
       await updateInformations(mergedData.id, mergedData);
       alert('Infos générales sauvegardées !');
@@ -334,6 +337,20 @@ export default function GeneralManager() {
             Variable disponible : {'{listePlats}'} sera remplacée par la liste des plats générée automatiquement.
           </p>
         </div>
+      </div>
+
+      <div className="border p-3 sm:p-4 rounded space-y-2">
+        <h3 className="font-semibold text-base sm:text-lg">Payconiq (Caisse)</h3>
+        <input
+          type="text"
+          placeholder="URL Payconiq (ex: https://payconiq.com/merchant/xxxxx)"
+          value={infos.payconiqUrl || ''}
+          onChange={(e) => handleChange('payconiqUrl', e.target.value)}
+          className="w-full border p-2 rounded text-sm"
+        />
+        <p className="text-xs text-gray-500">
+          URL du marchand Payconiq utilisee pour generer les QR codes dans la caisse.
+        </p>
       </div>
 
       <div className="border p-3 sm:p-4 rounded space-y-2">

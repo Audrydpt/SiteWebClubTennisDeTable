@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Minus,
   Plus,
@@ -10,6 +10,10 @@ import {
   Tag,
   ChevronLeft,
   Save,
+  GripVertical,
+  LayoutGrid,
+  List,
+  ArrowUpDown,
 } from 'lucide-react';
 import type { Plat, CategorieCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';
@@ -22,7 +26,9 @@ import {
   createCategorieCaisse,
   deleteCategorieCaisse,
   updateCategorieCaisse,
+  reorderCategoriesCaisse,
 } from '@/services/api';
+import { ReactSortable } from 'react-sortablejs';
 import ImagePickerCaisse from './ImagePickerCaisse';
 
 type StockView = 'articles' | 'categories' | 'addArticle' | 'editArticle';
@@ -58,8 +64,49 @@ export default function StockPanel({
 
   // Category form
   const [newCatName, setNewCatName] = useState('');
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [editCatName, setEditCatName] = useState('');
+
+  // Table view
+  const [stockViewMode, setStockViewMode] = useState<'grid' | 'table'>('grid');
+  type SortKey = 'nom' | 'categorie' | 'prix' | 'stock' | 'statut';
+  const [sortKey, setSortKey] = useState<SortKey>('nom');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   const sortedCategories = [...categories].sort((a, b) => a.ordre - b.ordre);
+
+  const sortedPlats = useMemo(() => {
+    return [...plats].sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case 'nom':
+          cmp = a.nom.localeCompare(b.nom);
+          break;
+        case 'categorie':
+          cmp = a.categorie.localeCompare(b.categorie);
+          break;
+        case 'prix':
+          cmp = a.prix - b.prix;
+          break;
+        case 'stock':
+          cmp = (a.stock ?? 9999) - (b.stock ?? 9999);
+          break;
+        case 'statut':
+          cmp = (a.disponible ? 1 : 0) - (b.disponible ? 1 : 0);
+          break;
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [plats, sortKey, sortDir]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
 
   // --- Stock quick actions ---
   const handleStockChange = async (platId: string, newStock: number) => {
@@ -193,6 +240,27 @@ export default function StockPanel({
       onDataUpdated();
     } catch (err) {
       console.error('Erreur reorder:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRenameCategory = async (id: string) => {
+    if (!editCatName.trim()) return;
+    setSaving(true);
+    try {
+      const oldCat = categories.find((c) => c.id === id);
+      if (oldCat && oldCat.nom !== editCatName.trim()) {
+        await updateCategorieCaisse(id, { nom: editCatName.trim() });
+        const platsToUpdate = plats.filter((p) => p.categorie === oldCat.nom);
+        for (const p of platsToUpdate) {
+          await updatePlat(p.id, { ...p, categorie: editCatName.trim() });
+        }
+      }
+      setEditingCatId(null);
+      onDataUpdated();
+    } catch (err) {
+      console.error('Erreur rename categorie:', err);
     } finally {
       setSaving(false);
     }
@@ -468,56 +536,109 @@ export default function StockPanel({
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-1">
-          {sortedCategories.map((cat, idx) => (
+        <ReactSortable
+          list={sortedCategories}
+          setList={async (newList) => {
+            setSaving(true);
+            try {
+              const orderedIds = newList.map((cat, index) => ({
+                id: cat.id,
+                ordre: index,
+              }));
+              await reorderCategoriesCaisse(orderedIds);
+              onDataUpdated();
+            } catch (err) {
+              console.error('Erreur reorder:', err);
+            } finally {
+              setSaving(false);
+            }
+          }}
+          handle=".drag-handle"
+          animation={200}
+          ghostClass="opacity-40"
+          forceFallback={true}
+          className="flex-1 overflow-y-auto space-y-1"
+        >
+          {sortedCategories.map((cat) => (
             <div
               key={cat.id}
               className="flex items-center gap-2 p-3 bg-[#3A3A3A] rounded-xl"
             >
+              <GripVertical className="w-4 h-4 text-gray-500 cursor-grab drag-handle shrink-0" />
               <Tag className="w-4 h-4 text-[#F1C40F] shrink-0" />
-              <span className="text-white text-sm font-medium flex-1">
-                {cat.nom}
-              </span>
-              <span className="text-gray-500 text-xs">
-                {plats.filter((p) => p.categorie === cat.nom).length} articles
-              </span>
-              <div className="flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  disabled={idx === 0 || saving}
-                  onClick={() => handleReorderCategory(cat.id, -1)}
-                  className="h-7 w-7 text-gray-500 hover:text-white disabled:opacity-20"
-                >
-                  <span className="text-xs">&#9650;</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  disabled={idx === sortedCategories.length - 1 || saving}
-                  onClick={() => handleReorderCategory(cat.id, 1)}
-                  className="h-7 w-7 text-gray-500 hover:text-white disabled:opacity-20"
-                >
-                  <span className="text-xs">&#9660;</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDeleteCategory(cat.id)}
-                  disabled={saving}
-                  className="h-7 w-7 text-gray-500 hover:text-red-400 disabled:opacity-20"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </Button>
-              </div>
+              {editingCatId === cat.id ? (
+                <div className="flex-1 flex items-center gap-2">
+                  <Input
+                    value={editCatName}
+                    onChange={(e) => setEditCatName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleRenameCategory(cat.id);
+                      if (e.key === 'Escape') setEditingCatId(null);
+                    }}
+                    className="h-8 bg-[#4A4A4A] border-none text-white rounded-lg text-sm flex-1"
+                    autoFocus
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRenameCategory(cat.id)}
+                    disabled={saving}
+                    className="h-7 w-7 text-green-400 hover:text-green-300"
+                  >
+                    <Save className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setEditingCatId(null)}
+                    className="h-7 w-7 text-gray-500 hover:text-white"
+                  >
+                    <span className="text-xs">&times;</span>
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <span className="text-white text-sm font-medium flex-1">
+                    {cat.nom}
+                  </span>
+                  <span className="text-gray-500 text-xs">
+                    {plats.filter((p) => p.categorie === cat.nom).length} articles
+                  </span>
+                </>
+              )}
+              {editingCatId !== cat.id && (
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setEditingCatId(cat.id);
+                      setEditCatName(cat.nom);
+                    }}
+                    disabled={saving}
+                    className="h-7 w-7 text-gray-500 hover:text-[#F1C40F] disabled:opacity-20"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDeleteCategory(cat.id)}
+                    disabled={saving}
+                    className="h-7 w-7 text-gray-500 hover:text-red-400 disabled:opacity-20"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
-          {sortedCategories.length === 0 && (
-            <p className="text-gray-500 text-sm text-center py-8">
-              Aucune categorie. Ajoutez-en une !
-            </p>
-          )}
-        </div>
+        </ReactSortable>
+        {sortedCategories.length === 0 && (
+          <p className="text-gray-500 text-sm text-center py-8">
+            Aucune categorie. Ajoutez-en une !
+          </p>
+        )}
       </div>
     );
   }
@@ -528,6 +649,32 @@ export default function StockPanel({
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-white text-lg font-bold">Gestion du stock</h2>
         <div className="flex gap-2">
+          <div className="flex gap-1 bg-[#3A3A3A] rounded-lg p-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setStockViewMode('grid')}
+              className={`h-7 w-7 rounded ${
+                stockViewMode === 'grid'
+                  ? 'bg-[#F1C40F] text-[#2C2C2C]'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setStockViewMode('table')}
+              className={`h-7 w-7 rounded ${
+                stockViewMode === 'table'
+                  ? 'bg-[#F1C40F] text-[#2C2C2C]'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <List className="w-3.5 h-3.5" />
+            </Button>
+          </div>
           <Button
             variant="ghost"
             onClick={() => setView('categories')}
@@ -547,6 +694,135 @@ export default function StockPanel({
         </div>
       </div>
 
+      {stockViewMode === 'table' ? (
+        <div className="flex-1 overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-[#2C2C2C]">
+              <tr className="border-b border-[#4A4A4A]">
+                {([
+                  ['nom', 'Nom'],
+                  ['categorie', 'Categorie'],
+                  ['prix', 'Prix'],
+                  ['stock', 'Stock'],
+                  ['statut', 'Statut'],
+                ] as [SortKey, string][]).map(([key, label]) => (
+                  <th
+                    key={key}
+                    onClick={() => toggleSort(key)}
+                    className="text-left px-3 py-2 text-gray-400 font-medium cursor-pointer hover:text-white select-none"
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      {label}
+                      <ArrowUpDown className={`w-3 h-3 ${sortKey === key ? 'text-[#F1C40F]' : 'text-gray-600'}`} />
+                    </span>
+                  </th>
+                ))}
+                <th className="px-3 py-2 text-gray-400 font-medium text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedPlats.map((plat) => (
+                <tr
+                  key={plat.id}
+                  className="border-b border-[#4A4A4A]/50 hover:bg-[#3A3A3A]/50"
+                >
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      {plat.imageUrl ? (
+                        <div className="w-8 h-8 rounded-md overflow-hidden bg-[#4A4A4A] shrink-0">
+                          <img src={plat.imageUrl} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 rounded-md bg-[#4A4A4A] shrink-0" />
+                      )}
+                      <span className="text-white truncate">{plat.nom}</span>
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 text-gray-400">{plat.categorie}</td>
+                  <td className="px-3 py-2 text-white tabular-nums">{plat.prix.toFixed(2)}&euro;</td>
+                  <td className="px-3 py-2">
+                    {plat.stock !== undefined ? (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={saving || plat.stock <= 0}
+                          onClick={() => handleStockChange(plat.id, plat.stock! - 1)}
+                          className="h-6 w-6 bg-[#4A4A4A] text-white hover:bg-[#555] rounded disabled:opacity-30"
+                        >
+                          <Minus className="w-2.5 h-2.5" />
+                        </Button>
+                        <span
+                          className={`h-6 w-10 flex items-center justify-center rounded font-bold text-xs tabular-nums ${
+                            plat.stock === 0
+                              ? 'bg-red-600 text-white'
+                              : plat.stock <= 3
+                                ? 'bg-red-500/20 text-red-400'
+                                : 'bg-[#4A4A4A] text-white'
+                          }`}
+                        >
+                          {plat.stock}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={saving}
+                          onClick={() => handleStockChange(plat.id, plat.stock! + 1)}
+                          className="h-6 w-6 bg-[#4A4A4A] text-white hover:bg-[#555] rounded disabled:opacity-30"
+                        >
+                          <Plus className="w-2.5 h-2.5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-gray-500 text-xs">illimite</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full ${
+                        plat.disponible
+                          ? 'bg-green-500/20 text-green-400'
+                          : 'bg-red-500/20 text-red-400'
+                      }`}
+                    >
+                      {plat.disponible ? 'Actif' : 'Off'}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <div className="flex gap-1 justify-end">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setEditArticle(plat);
+                          setView('editArticle');
+                        }}
+                        className="h-7 w-7 text-gray-500 hover:text-[#F1C40F] rounded"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteArticle(plat.id)}
+                        disabled={saving}
+                        className="h-7 w-7 text-gray-500 hover:text-red-400 rounded disabled:opacity-20"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {plats.length === 0 && (
+            <div className="flex items-center justify-center h-32 text-gray-500 text-sm">
+              Aucun article. Ajoutez-en un !
+            </div>
+          )}
+        </div>
+      ) : (
       <div className="flex-1 overflow-y-auto space-y-1">
         {plats.map((plat) => (
           <div
@@ -660,6 +936,7 @@ export default function StockPanel({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

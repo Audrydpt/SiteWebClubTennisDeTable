@@ -5,9 +5,6 @@ import { Button } from '@/components/ui/button';
 import { X, CreditCard, BookOpen, Check, Smartphone, ArrowLeft } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
-// Placeholder Payconiq URL - à remplacer par le vrai lien marchand
-const PAYCONIQ_URL = 'https://payconiq.com/merchant/PLACEHOLDER';
-
 interface PaiementModalProps {
   total: number;
   clientNom: string | null;
@@ -17,6 +14,7 @@ interface PaiementModalProps {
   onClose: () => void;
   loading?: boolean;
   success?: boolean;
+  payconiqUrl?: string;
 }
 
 export default function PaiementModal({
@@ -28,6 +26,7 @@ export default function PaiementModal({
   onClose,
   loading,
   success,
+  payconiqUrl,
 }: PaiementModalProps) {
   const [showQR, setShowQR] = useState(false);
 
@@ -81,7 +80,7 @@ export default function PaiementModal({
           <div className="flex justify-center mb-6">
             <div className="bg-white rounded-xl p-4">
               <QRCodeSVG
-                value={PAYCONIQ_URL}
+                value={payconiqUrl || ''}
                 size={200}
                 level="M"
                 bgColor="#FFFFFF"
@@ -156,12 +155,12 @@ export default function PaiementModal({
             className="w-full h-14 bg-blue-600 text-white hover:bg-blue-700 font-bold text-base rounded-xl disabled:opacity-30"
           >
             <BookOpen className="w-5 h-5 mr-2" />
-            {loading ? 'Traitement...' : 'Mettre sur ardoise'}
+            {loading ? 'Traitement...' : 'Mettre sur compte'}
           </Button>
 
           {!clientNom && (
             <p className="text-gray-500 text-xs text-center">
-              Un client doit etre selectionne pour l'ardoise
+              Un client doit etre selectionne pour le compte
             </p>
           )}
         </div>

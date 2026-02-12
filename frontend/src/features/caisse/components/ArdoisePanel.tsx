@@ -9,6 +9,7 @@ interface ArdoisePanelProps {
   onPayment: (compteId: string, montant: number) => void;
   onPaymentPayconiq: (compteId: string, montant: number) => void;
   loading?: boolean;
+  payconiqUrl?: string;
 }
 
 export default function ArdoisePanel({
@@ -16,6 +17,7 @@ export default function ArdoisePanel({
   onPayment,
   onPaymentPayconiq,
   loading,
+  payconiqUrl,
 }: ArdoisePanelProps) {
   const [selectedCompteId, setSelectedCompteId] = useState<string | null>(null);
 
@@ -30,6 +32,7 @@ export default function ArdoisePanel({
         onPayment={onPayment}
         onPaymentPayconiq={onPaymentPayconiq}
         loading={loading}
+        payconiqUrl={payconiqUrl}
       />
     );
   }
@@ -39,7 +42,7 @@ export default function ArdoisePanel({
   return (
     <div className="h-full flex flex-col">
       <div className="mb-4">
-        <h2 className="text-white text-lg font-bold">Ardoises</h2>
+        <h2 className="text-white text-lg font-bold">Comptes</h2>
         <p className="text-gray-400 text-sm">
           {comptesAvecSolde.length} client{comptesAvecSolde.length !== 1 && 's'}{' '}
           avec solde &middot; Total:{' '}
@@ -51,7 +54,7 @@ export default function ArdoisePanel({
 
       {comptesAvecSolde.length === 0 ? (
         <div className="flex-1 flex items-center justify-center text-gray-500 text-sm">
-          Aucune ardoise en cours
+          Aucun compte en cours
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto space-y-2">

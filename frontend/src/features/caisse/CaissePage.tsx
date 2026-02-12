@@ -18,6 +18,7 @@ import {
   fetchTransactionsCaisse,
   fetchComptesCaisse,
   fetchCategoriesCaisse,
+  fetchInformations,
   createTransactionCaisse,
   updateTransactionCaisse,
   fetchCompteCaisseByClient,
@@ -54,6 +55,7 @@ export default function CaissePage() {
   const [clientsExternes, setClientsExternes] = useState<ClientCaisse[]>([]);
   const [transactions, setTransactions] = useState<TransactionCaisse[]>([]);
   const [comptes, setComptes] = useState<CompteCaisse[]>([]);
+  const [payconiqUrl, setPayconiqUrl] = useState<string>('');
 
   // UI
   const [activeView, setActiveView] = useState<CaisseView>('vente');
@@ -71,13 +73,14 @@ export default function CaissePage() {
   // Load data
   const loadData = useCallback(async () => {
     try {
-      const [p, cats, m, ce, tx, cpt] = await Promise.all([
+      const [p, cats, m, ce, tx, cpt, infos] = await Promise.all([
         fetchPlats(),
         fetchCategoriesCaisse(),
         fetchUsers(),
         fetchClientsCaisse(),
         fetchTransactionsCaisse(),
         fetchComptesCaisse(),
+        fetchInformations(),
       ]);
       setPlats(p);
       setCategories(cats);
@@ -85,6 +88,9 @@ export default function CaissePage() {
       setClientsExternes(ce);
       setTransactions(tx);
       setComptes(cpt);
+      if (infos && infos.length > 0) {
+        setPayconiqUrl(infos[0].payconiqUrl || '');
+      }
     } catch (err) {
       console.error('Erreur chargement donnees:', err);
     }
@@ -465,6 +471,7 @@ export default function CaissePage() {
             plats={plats}
             categories={categories}
             onAddToCart={addToCart}
+            onReordered={reloadPlatsAndCategories}
           />
         );
       case 'ardoises':
@@ -473,6 +480,7 @@ export default function CaissePage() {
             comptes={comptes}
             onPayment={handleArdoisePayment}
             onPaymentPayconiq={handleArdoisePaymentPayconiq}
+            payconiqUrl={payconiqUrl}
           />
         );
       case 'historique':
@@ -552,6 +560,7 @@ export default function CaissePage() {
           onClose={() => setShowPaiementModal(false)}
           loading={paymentLoading}
           success={paymentSuccess}
+          payconiqUrl={payconiqUrl}
         />
       )}
     </div>

@@ -1048,6 +1048,28 @@ export const deleteCategorieCaisse = async (id: string): Promise<void> => {
   await axios.delete(`${API_URL}/categoriesCaisse/${id}`);
 };
 
+/* ---- CAISSE: Bulk Reorder ---- */
+
+export const reorderCategoriesCaisse = async (
+  orderedIds: { id: string; ordre: number }[]
+): Promise<void> => {
+  await Promise.all(
+    orderedIds.map(({ id, ordre }) =>
+      axios.patch(`${API_URL}/categoriesCaisse/${id}`, { ordre })
+    )
+  );
+};
+
+export const reorderPlatsCaisse = async (
+  orderedItems: { id: string; ordre: number }[]
+): Promise<void> => {
+  await Promise.all(
+    orderedItems.map(({ id, ordre }) =>
+      axios.patch(`${API_URL}/menu/${id}`, { ordre })
+    )
+  );
+};
+
 /* ---- CAISSE: Images Cloudinary (dossier Caisse) ---- */
 
 export const fetchImagesCaisse = async (): Promise<Image[]> => {

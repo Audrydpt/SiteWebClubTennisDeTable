@@ -275,6 +275,7 @@ export interface Plat {
   dateCreation: string;
   stock?: number;
   imageUrl?: string;
+  ordre?: number;
 }
 
 export interface ZoneCommande {

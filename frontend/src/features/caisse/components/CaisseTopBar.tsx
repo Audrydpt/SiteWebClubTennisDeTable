@@ -22,7 +22,7 @@ interface CaisseTopBarProps {
 
 const tabs: { id: CaisseView; label: string; icon: React.ElementType }[] = [
   { id: 'vente', label: 'Vente', icon: ShoppingCart },
-  { id: 'ardoises', label: 'Ardoises', icon: BookOpen },
+  { id: 'ardoises', label: 'Comptes', icon: BookOpen },
   { id: 'historique', label: 'Historique', icon: History },
   { id: 'stock', label: 'Stock', icon: Package },
 ];

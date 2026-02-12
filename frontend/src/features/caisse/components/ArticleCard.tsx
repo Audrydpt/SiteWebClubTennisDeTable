@@ -1,4 +1,5 @@
 /* eslint-disable */
+import { useState } from 'react';
 import type { Plat } from '@/services/type';
 import { ShoppingBag } from 'lucide-react';
 
@@ -7,9 +8,36 @@ interface ArticleCardProps {
   onAdd: (plat: Plat) => void;
 }
 
+type ImageShape = 'portrait' | 'landscape' | 'square';
+
 export default function ArticleCard({ plat, onAdd }: ArticleCardProps) {
   const isOutOfStock = plat.stock !== undefined && plat.stock <= 0;
   const isLowStock = plat.stock !== undefined && plat.stock > 0 && plat.stock <= 3;
+  const [imageShape, setImageShape] = useState<ImageShape>('landscape');
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    const ratio = img.naturalWidth / img.naturalHeight;
+    if (ratio < 0.8) {
+      setImageShape('portrait');
+    } else if (ratio > 1.2) {
+      setImageShape('landscape');
+    } else {
+      setImageShape('square');
+    }
+  };
+
+  const imageContainerClass: Record<ImageShape, string> = {
+    portrait: 'w-full h-24',
+    landscape: 'w-full h-14',
+    square: 'w-full h-16',
+  };
+
+  const imageObjectClass: Record<ImageShape, string> = {
+    portrait: 'object-contain',
+    landscape: 'object-cover',
+    square: 'object-cover',
+  };
 
   return (
     <button
@@ -38,11 +66,12 @@ export default function ArticleCard({ plat, onAdd }: ArticleCardProps) {
 
       {/* Image */}
       {plat.imageUrl ? (
-        <div className="w-full h-16 bg-[#3A3A3A] overflow-hidden">
+        <div className={`${imageContainerClass[imageShape]} bg-[#3A3A3A] overflow-hidden`}>
           <img
             src={plat.imageUrl}
             alt={plat.nom}
-            className="w-full h-full object-cover"
+            className={`w-full h-full ${imageObjectClass[imageShape]}`}
+            onLoad={handleImageLoad}
           />
         </div>
       ) : (
