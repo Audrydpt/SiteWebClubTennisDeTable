@@ -38,13 +38,7 @@ export default function CaisseTopBar({
 }: CaisseTopBarProps) {
   const { logout } = useAuth();
   const navigate = useNavigate();
-  const [time, setTime] = useState(new Date());
   const [isFullscreen, setIsFullscreen] = useState(false);
-
-  useEffect(() => {
-    const interval = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const handleFsChange = () => {
@@ -101,12 +95,6 @@ export default function CaisseTopBar({
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-gray-400 text-sm tabular-nums">
-          {time.toLocaleTimeString('fr-BE', {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </span>
         <Button
           variant="ghost"
           onClick={onEditModeToggle}

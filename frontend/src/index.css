@@ -93,27 +93,63 @@
     cursor: pointer;
   }
 
-  /* Support pour les tablettes et appareils mobiles - hauteur dynamique */
+  /* Styles de base pour le site */
   html,
   body {
-    overflow: hidden;
-    height: 100dvh; /* Dynamic viewport height pour gérer la barre d'état */
+    font-size: 16px; /* Empêcher le zoom iOS sur les inputs */
   }
 
-  /* Fallback pour les navigateurs plus anciens */
+  /* Styles appliqués UNIQUEMENT pour la caisse en mode plein écran sur tablette */
+  html.caisse-fullscreen-mode,
+  body.caisse-fullscreen-mode {
+    overflow: hidden;
+    height: 100dvh;
+    position: fixed;
+    width: 100%;
+    overscroll-behavior: none;
+  }
+
+  html.caisse-fullscreen-mode #root {
+    height: 100dvh;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  /* Fallback pour navigateurs plus anciens */
   @supports not (height: 100dvh) {
-    html,
-    body {
+    html.caisse-fullscreen-mode,
+    body.caisse-fullscreen-mode,
+    html.caisse-fullscreen-mode #root {
       height: 100vh;
     }
   }
 
-  /* Styles pour la caisse sur tablette Safari iOS */
+  /* Safari iOS */
   @supports (-webkit-touch-callout: none) {
-    html,
-    body {
+    html.caisse-fullscreen-mode,
+    body.caisse-fullscreen-mode,
+    html.caisse-fullscreen-mode #root {
       height: -webkit-fill-available;
     }
+  }
+
+  /* Désactiver les comportements tactiles uniquement en mode caisse */
+  html.caisse-fullscreen-mode * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Permettre la sélection dans les inputs en mode caisse */
+  html.caisse-fullscreen-mode input,
+  html.caisse-fullscreen-mode textarea {
+    -webkit-user-select: text;
+    user-select: text;
   }
 }
 

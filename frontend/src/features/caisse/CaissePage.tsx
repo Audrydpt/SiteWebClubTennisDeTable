@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/authContext';
+import useFullscreen from '@/hooks/use-fullscreen';
 import type {
   Plat,
   Member,
@@ -47,6 +48,9 @@ interface SelectedClient {
 
 export default function CaissePage() {
   const { isAuthenticated, isAdmin, user } = useAuth();
+
+  // Activer le mode plein écran permanent
+  useFullscreen();
 
   // Data
   const [plats, setPlats] = useState<Plat[]>([]);
