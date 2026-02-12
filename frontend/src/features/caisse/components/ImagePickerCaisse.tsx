@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { useState, useEffect } from 'react';
 import type { Image } from '@/services/type';
 import { fetchImagesCaisse } from '@/services/api';

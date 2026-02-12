@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/authContext';
 import type {

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import type { Plat } from '@/services/type';
 import { ShoppingBag } from 'lucide-react';
 

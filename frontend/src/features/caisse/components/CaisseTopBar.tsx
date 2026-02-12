@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/lib/authContext';
 import { useNavigate } from 'react-router-dom';

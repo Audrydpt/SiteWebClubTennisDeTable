@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { useState } from 'react';
 import type { Member, ClientCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';

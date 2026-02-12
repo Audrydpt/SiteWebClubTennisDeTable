@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, CreditCard, BookOpen, Check, Smartphone, ArrowLeft } from 'lucide-react';

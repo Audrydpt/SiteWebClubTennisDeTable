@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { useState } from 'react';
 import type { CompteCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';

@@ -1,7 +1,7 @@
 import { useState } from 'react';
+import { UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UserPlus } from 'lucide-react';
 
 interface ClientCreateFormProps {
   onSubmit: (data: { nom: string; prenom: string; telephone?: string }) => void;
@@ -28,7 +28,9 @@ export default function ClientCreateForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <p className="text-gray-400 text-sm font-medium">Nouveau client externe</p>
+      <p className="text-gray-400 text-sm font-medium">
+        Nouveau client externe
+      </p>
       <div className="flex gap-2">
         <Input
           placeholder="Prenom"

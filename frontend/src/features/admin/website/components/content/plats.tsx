@@ -133,7 +133,7 @@ export default function PlatsManager() {
       prix: plat.prix.toString(),
       disponible: plat.disponible,
       allergenes: plat.allergenes ? plat.allergenes.join(', ') : '',
-      categorie: plat.categorie,
+        categorie: plat.categorie as 'entree' | 'plat' | 'dessert' | 'boisson',
     });
     setShowForm(true);
   };

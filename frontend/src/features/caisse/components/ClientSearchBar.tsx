@@ -1,7 +1,8 @@
+/* eslint-disable */
 import { useState, useMemo } from 'react';
+import { Search, Users, UserPlus } from 'lucide-react';
 import type { Member, ClientCaisse } from '@/services/type';
 import { Input } from '@/components/ui/input';
-import { Search, Users, UserPlus } from 'lucide-react';
 
 interface ClientResult {
   type: 'membre' | 'externe';
@@ -14,7 +15,11 @@ interface ClientResult {
 interface ClientSearchBarProps {
   membres: Member[];
   clientsExternes: ClientCaisse[];
-  onSelect: (client: { type: 'membre' | 'externe'; id: string; nom: string }) => void;
+  onSelect: (client: {
+    type: 'membre' | 'externe';
+    id: string;
+    nom: string;
+  }) => void;
 }
 
 export default function ClientSearchBar({

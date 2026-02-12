@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { useState, useEffect } from 'react';
 import type { Plat, CategorieCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';

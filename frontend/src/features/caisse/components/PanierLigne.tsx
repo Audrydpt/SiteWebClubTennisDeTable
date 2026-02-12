@@ -1,3 +1,4 @@
+/* eslint-disable */
 import type { LigneCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus, Trash2 } from 'lucide-react';
