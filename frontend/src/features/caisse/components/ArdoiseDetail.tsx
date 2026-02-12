@@ -3,12 +3,17 @@ import { useState } from 'react';
 import type { CompteCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, CreditCard } from 'lucide-react';
+import { ArrowLeft, CreditCard, Smartphone, X, Check } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+
+// Placeholder Payconiq URL - à remplacer par le vrai lien marchand
+const PAYCONIQ_URL = 'https://payconiq.com/merchant/PLACEHOLDER';
 
 interface ArdoiseDetailProps {
   compte: CompteCaisse;
   onBack: () => void;
   onPayment: (compteId: string, montant: number) => void;
+  onPaymentPayconiq: (compteId: string, montant: number) => void;
   loading?: boolean;
 }
 
@@ -16,9 +21,11 @@ export default function ArdoiseDetail({
   compte,
   onBack,
   onPayment,
+  onPaymentPayconiq,
   loading,
 }: ArdoiseDetailProps) {
   const [montant, setMontant] = useState(compte.solde.toFixed(2));
+  const [showQR, setShowQR] = useState(false);
 
   const handlePay = () => {
     const val = parseFloat(montant);
@@ -27,8 +34,82 @@ export default function ArdoiseDetail({
     }
   };
 
+  const handlePayPayconiq = () => {
+    const val = parseFloat(montant);
+    if (val > 0 && val <= compte.solde) {
+      setShowQR(true);
+    }
+  };
+
+  const confirmPayconiq = () => {
+    const val = parseFloat(montant);
+    if (val > 0 && val <= compte.solde) {
+      onPaymentPayconiq(compte.id, val);
+      setShowQR(false);
+    }
+  };
+
   return (
-    <div className="h-full flex flex-col">
+    <>
+      {/* Modal QR Code Payconiq */}
+      {showQR && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-[#3A3A3A] rounded-2xl w-full max-w-sm mx-4 p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowQR(false)}
+                className="h-8 w-8 text-gray-400 hover:text-white"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <h2 className="text-white text-lg font-bold">Payconiq</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowQR(false)}
+                className="h-8 w-8 text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+
+            <div className="text-center mb-4">
+              <p className="text-[#F1C40F] text-3xl font-bold tabular-nums">
+                {parseFloat(montant).toFixed(2)}&euro;
+              </p>
+              <p className="text-gray-400 text-sm mt-1">
+                Scannez avec l'app Payconiq
+              </p>
+            </div>
+
+            <div className="flex justify-center mb-6">
+              <div className="bg-white rounded-xl p-4">
+                <QRCodeSVG
+                  value={PAYCONIQ_URL}
+                  size={200}
+                  level="M"
+                  bgColor="#FFFFFF"
+                  fgColor="#000000"
+                />
+              </div>
+            </div>
+
+            <Button
+              onClick={confirmPayconiq}
+              disabled={loading}
+              className="w-full h-14 bg-[#FF4785] text-white hover:bg-[#FF4785]/80 font-bold text-base rounded-xl"
+            >
+              <Check className="w-5 h-5 mr-2" />
+              {loading ? 'Traitement...' : 'Paiement effectue'}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Contenu principal */}
+      <div className="h-full flex flex-col">
       <div className="flex items-center gap-3 mb-4">
         <Button
           variant="ghost"
@@ -78,6 +159,19 @@ export default function ArdoiseDetail({
             <CreditCard className="w-4 h-4 mr-2" />
             {loading ? '...' : 'Payer'}
           </Button>
+          <Button
+            onClick={handlePayPayconiq}
+            disabled={
+              loading ||
+              !montant ||
+              parseFloat(montant) <= 0 ||
+              parseFloat(montant) > compte.solde
+            }
+            className="h-12 px-6 bg-[#FF4785] text-white hover:bg-[#FF4785]/80 rounded-xl disabled:opacity-30"
+          >
+            <Smartphone className="w-4 h-4 mr-2" />
+            Payconiq
+          </Button>
         </div>
       </div>
 
@@ -94,7 +188,7 @@ export default function ArdoiseDetail({
                   {entry.type === 'consommation' ? 'Consommation' : 'Paiement'}
                 </p>
                 <p className="text-gray-500 text-xs">
-                  {new Date(entry.date).toLocaleDateString('fr-BE')}{' '}
+                  {new Date(entry.date).toLocaleDateString('fr-BE')} 
                   {new Date(entry.date).toLocaleTimeString('fr-BE', {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -119,5 +213,7 @@ export default function ArdoiseDetail({
         </div>
       </div>
     </div>
+    </>
   );
 }
+

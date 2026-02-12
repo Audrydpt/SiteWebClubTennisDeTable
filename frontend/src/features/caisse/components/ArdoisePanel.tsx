@@ -1,19 +1,20 @@
-/* eslint-disable */
 import { useState } from 'react';
+import { User, ChevronRight } from 'lucide-react';
 import type { CompteCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';
-import { User, ChevronRight } from 'lucide-react';
 import ArdoiseDetail from './ArdoiseDetail';
 
 interface ArdoisePanelProps {
   comptes: CompteCaisse[];
   onPayment: (compteId: string, montant: number) => void;
+  onPaymentPayconiq: (compteId: string, montant: number) => void;
   loading?: boolean;
 }
 
 export default function ArdoisePanel({
   comptes,
   onPayment,
+  onPaymentPayconiq,
   loading,
 }: ArdoisePanelProps) {
   const [selectedCompteId, setSelectedCompteId] = useState<string | null>(null);
@@ -27,6 +28,7 @@ export default function ArdoisePanel({
         compte={selectedCompte}
         onBack={() => setSelectedCompteId(null)}
         onPayment={onPayment}
+        onPaymentPayconiq={onPaymentPayconiq}
         loading={loading}
       />
     );
@@ -70,7 +72,9 @@ export default function ArdoisePanel({
                   <p className="text-gray-500 text-xs">
                     {compte.clientType === 'membre' ? 'Membre' : 'Externe'}{' '}
                     &middot; Derniere activite:{' '}
-                    {new Date(compte.derniereActivite).toLocaleDateString('fr-BE')}
+                    {new Date(compte.derniereActivite).toLocaleDateString(
+                      'fr-BE'
+                    )}
                   </p>
                 </div>
                 <span className="text-red-400 font-bold text-sm tabular-nums mr-2">

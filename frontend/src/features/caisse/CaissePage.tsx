@@ -420,6 +420,37 @@ export default function CaissePage() {
     }
   };
 
+  // Ardoise payment via Payconiq
+  const handleArdoisePaymentPayconiq = async (
+    compteId: string,
+    montant: number
+  ) => {
+    try {
+      const compte = comptes.find((c) => c.id === compteId);
+      if (!compte) return;
+
+      const now = new Date().toISOString();
+      const updatedCompte: CompteCaisse = {
+        ...compte,
+        solde: Math.max(0, compte.solde - montant),
+        derniereActivite: now,
+        historique: [
+          ...compte.historique,
+          {
+            transactionId: `paiement_payconiq_${Date.now()}`,
+            montant,
+            type: 'paiement' as const,
+            date: now,
+          },
+        ],
+      };
+      await updateCompteCaisse(compteId, updatedCompte);
+      loadData();
+    } catch (err) {
+      console.error('Erreur paiement ardoise payconiq:', err);
+    }
+  };
+
   // Auth gate
   if (!isAuthenticated || !isAdmin()) {
     return <CaisseLoginForm />;
@@ -441,6 +472,7 @@ export default function CaissePage() {
           <ArdoisePanel
             comptes={comptes}
             onPayment={handleArdoisePayment}
+            onPaymentPayconiq={handleArdoisePaymentPayconiq}
           />
         );
       case 'historique':
