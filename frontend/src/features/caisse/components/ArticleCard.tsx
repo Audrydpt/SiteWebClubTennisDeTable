@@ -1,18 +1,26 @@
 /* eslint-disable */
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import type { Plat } from '@/services/type';
 import { ShoppingBag } from 'lucide-react';
 
 interface ArticleCardProps {
   plat: Plat;
   onAdd: (plat: Plat) => void;
+  isDragging?: boolean;
+  isEditMode?: boolean;
 }
 
 type ImageShape = 'portrait' | 'landscape' | 'square';
 
-export default function ArticleCard({ plat, onAdd }: ArticleCardProps) {
+const ArticleCard = memo(function ArticleCard({
+  plat,
+  onAdd,
+  isDragging = false,
+  isEditMode = false,
+}: ArticleCardProps) {
   const isOutOfStock = plat.stock !== undefined && plat.stock <= 0;
-  const isLowStock = plat.stock !== undefined && plat.stock > 0 && plat.stock <= 3;
+  const isLowStock =
+    plat.stock !== undefined && plat.stock > 0 && plat.stock <= 3;
   const [imageShape, setImageShape] = useState<ImageShape>('landscape');
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -39,20 +47,31 @@ export default function ArticleCard({ plat, onAdd }: ArticleCardProps) {
     square: 'object-cover',
   };
 
-  return (
-    <button
-      onClick={() => !isOutOfStock && onAdd(plat)}
-      disabled={isOutOfStock}
-      className={`relative flex flex-col items-center rounded-xl border-2 border-[#4A4A4A] overflow-hidden min-h-[120px] transition-transform select-none bg-[#4A4A4A] ${
-        isOutOfStock
-          ? 'opacity-40 cursor-not-allowed'
-          : 'active:scale-95 cursor-pointer hover:border-[#F1C40F]/50 hover:brightness-110'
-      }`}
-    >
+  const handleClick = (e: React.MouseEvent) => {
+    if (isEditMode) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    if (!isOutOfStock && !isDragging) {
+      onAdd(plat);
+    }
+  };
+
+  const className = `relative flex flex-col items-center rounded-xl border-2 border-[#4A4A4A] overflow-hidden min-h-[120px] transition-transform select-none bg-[#4A4A4A] ${
+    isOutOfStock
+      ? 'opacity-40 cursor-not-allowed'
+      : isEditMode
+        ? 'cursor-move hover:border-[#F1C40F]/50'
+        : 'active:scale-95 cursor-pointer hover:border-[#F1C40F]/50 hover:brightness-110'
+  }`;
+
+  const content = (
+    <>
       {/* Stock badge */}
       {plat.stock !== undefined && (
         <span
-          className={`absolute top-1.5 right-1.5 z-10 text-xs font-bold px-1.5 py-0.5 rounded-full ${
+          className={`absolute top-1.5 right-1.5 z-10 text-xs font-bold px-1.5 py-0.5 rounded-full pointer-events-none ${
             isOutOfStock
               ? 'bg-red-600 text-white'
               : isLowStock
@@ -66,12 +85,15 @@ export default function ArticleCard({ plat, onAdd }: ArticleCardProps) {
 
       {/* Image */}
       {plat.imageUrl ? (
-        <div className={`${imageContainerClass[imageShape]} bg-[#3A3A3A] overflow-hidden`}>
+        <div
+          className={`${imageContainerClass[imageShape]} bg-[#3A3A3A] overflow-hidden`}
+        >
           <img
             src={plat.imageUrl}
             alt={plat.nom}
             className={`w-full h-full ${imageObjectClass[imageShape]}`}
             onLoad={handleImageLoad}
+            draggable={false}
           />
         </div>
       ) : (
@@ -89,6 +111,22 @@ export default function ArticleCard({ plat, onAdd }: ArticleCardProps) {
           {plat.prix.toFixed(2)}&euro;
         </span>
       </div>
+    </>
+  );
+
+  if (isEditMode) {
+    return (
+      <div className={className} data-id={plat.id}>
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={handleClick} disabled={isOutOfStock} className={className}>
+      {content}
     </button>
   );
-}
+});
+
+export default ArticleCard;

@@ -640,11 +640,6 @@ export default function HistoriquePanel({
           <p className="text-blue-400 text-lg font-bold tabular-nums">
             {stats.ardoises.toFixed(2)}&euro;
           </p>
-          {stats.annulees > 0 && (
-            <p className="text-red-400 text-xs">
-              {stats.annulees} annulee{stats.annulees > 1 ? 's' : ''}
-            </p>
-          )}
         </div>
       </div>
 

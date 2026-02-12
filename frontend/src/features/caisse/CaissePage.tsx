@@ -56,6 +56,8 @@ export default function CaissePage() {
   const [transactions, setTransactions] = useState<TransactionCaisse[]>([]);
   const [comptes, setComptes] = useState<CompteCaisse[]>([]);
   const [payconiqUrl, setPayconiqUrl] = useState<string>('');
+  const [isEditMode, setIsEditMode] = useState(false);
+
 
   // UI
   const [activeView, setActiveView] = useState<CaisseView>('vente');
@@ -464,6 +466,8 @@ export default function CaissePage() {
 
   // Render active view content
   const renderLeftPanel = () => {
+    console.log('[CaissePage] renderLeftPanel - activeView:', activeView, 'isEditMode:', isEditMode);
+
     switch (activeView) {
       case 'vente':
         return (
@@ -472,6 +476,7 @@ export default function CaissePage() {
             categories={categories}
             onAddToCart={addToCart}
             onReordered={reloadPlatsAndCategories}
+            isEditMode={isEditMode}
           />
         );
       case 'ardoises':
@@ -506,7 +511,15 @@ export default function CaissePage() {
 
   return (
     <div className="h-screen flex flex-col bg-[#2C2C2C] overflow-hidden">
-      <CaisseTopBar activeView={activeView} onViewChange={setActiveView} />
+      <CaisseTopBar
+        activeView={activeView}
+        onViewChange={setActiveView}
+        isEditMode={isEditMode}
+        onEditModeToggle={() => {
+          console.log('[CaissePage] Toggle Edit Mode:', !isEditMode);
+          setIsEditMode(!isEditMode);
+        }}
+      />
 
       {activeView === 'vente' ? (
         <CaisseLayout

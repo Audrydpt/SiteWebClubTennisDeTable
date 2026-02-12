@@ -11,6 +11,7 @@ import {
   LogOut,
   Maximize,
   Minimize,
+  GripVertical,
 } from 'lucide-react';
 
 export type CaisseView = 'vente' | 'ardoises' | 'historique' | 'stock';
@@ -18,6 +19,8 @@ export type CaisseView = 'vente' | 'ardoises' | 'historique' | 'stock';
 interface CaisseTopBarProps {
   activeView: CaisseView;
   onViewChange: (view: CaisseView) => void;
+  isEditMode: boolean;
+  onEditModeToggle: () => void;
 }
 
 const tabs: { id: CaisseView; label: string; icon: React.ElementType }[] = [
@@ -30,6 +33,8 @@ const tabs: { id: CaisseView; label: string; icon: React.ElementType }[] = [
 export default function CaisseTopBar({
   activeView,
   onViewChange,
+  isEditMode,
+  onEditModeToggle,
 }: CaisseTopBarProps) {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -46,7 +51,8 @@ export default function CaisseTopBar({
       setIsFullscreen(!!document.fullscreenElement);
     };
     document.addEventListener('fullscreenchange', handleFsChange);
-    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+    return () =>
+      document.removeEventListener('fullscreenchange', handleFsChange);
   }, []);
 
   const toggleFullscreen = useCallback(async () => {
@@ -101,6 +107,23 @@ export default function CaisseTopBar({
             minute: '2-digit',
           })}
         </span>
+        <Button
+          variant="ghost"
+          onClick={onEditModeToggle}
+          className={`h-10 px-3 rounded-lg transition-colors ${
+            isEditMode
+              ? 'bg-[#F1C40F] text-[#2C2C2C] hover:bg-[#F1C40F]/90'
+              : 'text-gray-400 hover:text-white hover:bg-[#3A3A3A]'
+          }`}
+          title={
+            isEditMode
+              ? 'Désactiver le mode édition'
+              : 'Activer le mode édition'
+          }
+        >
+          <GripVertical className="w-4 h-4 mr-2" />
+          {isEditMode ? 'Mode édition' : 'Édition'}
+        </Button>
         <Button
           variant="ghost"
           onClick={toggleFullscreen}
