@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { ReactSortable } from 'react-sortablejs';
 import type { Plat, CategorieCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { GripVertical } from 'lucide-react';
 import ArticleCard from './ArticleCard';
 import { reorderCategoriesCaisse, reorderPlatsCaisse } from '@/services/api';
@@ -183,58 +184,62 @@ export default function ArticleGrid({
           Aucun article dans cette categorie
         </div>
       ) : isEditMode ? (
-        <ReactSortable
-          list={sortablePlats}
-          setList={handleProductReorder}
-          className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3"
-          animation={200}
-          easing="cubic-bezier(0.4, 0.0, 0.2, 1)"
-          ghostClass="opacity-40"
-          chosenClass="scale-105"
-          dragClass="rotate-2"
-          filter=".pointer-events-none"
-          preventOnFilter={false}
-          forceFallback={false}
-          fallbackTolerance={3}
-          delay={100}
-          delayOnTouchOnly={true}
-          touchStartThreshold={5}
-          swapThreshold={0.65}
-          invertSwap={false}
-          direction="horizontal"
-          onStart={() => {
-            console.log('[ArticleGrid] Produits - Drag START');
-            setIsDragging(true);
-          }}
-          onEnd={() => {
-            console.log('[ArticleGrid] Produits - Drag END');
-            setTimeout(() => setIsDragging(false), 50);
-          }}
-          onChange={(_order, _sortable, evt) => {
-            console.log('[ArticleGrid] Produits - Ordre changé!', evt);
-          }}
-        >
-          {sortablePlats.map((plat) => (
-            <ArticleCard
-              key={plat.id}
-              plat={plat}
-              onAdd={onAddToCart}
-              isDragging={isDragging}
-              isEditMode={true}
-            />
-          ))}
-        </ReactSortable>
+        <ScrollArea className="flex-1">
+          <ReactSortable
+            list={sortablePlats}
+            setList={handleProductReorder}
+            className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 pr-4 pb-4"
+            animation={200}
+            easing="cubic-bezier(0.4, 0.0, 0.2, 1)"
+            ghostClass="opacity-40"
+            chosenClass="scale-105"
+            dragClass="rotate-2"
+            filter=".pointer-events-none"
+            preventOnFilter={false}
+            forceFallback={false}
+            fallbackTolerance={3}
+            delay={100}
+            delayOnTouchOnly={true}
+            touchStartThreshold={5}
+            swapThreshold={0.65}
+            invertSwap={false}
+            direction="horizontal"
+            onStart={() => {
+              console.log('[ArticleGrid] Produits - Drag START');
+              setIsDragging(true);
+            }}
+            onEnd={() => {
+              console.log('[ArticleGrid] Produits - Drag END');
+              setTimeout(() => setIsDragging(false), 50);
+            }}
+            onChange={(_order, _sortable, evt) => {
+              console.log('[ArticleGrid] Produits - Ordre changé!', evt);
+            }}
+          >
+            {sortablePlats.map((plat) => (
+              <ArticleCard
+                key={plat.id}
+                plat={plat}
+                onAdd={onAddToCart}
+                isDragging={isDragging}
+                isEditMode={true}
+              />
+            ))}
+          </ReactSortable>
+        </ScrollArea>
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-          {sortablePlats.map((plat) => (
-            <ArticleCard
-              key={plat.id}
-              plat={plat}
-              onAdd={onAddToCart}
-              isDragging={false}
-            />
-          ))}
-        </div>
+        <ScrollArea className="flex-1">
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 pr-4 pb-4">
+            {sortablePlats.map((plat) => (
+              <ArticleCard
+                key={plat.id}
+                plat={plat}
+                onAdd={onAddToCart}
+                isDragging={false}
+              />
+            ))}
+          </div>
+        </ScrollArea>
       )}
     </div>
   );

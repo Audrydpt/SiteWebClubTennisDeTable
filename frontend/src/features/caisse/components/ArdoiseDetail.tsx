@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { CompteCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, CreditCard, Smartphone, X, Check } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -174,43 +175,45 @@ export default function ArdoiseDetail({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <p className="text-gray-400 text-sm font-medium mb-2">Historique</p>
-        <div className="space-y-1">
-          {[...compte.historique].reverse().map((entry, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between py-2 px-3 rounded-lg bg-[#3A3A3A]"
-            >
-              <div>
-                <p className="text-white text-sm">
-                  {entry.type === 'consommation' ? 'Consommation' : 'Paiement'}
-                </p>
-                <p className="text-gray-500 text-xs">
-                  {new Date(entry.date).toLocaleDateString('fr-BE')} 
-                  {new Date(entry.date).toLocaleTimeString('fr-BE', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
-              </div>
-              <span
-                className={`font-bold text-sm tabular-nums ${
-                  entry.type === 'consommation' ? 'text-red-400' : 'text-green-400'
-                }`}
+      <ScrollArea className="flex-1">
+        <div className="pr-4">
+          <p className="text-gray-400 text-sm font-medium mb-2">Historique</p>
+          <div className="space-y-1">
+            {[...compte.historique].reverse().map((entry, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between py-2 px-3 rounded-lg bg-[#3A3A3A]"
               >
-                {entry.type === 'consommation' ? '+' : '-'}
-                {entry.montant.toFixed(2)}&euro;
-              </span>
-            </div>
-          ))}
-          {compte.historique.length === 0 && (
-            <p className="text-gray-500 text-sm text-center py-4">
-              Aucun historique
-            </p>
-          )}
+                <div>
+                  <p className="text-white text-sm">
+                    {entry.type === 'consommation' ? 'Consommation' : 'Paiement'}
+                  </p>
+                  <p className="text-gray-500 text-xs">
+                    {new Date(entry.date).toLocaleDateString('fr-BE')}
+                    {new Date(entry.date).toLocaleTimeString('fr-BE', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+                <span
+                  className={`font-bold text-sm tabular-nums ${
+                    entry.type === 'consommation' ? 'text-red-400' : 'text-green-400'
+                  }`}
+                >
+                  {entry.type === 'consommation' ? '+' : '-'}
+                  {entry.montant.toFixed(2)}&euro;
+                </span>
+              </div>
+            ))}
+            {compte.historique.length === 0 && (
+              <p className="text-gray-500 text-sm text-center py-4">
+                Aucun historique
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      </ScrollArea>
     </div>
     </>
   );

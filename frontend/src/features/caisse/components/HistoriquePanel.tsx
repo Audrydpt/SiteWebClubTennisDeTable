@@ -18,6 +18,7 @@ import {
   List,
   BarChart3,
 } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   BarChart,
   Bar,
@@ -299,8 +300,9 @@ function ModificationModal({
           </Button>
         </div>
 
-        <div className="space-y-2 mb-4 max-h-60 overflow-y-auto">
-          {lignes.map((l, i) => (
+        <ScrollArea className="max-h-60 mb-4">
+          <div className="space-y-2 pr-4">
+            {lignes.map((l, i) => (
             <div
               key={`${l.platId}-${i}`}
               className="bg-[#2C2C2C] rounded-lg p-3 flex items-center justify-between"
@@ -351,7 +353,8 @@ function ModificationModal({
               Aucun article restant
             </p>
           )}
-        </div>
+          </div>
+        </ScrollArea>
 
         <div className="flex items-center justify-between bg-[#2C2C2C] rounded-lg p-3 mb-4">
           <span className="text-white font-bold">Total</span>
@@ -691,7 +694,8 @@ export default function HistoriquePanel({
 
       {/* Contenu: Graphiques ou Liste */}
       {viewMode === 'chart' ? (
-        <div className="flex-1 overflow-y-auto space-y-4">
+        <ScrollArea className="flex-1">
+          <div className="space-y-4 pr-4">
           {/* Bar chart: Revenue par période */}
           <div className="bg-[#3A3A3A] rounded-xl p-4">
             <p className="text-gray-400 text-sm mb-3">Chiffre d'affaires</p>
@@ -811,9 +815,11 @@ export default function HistoriquePanel({
               <p className="text-gray-500 text-sm text-center py-8">Aucune donnee</p>
             )}
           </div>
-        </div>
+          </div>
+        </ScrollArea>
       ) : (
-      <div className="flex-1 overflow-y-auto space-y-2">
+      <ScrollArea className="flex-1">
+        <div className="space-y-2 pr-4">
         {filteredTransactions.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-gray-500 text-sm">
             Aucune transaction pour cette periode
@@ -942,7 +948,8 @@ export default function HistoriquePanel({
             );
           })
         )}
-      </div>
+        </div>
+      </ScrollArea>
       )}
 
       {/* Modals */}

@@ -510,7 +510,7 @@ export default function CaissePage() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-[#2C2C2C] overflow-hidden">
+    <div className="h-dvh flex flex-col bg-[#2C2C2C] overflow-hidden">
       <CaisseTopBar
         activeView={activeView}
         onViewChange={setActiveView}
@@ -542,7 +542,7 @@ export default function CaissePage() {
           }
         />
       ) : (
-        <div className="flex-1 overflow-y-auto bg-[#3A3A3A] p-4">
+        <div className="flex-1 flex flex-col overflow-hidden bg-[#3A3A3A] p-4">
           {renderLeftPanel()}
         </div>
       )}

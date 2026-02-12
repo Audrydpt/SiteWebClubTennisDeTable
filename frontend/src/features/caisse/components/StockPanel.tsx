@@ -18,6 +18,7 @@ import {
 import type { Plat, CategorieCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   updatePlatStock,
   createPlat,
@@ -557,8 +558,10 @@ export default function StockPanel({
           animation={200}
           ghostClass="opacity-40"
           forceFallback={true}
-          className="flex-1 overflow-y-auto space-y-1"
+          className="flex-1"
         >
+          <ScrollArea className="h-full">
+            <div className="space-y-1 pr-4">
           {sortedCategories.map((cat) => (
             <div
               key={cat.id}
@@ -633,6 +636,8 @@ export default function StockPanel({
               )}
             </div>
           ))}
+            </div>
+          </ScrollArea>
         </ReactSortable>
         {sortedCategories.length === 0 && (
           <p className="text-gray-500 text-sm text-center py-8">
@@ -823,7 +828,8 @@ export default function StockPanel({
           )}
         </div>
       ) : (
-      <div className="flex-1 overflow-y-auto space-y-1">
+      <ScrollArea className="flex-1">
+        <div className="space-y-1 pr-4">
         {plats.map((plat) => (
           <div
             key={plat.id}
@@ -935,7 +941,8 @@ export default function StockPanel({
             Aucun article. Ajoutez-en un !
           </div>
         )}
-      </div>
+        </div>
+      </ScrollArea>
       )}
     </div>
   );

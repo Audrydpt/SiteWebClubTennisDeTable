@@ -92,6 +92,29 @@
   [role='button']:not([disabled]) {
     cursor: pointer;
   }
+
+  /* Support pour les tablettes et appareils mobiles - hauteur dynamique */
+  html,
+  body {
+    overflow: hidden;
+    height: 100dvh; /* Dynamic viewport height pour gérer la barre d'état */
+  }
+
+  /* Fallback pour les navigateurs plus anciens */
+  @supports not (height: 100dvh) {
+    html,
+    body {
+      height: 100vh;
+    }
+  }
+
+  /* Styles pour la caisse sur tablette Safari iOS */
+  @supports (-webkit-touch-callout: none) {
+    html,
+    body {
+      height: -webkit-fill-available;
+    }
+  }
 }
 
 :root {

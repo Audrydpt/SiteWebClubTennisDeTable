@@ -2,6 +2,7 @@
 
 import type { LigneCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { User, CreditCard, XCircle } from 'lucide-react';
 import PanierLigne from './PanierLigne';
 
@@ -71,22 +72,24 @@ export default function PanierPanel({
       </div>
 
       {/* Liste des lignes */}
-      <div className="flex-1 overflow-y-auto">
+      <ScrollArea className="flex-1 min-h-0">
         {lignes.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-gray-500 text-sm">
             Panier vide
           </div>
         ) : (
-          lignes.map((ligne) => (
-            <PanierLigne
-              key={ligne.platId}
-              ligne={ligne}
-              onUpdateQuantity={onUpdateQuantity}
-              onRemove={onRemoveLine}
-            />
-          ))
+          <div className="pr-4">
+            {lignes.map((ligne) => (
+              <PanierLigne
+                key={ligne.platId}
+                ligne={ligne}
+                onUpdateQuantity={onUpdateQuantity}
+                onRemove={onRemoveLine}
+              />
+            ))}
+          </div>
         )}
-      </div>
+      </ScrollArea>
 
       {/* Total + Actions */}
       <div className="mt-auto pt-3 border-t border-[#4A4A4A]">
