@@ -5,16 +5,16 @@ import { Button } from '@/components/ui/button';
 import { X, CreditCard, BookOpen, Check, Smartphone, ArrowLeft } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
-interface PaiementModalProps {
+export interface PaiementModalProps {
   total: number;
   clientNom: string | null;
-  onPayImmediat: () => void;
-  onPayArdoise: () => void;
-  onPayPayconiq: () => void;
+  onPayImmediat: () => Promise<void>;
+  onPayArdoise: () => Promise<void>;
+  onPayPayconiq: () => Promise<void>;
   onClose: () => void;
-  loading?: boolean;
-  success?: boolean;
-  payconiqUrl?: string;
+  loading: boolean;
+  success: boolean;
+  payconiqUrl: string;
 }
 
 export default function PaiementModal({
