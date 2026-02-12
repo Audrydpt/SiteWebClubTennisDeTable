@@ -17,10 +17,12 @@ import {
   fetchComptesCaisse,
   fetchCategoriesCaisse,
   createTransactionCaisse,
+  updateTransactionCaisse,
   fetchCompteCaisseByClient,
   createCompteCaisse,
   updateCompteCaisse,
   decrementStock,
+  incrementStock,
 } from '@/services/api';
 
 import CaisseLoginForm from './CaisseLoginForm';
@@ -264,6 +266,127 @@ export default function CaissePage() {
     }
   };
 
+  // Payconiq payment (same flow as immediat, but with payconiq mode)
+  const handlePayPayconiq = async () => {
+    setPaymentLoading(true);
+    try {
+      await createTransactionCaisse({
+        lignes: panier,
+        total,
+        modePaiement: 'payconiq',
+        statut: 'payee',
+        clientType: selectedClient?.type || 'anonyme',
+        clientId: selectedClient?.id,
+        clientNom: selectedClient?.nom,
+        dateTransaction: new Date().toISOString(),
+        operateur: operateurName,
+      });
+
+      for (const ligne of panier) {
+        await decrementStock(ligne.platId, ligne.quantite);
+      }
+
+      setPaymentSuccess(true);
+      setTimeout(() => {
+        setPaymentSuccess(false);
+        setShowPaiementModal(false);
+        clearCart();
+        loadData();
+      }, 1500);
+    } catch (err) {
+      console.error('Erreur paiement payconiq:', err);
+      setPaymentLoading(false);
+    }
+  };
+
+  // Annuler transaction
+  const handleAnnulerTransaction = async (tx: TransactionCaisse) => {
+    try {
+      await updateTransactionCaisse(tx.id, { statut: 'annulee' });
+
+      // Restore stock
+      for (const ligne of tx.lignes) {
+        await incrementStock(ligne.platId, ligne.quantite);
+      }
+
+      // If ardoise, adjust account balance
+      if (tx.modePaiement === 'ardoise' && tx.clientId) {
+        const compte = await fetchCompteCaisseByClient(tx.clientId);
+        if (compte) {
+          const now = new Date().toISOString();
+          await updateCompteCaisse(compte.id, {
+            ...compte,
+            solde: Math.max(0, compte.solde - tx.total),
+            derniereActivite: now,
+            historique: [
+              ...compte.historique,
+              {
+                transactionId: tx.id,
+                montant: tx.total,
+                type: 'paiement' as const,
+                date: now,
+              },
+            ],
+          });
+        }
+      }
+
+      loadData();
+    } catch (err) {
+      console.error('Erreur annulation transaction:', err);
+    }
+  };
+
+  // Modifier transaction
+  const handleModifierTransaction = async (
+    tx: TransactionCaisse,
+    newLignes: LigneCaisse[],
+    newTotal: number
+  ) => {
+    try {
+      // Calculate stock differences
+      for (const oldLigne of tx.lignes) {
+        const newLigne = newLignes.find((l) => l.platId === oldLigne.platId);
+        const oldQty = oldLigne.quantite;
+        const newQty = newLigne ? newLigne.quantite : 0;
+        const diff = oldQty - newQty;
+        if (diff > 0) {
+          await incrementStock(oldLigne.platId, diff);
+        } else if (diff < 0) {
+          await decrementStock(oldLigne.platId, Math.abs(diff));
+        }
+      }
+      // Handle new items that weren't in original (shouldn't happen in current UI, but safety)
+      for (const newLigne of newLignes) {
+        if (!tx.lignes.find((l) => l.platId === newLigne.platId)) {
+          await decrementStock(newLigne.platId, newLigne.quantite);
+        }
+      }
+
+      await updateTransactionCaisse(tx.id, {
+        lignes: newLignes,
+        total: newTotal,
+      });
+
+      // If ardoise, adjust account balance
+      if (tx.modePaiement === 'ardoise' && tx.clientId) {
+        const compte = await fetchCompteCaisseByClient(tx.clientId);
+        if (compte) {
+          const diff = newTotal - tx.total;
+          await updateCompteCaisse(compte.id, {
+            ...compte,
+            solde: Math.max(0, compte.solde + diff),
+            derniereActivite: new Date().toISOString(),
+          });
+        }
+      }
+
+      loadData();
+    } catch (err) {
+      console.error('Erreur modification transaction:', err);
+    }
+  };
+
   // Ardoise payment
   const handleArdoisePayment = async (
     compteId: string,
@@ -319,7 +442,13 @@ export default function CaissePage() {
           />
         );
       case 'historique':
-        return <HistoriquePanel transactions={transactions} />;
+        return (
+          <HistoriquePanel
+            transactions={transactions}
+            onAnnuler={handleAnnulerTransaction}
+            onModifier={handleModifierTransaction}
+          />
+        );
       case 'stock':
         return (
           <StockPanel
@@ -385,6 +514,7 @@ export default function CaissePage() {
           clientNom={selectedClient?.nom || null}
           onPayImmediat={handlePayImmediat}
           onPayArdoise={handlePayArdoise}
+          onPayPayconiq={handlePayPayconiq}
           onClose={() => setShowPaiementModal(false)}
           loading={paymentLoading}
           success={paymentSuccess}

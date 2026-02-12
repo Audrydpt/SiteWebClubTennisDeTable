@@ -944,6 +944,30 @@ export const fetchTransactionsByClient = async (
   return response.data;
 };
 
+export const updateTransactionCaisse = async (
+  id: string,
+  data: Partial<TransactionCaisse>
+): Promise<TransactionCaisse> => {
+  const response = await axios.patch(
+    `${API_URL}/transactionsCaisse/${id}`,
+    data
+  );
+  return response.data;
+};
+
+export const incrementStock = async (
+  platId: string,
+  quantite: number
+): Promise<Plat> => {
+  const response = await axios.get(`${API_URL}/menu/${platId}`);
+  const plat: Plat = response.data;
+  if (plat.stock !== undefined) {
+    const newStock = plat.stock + quantite;
+    return updatePlatStock(platId, newStock);
+  }
+  return plat;
+};
+
 /* ---- CAISSE: Comptes (Ardoise) ---- */
 
 export const fetchComptesCaisse = async (): Promise<CompteCaisse[]> => {

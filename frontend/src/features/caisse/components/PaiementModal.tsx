@@ -1,11 +1,17 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, CreditCard, BookOpen, Check } from 'lucide-react';
+import { X, CreditCard, BookOpen, Check, Smartphone, ArrowLeft } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+
+// Placeholder Payconiq URL - à remplacer par le vrai lien marchand
+const PAYCONIQ_URL = 'https://payconiq.com/merchant/PLACEHOLDER';
 
 interface PaiementModalProps {
   total: number;
   clientNom: string | null;
   onPayImmediat: () => void;
   onPayArdoise: () => void;
+  onPayPayconiq: () => void;
   onClose: () => void;
   loading?: boolean;
   success?: boolean;
@@ -16,10 +22,13 @@ export default function PaiementModal({
   clientNom,
   onPayImmediat,
   onPayArdoise,
+  onPayPayconiq,
   onClose,
   loading,
   success,
 }: PaiementModalProps) {
+  const [showQR, setShowQR] = useState(false);
+
   if (success) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -29,6 +38,67 @@ export default function PaiementModal({
           </div>
           <p className="text-white text-lg font-bold mb-1">Paiement enregistre</p>
           <p className="text-[#F1C40F] text-2xl font-bold">{total.toFixed(2)}&euro;</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (showQR) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+        <div className="bg-[#3A3A3A] rounded-2xl w-full max-w-sm mx-4 p-6 shadow-2xl">
+          <div className="flex items-center justify-between mb-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowQR(false)}
+              className="h-8 w-8 text-gray-400 hover:text-white"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <h2 className="text-white text-lg font-bold">Payconiq</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-8 w-8 text-gray-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+
+          <div className="text-center mb-4">
+            <p className="text-[#F1C40F] text-3xl font-bold tabular-nums">
+              {total.toFixed(2)}&euro;
+            </p>
+            <p className="text-gray-400 text-sm mt-1">
+              Scannez avec l'app Payconiq
+            </p>
+          </div>
+
+          <div className="flex justify-center mb-6">
+            <div className="bg-white rounded-xl p-4">
+              <QRCodeSVG
+                value={PAYCONIQ_URL}
+                size={200}
+                level="M"
+                bgColor="#FFFFFF"
+                fgColor="#000000"
+              />
+            </div>
+          </div>
+
+          <Button
+            onClick={() => {
+              onPayPayconiq();
+              setShowQR(false);
+            }}
+            disabled={loading}
+            className="w-full h-14 bg-[#FF4785] text-white hover:bg-[#FF4785]/80 font-bold text-base rounded-xl"
+          >
+            <Check className="w-5 h-5 mr-2" />
+            {loading ? 'Traitement...' : 'Paiement effectue'}
+          </Button>
         </div>
       </div>
     );
@@ -67,6 +137,15 @@ export default function PaiementModal({
           >
             <CreditCard className="w-5 h-5 mr-2" />
             {loading ? 'Traitement...' : 'Paiement immediat'}
+          </Button>
+
+          <Button
+            onClick={() => setShowQR(true)}
+            disabled={loading}
+            className="w-full h-14 bg-[#FF4785] text-white hover:bg-[#FF4785]/80 font-bold text-base rounded-xl"
+          >
+            <Smartphone className="w-5 h-5 mr-2" />
+            Payconiq
           </Button>
 
           <Button

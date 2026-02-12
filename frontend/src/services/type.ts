@@ -373,7 +373,7 @@ export interface LigneCaisse {
   sousTotal: number;
 }
 
-export type ModePaiement = 'immediat' | 'ardoise';
+export type ModePaiement = 'immediat' | 'ardoise' | 'payconiq';
 
 export interface TransactionCaisse {
   id: string;
