@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { Member, ClientCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { X, AlertCircle } from 'lucide-react';
 import ClientSearchBar from './ClientSearchBar';
 import ClientCreateForm from './ClientCreateForm';
 import { createClientCaisse } from '@/services/api';
@@ -25,12 +25,35 @@ export default function ClientSelector({
 }: ClientSelectorProps) {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleCreateClient = async (data: {
     nom: string;
     prenom: string;
     telephone?: string;
   }) => {
+    setErrorMessage(null);
+
+    // Vérifier si un client externe existe déjà avec le même nom et prénom
+    const fullName = `${data.prenom} ${data.nom}`.toLowerCase();
+    const existingExterne = clientsExternes.find(
+      (c) => `${c.prenom} ${c.nom}`.toLowerCase() === fullName
+    );
+    if (existingExterne) {
+      setErrorMessage(`Un client externe "${data.prenom} ${data.nom}" existe déjà.`);
+      return;
+    }
+
+    // Vérifier si un membre existe avec le même nom
+    const existingMembre = membres.find((m) => {
+      const membreFullName = `${m.prenom} ${m.nom}`.toLowerCase();
+      return membreFullName === fullName;
+    });
+    if (existingMembre) {
+      setErrorMessage(`Un membre "${data.prenom} ${data.nom}" existe déjà. Sélectionnez-le dans la liste.`);
+      return;
+    }
+
     setCreating(true);
     try {
       const newClient = await createClientCaisse(data);
@@ -42,6 +65,7 @@ export default function ClientSelector({
       });
     } catch (err) {
       console.error('Erreur creation client:', err);
+      setErrorMessage('Erreur lors de la création du client.');
     } finally {
       setCreating(false);
     }
@@ -74,7 +98,15 @@ export default function ClientSelector({
         <div className="my-4 border-t border-[#4A4A4A]" />
 
         {showCreateForm ? (
-          <ClientCreateForm onSubmit={handleCreateClient} loading={creating} />
+          <div className="space-y-3">
+            {errorMessage && (
+              <div className="flex items-center gap-2 bg-red-500/20 border border-red-500/50 rounded-lg p-3 text-red-400">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span className="text-sm">{errorMessage}</span>
+              </div>
+            )}
+            <ClientCreateForm onSubmit={handleCreateClient} loading={creating} />
+          </div>
         ) : (
           <Button
             variant="ghost"

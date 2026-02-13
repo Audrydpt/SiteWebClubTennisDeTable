@@ -53,6 +53,7 @@ import CaisseTopBar, { type CaisseView } from './components/CaisseTopBar';
 import CaisseLayout from './components/CaisseLayout';
 import ArticleGrid from './components/ArticleGrid';
 import PanierPanel from './components/PanierPanel';
+import ComptesActifsPanel from './components/ComptesActifsPanel';
 import ClientSelector from './components/ClientSelector';
 import PaiementModal from './components/PaiementModal';
 import ArdoisePanel from './components/ArdoisePanel';
@@ -98,6 +99,7 @@ export default function CaissePage() {
   const [showPaiementModal, setShowPaiementModal] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [successType, setSuccessType] = useState<'paiement' | 'ardoise'>('paiement');
 
   // Cart
   const [panier, setPanier] = useState<LigneCaisse[]>([]);
@@ -253,6 +255,7 @@ export default function CaissePage() {
         });
       }
 
+      setSuccessType('paiement');
       setPaymentSuccess(true);
       setTimeout(() => {
         setPaymentSuccess(false);
@@ -319,6 +322,7 @@ export default function CaissePage() {
         await decrementStock(ligne.platId, ligne.quantite);
       }
 
+      setSuccessType('ardoise');
       setPaymentSuccess(true);
       setTimeout(() => {
         setPaymentSuccess(false);
@@ -362,6 +366,7 @@ export default function CaissePage() {
         });
       }
 
+      setSuccessType('paiement');
       setPaymentSuccess(true);
       setTimeout(() => {
         setPaymentSuccess(false);
@@ -685,10 +690,11 @@ export default function CaissePage() {
       {activeView === 'vente' ? (
         <CaisseLayout
           leftPanel={renderLeftPanel()}
-          rightPanel={
+          centerPanel={
             <PanierPanel
               lignes={panier}
               selectedClient={selectedClient}
+              hasSoldeOuvert={!!soldeActuel}
               onUpdateQuantity={updateQuantity}
               onRemoveLine={removeLine}
               onClearCart={clearCart}
@@ -699,6 +705,12 @@ export default function CaissePage() {
                 setPaymentSuccess(false);
                 setShowPaiementModal(true);
               }}
+            />
+          }
+          rightPanel={
+            <ComptesActifsPanel
+              comptes={comptes}
+              onSelectClient={(client) => setSelectedClient(client)}
             />
           }
         />
@@ -734,6 +746,7 @@ export default function CaissePage() {
           onClose={() => setShowPaiementModal(false)}
           loading={paymentLoading}
           success={paymentSuccess}
+          successType={successType}
           payconiqUrl={payconiqUrl}
         />
       )}

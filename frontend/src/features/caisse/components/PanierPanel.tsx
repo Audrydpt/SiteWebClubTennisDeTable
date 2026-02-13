@@ -3,7 +3,7 @@
 import type { LigneCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { User, CreditCard, XCircle } from 'lucide-react';
+import { User, CreditCard, XCircle, AlertTriangle } from 'lucide-react';
 import PanierLigne from './PanierLigne';
 
 interface SelectedClient {
@@ -15,6 +15,7 @@ interface SelectedClient {
 interface PanierPanelProps {
   lignes: LigneCaisse[];
   selectedClient: SelectedClient | null;
+  hasSoldeOuvert: boolean;
   onUpdateQuantity: (platId: string, delta: number) => void;
   onRemoveLine: (platId: string) => void;
   onClearCart: () => void;
@@ -26,6 +27,7 @@ interface PanierPanelProps {
 export default function PanierPanel({
   lignes,
   selectedClient,
+  hasSoldeOuvert,
   onUpdateQuantity,
   onRemoveLine,
   onClearCart,
@@ -35,8 +37,17 @@ export default function PanierPanel({
 }: PanierPanelProps) {
   const total = lignes.reduce((sum, l) => sum + l.sousTotal, 0);
 
+
   return (
     <div className="flex flex-col h-full">
+      {/* Avertissement si pas de caisse ouverte */}
+      {!hasSoldeOuvert && lignes.length > 0 && (
+        <div className="mb-3 flex items-center gap-2 bg-orange-500/20 border border-orange-500/50 rounded-lg p-2.5 text-orange-400">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span className="text-xs font-medium">Attention : Aucune caisse ouverte</span>
+        </div>
+      )}
+
       {/* Client */}
       <div className="mb-3">
         {selectedClient ? (

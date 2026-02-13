@@ -14,6 +14,7 @@ export interface PaiementModalProps {
   onClose: () => void;
   loading: boolean;
   success: boolean;
+  successType: 'paiement' | 'ardoise';
   payconiqUrl: string;
 }
 
@@ -26,19 +27,26 @@ export default function PaiementModal({
   onClose,
   loading,
   success,
+  successType,
   payconiqUrl,
 }: PaiementModalProps) {
   const [showQR, setShowQR] = useState(false);
 
   if (success) {
+    const isArdoise = successType === 'ardoise';
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
         <div className="bg-[#3A3A3A] rounded-2xl w-full max-w-sm mx-4 p-8 shadow-2xl flex flex-col items-center">
-          <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-4">
+          <div className={`w-16 h-16 ${isArdoise ? 'bg-blue-500' : 'bg-green-500'} rounded-full flex items-center justify-center mb-4`}>
             <Check className="w-8 h-8 text-white" />
           </div>
-          <p className="text-white text-lg font-bold mb-1">Paiement enregistre</p>
+          <p className="text-white text-lg font-bold mb-1">
+            {isArdoise ? 'Enregistré sur le compte' : 'Paiement enregistré'}
+          </p>
           <p className="text-[#F1C40F] text-2xl font-bold">{total.toFixed(2)}&euro;</p>
+          {isArdoise && clientNom && (
+            <p className="text-gray-400 text-sm mt-2">{clientNom}</p>
+          )}
         </div>
       </div>
     );
