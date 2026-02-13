@@ -487,6 +487,7 @@ export default function CaissePage() {
         return (
           <ArdoisePanel
             comptes={comptes}
+            transactions={transactions}
             onPayment={handleArdoisePayment}
             onPaymentPayconiq={handleArdoisePaymentPayconiq}
             payconiqUrl={payconiqUrl}
@@ -546,7 +547,7 @@ export default function CaissePage() {
           }
         />
       ) : (
-        <div className="flex-1 flex flex-col overflow-hidden bg-[#3A3A3A] p-4">
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-[#3A3A3A] p-4">
           {renderLeftPanel()}
         </div>
       )}

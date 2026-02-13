@@ -1,14 +1,17 @@
 /* eslint-disable */
-import { useState } from 'react';
-import type { CompteCaisse } from '@/services/type';
+import { useState, useMemo } from 'react';
+import type { CompteCaisse, TransactionCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, CreditCard, Smartphone, X, Check } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface ArdoiseDetailProps {
   compte: CompteCaisse;
+  transactions: TransactionCaisse[];
   onBack: () => void;
   onPayment: (compteId: string, montant: number) => void;
   onPaymentPayconiq: (compteId: string, montant: number) => void;
@@ -18,6 +21,7 @@ interface ArdoiseDetailProps {
 
 export default function ArdoiseDetail({
   compte,
+  transactions,
   onBack,
   onPayment,
   onPaymentPayconiq,
@@ -48,6 +52,32 @@ export default function ArdoiseDetail({
       setShowQR(false);
     }
   };
+
+  const transactionMap = useMemo(() => {
+    const map = new Map<string, TransactionCaisse>();
+    transactions.forEach((tx) => map.set(tx.id, tx));
+    return map;
+  }, [transactions]);
+
+  const groupedHistory = useMemo(() => {
+    const groups: Record<string, typeof compte.historique> = {};
+
+    for (const entry of compte.historique) {
+      const dateKey = format(new Date(entry.date), 'yyyy-MM-dd');
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(entry);
+    }
+
+    return Object.entries(groups)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([dateKey, entries]) => ({
+        dateKey,
+        dateLabel: format(new Date(dateKey), 'EEEE d MMMM yyyy', { locale: fr }),
+        entries: [...entries].sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        ),
+      }));
+  }, [compte.historique]);
 
   return (
     <>
@@ -109,7 +139,7 @@ export default function ArdoiseDetail({
       )}
 
       {/* Contenu principal */}
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col min-h-0">
       <div className="flex items-center gap-3 mb-4">
         <Button
           variant="ghost"
@@ -175,47 +205,90 @@ export default function ArdoiseDetail({
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="pr-4">
           <p className="text-gray-400 text-sm font-medium mb-2">Historique</p>
-          <div className="space-y-1">
-            {[...compte.historique].reverse().map((entry, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between py-2 px-3 rounded-lg bg-[#3A3A3A]"
-              >
-                <div>
-                  <p className="text-white text-sm">
-                    {entry.type === 'consommation' ? 'Consommation' : 'Paiement'}
+          {groupedHistory.length === 0 ? (
+            <p className="text-gray-500 text-sm text-center py-4">
+              Aucun historique
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {groupedHistory.map((group) => (
+                <div key={group.dateKey}>
+                  <p className="text-gray-500 text-xs font-medium mb-1.5 capitalize">
+                    {group.dateLabel}
                   </p>
-                  <p className="text-gray-500 text-xs">
-                    {new Date(entry.date).toLocaleDateString('fr-BE')}
-                    {new Date(entry.date).toLocaleTimeString('fr-BE', {
-                      hour: '2-digit',
-                      minute: '2-digit',
+                  <div className="space-y-1">
+                    {group.entries.map((entry, i) => {
+                      const tx =
+                        entry.type === 'consommation'
+                          ? transactionMap.get(entry.transactionId)
+                          : null;
+
+                      return (
+                        <div
+                          key={`${entry.transactionId}-${i}`}
+                          className="py-2 px-3 rounded-lg bg-[#3A3A3A]"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-white text-sm">
+                                {entry.type === 'consommation'
+                                  ? 'Consommation'
+                                  : 'Paiement'}
+                              </p>
+                              <p className="text-gray-500 text-xs">
+                                {new Date(entry.date).toLocaleTimeString(
+                                  'fr-BE',
+                                  {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  }
+                                )}
+                              </p>
+                            </div>
+                            <span
+                              className={`font-bold text-sm tabular-nums ${
+                                entry.type === 'consommation'
+                                  ? 'text-red-400'
+                                  : 'text-green-400'
+                              }`}
+                            >
+                              {entry.type === 'consommation' ? '+' : '-'}
+                              {entry.montant.toFixed(2)}&euro;
+                            </span>
+                          </div>
+
+                          {/* Detail des consommations */}
+                          {tx && tx.lignes.length > 0 && (
+                            <div className="mt-1.5 pt-1.5 border-t border-[#4A4A4A]">
+                              {tx.lignes.map((ligne, li) => (
+                                <div
+                                  key={`${ligne.platId}-${li}`}
+                                  className="flex items-center justify-between text-xs py-0.5"
+                                >
+                                  <span className="text-gray-400">
+                                    {ligne.quantite}x {ligne.platNom}
+                                  </span>
+                                  <span className="text-gray-500 tabular-nums">
+                                    {ligne.sousTotal.toFixed(2)}&euro;
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
                     })}
-                  </p>
+                  </div>
                 </div>
-                <span
-                  className={`font-bold text-sm tabular-nums ${
-                    entry.type === 'consommation' ? 'text-red-400' : 'text-green-400'
-                  }`}
-                >
-                  {entry.type === 'consommation' ? '+' : '-'}
-                  {entry.montant.toFixed(2)}&euro;
-                </span>
-              </div>
-            ))}
-            {compte.historique.length === 0 && (
-              <p className="text-gray-500 text-sm text-center py-4">
-                Aucun historique
-              </p>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </ScrollArea>
     </div>
     </>
   );
 }
-

@@ -576,7 +576,7 @@ export default function HistoriquePanel({
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col min-h-0">
       {/* Onglets période */}
       <div className="flex gap-1 mb-3">
         {periodes.map((p) => (
@@ -694,7 +694,7 @@ export default function HistoriquePanel({
 
       {/* Contenu: Graphiques ou Liste */}
       {viewMode === 'chart' ? (
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="space-y-4 pr-4">
           {/* Bar chart: Revenue par période */}
           <div className="bg-[#3A3A3A] rounded-xl p-4">
@@ -818,7 +818,7 @@ export default function HistoriquePanel({
           </div>
         </ScrollArea>
       ) : (
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="space-y-2 pr-4">
         {filteredTransactions.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-gray-500 text-sm">

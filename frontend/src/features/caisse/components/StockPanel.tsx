@@ -275,7 +275,7 @@ export default function StockPanel({
   // --- Add Article View ---
   if (view === 'addArticle') {
     return (
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col min-h-0">
         <div className="flex items-center gap-3 mb-4">
           <Button
             variant="ghost"
@@ -379,7 +379,7 @@ export default function StockPanel({
   // --- Edit Article View ---
   if (view === 'editArticle' && editArticle) {
     return (
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col min-h-0">
         <div className="flex items-center gap-3 mb-4">
           <Button
             variant="ghost"
@@ -507,7 +507,7 @@ export default function StockPanel({
   // --- Categories View ---
   if (view === 'categories') {
     return (
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col min-h-0">
         <div className="flex items-center gap-3 mb-4">
           <Button
             variant="ghost"
@@ -558,7 +558,7 @@ export default function StockPanel({
           animation={200}
           ghostClass="opacity-40"
           forceFallback={true}
-          className="flex-1"
+          className="flex-1 min-h-0 overflow-hidden"
         >
           <ScrollArea className="h-full">
             <div className="space-y-1 pr-4">
@@ -650,7 +650,7 @@ export default function StockPanel({
 
   // --- Articles List View (default) ---
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col min-h-0">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-white text-lg font-bold">Gestion du stock</h2>
         <div className="flex gap-2">
@@ -700,7 +700,7 @@ export default function StockPanel({
       </div>
 
       {stockViewMode === 'table' ? (
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 min-h-0 overflow-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-[#2C2C2C]">
               <tr className="border-b border-[#4A4A4A]">
@@ -828,7 +828,7 @@ export default function StockPanel({
           )}
         </div>
       ) : (
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="space-y-1 pr-4">
         {plats.map((plat) => (
           <div

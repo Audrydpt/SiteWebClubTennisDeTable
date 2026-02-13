@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { User, ChevronRight } from 'lucide-react';
-import type { CompteCaisse } from '@/services/type';
+import type { CompteCaisse, TransactionCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ArdoiseDetail from './ArdoiseDetail';
 
 interface ArdoisePanelProps {
   comptes: CompteCaisse[];
+  transactions: TransactionCaisse[];
   onPayment: (compteId: string, montant: number) => void;
   onPaymentPayconiq: (compteId: string, montant: number) => void;
   loading?: boolean;
@@ -15,6 +16,7 @@ interface ArdoisePanelProps {
 
 export default function ArdoisePanel({
   comptes,
+  transactions,
   onPayment,
   onPaymentPayconiq,
   loading,
@@ -29,6 +31,7 @@ export default function ArdoisePanel({
     return (
       <ArdoiseDetail
         compte={selectedCompte}
+        transactions={transactions}
         onBack={() => setSelectedCompteId(null)}
         onPayment={onPayment}
         onPaymentPayconiq={onPaymentPayconiq}
@@ -41,7 +44,7 @@ export default function ArdoisePanel({
   const totalArdoises = comptesAvecSolde.reduce((sum, c) => sum + c.solde, 0);
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col min-h-0">
       <div className="mb-4">
         <h2 className="text-white text-lg font-bold">Comptes</h2>
         <p className="text-gray-400 text-sm">
@@ -58,7 +61,7 @@ export default function ArdoisePanel({
           Aucun compte en cours
         </div>
       ) : (
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="space-y-2 pr-4">
             {comptesAvecSolde
               .sort((a, b) => b.solde - a.solde)
