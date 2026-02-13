@@ -19,6 +19,7 @@ interface GeneralInfos {
   facebookMessageEntrainement?: string; // Nouveau message pour les entraînements
   facebookMessageAbsence?: string; // Nouveau message pour les absences
   facebookMessageMenu?: string; // Nouveau message pour les menus
+  facebookMessageCaisse?: string; // Nouveau message pour la caisse
   footer?: {
     aboutText?: string;
     year?: string;
@@ -55,6 +56,7 @@ export default function GeneralManager() {
             facebookMessageEntrainement: data[0].facebookMessageEntrainement || '🏓 {titre}\n\n📅 {date}\n⏰ {heures}\n📍 {lieu}\n👨‍🏫 Responsable: {responsable}\n\n{description}\n\n{maxParticipants}Inscrivez-vous directement sur notre site web !\n🔗 https://cttframeries.com\n\nVenez nombreux ! 🎯\n\n#CTTFrameries #TennisDeTable #Entraînement #Sport',
             facebookMessageAbsence: data[0].facebookMessageAbsence || 'Bonjour @tout le monde\n\n🗓️ Merci de compléter vos absences à venir pour {mois} sur votre espace personnel.\n\nCela nous aide à préparer au mieux les sélections et les compositions d\'équipes.\n\n🔗 https://cttframeries.com\n\nMerci pour votre collaboration ! 🙏',
             facebookMessageMenu: data[0].facebookMessageMenu || 'Bonjour @tout le monde\n\n🍽️ Menu du moment au club !\n\n{listePlats}\n\nVenez vous régaler au club, ambiance conviviale garantie !\n\n🔗 https://cttframeries.com\n\n#CTTFrameries #Convivialité #Restauration',
+            facebookMessageCaisse: data[0].facebookMessageCaisse || 'Bonjour @tout le monde\n\n💰 Pensez à régler vos ardoises au club ! 🏓\n\nConsultez votre solde directement sur notre site ou au comptoir.\n\n🔗 https://cttframeries.com\n\nMerci pour votre collaboration ! 🙏\n\n#CTTFrameries #Caisse #ClubLife',
             footer: {
               aboutText: data[0].footer?.aboutText || '',
               year: data[0].footer?.year || '',
@@ -109,6 +111,7 @@ export default function GeneralManager() {
         facebookMessageEntrainement: infos.facebookMessageEntrainement, // Ajouté
         facebookMessageAbsence: infos.facebookMessageAbsence,
         facebookMessageMenu: infos.facebookMessageMenu,
+        facebookMessageCaisse: infos.facebookMessageCaisse,
         payconiqUrl: infos.payconiqUrl,
       };
       await updateInformations(mergedData.id, mergedData);
@@ -335,6 +338,24 @@ export default function GeneralManager() {
           />
           <p className="text-xs text-gray-500 mt-1">
             Variable disponible : {'{listePlats}'} sera remplacée par la liste des plats générée automatiquement.
+          </p>
+        </div>
+
+        {/* Nouveau: Message par défaut pour la caisse */}
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            <span className="hidden sm:inline">Message par défaut pour la caisse</span>
+            <span className="sm:hidden">Message caisse</span>
+          </label>
+          <textarea
+            placeholder="Message de publication par défaut pour la caisse"
+            value={infos.facebookMessageCaisse || ''}
+            onChange={(e) => handleChange('facebookMessageCaisse', e.target.value)}
+            className="w-full border p-2 rounded text-sm"
+            rows={5}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Message personnalisé pour rappeler aux membres de régler leurs ardoises. Ce message peut être copié facilement depuis l'interface caisse.
           </p>
         </div>
       </div>

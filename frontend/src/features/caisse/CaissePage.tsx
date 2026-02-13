@@ -3,6 +3,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/authContext';
 import useFullscreen from '@/hooks/use-fullscreen';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Check, ClipboardCopy, Info } from 'lucide-react';
 import type {
   Plat,
   Member,
@@ -71,6 +83,13 @@ export default function CaissePage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [soldeLoading, setSoldeLoading] = useState(false);
 
+  // Facebook
+  const [showFacebookDialog, setShowFacebookDialog] = useState(false);
+  const [facebookMessage, setFacebookMessage] = useState('');
+  const [groupId, setGroupId] = useState('1414350289649865');
+  const [messageTemplate, setMessageTemplate] = useState('Bonjour @tout le monde\n\n💰 Pensez à régler vos ardoises au club ! 🏓\n\nConsultez votre solde directement sur notre site ou au comptoir.\n\n🔗 https://cttframeries.com\n\nMerci pour votre collaboration ! 🙏\n\n#CTTFrameries #Caisse #ClubLife');
+  const [isMessageCopied, setIsMessageCopied] = useState(false);
+
   // UI
   const [activeView, setActiveView] = useState<CaisseView>('vente');
   const [showClientSelector, setShowClientSelector] = useState(false);
@@ -106,6 +125,17 @@ export default function CaissePage() {
       setSoldeActuel(solde);
       if (infos && infos.length > 0) {
         setPayconiqUrl(infos[0].payconiqUrl || '');
+        // Charger la config Facebook
+        if (infos[0].facebookGroupePriveUrl) {
+          const url = infos[0].facebookGroupePriveUrl;
+          const match = url.match(/groups\/(\d+)/);
+          if (match && match[1]) {
+            setGroupId(match[1]);
+          }
+        }
+        if (infos[0].facebookMessageCaisse) {
+          setMessageTemplate(infos[0].facebookMessageCaisse);
+        }
       }
     } catch (err) {
       console.error('Erreur chargement donnees:', err);
@@ -516,6 +546,24 @@ export default function CaissePage() {
     }
   };
 
+  // Facebook message
+  const handleFacebookClick = () => {
+    setFacebookMessage(messageTemplate);
+    setShowFacebookDialog(true);
+  };
+
+  const handleCopyAndOpenFacebook = () => {
+    navigator.clipboard
+      .writeText(facebookMessage)
+      .then(() => {
+        setIsMessageCopied(true);
+        setTimeout(() => setIsMessageCopied(false), 2000);
+        const fbUrl = `https://www.facebook.com/groups/${groupId}`;
+        window.open(fbUrl, '_blank');
+      })
+      .catch((err) => console.error('Erreur lors de la copie du message:', err));
+  };
+
   // Gestion du solde de caisse
   const handleCreateSolde = async (montantInitial: number) => {
     setSoldeLoading(true);
@@ -629,6 +677,7 @@ export default function CaissePage() {
           console.log('[CaissePage] Toggle Edit Mode:', !isEditMode);
           setIsEditMode(!isEditMode);
         }}
+        onFacebookClick={handleFacebookClick}
       />
 
       {activeView === 'vente' ? (
@@ -686,6 +735,59 @@ export default function CaissePage() {
           payconiqUrl={payconiqUrl}
         />
       )}
+
+      {/* Dialogue de partage Facebook */}
+      <Dialog open={showFacebookDialog} onOpenChange={setShowFacebookDialog}>
+        <DialogContent className="w-full max-w-full sm:max-w-md mx-4 bg-[#2C2C2C] text-white border-[#3A3A3A]">
+          <DialogHeader>
+            <DialogTitle className="text-[#F1C40F]">Message Facebook - Caisse</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="fb-message" className="text-gray-300">Message à publier</Label>
+              <Textarea
+                id="fb-message"
+                value={facebookMessage}
+                onChange={(e) => setFacebookMessage(e.target.value)}
+                rows={8}
+                className="resize-none bg-[#3A3A3A] border-[#4A4A4A] text-white"
+              />
+            </div>
+            <div className="rounded-md bg-blue-900/30 border border-blue-700/30 p-3">
+              <div className="flex items-start">
+                <Info className="h-5 w-5 text-blue-400 mt-0.5 mr-2 flex-shrink-0" />
+                <div className="text-blue-300 text-sm">
+                  <p className="font-medium mb-1">Comment publier facilement :</p>
+                  <ol className="list-decimal pl-5 space-y-1">
+                    <li>Cliquez sur le bouton "Copier et ouvrir Facebook"</li>
+                    <li>Le message sera automatiquement copié</li>
+                    <li>Collez le message (Ctrl+V) dans la fenêtre de publication Facebook qui s'ouvre</li>
+                  </ol>
+                  <p className="mt-2 text-xs">Groupe configuré: ID {groupId}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-2">
+            <DialogClose asChild>
+              <Button variant="secondary" className="bg-[#3A3A3A] hover:bg-[#4A4A4A] text-white">Annuler</Button>
+            </DialogClose>
+            <Button onClick={handleCopyAndOpenFacebook} className="bg-[#1877F2] hover:bg-[#166FE5] text-white">
+              {isMessageCopied ? (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Copié !
+                </>
+              ) : (
+                <>
+                  <ClipboardCopy className="h-4 w-4 mr-2" />
+                  Copier et ouvrir Facebook
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
