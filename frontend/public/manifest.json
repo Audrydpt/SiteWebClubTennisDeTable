@@ -1,0 +1,25 @@
+{
+  "name": "CTT Frameries - Caisse",
+  "short_name": "CTT Caisse",
+  "description": "Application de caisse pour le CTT Frameries",
+  "start_url": "/caisse",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "https://res.cloudinary.com/dsrrxx5yx/image/upload/v1751736862/cwtcapgd9s25y02mlhhi.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://res.cloudinary.com/dsrrxx5yx/image/upload/v1751736862/cwtcapgd9s25y02mlhhi.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

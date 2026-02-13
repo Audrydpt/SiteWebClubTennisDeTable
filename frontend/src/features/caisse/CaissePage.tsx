@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/authContext';
 import useFullscreen from '@/hooks/use-fullscreen';
+import IOSInstallPrompt from '@/components/ios-install-prompt';
+import DebugPanel from '@/components/debug-panel';
 import {
   Dialog,
   DialogClose,
@@ -788,6 +790,12 @@ export default function CaissePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Prompt d'installation pour iOS/iPad */}
+      <IOSInstallPrompt />
+
+      {/* Panneau de debug pour tester sur PC */}
+      <DebugPanel />
     </div>
   );
 }

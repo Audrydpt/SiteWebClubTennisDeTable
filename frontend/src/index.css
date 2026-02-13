@@ -70,6 +70,19 @@
       height: 0;
     }
   }
+
+  @keyframes slide-up {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  --animate-slide-up: slide-up 0.3s ease-out;
 }
 
 /*
@@ -179,6 +192,25 @@
   html.caisse-fullscreen-mode textarea {
     -webkit-user-select: text;
     user-select: text;
+  }
+
+  /* Styles spécifiques pour iOS/iPad en mode standalone (PWA) */
+  @media all and (display-mode: standalone) {
+    html.caisse-fullscreen-mode,
+    body.caisse-fullscreen-mode {
+      /* Utiliser tout l'espace disponible, y compris les notches */
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+  }
+
+  /* Support du clavier externe sur iPad */
+  @media (pointer: fine) and (hover: hover) {
+    html.caisse-fullscreen-mode input:focus,
+    html.caisse-fullscreen-mode textarea:focus {
+      /* Améliorer la visibilité du focus pour clavier externe */
+      outline: 2px solid var(--green, #39939E);
+      outline-offset: 2px;
+    }
   }
 }
 
