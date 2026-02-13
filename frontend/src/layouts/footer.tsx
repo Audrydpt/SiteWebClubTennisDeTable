@@ -28,13 +28,18 @@ export default function Footer() {
     <footer
       className={cn(
         'border-t shadow-sm',
-        'py-8 mt-auto text-white bg-[#3A3A3A] relative overflow-hidden'
+        'py-8 mt-auto text-white bg-[#3A3A3A] relative overflow-hidden',
+        'w-full shrink-0'
       )}
+      style={{
+        minHeight: 'fit-content',
+        paddingBottom: 'max(2rem, env(safe-area-inset-bottom))'
+      }}
     >
       <div className="container mx-auto px-4 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-safe">
           {/* À propos */}
-          <div>
+          <div className="min-h-[100px]">
             <Link
               to="/infos/about"
               className="hover:text-[#F1C40F] transition-colors cursor-pointer"

@@ -97,6 +97,35 @@
   html,
   body {
     font-size: 16px; /* Empêcher le zoom iOS sur les inputs */
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  #root {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Utiliser dvh pour les appareils mobiles modernes */
+  @supports (height: 100dvh) {
+    html,
+    body {
+      height: 100dvh;
+    }
+
+    #root {
+      min-height: 100dvh;
+    }
+  }
+
+  /* Safari iOS - utiliser -webkit-fill-available */
+  @supports (-webkit-touch-callout: none) {
+    html,
+    body {
+      height: -webkit-fill-available;
+    }
   }
 
   /* Styles appliqués UNIQUEMENT pour la caisse en mode plein écran sur tablette */
@@ -271,4 +300,24 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Assurer que le footer est toujours visible sur mobile */
+  footer {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+  }
+
+  /* Gestion du safe-area pour les iPhone avec encoche */
+  @supports (padding: max(0px)) {
+    body {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+}
+
+/* Classe utilitaire pour le padding bottom sécurisé */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }

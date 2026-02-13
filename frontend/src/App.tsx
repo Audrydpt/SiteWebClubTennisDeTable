@@ -57,7 +57,7 @@ export default function App() {
     <div className="min-h-screen flex flex-col">
       <Header title="" />
 
-      <main className="flex-1">
+      <main className="flex-1 flex flex-col">
         <Suspense
           fallback={
             <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
