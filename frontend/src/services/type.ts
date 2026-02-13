@@ -276,6 +276,8 @@ export interface Plat {
   stock?: number;
   imageUrl?: string;
   ordre?: number;
+  formats?: number[]; // Formats de conditionnement (ex: [6, 12, 24] pour les packs)
+  isPlat?: boolean; // true pour les plats cuisinés (pas de gestion de formats)
 }
 
 export interface ZoneCommande {
@@ -401,6 +403,7 @@ export interface CompteCaisse {
     montant: number;
     type: 'consommation' | 'paiement';
     date: string;
+    modePaiement?: 'immediat' | 'payconiq'; // Type de paiement pour les paiements
   }[];
 }
 
@@ -408,4 +411,25 @@ export interface CategorieCaisse {
   id: string;
   nom: string;
   ordre: number;
+}
+
+/* ---- SOLDE CAISSE ---- */
+
+export interface TransactionSolde {
+  id: string;
+  type: 'vente_cash' | 'vente_payconiq' | 'compte_cash' | 'compte_payconiq';
+  montant: number;
+  date: string;
+  transactionId?: string; // Référence à la transaction de caisse
+  compteId?: string; // Référence au compte si c'est un paiement de compte
+  compteName?: string; // Nom du client pour les paiements de compte
+}
+
+export interface SoldeCaisse {
+  id: string;
+  montantInitial: number;
+  dateOuverture: string;
+  dateCloture?: string;
+  statut: 'en_cours' | 'cloture';
+  transactions: TransactionSolde[];
 }

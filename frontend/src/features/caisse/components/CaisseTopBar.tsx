@@ -12,9 +12,15 @@ import {
   Maximize,
   Minimize,
   GripVertical,
+  Wallet,
 } from 'lucide-react';
 
-export type CaisseView = 'vente' | 'ardoises' | 'historique' | 'stock';
+export type CaisseView =
+  | 'vente'
+  | 'ardoises'
+  | 'historique'
+  | 'stock'
+  | 'solde';
 
 interface CaisseTopBarProps {
   activeView: CaisseView;
@@ -28,6 +34,7 @@ const tabs: { id: CaisseView; label: string; icon: React.ElementType }[] = [
   { id: 'ardoises', label: 'Comptes', icon: BookOpen },
   { id: 'historique', label: 'Historique', icon: History },
   { id: 'stock', label: 'Stock', icon: Package },
+  { id: 'solde', label: 'Solde', icon: Wallet },
 ];
 
 export default function CaisseTopBar({

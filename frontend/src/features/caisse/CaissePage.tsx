@@ -11,6 +11,7 @@ import type {
   TransactionCaisse,
   CompteCaisse,
   CategorieCaisse,
+  SoldeCaisse,
 } from '@/services/type';
 import {
   fetchPlats,
@@ -27,6 +28,10 @@ import {
   updateCompteCaisse,
   decrementStock,
   incrementStock,
+  fetchSoldeCaisseEnCours,
+  createSoldeCaisse,
+  cloturerSoldeCaisse,
+  ajouterTransactionSolde,
 } from '@/services/api';
 
 import CaisseLoginForm from './CaisseLoginForm';
@@ -39,6 +44,8 @@ import PaiementModal from './components/PaiementModal';
 import ArdoisePanel from './components/ArdoisePanel';
 import HistoriquePanel from './components/HistoriquePanel';
 import StockPanel from './components/StockPanel';
+import SoldePanel from './components/SoldePanel';
+import SoldeCreate from './components/SoldeCreate';
 
 interface SelectedClient {
   type: 'membre' | 'externe' | 'anonyme';
@@ -59,9 +66,10 @@ export default function CaissePage() {
   const [clientsExternes, setClientsExternes] = useState<ClientCaisse[]>([]);
   const [transactions, setTransactions] = useState<TransactionCaisse[]>([]);
   const [comptes, setComptes] = useState<CompteCaisse[]>([]);
+  const [soldeActuel, setSoldeActuel] = useState<SoldeCaisse | null>(null);
   const [payconiqUrl, setPayconiqUrl] = useState<string>('');
   const [isEditMode, setIsEditMode] = useState(false);
-
+  const [soldeLoading, setSoldeLoading] = useState(false);
 
   // UI
   const [activeView, setActiveView] = useState<CaisseView>('vente');
@@ -79,7 +87,7 @@ export default function CaissePage() {
   // Load data
   const loadData = useCallback(async () => {
     try {
-      const [p, cats, m, ce, tx, cpt, infos] = await Promise.all([
+      const [p, cats, m, ce, tx, cpt, infos, solde] = await Promise.all([
         fetchPlats(),
         fetchCategoriesCaisse(),
         fetchUsers(),
@@ -87,6 +95,7 @@ export default function CaissePage() {
         fetchTransactionsCaisse(),
         fetchComptesCaisse(),
         fetchInformations(),
+        fetchSoldeCaisseEnCours(),
       ]);
       setPlats(p);
       setCategories(cats);
@@ -94,6 +103,7 @@ export default function CaissePage() {
       setClientsExternes(ce);
       setTransactions(tx);
       setComptes(cpt);
+      setSoldeActuel(solde);
       if (infos && infos.length > 0) {
         setPayconiqUrl(infos[0].payconiqUrl || '');
       }
@@ -150,19 +160,20 @@ export default function CaissePage() {
   }, []);
 
   const updateQuantity = useCallback((platId: string, delta: number) => {
-    setPanier((prev) =>
-      prev
-        .map((l) => {
-          if (l.platId !== platId) return l;
-          const newQty = l.quantite + delta;
-          if (newQty <= 0) return null;
-          return {
-            ...l,
-            quantite: newQty,
-            sousTotal: newQty * l.prixUnitaire,
-          };
-        })
-        .filter(Boolean) as LigneCaisse[]
+    setPanier(
+      (prev) =>
+        prev
+          .map((l) => {
+            if (l.platId !== platId) return l;
+            const newQty = l.quantite + delta;
+            if (newQty <= 0) return null;
+            return {
+              ...l,
+              quantite: newQty,
+              sousTotal: newQty * l.prixUnitaire,
+            };
+          })
+          .filter(Boolean) as LigneCaisse[]
     );
   }, []);
 
@@ -178,13 +189,12 @@ export default function CaissePage() {
   // Payment
   const total = panier.reduce((sum, l) => sum + l.sousTotal, 0);
 
-  const operateurName =
-    user && 'username' in user ? user.username : 'admin';
+  const operateurName = user && 'username' in user ? user.username : 'admin';
 
   const handlePayImmediat = async () => {
     setPaymentLoading(true);
     try {
-      await createTransactionCaisse({
+      const tx = await createTransactionCaisse({
         lignes: panier,
         total,
         modePaiement: 'immediat',
@@ -199,6 +209,16 @@ export default function CaissePage() {
       // Decrement stock for each line
       for (const ligne of panier) {
         await decrementStock(ligne.platId, ligne.quantite);
+      }
+
+      // Ajouter au solde de caisse si un solde est ouvert
+      if (soldeActuel) {
+        await ajouterTransactionSolde(soldeActuel.id, {
+          type: 'vente_cash',
+          montant: total,
+          date: new Date().toISOString(),
+          transactionId: tx.id,
+        });
       }
 
       setPaymentSuccess(true);
@@ -284,7 +304,7 @@ export default function CaissePage() {
   const handlePayPayconiq = async () => {
     setPaymentLoading(true);
     try {
-      await createTransactionCaisse({
+      const tx = await createTransactionCaisse({
         lignes: panier,
         total,
         modePaiement: 'payconiq',
@@ -298,6 +318,16 @@ export default function CaissePage() {
 
       for (const ligne of panier) {
         await decrementStock(ligne.platId, ligne.quantite);
+      }
+
+      // Ajouter au solde de caisse si un solde est ouvert
+      if (soldeActuel) {
+        await ajouterTransactionSolde(soldeActuel.id, {
+          type: 'vente_payconiq',
+          montant: total,
+          date: new Date().toISOString(),
+          transactionId: tx.id,
+        });
       }
 
       setPaymentSuccess(true);
@@ -402,10 +432,7 @@ export default function CaissePage() {
   };
 
   // Ardoise payment
-  const handleArdoisePayment = async (
-    compteId: string,
-    montant: number
-  ) => {
+  const handleArdoisePayment = async (compteId: string, montant: number) => {
     try {
       const compte = comptes.find((c) => c.id === compteId);
       if (!compte) return;
@@ -422,10 +449,23 @@ export default function CaissePage() {
             montant,
             type: 'paiement' as const,
             date: now,
+            modePaiement: 'immediat',
           },
         ],
       };
       await updateCompteCaisse(compteId, updatedCompte);
+
+      // Ajouter au solde de caisse si un solde est ouvert
+      if (soldeActuel) {
+        await ajouterTransactionSolde(soldeActuel.id, {
+          type: 'compte_cash',
+          montant,
+          date: now,
+          compteId: compte.id,
+          compteName: compte.clientNom,
+        });
+      }
+
       loadData();
     } catch (err) {
       console.error('Erreur paiement ardoise:', err);
@@ -453,13 +493,57 @@ export default function CaissePage() {
             montant,
             type: 'paiement' as const,
             date: now,
+            modePaiement: 'payconiq',
           },
         ],
       };
       await updateCompteCaisse(compteId, updatedCompte);
+
+      // Ajouter au solde de caisse si un solde est ouvert
+      if (soldeActuel) {
+        await ajouterTransactionSolde(soldeActuel.id, {
+          type: 'compte_payconiq',
+          montant,
+          date: now,
+          compteId: compte.id,
+          compteName: compte.clientNom,
+        });
+      }
+
       loadData();
     } catch (err) {
       console.error('Erreur paiement ardoise payconiq:', err);
+    }
+  };
+
+  // Gestion du solde de caisse
+  const handleCreateSolde = async (montantInitial: number) => {
+    setSoldeLoading(true);
+    try {
+      const newSolde = await createSoldeCaisse({
+        montantInitial,
+        dateOuverture: new Date().toISOString(),
+        statut: 'en_cours',
+        transactions: [],
+      });
+      setSoldeActuel(newSolde);
+    } catch (err) {
+      console.error('Erreur creation solde:', err);
+    } finally {
+      setSoldeLoading(false);
+    }
+  };
+
+  const handleCloturerSolde = async () => {
+    if (!soldeActuel) return;
+    setSoldeLoading(true);
+    try {
+      await cloturerSoldeCaisse(soldeActuel.id);
+      setSoldeActuel(null);
+    } catch (err) {
+      console.error('Erreur cloture solde:', err);
+    } finally {
+      setSoldeLoading(false);
     }
   };
 
@@ -470,7 +554,12 @@ export default function CaissePage() {
 
   // Render active view content
   const renderLeftPanel = () => {
-    console.log('[CaissePage] renderLeftPanel - activeView:', activeView, 'isEditMode:', isEditMode);
+    console.log(
+      '[CaissePage] renderLeftPanel - activeView:',
+      activeView,
+      'isEditMode:',
+      isEditMode
+    );
 
     switch (activeView) {
       case 'vente':
@@ -507,6 +596,22 @@ export default function CaissePage() {
             plats={plats}
             categories={categories}
             onDataUpdated={reloadPlatsAndCategories}
+          />
+        );
+      case 'solde':
+        if (!soldeActuel) {
+          return (
+            <SoldeCreate
+              onCreateSolde={handleCreateSolde}
+              loading={soldeLoading}
+            />
+          );
+        }
+        return (
+          <SoldePanel
+            solde={soldeActuel}
+            onCloturer={handleCloturerSolde}
+            loading={soldeLoading}
           />
         );
       default:

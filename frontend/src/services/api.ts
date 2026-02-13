@@ -14,6 +14,8 @@ import {
   CompteCaisse,
   CategorieCaisse,
   Plat,
+  SoldeCaisse,
+  TransactionSolde,
 } from '@/services/type.ts';
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -47,7 +49,7 @@ export const updateMemberLastLog = async (supabaseUid: string) => {
 
     if (membre) {
       const response = await axios.patch(`${API_URL}/membres/${membre.id}`, {
-        lastLog: new Date().toISOString()
+        lastLog: new Date().toISOString(),
       });
       return response.data;
     }
@@ -128,7 +130,6 @@ export const deleteFoodMenu = async (id: string) => {
   await axios.delete(`${API_URL}/menu/${id}`);
 };
 
-
 /* Zones de Commande API Endpoints */
 export const fetchZonesCommande = async () => {
   const response = await axios.get(`${API_URL}/zonesCommande`);
@@ -148,7 +149,6 @@ export const updateZoneCommande = async (id: string, data: any) => {
 export const deleteZoneCommande = async (id: string) => {
   await axios.delete(`${API_URL}/zonesCommande/${id}`);
 };
-
 
 /* Actualités API Endpoints */
 
@@ -296,7 +296,9 @@ export const updateSaisonResults = async (
     }));
   };
 
-  const originalCalendar: Match[] = Array.isArray(saison.calendrier) ? saison.calendrier : [];
+  const originalCalendar: Match[] = Array.isArray(saison.calendrier)
+    ? saison.calendrier
+    : [];
   const originalIds = new Set(originalCalendar.map((m) => m.id));
 
   // Mise à jour des matchs existants
@@ -306,16 +308,21 @@ export const updateSaisonResults = async (
 
     // Normaliser joueurs et champs wo
     const joueur_dom = ensureWoField(
-      updatedMatch.joueursDomicile || updatedMatch.joueur_dom || match.joueur_dom
+      updatedMatch.joueursDomicile ||
+        updatedMatch.joueur_dom ||
+        match.joueur_dom
     );
     const joueur_ext = ensureWoField(
-      updatedMatch.joueursExterieur || updatedMatch.joueur_ext || match.joueur_ext
+      updatedMatch.joueursExterieur ||
+        updatedMatch.joueur_ext ||
+        match.joueur_ext
     );
 
     return {
       ...match,
       score: updatedMatch.score ?? match.score ?? '',
-      scoresIndividuels: updatedMatch.scoresIndividuels || match.scoresIndividuels || {},
+      scoresIndividuels:
+        updatedMatch.scoresIndividuels || match.scoresIndividuels || {},
       joueursDomicile: joueur_dom,
       joueursExterieur: joueur_ext,
       joueur_dom,
@@ -462,13 +469,13 @@ export const addItemToCommande = async (
   };
 
   // Trouver ou créer le membre dans la commande
-  let memberGroup = commande.members.find(m => m.memberId === item.memberId);
+  let memberGroup = commande.members.find((m) => m.memberId === item.memberId);
 
   if (!memberGroup) {
     memberGroup = {
       memberId: item.memberId,
       items: [],
-      subtotal: '0'
+      subtotal: '0',
     };
     commande.members.push(memberGroup);
   }
@@ -478,7 +485,7 @@ export const addItemToCommande = async (
 
   // Recalculer le sous-total du membre
   const memberSubtotal = memberGroup.items.reduce(
-    (sum, item) => sum + (parseFloat(item.price) * parseInt(item.quantity)),
+    (sum, item) => sum + parseFloat(item.price) * parseInt(item.quantity),
     0
   );
   memberGroup.subtotal = memberSubtotal.toString();
@@ -499,7 +506,7 @@ export const getOrCreateOpenCommande = async (): Promise<Commande> => {
   const commandes = await fetchCommandes();
 
   // Chercher une commande ouverte existante
-  let openCommande = commandes.find(c => c.statut === 'open');
+  let openCommande = commandes.find((c) => c.statut === 'open');
 
   if (!openCommande) {
     // Créer une nouvelle commande ouverte
@@ -533,10 +540,8 @@ export const updateCommandeItem = async (
 ): Promise<CommandeItem> => {
   // Trouver la commande qui contient cet item
   const commandes = await fetchCommandes();
-  const commande = commandes.find(c =>
-    c.members.some(member =>
-      member.items.some(item => item.id === itemId)
-    )
+  const commande = commandes.find((c) =>
+    c.members.some((member) => member.items.some((item) => item.id === itemId))
   );
 
   if (!commande) {
@@ -544,8 +549,8 @@ export const updateCommandeItem = async (
   }
 
   // Trouver le membre qui contient l'item
-  const memberGroup = commande.members.find(member =>
-    member.items.some(item => item.id === itemId)
+  const memberGroup = commande.members.find((member) =>
+    member.items.some((item) => item.id === itemId)
   );
 
   if (!memberGroup) {
@@ -553,7 +558,7 @@ export const updateCommandeItem = async (
   }
 
   // Mettre à jour l'item
-  memberGroup.items = memberGroup.items.map(item => {
+  memberGroup.items = memberGroup.items.map((item) => {
     if (item.id === itemId) {
       return { ...item, ...updates };
     }
@@ -562,7 +567,7 @@ export const updateCommandeItem = async (
 
   // Recalculer le sous-total du membre
   const memberSubtotal = memberGroup.items.reduce(
-    (sum, item) => sum + (parseFloat(item.price) * parseInt(item.quantity)),
+    (sum, item) => sum + parseFloat(item.price) * parseInt(item.quantity),
     0
   );
   memberGroup.subtotal = memberSubtotal.toString();
@@ -577,17 +582,15 @@ export const updateCommandeItem = async (
   await updateCommande(commande.id, commande);
 
   // Retourner l'item modifié
-  return memberGroup.items.find(item => item.id === itemId)!;
+  return memberGroup.items.find((item) => item.id === itemId)!;
 };
 
 // Fonction pour supprimer un item de commande
 export const deleteCommandeItem = async (itemId: string): Promise<void> => {
   // Trouver la commande qui contient cet item
   const commandes = await fetchCommandes();
-  const commande = commandes.find(c =>
-    c.members.some(member =>
-      member.items.some(item => item.id === itemId)
-    )
+  const commande = commandes.find((c) =>
+    c.members.some((member) => member.items.some((item) => item.id === itemId))
   );
 
   if (!commande) {
@@ -595,8 +598,8 @@ export const deleteCommandeItem = async (itemId: string): Promise<void> => {
   }
 
   // Trouver le membre qui contient l'item
-  const memberGroup = commande.members.find(member =>
-    member.items.some(item => item.id === itemId)
+  const memberGroup = commande.members.find((member) =>
+    member.items.some((item) => item.id === itemId)
   );
 
   if (!memberGroup) {
@@ -604,18 +607,20 @@ export const deleteCommandeItem = async (itemId: string): Promise<void> => {
   }
 
   // Supprimer l'item
-  memberGroup.items = memberGroup.items.filter(item => item.id !== itemId);
+  memberGroup.items = memberGroup.items.filter((item) => item.id !== itemId);
 
   // Recalculer le sous-total du membre
   const memberSubtotal = memberGroup.items.reduce(
-    (sum, item) => sum + (parseFloat(item.price) * parseInt(item.quantity)),
+    (sum, item) => sum + parseFloat(item.price) * parseInt(item.quantity),
     0
   );
   memberGroup.subtotal = memberSubtotal.toString();
 
   // Si le membre n'a plus d'items, le supprimer
   if (memberGroup.items.length === 0) {
-    commande.members = commande.members.filter(m => m.memberId !== memberGroup.memberId);
+    commande.members = commande.members.filter(
+      (m) => m.memberId !== memberGroup.memberId
+    );
   }
 
   // Recalculer le total global
@@ -778,7 +783,7 @@ export const updateCommandeInfo = async (
   // Mettre à jour seulement les champs fournis
   const updatedCommande = {
     ...commande,
-    ...updates
+    ...updates,
   };
 
   return updateCommande(id, updatedCommande);
@@ -830,7 +835,10 @@ export const createLog = async (data: {
   return response.data;
 };
 
-export const logSelectionsAccess = async (userId?: string, userName?: string) => {
+export const logSelectionsAccess = async (
+  userId?: string,
+  userName?: string
+) => {
   return createLog({
     action: 'selections_access',
     details: `Utilisateur ${userName || 'anonyme'} a ouvert la page Toutes les sélections du club`,
@@ -839,7 +847,11 @@ export const logSelectionsAccess = async (userId?: string, userName?: string) =>
   });
 };
 
-export const logAccordionOpen = async (equipe: string, userId?: string, userName?: string) => {
+export const logAccordionOpen = async (
+  equipe: string,
+  userId?: string,
+  userName?: string
+) => {
   return createLog({
     action: 'accordion_open',
     details: `${userName || 'Utilisateur anonyme'} a ouvert l'accordéon pour l'équipe: ${equipe}`,
@@ -851,7 +863,10 @@ export const logAccordionOpen = async (equipe: string, userId?: string, userName
 // ---- Infos Exceptionnelles (helpers) ----
 export const upsertInfosPersonnalisees = async (
   saisonId: string,
-  payload: Omit<InfosPersonnalisees, 'id' | 'dateCreation' | 'dateModification'> & { id?: string }
+  payload: Omit<
+    InfosPersonnalisees,
+    'id' | 'dateCreation' | 'dateModification'
+  > & { id?: string }
 ): Promise<Saison> => {
   const saison = await fetchSaisonById(saisonId);
   const list: InfosPersonnalisees[] = Array.isArray(saison.infosPersonnalisees)
@@ -923,7 +938,9 @@ export const deleteClientCaisse = async (id: string): Promise<void> => {
 
 /* ---- CAISSE: Transactions ---- */
 
-export const fetchTransactionsCaisse = async (): Promise<TransactionCaisse[]> => {
+export const fetchTransactionsCaisse = async (): Promise<
+  TransactionCaisse[]
+> => {
   const response = await axios.get(`${API_URL}/transactionsCaisse`);
   return response.data;
 };
@@ -1075,4 +1092,53 @@ export const reorderPlatsCaisse = async (
 export const fetchImagesCaisse = async (): Promise<Image[]> => {
   const allImages = await fetchImages();
   return allImages.filter((img) => img.folder === 'Caisse');
+};
+
+/* ---- CAISSE: Soldes ---- */
+
+export const fetchSoldesCaisse = async (): Promise<SoldeCaisse[]> => {
+  const response = await axios.get(`${API_URL}/soldesCaisse`);
+  return response.data;
+};
+
+export const fetchSoldeCaisseEnCours =
+  async (): Promise<SoldeCaisse | null> => {
+    const response = await axios.get(`${API_URL}/soldesCaisse?statut=en_cours`);
+    return response.data[0] || null;
+  };
+
+export const createSoldeCaisse = async (
+  data: Omit<SoldeCaisse, 'id'>
+): Promise<SoldeCaisse> => {
+  const response = await axios.post(`${API_URL}/soldesCaisse`, data);
+  return response.data;
+};
+
+export const updateSoldeCaisse = async (
+  id: string,
+  data: Partial<SoldeCaisse>
+): Promise<SoldeCaisse> => {
+  const response = await axios.patch(`${API_URL}/soldesCaisse/${id}`, data);
+  return response.data;
+};
+
+export const cloturerSoldeCaisse = async (id: string): Promise<SoldeCaisse> => {
+  const response = await axios.patch(`${API_URL}/soldesCaisse/${id}`, {
+    statut: 'cloture',
+    dateCloture: new Date().toISOString(),
+  });
+  return response.data;
+};
+
+export const ajouterTransactionSolde = async (
+  soldeId: string,
+  transaction: Omit<TransactionSolde, 'id'>
+): Promise<SoldeCaisse> => {
+  const solde = (await axios.get(`${API_URL}/soldesCaisse/${soldeId}`)).data;
+  const newTransaction: TransactionSolde = {
+    ...transaction,
+    id: `tx_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+  };
+  solde.transactions.push(newTransaction);
+  return updateSoldeCaisse(soldeId, { transactions: solde.transactions });
 };
