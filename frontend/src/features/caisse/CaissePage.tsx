@@ -110,7 +110,7 @@ export default function CaissePage() {
   // Load data
   const loadData = useCallback(async () => {
     try {
-      const [p, cats, m, ce, tx, cpt, infos, solde] = await Promise.all([
+      const results = await Promise.allSettled([
         fetchPlats(),
         fetchCategoriesCaisse(),
         fetchUsers(),
@@ -120,27 +120,45 @@ export default function CaissePage() {
         fetchInformations(),
         fetchSoldeCaisseEnCours(),
       ]);
-      setPlats(p);
-      setCategories(cats);
-      setMembres(m);
-      setClientsExternes(ce);
-      setTransactions(tx);
-      setComptes(cpt);
-      setSoldeActuel(solde);
-      if (infos && infos.length > 0) {
-        setPayconiqUrl(infos[0].payconiqUrl || '');
+
+      // Helper pour extraire les valeurs des résultats
+      const getValue = <T,>(result: PromiseSettledResult<T>, defaultValue: T): T => {
+        return result.status === 'fulfilled' ? result.value : defaultValue;
+      };
+
+      const [p, cats, m, ce, tx, cpt, infos, solde] = results;
+
+      setPlats(getValue(p as PromiseSettledResult<Plat[]>, []));
+      setCategories(getValue(cats as PromiseSettledResult<CategorieCaisse[]>, []));
+      setMembres(getValue(m as PromiseSettledResult<Member[]>, []));
+      setClientsExternes(getValue(ce as PromiseSettledResult<ClientCaisse[]>, []));
+      setTransactions(getValue(tx as PromiseSettledResult<TransactionCaisse[]>, []));
+      setComptes(getValue(cpt as PromiseSettledResult<CompteCaisse[]>, []));
+      setSoldeActuel(getValue(solde as PromiseSettledResult<SoldeCaisse | null>, null));
+
+      const infosData = getValue(infos as PromiseSettledResult<any[]>, []);
+      if (infosData && infosData.length > 0) {
+        setPayconiqUrl(infosData[0].payconiqUrl || '');
         // Charger la config Facebook
-        if (infos[0].facebookGroupePriveUrl) {
-          const url = infos[0].facebookGroupePriveUrl;
+        if (infosData[0].facebookGroupePriveUrl) {
+          const url = infosData[0].facebookGroupePriveUrl;
           const match = url.match(/groups\/(\d+)/);
           if (match && match[1]) {
             setGroupId(match[1]);
           }
         }
-        if (infos[0].facebookMessageCaisse) {
-          setMessageTemplate(infos[0].facebookMessageCaisse);
+        if (infosData[0].facebookMessageCaisse) {
+          setMessageTemplate(infosData[0].facebookMessageCaisse);
         }
       }
+
+      // Loguer les erreurs éventuelles
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          const names = ['plats', 'categories', 'membres', 'clients', 'transactions', 'comptes', 'infos', 'solde'];
+          console.warn(`Erreur chargement ${names[index]}:`, result.reason);
+        }
+      });
     } catch (err) {
       console.error('Erreur chargement donnees:', err);
     }
