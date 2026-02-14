@@ -18,11 +18,11 @@ export default function CaisseLayout({
         {leftPanel}
       </div>
       {/* Panier - Centre */}
-      <div className="w-[25%] bg-[#2C2C2C] border-l border-[#4A4A4A] p-4 flex flex-col overflow-hidden">
+      <div className="w-[32%] bg-[#2C2C2C] border-l border-[#4A4A4A] p-4 flex flex-col overflow-hidden">
         {centerPanel}
       </div>
       {/* Comptes actifs - Droite */}
-      <div className="w-[25%] bg-[#252525] border-l border-[#4A4A4A] p-4 flex flex-col overflow-hidden">
+      <div className="w-[18%] bg-[#252525] border-l border-[#4A4A4A] p-4 flex flex-col overflow-hidden">
         {rightPanel}
       </div>
     </div>

@@ -56,11 +56,11 @@ export default function ComptesActifsPanel({ comptes, onSelectClient }: ComptesA
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#4A4A4A]">
-        <Clock className="w-4 h-4 text-orange-400" />
-        <span className="text-sm text-white font-medium">Comptes du jour</span>
+      <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-[#4A4A4A]">
+        <Clock className="w-3.5 h-3.5 text-orange-400" />
+        <span className="text-xs text-white font-medium">Comptes du jour</span>
         {comptesRecents.length > 0 && (
-          <span className="ml-auto text-xs text-orange-400 font-semibold bg-orange-400/20 px-2 py-0.5 rounded-full">
+          <span className="ml-auto text-xs text-orange-400 font-semibold bg-orange-400/20 px-1.5 py-0.5 rounded-full">
             {comptesRecents.length}
           </span>
         )}
@@ -69,13 +69,13 @@ export default function ComptesActifsPanel({ comptes, onSelectClient }: ComptesA
       {/* Liste des comptes */}
       <ScrollArea className="flex-1 min-h-0">
         {comptesRecents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-gray-500">
-            <User className="w-8 h-8 mb-2 opacity-30" />
-            <span className="text-sm">Aucune compte actif</span>
+          <div className="flex flex-col items-center justify-center h-24 text-gray-500">
+            <User className="w-6 h-6 mb-1.5 opacity-30" />
+            <span className="text-xs">Aucun compte actif</span>
             <span className="text-xs text-gray-600">dans les 48h</span>
           </div>
         ) : (
-          <div className="space-y-2 pr-2">
+          <div className="space-y-1.5 pr-1">
             {comptesRecents.map((compte) => (
               <div
                 key={compte.id} onClick={() => onSelectClient?.({
@@ -83,21 +83,21 @@ export default function ComptesActifsPanel({ comptes, onSelectClient }: ComptesA
                   id: compte.clientId,
                   nom: compte.clientNom,
                 })}
-                className="bg-[#3A3A3A] rounded-lg p-2.5 hover:bg-[#404040] hover:ring-1 hover:ring-[#F1C40F]/50 transition-colors cursor-pointer"
+                className="bg-[#3A3A3A] rounded-lg p-2 hover:bg-[#404040] hover:ring-1 hover:ring-[#F1C40F]/50 transition-colors cursor-pointer"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-white text-sm font-medium truncate flex-1">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-white text-xs font-medium truncate flex-1">
                     {formatCompactName(compte.clientNom)}
                   </span>
-                  <span className="text-orange-400 font-bold text-sm ml-2">
+                  <span className="text-orange-400 font-bold text-xs whitespace-nowrap">
                     {compte.solde.toFixed(2)}€
                   </span>
                 </div>
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-xs text-gray-500">
+                <div className="flex items-center justify-between mt-0.5">
+                  <span className="text-[10px] text-gray-500">
                     {compte.clientType === 'membre' ? 'Membre' : 'Externe'}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-[10px] text-gray-500">
                     {formatRelativeTime(compte.derniereActivite)}
                   </span>
                 </div>
@@ -106,18 +106,6 @@ export default function ComptesActifsPanel({ comptes, onSelectClient }: ComptesA
           </div>
         )}
       </ScrollArea>
-
-      {/* Total */}
-      {comptesRecents.length > 0 && (
-        <div className="mt-auto pt-3 border-t border-[#4A4A4A]">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-400 text-xs">Total comptes</span>
-            <span className="text-orange-400 font-bold text-lg">
-              {comptesRecents.reduce((sum, c) => sum + c.solde, 0).toFixed(2)}€
-            </span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
