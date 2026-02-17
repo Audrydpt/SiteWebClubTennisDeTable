@@ -1,9 +1,16 @@
 /* eslint-disable */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import CompteBillets from './CompteBillets';
 import type { SoldeCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Banknote, Smartphone, BookOpen, XCircle } from 'lucide-react';
+import {
+  Banknote,
+  Smartphone,
+  BookOpen,
+  XCircle,
+  Calculator,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -18,6 +25,8 @@ export default function SoldePanel({
   onCloturer,
   loading,
 }: SoldePanelProps) {
+  const [showComptage, setShowComptage] = useState(false);
+
   const stats = useMemo(() => {
     let totalCash = 0;
     let totalPayconiq = 0;
@@ -64,18 +73,33 @@ export default function SoldePanel({
 
   return (
     <div className="h-full flex flex-col min-h-0">
+      {showComptage && (
+        <CompteBillets
+          montantCash={stats.montantActuel}
+          onClose={() => setShowComptage(false)}
+        />
+      )}
       {/* Header */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-white text-lg font-bold">Solde de caisse</h2>
-          <Button
-            onClick={onCloturer}
-            disabled={loading}
-            className="h-9 px-4 bg-red-600 text-white hover:bg-red-700 rounded-lg disabled:opacity-30"
-          >
-            <XCircle className="w-4 h-4 mr-2" />
-            {loading ? 'Clôture...' : 'Clôturer'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowComptage(true)}
+              className="h-9 px-4 bg-[#F1C40F] text-[#2C2C2C] hover:bg-[#F1C40F]/90 rounded-lg font-semibold"
+            >
+              <Calculator className="w-4 h-4 mr-2" />
+              Comptage
+            </Button>
+            <Button
+              onClick={onCloturer}
+              disabled={loading}
+              className="h-9 px-4 bg-red-600 text-white hover:bg-red-700 rounded-lg disabled:opacity-30"
+            >
+              <XCircle className="w-4 h-4 mr-2" />
+              {loading ? 'Clôture...' : 'Clôturer'}
+            </Button>
+          </div>
         </div>
         <p className="text-gray-400 text-sm">
           Ouvert{' '}
