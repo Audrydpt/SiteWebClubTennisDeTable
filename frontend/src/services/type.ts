@@ -264,6 +264,11 @@ export interface Training {
   groupe?: string; // Nouveau : identifie le groupe cible de l'entraînement (ex: 'A', 'B', 'Tous')
 }
 
+export interface SousProduitRecette {
+  platId: string;
+  quantite: number;
+}
+
 export interface Plat {
   id: string;
   nom: string;
@@ -278,6 +283,7 @@ export interface Plat {
   ordre?: number;
   formats?: number[]; // Formats de conditionnement (ex: [6, 12, 24] pour les packs)
   isPlat?: boolean; // true pour les plats cuisinés (pas de gestion de formats)
+  sousProduitsIds?: SousProduitRecette[]; // Recette : ingrédients prélevés du stock à la vente
 }
 
 export interface ZoneCommande {

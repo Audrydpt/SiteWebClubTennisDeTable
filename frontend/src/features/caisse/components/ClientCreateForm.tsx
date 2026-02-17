@@ -8,6 +8,9 @@ interface ClientCreateFormProps {
   loading?: boolean;
 }
 
+const capitalize = (val: string) =>
+  val.length === 0 ? '' : val.charAt(0).toUpperCase() + val.slice(1);
+
 export default function ClientCreateForm({
   onSubmit,
   loading,
@@ -35,13 +38,13 @@ export default function ClientCreateForm({
         <Input
           placeholder="Prenom"
           value={prenom}
-          onChange={(e) => setPrenom(e.target.value)}
+          onChange={(e) => setPrenom(capitalize(e.target.value))}
           className="h-11 bg-[#4A4A4A] border-none text-white placeholder:text-gray-500 rounded-xl"
         />
         <Input
           placeholder="Nom"
           value={nom}
-          onChange={(e) => setNom(e.target.value)}
+          onChange={(e) => setNom(capitalize(e.target.value))}
           className="h-11 bg-[#4A4A4A] border-none text-white placeholder:text-gray-500 rounded-xl"
         />
       </div>

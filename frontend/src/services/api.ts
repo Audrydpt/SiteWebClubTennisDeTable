@@ -1034,7 +1034,9 @@ export const createCompteCaisse = async (
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) {
-      console.warn('Collection comptesCaisse non disponible, création impossible');
+      console.warn(
+        'Collection comptesCaisse non disponible, création impossible'
+      );
       // Retourner un objet fictif avec un ID temporaire
       return { ...data, id: `temp_${Date.now()}` } as CompteCaisse;
     }
@@ -1051,7 +1053,9 @@ export const updateCompteCaisse = async (
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) {
-      console.warn('Collection comptesCaisse non disponible, mise à jour impossible');
+      console.warn(
+        'Collection comptesCaisse non disponible, mise à jour impossible'
+      );
       return data;
     }
     throw error;
@@ -1132,6 +1136,40 @@ export const reorderPlatsCaisse = async (
   );
 };
 
+/**
+ * Décrémente le stock lors d'une vente.
+ * - Si le plat a une recette (sousProduitsIds), décrémente chaque ingrédient × quantiteVendue.
+ * - Sinon, décrémente le stock du plat lui-même (comportement normal).
+ *
+ * À appeler depuis CaissePage lors du traitement d'une transaction :
+ * @example
+ *   // Remplacer : await decrementStock(ligne.platId, ligne.quantite)
+ *   // Par :       await decrementStockComposite(ligne.platId, ligne.quantite, allPlats)
+ */
+export const decrementStockComposite = async (
+  platId: string,
+  quantiteVendue: number,
+  allPlats: Plat[]
+): Promise<void> => {
+  // Normaliser les IDs en string car json-server peut renvoyer des nombres
+  const normalize = (id: string | number) => String(id);
+  const plat = allPlats.find((p) => normalize(p.id) === normalize(platId));
+  if (!plat) return;
+
+  if (plat.sousProduitsIds && plat.sousProduitsIds.length > 0) {
+    // Plat composé : décrémenter chaque ingrédient
+    await Promise.all(
+      plat.sousProduitsIds.map(
+        ({ platId: ingredientId, quantite: qtyParUnite }) =>
+          decrementStock(normalize(ingredientId), qtyParUnite * quantiteVendue)
+      )
+    );
+  } else {
+    // Produit simple : décrémenter son propre stock
+    await decrementStock(platId, quantiteVendue);
+  }
+};
+
 /* ---- CAISSE: Images Cloudinary (dossier Caisse) ---- */
 
 export const fetchImagesCaisse = async (): Promise<Image[]> => {
@@ -1157,7 +1195,9 @@ export const fetchSoldesCaisse = async (): Promise<SoldeCaisse[]> => {
 export const fetchSoldeCaisseEnCours =
   async (): Promise<SoldeCaisse | null> => {
     try {
-      const response = await axios.get(`${API_URL}/soldesCaisse?statut=en_cours`);
+      const response = await axios.get(
+        `${API_URL}/soldesCaisse?statut=en_cours`
+      );
       return response.data[0] || null;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 404) {
@@ -1180,7 +1220,10 @@ export const createSoldeCaisse = async (
     const response = await axios.post(`${API_URL}/soldesCaisse`, dataWithId);
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error) && (error.response?.status === 404 || error.response?.status === 500)) {
+    if (
+      axios.isAxiosError(error) &&
+      (error.response?.status === 404 || error.response?.status === 500)
+    ) {
       console.warn('Erreur création solde caisse:', error.response?.status);
       // Retourner un objet fictif pour ne pas bloquer l'UI
       return { ...data, id: `temp_${Date.now()}` } as SoldeCaisse;

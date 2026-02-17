@@ -16,7 +16,14 @@ import {
   ArrowUpDown,
   Package,
 } from 'lucide-react';
-import type { Plat, CategorieCaisse } from '@/services/type';
+import type {
+  Plat,
+  CategorieCaisse,
+  SousProduitRecette,
+} from '@/services/type';
+
+// Nom exact de la catégorie qui utilise la logique "recette" (ingrédients liés)
+const PLATS_CATEGORY_NAME = 'Plats';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -35,6 +42,127 @@ import ImagePickerCaisse from './ImagePickerCaisse';
 import AjoutStockMasse from './AjoutStockMasse';
 
 type StockView = 'articles' | 'categories' | 'addArticle' | 'editArticle';
+
+/** Sélecteur d'ingrédients pour les plats composés */
+function RecetteEditor({
+  recette,
+  onChange,
+  ingredients, // plats disponibles comme ingrédients (hors catégorie Plats)
+}: {
+  recette: SousProduitRecette[];
+  onChange: (r: SousProduitRecette[]) => void;
+  ingredients: Plat[];
+}) {
+  // Normaliser tous les IDs en string pour éviter les mismatches number/string (json-server)
+  const normalize = (id: string | number) => String(id);
+
+  const availableToAdd = ingredients.filter(
+    (p) => !recette.some((r) => normalize(r.platId) === normalize(p.id))
+  );
+
+  const addIngredient = (platId: string) => {
+    onChange([...recette, { platId: normalize(platId), quantite: 1 }]);
+  };
+
+  const updateQty = (platId: string, quantite: number) => {
+    onChange(
+      recette.map((r) =>
+        normalize(r.platId) === normalize(platId) ? { ...r, quantite } : r
+      )
+    );
+  };
+
+  const removeIngredient = (platId: string) => {
+    onChange(recette.filter((r) => normalize(r.platId) !== normalize(platId)));
+  };
+
+  return (
+    <div className="bg-[#2C2C2C] rounded-xl p-3 space-y-2">
+      <div className="flex items-center gap-2 mb-1">
+        <Package className="w-4 h-4 text-[#F1C40F]" />
+        <p className="text-[#F1C40F] text-sm font-bold">
+          Recette (ingrédients prélevés à la vente)
+        </p>
+      </div>
+
+      {recette.length === 0 && (
+        <p className="text-gray-500 text-xs italic">
+          Aucun ingrédient — ajoutez-en ci-dessous.
+        </p>
+      )}
+
+      {recette.map((ligne) => {
+        const plat = ingredients.find(
+          (p) => normalize(p.id) === normalize(ligne.platId)
+        );
+        return (
+          <div
+            key={ligne.platId}
+            className="flex items-center gap-2 bg-[#3A3A3A] rounded-lg px-3 py-1.5"
+          >
+            <span className="text-white text-sm flex-1 truncate">
+              {plat?.nom ?? (
+                <span className="text-red-400 italic">
+                  Produit introuvable ({ligne.platId})
+                </span>
+              )}
+              {plat?.stock !== undefined && (
+                <span className="text-gray-500 text-xs ml-2">
+                  (stock: {plat.stock})
+                </span>
+              )}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() =>
+                  updateQty(ligne.platId, Math.max(1, ligne.quantite - 1))
+                }
+                className="h-6 w-6 bg-[#4A4A4A] hover:bg-[#555] text-white rounded flex items-center justify-center"
+              >
+                <Minus className="w-3 h-3" />
+              </button>
+              <span className="w-8 text-center text-white text-sm font-bold tabular-nums">
+                {ligne.quantite}
+              </span>
+              <button
+                type="button"
+                onClick={() => updateQty(ligne.platId, ligne.quantite + 1)}
+                className="h-6 w-6 bg-[#4A4A4A] hover:bg-[#555] text-white rounded flex items-center justify-center"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => removeIngredient(ligne.platId)}
+              className="text-gray-500 hover:text-red-400 ml-1"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        );
+      })}
+
+      {availableToAdd.length > 0 && (
+        <select
+          value=""
+          onChange={(e) => {
+            if (e.target.value) addIngredient(e.target.value);
+          }}
+          className="h-9 w-full px-3 bg-[#3A3A3A] text-gray-400 rounded-lg border-none text-sm"
+        >
+          <option value="">+ Ajouter un ingrédient…</option>
+          {availableToAdd.map((p) => (
+            <option key={p.id} value={String(p.id)}>
+              {p.nom} {p.stock !== undefined ? `(stock: ${p.stock})` : ''}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
+  );
+}
 
 interface StockPanelProps {
   plats: Plat[];
@@ -66,6 +194,10 @@ export default function StockPanel({
   // Edit article
   const [editArticle, setEditArticle] = useState<Plat | null>(null);
 
+  // Recette (sous-produits liés) pour la catégorie Plats
+  const [newRecette, setNewRecette] = useState<SousProduitRecette[]>([]);
+  const [editRecette, setEditRecette] = useState<SousProduitRecette[]>([]);
+
   // Category form
   const [newCatName, setNewCatName] = useState('');
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
@@ -84,10 +216,10 @@ export default function StockPanel({
       let cmp = 0;
       switch (sortKey) {
         case 'nom':
-          cmp = a.nom.localeCompare(b.nom);
+          cmp = a.nom.localeCompare(b.nom, 'fr');
           break;
         case 'categorie':
-          cmp = a.categorie.localeCompare(b.categorie);
+          cmp = a.categorie.localeCompare(b.categorie, 'fr');
           break;
         case 'prix':
           cmp = a.prix - b.prix;
@@ -154,6 +286,10 @@ export default function StockPanel({
         imageUrl: newArticle.imageUrl || undefined,
         description: newArticle.description || undefined,
         dateCreation: new Date().toISOString(),
+        sousProduitsIds:
+          newArticle.categorie === PLATS_CATEGORY_NAME && newRecette.length > 0
+            ? newRecette
+            : undefined,
       });
       setNewArticle({
         nom: '',
@@ -163,6 +299,7 @@ export default function StockPanel({
         imageUrl: '',
         description: '',
       });
+      setNewRecette([]);
       setView('articles');
       onDataUpdated();
     } catch (err) {
@@ -178,8 +315,19 @@ export default function StockPanel({
     if (!editArticle) return;
     setSaving(true);
     try {
-      await updatePlat(editArticle.id, editArticle);
+      const updatedPlat: Plat = {
+        ...editArticle,
+        sousProduitsIds:
+          editArticle.categorie === PLATS_CATEGORY_NAME &&
+          editRecette.length > 0
+            ? editRecette
+            : editArticle.categorie === PLATS_CATEGORY_NAME
+              ? []
+              : undefined,
+      };
+      await updatePlat(editArticle.id, updatedPlat);
       setEditArticle(null);
+      setEditRecette([]);
       setView('articles');
       onDataUpdated();
     } catch (err) {
@@ -393,6 +541,18 @@ export default function StockPanel({
               }
             />
           </div>
+
+          {/* Recette — uniquement pour la catégorie Plats */}
+          {newArticle.categorie === PLATS_CATEGORY_NAME && (
+            <RecetteEditor
+              recette={newRecette}
+              onChange={setNewRecette}
+              ingredients={plats.filter(
+                (p) => p.categorie !== PLATS_CATEGORY_NAME
+              )}
+            />
+          )}
+
           <div className="flex gap-2 pt-2">
             <Button
               type="button"
@@ -523,6 +683,19 @@ export default function StockPanel({
               }
             />
           </div>
+
+          {/* Recette — uniquement pour la catégorie Plats */}
+          {editArticle.categorie === PLATS_CATEGORY_NAME && (
+            <RecetteEditor
+              recette={editRecette}
+              onChange={setEditRecette}
+              ingredients={plats.filter(
+                (p) =>
+                  p.categorie !== PLATS_CATEGORY_NAME && p.id !== editArticle.id
+              )}
+            />
+          )}
+
           <div className="flex gap-2 pt-2">
             <Button
               type="button"
@@ -530,6 +703,7 @@ export default function StockPanel({
               onClick={() => {
                 setView('articles');
                 setEditArticle(null);
+                setEditRecette([]);
               }}
               className="flex-1 h-12 bg-[#4A4A4A] text-gray-400 hover:bg-[#555] rounded-xl"
             >
@@ -870,6 +1044,7 @@ export default function StockPanel({
                         size="icon"
                         onClick={() => {
                           setEditArticle(plat);
+                          setEditRecette(plat.sousProduitsIds || []);
                           setView('editArticle');
                         }}
                         className="h-7 w-7 text-gray-500 hover:text-[#F1C40F] rounded"
@@ -929,6 +1104,20 @@ export default function StockPanel({
                     {!plat.disponible && (
                       <span className="text-red-400 ml-1">(off)</span>
                     )}
+                    {plat.sousProduitsIds &&
+                      plat.sousProduitsIds.length > 0 && (
+                        <span
+                          className="text-[#F1C40F] ml-1"
+                          title={`Recette: ${plat.sousProduitsIds
+                            .map((s) => {
+                              const p = plats.find((x) => x.id === s.platId);
+                              return `${s.quantite}x ${p?.nom ?? s.platId}`;
+                            })
+                            .join(', ')}`}
+                        >
+                          🍽 recette ({plat.sousProduitsIds.length})
+                        </span>
+                      )}
                   </p>
                 </div>
 
@@ -991,6 +1180,7 @@ export default function StockPanel({
                     size="icon"
                     onClick={() => {
                       setEditArticle(plat);
+                      setEditRecette(plat.sousProduitsIds || []);
                       setView('editArticle');
                     }}
                     className="h-8 w-8 text-gray-500 hover:text-[#F1C40F] rounded-lg"

@@ -57,15 +57,11 @@ export default function ComptesActifsPanel({
         const derniereActivite = new Date(compte.derniereActivite);
         return derniereActivite >= heures48Ago && compte.solde > 0;
       })
-      .sort(
-        (a, b) =>
-          new Date(b.derniereActivite).getTime() -
-          new Date(a.derniereActivite).getTime()
-      );
+      .sort((a, b) => a.clientNom.localeCompare(b.clientNom, 'fr'));
   }, [comptes]);
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-[#4A4A4A]">
         <Clock className="w-3.5 h-3.5 text-orange-400" />

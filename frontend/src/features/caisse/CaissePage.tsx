@@ -41,6 +41,7 @@ import {
   createCompteCaisse,
   updateCompteCaisse,
   decrementStock,
+  decrementStockComposite,
   incrementStock,
   fetchSoldeCaisseEnCours,
   createSoldeCaisse,
@@ -62,6 +63,7 @@ import HistoriquePanel from './components/HistoriquePanel';
 import StockPanel from './components/StockPanel';
 import SoldePanel from './components/SoldePanel';
 import SoldeCreate from './components/SoldeCreate';
+import { TransferItem } from '@/features/caisse/components/ArdoiseDetail.tsx';
 
 interface SelectedClient {
   type: 'membre' | 'externe' | 'anonyme';
@@ -91,7 +93,9 @@ export default function CaissePage() {
   const [showFacebookDialog, setShowFacebookDialog] = useState(false);
   const [facebookMessage, setFacebookMessage] = useState('');
   const [groupId, setGroupId] = useState('1414350289649865');
-  const [messageTemplate, setMessageTemplate] = useState('Bonjour @tout le monde\n\n💰 Pensez à régler vos ardoises au club ! 🏓\n\nConsultez votre solde directement sur notre site ou au comptoir.\n\n🔗 https://cttframeries.com\n\nMerci pour votre collaboration ! 🙏\n\n#CTTFrameries #Caisse #ClubLife');
+  const [messageTemplate, setMessageTemplate] = useState(
+    'Bonjour @tout le monde\n\n💰 Pensez à régler vos ardoises au club ! 🏓\n\nConsultez votre solde directement sur notre site ou au comptoir.\n\n🔗 https://cttframeries.com\n\nMerci pour votre collaboration ! 🙏\n\n#CTTFrameries #Caisse #ClubLife'
+  );
   const [isMessageCopied, setIsMessageCopied] = useState(false);
 
   // UI
@@ -100,7 +104,9 @@ export default function CaissePage() {
   const [showPaiementModal, setShowPaiementModal] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [successType, setSuccessType] = useState<'paiement' | 'ardoise'>('paiement');
+  const [successType, setSuccessType] = useState<'paiement' | 'ardoise'>(
+    'paiement'
+  );
 
   // Cart
   const [panier, setPanier] = useState<LigneCaisse[]>([]);
@@ -123,19 +129,30 @@ export default function CaissePage() {
       ]);
 
       // Helper pour extraire les valeurs des résultats
-      const getValue = <T,>(result: PromiseSettledResult<T>, defaultValue: T): T => {
+      const getValue = <T,>(
+        result: PromiseSettledResult<T>,
+        defaultValue: T
+      ): T => {
         return result.status === 'fulfilled' ? result.value : defaultValue;
       };
 
       const [p, cats, m, ce, tx, cpt, infos, solde] = results;
 
       setPlats(getValue(p as PromiseSettledResult<Plat[]>, []));
-      setCategories(getValue(cats as PromiseSettledResult<CategorieCaisse[]>, []));
+      setCategories(
+        getValue(cats as PromiseSettledResult<CategorieCaisse[]>, [])
+      );
       setMembres(getValue(m as PromiseSettledResult<Member[]>, []));
-      setClientsExternes(getValue(ce as PromiseSettledResult<ClientCaisse[]>, []));
-      setTransactions(getValue(tx as PromiseSettledResult<TransactionCaisse[]>, []));
+      setClientsExternes(
+        getValue(ce as PromiseSettledResult<ClientCaisse[]>, [])
+      );
+      setTransactions(
+        getValue(tx as PromiseSettledResult<TransactionCaisse[]>, [])
+      );
       setComptes(getValue(cpt as PromiseSettledResult<CompteCaisse[]>, []));
-      setSoldeActuel(getValue(solde as PromiseSettledResult<SoldeCaisse | null>, null));
+      setSoldeActuel(
+        getValue(solde as PromiseSettledResult<SoldeCaisse | null>, null)
+      );
 
       const infosData = getValue(infos as PromiseSettledResult<any[]>, []);
       if (infosData && infosData.length > 0) {
@@ -156,7 +173,16 @@ export default function CaissePage() {
       // Loguer les erreurs éventuelles
       results.forEach((result, index) => {
         if (result.status === 'rejected') {
-          const names = ['plats', 'categories', 'membres', 'clients', 'transactions', 'comptes', 'infos', 'solde'];
+          const names = [
+            'plats',
+            'categories',
+            'membres',
+            'clients',
+            'transactions',
+            'comptes',
+            'infos',
+            'solde',
+          ];
           console.warn(`Erreur chargement ${names[index]}:`, result.reason);
         }
       });
@@ -261,7 +287,7 @@ export default function CaissePage() {
 
       // Decrement stock for each line
       for (const ligne of panier) {
-        await decrementStock(ligne.platId, ligne.quantite);
+        await decrementStockComposite(ligne.platId, ligne.quantite, plats);
       }
 
       // Ajouter au solde de caisse si un solde est ouvert
@@ -338,7 +364,7 @@ export default function CaissePage() {
 
       // Decrement stock
       for (const ligne of panier) {
-        await decrementStock(ligne.platId, ligne.quantite);
+        await decrementStockComposite(ligne.platId, ligne.quantite, plats);
       }
 
       setSuccessType('ardoise');
@@ -372,7 +398,7 @@ export default function CaissePage() {
       });
 
       for (const ligne of panier) {
-        await decrementStock(ligne.platId, ligne.quantite);
+        await decrementStockComposite(ligne.platId, ligne.quantite, plats);
       }
 
       // Ajouter au solde de caisse si un solde est ouvert
@@ -546,6 +572,73 @@ export default function CaissePage() {
     }
   };
 
+  const handleTransfer = async (
+    compteExterneId: string,
+    transfers: TransferItem[]
+  ) => {
+    setPaymentLoading(true);
+    try {
+      const now = new Date().toISOString();
+
+      // 1. Pour chaque membre, ajouter la consommation à son compte
+      for (const t of transfers) {
+        let cpt = await fetchCompteCaisseByClient(t.memberId);
+        if (cpt) {
+          cpt.solde += t.montant;
+          cpt.derniereActivite = now;
+          cpt.historique.push({
+            transactionId: `transfer_${Date.now()}_${t.memberId}`,
+            montant: t.montant,
+            type: 'consommation',
+            date: now,
+          });
+          await updateCompteCaisse(cpt.id, cpt);
+        } else {
+          await createCompteCaisse({
+            clientType: 'membre',
+            clientId: t.memberId,
+            clientNom: t.memberName,
+            solde: t.montant,
+            derniereActivite: now,
+            historique: [
+              {
+                transactionId: `transfer_${Date.now()}_${t.memberId}`,
+                montant: t.montant,
+                type: 'consommation',
+                date: now,
+              },
+            ],
+          });
+        }
+      }
+
+      // 2. Solder le compte externe
+      const compteExterne = comptes.find((c) => c.id === compteExterneId);
+      if (compteExterne) {
+        await updateCompteCaisse(compteExterneId, {
+          ...compteExterne,
+          solde: 0,
+          derniereActivite: now,
+          historique: [
+            ...compteExterne.historique,
+            {
+              transactionId: `transfer_ext_${Date.now()}`,
+              montant: compteExterne.solde,
+              type: 'paiement',
+              date: now,
+            },
+          ],
+        });
+      }
+
+      loadData();
+    } catch (err) {
+      console.error('Erreur transfert:', err);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
   // Ardoise payment via Payconiq
   const handleArdoisePaymentPayconiq = async (
     compteId: string,
@@ -605,7 +698,9 @@ export default function CaissePage() {
         const fbUrl = `https://www.facebook.com/groups/${groupId}`;
         window.open(fbUrl, '_blank');
       })
-      .catch((err) => console.error('Erreur lors de la copie du message:', err));
+      .catch((err) =>
+        console.error('Erreur lors de la copie du message:', err)
+      );
   };
 
   // Gestion du solde de caisse
@@ -638,6 +733,8 @@ export default function CaissePage() {
       setSoldeLoading(false);
     }
   };
+
+
 
   // Auth gate
   if (!isAuthenticated || !isAdmin()) {
@@ -682,6 +779,8 @@ export default function CaissePage() {
               setClientsExternes((prev) => prev.filter((x) => x.id !== id))
             }
             payconiqUrl={payconiqUrl}
+            onCompteImported={loadData}
+            onTransfer={handleTransfer}
           />
         );
       case 'historique':
@@ -690,6 +789,7 @@ export default function CaissePage() {
             transactions={transactions}
             onAnnuler={handleAnnulerTransaction}
             onModifier={handleModifierTransaction}
+
           />
         );
       case 'stock':
@@ -802,11 +902,15 @@ export default function CaissePage() {
       <Dialog open={showFacebookDialog} onOpenChange={setShowFacebookDialog}>
         <DialogContent className="w-full max-w-full sm:max-w-md mx-4 bg-[#2C2C2C] text-white border-[#3A3A3A]">
           <DialogHeader>
-            <DialogTitle className="text-[#F1C40F]">Message Facebook - Caisse</DialogTitle>
+            <DialogTitle className="text-[#F1C40F]">
+              Message Facebook - Caisse
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="fb-message" className="text-gray-300">Message à publier</Label>
+              <Label htmlFor="fb-message" className="text-gray-300">
+                Message à publier
+              </Label>
               <Textarea
                 id="fb-message"
                 value={facebookMessage}
@@ -819,11 +923,16 @@ export default function CaissePage() {
               <div className="flex items-start">
                 <Info className="h-5 w-5 text-blue-400 mt-0.5 mr-2 flex-shrink-0" />
                 <div className="text-blue-300 text-sm">
-                  <p className="font-medium mb-1">Comment publier facilement :</p>
+                  <p className="font-medium mb-1">
+                    Comment publier facilement :
+                  </p>
                   <ol className="list-decimal pl-5 space-y-1">
                     <li>Cliquez sur le bouton "Copier et ouvrir Facebook"</li>
                     <li>Le message sera automatiquement copié</li>
-                    <li>Collez le message (Ctrl+V) dans la fenêtre de publication Facebook qui s'ouvre</li>
+                    <li>
+                      Collez le message (Ctrl+V) dans la fenêtre de publication
+                      Facebook qui s'ouvre
+                    </li>
                   </ol>
                   <p className="mt-2 text-xs">Groupe configuré: ID {groupId}</p>
                 </div>
@@ -832,9 +941,17 @@ export default function CaissePage() {
           </div>
           <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-2">
             <DialogClose asChild>
-              <Button variant="secondary" className="bg-[#3A3A3A] hover:bg-[#4A4A4A] text-white">Annuler</Button>
+              <Button
+                variant="secondary"
+                className="bg-[#3A3A3A] hover:bg-[#4A4A4A] text-white"
+              >
+                Annuler
+              </Button>
             </DialogClose>
-            <Button onClick={handleCopyAndOpenFacebook} className="bg-[#1877F2] hover:bg-[#166FE5] text-white">
+            <Button
+              onClick={handleCopyAndOpenFacebook}
+              className="bg-[#1877F2] hover:bg-[#166FE5] text-white"
+            >
               {isMessageCopied ? (
                 <>
                   <Check className="h-4 w-4 mr-2" />

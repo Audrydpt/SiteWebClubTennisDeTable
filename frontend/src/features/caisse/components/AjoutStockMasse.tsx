@@ -35,12 +35,12 @@ export default function AjoutStockMasse({
   const [ajoutsEnAttente, setAjoutsEnAttente] = useState<AjoutEnAttente[]>([]);
 
   // Filtrer les produits (exclure les plats cuisinés et les items indisponibles)
-  const produitsDisponibles = plats.filter((p) => {
-    // Exclure les plats cuisinés
-    // Exclure les items explicitement marqués comme indisponibles
-    if (p.disponible === false) return false;
-    return true;
-  });
+  const produitsDisponibles = plats
+    .filter((p) => {
+      if (p.disponible === false) return false;
+      return true;
+    })
+    .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
 
   console.log('[AjoutStockMasse] Total plats:', plats.length);
   console.log(

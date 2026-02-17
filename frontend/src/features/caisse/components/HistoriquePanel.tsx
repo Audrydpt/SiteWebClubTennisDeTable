@@ -303,56 +303,56 @@ function ModificationModal({
         <ScrollArea className="max-h-60 mb-4">
           <div className="space-y-2 pr-4">
             {lignes.map((l, i) => (
-            <div
-              key={`${l.platId}-${i}`}
-              className="bg-[#2C2C2C] rounded-lg p-3 flex items-center justify-between"
-            >
-              <div className="flex-1 min-w-0">
-                <p className="text-white text-sm truncate">{l.platNom}</p>
-                <p className="text-gray-500 text-xs tabular-nums">
-                  {l.prixUnitaire.toFixed(2)}&euro; / unite
-                </p>
-              </div>
-              <div className="flex items-center gap-2 ml-3">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => updateQty(i, -1)}
-                  className="h-7 w-7 bg-[#4A4A4A] text-white hover:bg-[#5A5A5A] rounded-lg"
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </Button>
-                <span className="text-white text-sm w-6 text-center tabular-nums">
-                  {l.quantite}
+              <div
+                key={`${l.platId}-${i}`}
+                className="bg-[#2C2C2C] rounded-lg p-3 flex items-center justify-between"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm truncate">{l.platNom}</p>
+                  <p className="text-gray-500 text-xs tabular-nums">
+                    {l.prixUnitaire.toFixed(2)}&euro; / unite
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 ml-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => updateQty(i, -1)}
+                    className="h-7 w-7 bg-[#4A4A4A] text-white hover:bg-[#5A5A5A] rounded-lg"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </Button>
+                  <span className="text-white text-sm w-6 text-center tabular-nums">
+                    {l.quantite}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => updateQty(i, 1)}
+                    className="h-7 w-7 bg-[#4A4A4A] text-white hover:bg-[#5A5A5A] rounded-lg"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeLigne(i)}
+                    className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+                <span className="text-[#F1C40F] text-sm font-bold ml-3 tabular-nums w-16 text-right">
+                  {l.sousTotal.toFixed(2)}&euro;
                 </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => updateQty(i, 1)}
-                  className="h-7 w-7 bg-[#4A4A4A] text-white hover:bg-[#5A5A5A] rounded-lg"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeLigne(i)}
-                  className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
               </div>
-              <span className="text-[#F1C40F] text-sm font-bold ml-3 tabular-nums w-16 text-right">
-                {l.sousTotal.toFixed(2)}&euro;
-              </span>
-            </div>
-          ))}
+            ))}
 
-          {lignes.length === 0 && (
-            <p className="text-gray-500 text-sm text-center py-4">
-              Aucun article restant
-            </p>
-          )}
+            {lignes.length === 0 && (
+              <p className="text-gray-500 text-sm text-center py-4">
+                Aucun article restant
+              </p>
+            )}
           </div>
         </ScrollArea>
 
@@ -501,14 +501,29 @@ export default function HistoriquePanel({
       .filter((t) => t.modePaiement === 'ardoise')
       .reduce((s, t) => s + t.total, 0);
     return [
-      { name: 'Immediat', value: Math.round(immediat * 100) / 100, color: '#22C55E' },
-      { name: 'Payconiq', value: Math.round(payconiq * 100) / 100, color: '#FF4785' },
-      { name: 'Compte', value: Math.round(ardoise * 100) / 100, color: '#3B82F6' },
+      {
+        name: 'Immediat',
+        value: Math.round(immediat * 100) / 100,
+        color: '#22C55E',
+      },
+      {
+        name: 'Payconiq',
+        value: Math.round(payconiq * 100) / 100,
+        color: '#FF4785',
+      },
+      {
+        name: 'Compte',
+        value: Math.round(ardoise * 100) / 100,
+        color: '#3B82F6',
+      },
     ].filter((d) => d.value > 0);
   }, [periodTransactions]);
 
   const topProducts = useMemo(() => {
-    const productMap: Record<string, { name: string; total: number; qty: number }> = {};
+    const productMap: Record<
+      string,
+      { name: string; total: number; qty: number }
+    > = {};
     periodTransactions.forEach((t) => {
       t.lignes.forEach((l) => {
         if (!productMap[l.platId]) {
@@ -696,260 +711,306 @@ export default function HistoriquePanel({
       {viewMode === 'chart' ? (
         <ScrollArea className="flex-1 min-h-0">
           <div className="space-y-4 pr-4">
-          {/* Bar chart: Revenue par période */}
-          <div className="bg-[#3A3A3A] rounded-xl p-4">
-            <p className="text-gray-400 text-sm mb-3">Chiffre d'affaires</p>
-            {revenueByPeriod.length > 0 ? (
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={revenueByPeriod}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#4A4A4A" />
-                  <XAxis dataKey="label" stroke="#9CA3AF" fontSize={11} />
-                  <YAxis stroke="#9CA3AF" fontSize={11} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#3A3A3A', border: 'none', borderRadius: '8px' }}
-                    labelStyle={{ color: '#9CA3AF' }}
-                    itemStyle={{ color: '#F1C40F' }}
-                    formatter={(value: number) => [`${value.toFixed(2)}€`, 'CA']}
-                  />
-                  <Bar dataKey="revenue" fill="#F1C40F" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-gray-500 text-sm text-center py-8">Aucune donnee</p>
-            )}
-          </div>
+            {/* Bar chart: Revenue par période */}
+            <div className="bg-[#3A3A3A] rounded-xl p-4">
+              <p className="text-gray-400 text-sm mb-3">Chiffre d'affaires</p>
+              {revenueByPeriod.length > 0 ? (
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={revenueByPeriod}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#4A4A4A" />
+                    <XAxis dataKey="label" stroke="#9CA3AF" fontSize={11} />
+                    <YAxis stroke="#9CA3AF" fontSize={11} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#3A3A3A',
+                        border: 'none',
+                        borderRadius: '8px',
+                      }}
+                      labelStyle={{ color: '#9CA3AF' }}
+                      itemStyle={{ color: '#F1C40F' }}
+                      formatter={(value: number) => [
+                        `${value.toFixed(2)}€`,
+                        'CA',
+                      ]}
+                    />
+                    <Bar
+                      dataKey="revenue"
+                      fill="#F1C40F"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-gray-500 text-sm text-center py-8">
+                  Aucune donnee
+                </p>
+              )}
+            </div>
 
-          {/* Pie chart: Répartition paiements */}
-          <div className="bg-[#3A3A3A] rounded-xl p-4">
-            <p className="text-gray-400 text-sm mb-3">Modes de paiement</p>
-            {paymentDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    data={paymentDistribution}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={70}
-                    label={({ name, percent }) =>
-                      `${name} ${(percent * 100).toFixed(0)}%`
-                    }
-                    labelLine={false}
-                    fontSize={11}
-                  >
-                    {paymentDistribution.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#3A3A3A', border: 'none', borderRadius: '8px' }}
-                    formatter={(value: number) => [`${value.toFixed(2)}€`]}
-                  />
-                  <Legend
-                    wrapperStyle={{ fontSize: '12px', color: '#9CA3AF' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-gray-500 text-sm text-center py-8">Aucune donnee</p>
-            )}
-          </div>
+            {/* Pie chart: Répartition paiements */}
+            <div className="bg-[#3A3A3A] rounded-xl p-4">
+              <p className="text-gray-400 text-sm mb-3">Modes de paiement</p>
+              {paymentDistribution.length > 0 ? (
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={paymentDistribution}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={70}
+                      label={({ name, percent }) =>
+                        `${name} ${(percent * 100).toFixed(0)}%`
+                      }
+                      labelLine={false}
+                      fontSize={11}
+                    >
+                      {paymentDistribution.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#3A3A3A',
+                        border: 'none',
+                        borderRadius: '8px',
+                      }}
+                      formatter={(value: number) => [`${value.toFixed(2)}€`]}
+                    />
+                    <Legend
+                      wrapperStyle={{ fontSize: '12px', color: '#9CA3AF' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-gray-500 text-sm text-center py-8">
+                  Aucune donnee
+                </p>
+              )}
+            </div>
 
-          {/* Line chart: Tendance cumulative CA */}
-          <div className="bg-[#3A3A3A] rounded-xl p-4">
-            <p className="text-gray-400 text-sm mb-3">Tendance cumulative</p>
-            {revenueTrend.length > 0 ? (
-              <ResponsiveContainer width="100%" height={180}>
-                <LineChart data={revenueTrend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#4A4A4A" />
-                  <XAxis dataKey="label" stroke="#9CA3AF" fontSize={11} />
-                  <YAxis stroke="#9CA3AF" fontSize={11} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#3A3A3A', border: 'none', borderRadius: '8px' }}
-                    labelStyle={{ color: '#9CA3AF' }}
-                    itemStyle={{ color: '#22C55E' }}
-                    formatter={(value: number) => [`${value.toFixed(2)}€`, 'Cumul']}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="cumul"
-                    stroke="#22C55E"
-                    strokeWidth={2}
-                    dot={{ fill: '#22C55E', r: 3 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-gray-500 text-sm text-center py-8">Aucune donnee</p>
-            )}
-          </div>
+            {/* Line chart: Tendance cumulative CA */}
+            <div className="bg-[#3A3A3A] rounded-xl p-4">
+              <p className="text-gray-400 text-sm mb-3">Tendance cumulative</p>
+              {revenueTrend.length > 0 ? (
+                <ResponsiveContainer width="100%" height={180}>
+                  <LineChart data={revenueTrend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#4A4A4A" />
+                    <XAxis dataKey="label" stroke="#9CA3AF" fontSize={11} />
+                    <YAxis stroke="#9CA3AF" fontSize={11} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#3A3A3A',
+                        border: 'none',
+                        borderRadius: '8px',
+                      }}
+                      labelStyle={{ color: '#9CA3AF' }}
+                      itemStyle={{ color: '#22C55E' }}
+                      formatter={(value: number) => [
+                        `${value.toFixed(2)}€`,
+                        'Cumul',
+                      ]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="cumul"
+                      stroke="#22C55E"
+                      strokeWidth={2}
+                      dot={{ fill: '#22C55E', r: 3 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-gray-500 text-sm text-center py-8">
+                  Aucune donnee
+                </p>
+              )}
+            </div>
 
-          {/* Bar chart horizontal: Top produits */}
-          <div className="bg-[#3A3A3A] rounded-xl p-4">
-            <p className="text-gray-400 text-sm mb-3">Top produits (quantite)</p>
-            {topProducts.length > 0 ? (
-              <ResponsiveContainer width="100%" height={Math.max(150, topProducts.length * 32)}>
-                <BarChart data={topProducts} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#4A4A4A" />
-                  <XAxis type="number" stroke="#9CA3AF" fontSize={11} />
-                  <YAxis
-                    dataKey="name"
-                    type="category"
-                    stroke="#9CA3AF"
-                    fontSize={11}
-                    width={90}
-                    tick={{ fill: '#D1D5DB' }}
-                  />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#3A3A3A', border: 'none', borderRadius: '8px' }}
-                    formatter={(value: number, name: string) => {
-                      if (name === 'qty') return [`${value}`, 'Quantite'];
-                      return [`${value.toFixed(2)}€`, 'CA'];
-                    }}
-                  />
-                  <Bar dataKey="qty" fill="#F1C40F" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-gray-500 text-sm text-center py-8">Aucune donnee</p>
-            )}
-          </div>
+            {/* Bar chart horizontal: Top produits */}
+            <div className="bg-[#3A3A3A] rounded-xl p-4">
+              <p className="text-gray-400 text-sm mb-3">
+                Top produits (quantite)
+              </p>
+              {topProducts.length > 0 ? (
+                <ResponsiveContainer
+                  width="100%"
+                  height={Math.max(150, topProducts.length * 32)}
+                >
+                  <BarChart data={topProducts} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#4A4A4A" />
+                    <XAxis type="number" stroke="#9CA3AF" fontSize={11} />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      stroke="#9CA3AF"
+                      fontSize={11}
+                      width={90}
+                      tick={{ fill: '#D1D5DB' }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#3A3A3A',
+                        border: 'none',
+                        borderRadius: '8px',
+                      }}
+                      formatter={(value: number, name: string) => {
+                        if (name === 'qty') return [`${value}`, 'Quantite'];
+                        return [`${value.toFixed(2)}€`, 'CA'];
+                      }}
+                    />
+                    <Bar dataKey="qty" fill="#F1C40F" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-gray-500 text-sm text-center py-8">
+                  Aucune donnee
+                </p>
+              )}
+            </div>
           </div>
         </ScrollArea>
       ) : (
-      <ScrollArea className="flex-1 min-h-0">
-        <div className="space-y-2 pr-4">
-        {filteredTransactions.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-gray-500 text-sm">
-            Aucune transaction pour cette periode
-          </div>
-        ) : (
-          filteredTransactions.map((tx) => {
-            const isExpanded = expandedTx === tx.id;
-            const isAnnulee = tx.statut === 'annulee';
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="space-y-2 pr-4">
+            {filteredTransactions.length === 0 ? (
+              <div className="flex items-center justify-center h-32 text-gray-500 text-sm">
+                Aucune transaction pour cette periode
+              </div>
+            ) : (
+              filteredTransactions.map((tx) => {
+                const isExpanded = expandedTx === tx.id;
+                const isAnnulee = tx.statut === 'annulee';
 
-            return (
-              <div
-                key={tx.id}
-                className={`bg-[#3A3A3A] rounded-xl p-3 cursor-pointer transition-colors hover:bg-[#424242] ${
-                  isAnnulee ? 'opacity-60' : ''
-                }`}
-                onClick={() => setExpandedTx(isExpanded ? null : tx.id)}
-              >
-                {/* Ligne 1: statut + mode paiement + total */}
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        tx.statut === 'payee'
-                          ? 'bg-green-500/20 text-green-400'
-                          : tx.statut === 'ardoise'
-                            ? 'bg-blue-500/20 text-blue-400'
-                            : 'bg-red-500/20 text-red-400'
-                      }`}
-                    >
-                      {tx.statut === 'payee'
-                        ? 'Payee'
-                        : tx.statut === 'ardoise'
-                          ? 'Compte'
-                          : 'Annulee'}
-                    </span>
-                    <span className="flex items-center gap-1 text-gray-500 text-xs">
-                      {modePaiementIcon(tx.modePaiement)}
-                      {modePaiementLabel(tx.modePaiement)}
-                    </span>
-                  </div>
-                  <span
-                    className={`font-bold text-sm tabular-nums ${
-                      isAnnulee ? 'text-red-400 line-through' : 'text-[#F1C40F]'
-                    }`}
-                  >
-                    {tx.total.toFixed(2)}&euro;
-                  </span>
-                </div>
-
-                {/* Ligne 2: articles + heure */}
-                <div className="flex items-center justify-between">
-                  <p className="text-gray-500 text-xs truncate mr-2">
-                    {tx.lignes
-                      .map((l) => `${l.quantite}x ${l.platNom}`)
-                      .join(', ')}
-                  </p>
-                  <span className="text-gray-500 text-xs shrink-0">
-                    {new Date(tx.dateTransaction).toLocaleTimeString('fr-BE', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                </div>
-
-                {/* Ligne 3: client + opérateur */}
-                <div className="flex items-center justify-between mt-1">
-                  <div className="flex items-center gap-2">
-                    {tx.clientNom && (
-                      <span className="flex items-center gap-1 text-gray-400 text-xs">
-                        <User className="w-3 h-3" />
-                        {tx.clientNom}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-gray-600 text-xs">{tx.operateur}</span>
-                </div>
-
-                {/* Expanded: détails + actions */}
-                {isExpanded && (
+                return (
                   <div
-                    className="mt-3 pt-3 border-t border-[#4A4A4A]"
-                    onClick={(e) => e.stopPropagation()}
+                    key={tx.id}
+                    className={`bg-[#3A3A3A] rounded-xl p-3 cursor-pointer transition-colors hover:bg-[#424242] ${
+                      isAnnulee ? 'opacity-60' : ''
+                    }`}
+                    onClick={() => setExpandedTx(isExpanded ? null : tx.id)}
                   >
-                    {/* Détail articles */}
-                    <div className="space-y-1 mb-3">
-                      {tx.lignes.map((l, i) => (
-                        <div
-                          key={`${l.platId}-${i}`}
-                          className="flex items-center justify-between text-xs"
+                    {/* Ligne 1: statut + mode paiement + total */}
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            tx.statut === 'payee'
+                              ? 'bg-green-500/20 text-green-400'
+                              : tx.statut === 'ardoise'
+                                ? 'bg-blue-500/20 text-blue-400'
+                                : 'bg-red-500/20 text-red-400'
+                          }`}
                         >
-                          <span className="text-gray-300">
-                            {l.quantite}x {l.platNom}
-                          </span>
-                          <span className="text-gray-400 tabular-nums">
-                            {l.prixUnitaire.toFixed(2)}&euro; &rarr;{' '}
-                            {l.sousTotal.toFixed(2)}&euro;
-                          </span>
-                        </div>
-                      ))}
+                          {tx.statut === 'payee'
+                            ? 'Payee'
+                            : tx.statut === 'ardoise'
+                              ? 'Compte'
+                              : 'Annulee'}
+                        </span>
+                        <span className="flex items-center gap-1 text-gray-500 text-xs">
+                          {modePaiementIcon(tx.modePaiement)}
+                          {modePaiementLabel(tx.modePaiement)}
+                        </span>
+                      </div>
+                      <span
+                        className={`font-bold text-sm tabular-nums ${
+                          isAnnulee
+                            ? 'text-red-400 line-through'
+                            : 'text-[#F1C40F]'
+                        }`}
+                      >
+                        {tx.total.toFixed(2)}&euro;
+                      </span>
                     </div>
 
-                    {/* Actions */}
-                    {!isAnnulee && (
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          onClick={() => setModificationTarget(tx)}
-                          className="flex-1 h-9 bg-[#4A4A4A] text-white hover:bg-[#5A5A5A] rounded-lg text-xs"
-                        >
-                          <Pencil className="w-3.5 h-3.5 mr-1.5" />
-                          Modifier
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => setAnnulationTarget(tx)}
-                          className="flex-1 h-9 bg-red-600/20 text-red-400 hover:bg-red-600/30 rounded-lg text-xs"
-                        >
-                          <Ban className="w-3.5 h-3.5 mr-1.5" />
-                          Annuler
-                        </Button>
+                    {/* Ligne 2: articles + heure */}
+                    <div className="flex items-center justify-between">
+                      <p className="text-gray-500 text-xs truncate mr-2">
+                        {tx.lignes
+                          .map((l) => `${l.quantite}x ${l.platNom}`)
+                          .join(', ')}
+                      </p>
+                      <span className="text-gray-500 text-xs shrink-0">
+                        {new Date(tx.dateTransaction).toLocaleTimeString(
+                          'fr-BE',
+                          {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          }
+                        )}
+                      </span>
+                    </div>
+
+                    {/* Ligne 3: client + opérateur */}
+                    <div className="flex items-center justify-between mt-1">
+                      <div className="flex items-center gap-2">
+                        {tx.clientNom && (
+                          <span className="flex items-center gap-1 text-gray-400 text-xs">
+                            <User className="w-3 h-3" />
+                            {tx.clientNom}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-gray-600 text-xs">
+                        {tx.operateur}
+                      </span>
+                    </div>
+
+                    {/* Expanded: détails + actions */}
+                    {isExpanded && (
+                      <div
+                        className="mt-3 pt-3 border-t border-[#4A4A4A]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* Détail articles */}
+                        <div className="space-y-1 mb-3">
+                          {tx.lignes.map((l, i) => (
+                            <div
+                              key={`${l.platId}-${i}`}
+                              className="flex items-center justify-between text-xs"
+                            >
+                              <span className="text-gray-300">
+                                {l.quantite}x {l.platNom}
+                              </span>
+                              <span className="text-gray-400 tabular-nums">
+                                {l.prixUnitaire.toFixed(2)}&euro; &rarr;{' '}
+                                {l.sousTotal.toFixed(2)}&euro;
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Actions */}
+                        {!isAnnulee && (
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              onClick={() => setModificationTarget(tx)}
+                              className="flex-1 h-9 bg-[#4A4A4A] text-white hover:bg-[#5A5A5A] rounded-lg text-xs"
+                            >
+                              <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                              Modifier
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              onClick={() => setAnnulationTarget(tx)}
+                              className="flex-1 h-9 bg-red-600/20 text-red-400 hover:bg-red-600/30 rounded-lg text-xs"
+                            >
+                              <Ban className="w-3.5 h-3.5 mr-1.5" />
+                              Annuler
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
-              </div>
-            );
-          })
-        )}
-        </div>
-      </ScrollArea>
+                );
+              })
+            )}
+          </div>
+        </ScrollArea>
       )}
 
       {/* Modals */}

@@ -42,6 +42,28 @@ export default function ArticleGrid({
     return plats.filter((p) => p.disponible);
   }, [plats]);
 
+  // Navigation clavier entre catégories (flèches gauche/droite)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      // Ne pas interférer si focus dans un input/textarea
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+      const idx = sortableCategories.findIndex((c) => c.nom === activeCategory);
+      if (e.key === 'ArrowLeft' && idx > 0) {
+        setActiveCategory(sortableCategories[idx - 1].nom);
+      } else if (
+        e.key === 'ArrowRight' &&
+        idx < sortableCategories.length - 1
+      ) {
+        setActiveCategory(sortableCategories[idx + 1].nom);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [sortableCategories, activeCategory]);
+
   // Sync categories from props - seulement si pas en cours de drag
   useEffect(() => {
     if (isCategoryDragging.current) return;
