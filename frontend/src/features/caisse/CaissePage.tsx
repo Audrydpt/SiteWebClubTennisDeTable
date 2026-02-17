@@ -46,6 +46,7 @@ import {
   createSoldeCaisse,
   cloturerSoldeCaisse,
   ajouterTransactionSolde,
+  updateSoldeCaisse,
 } from '@/services/api';
 
 import CaisseLoginForm from './CaisseLoginForm';
@@ -430,6 +431,24 @@ export default function CaissePage() {
         }
       }
 
+      // Si la transaction a impacté le solde de caisse (cash ou payconiq),
+      // on retire la TransactionSolde correspondante
+      if (
+        soldeActuel &&
+        (tx.modePaiement === 'immediat' || tx.modePaiement === 'payconiq')
+      ) {
+        const transactionsSansCelle = soldeActuel.transactions.filter(
+          (ts) => ts.transactionId !== tx.id
+        );
+        // On ne fait le patch que si une entrée a effectivement été retirée
+        if (transactionsSansCelle.length < soldeActuel.transactions.length) {
+          const updatedSolde = await updateSoldeCaisse(soldeActuel.id, {
+            transactions: transactionsSansCelle,
+          });
+          setSoldeActuel(updatedSolde);
+        }
+      }
+
       loadData();
     } catch (err) {
       console.error('Erreur annulation transaction:', err);
@@ -650,8 +669,18 @@ export default function CaissePage() {
           <ArdoisePanel
             comptes={comptes}
             transactions={transactions}
+            membres={membres} // ← ajouter
+            clientsExternes={clientsExternes} // ← ajouter
             onPayment={handleArdoisePayment}
             onPaymentPayconiq={handleArdoisePaymentPayconiq}
+            onClientUpdated={(c) =>
+              setClientsExternes((prev) =>
+                prev.map((x) => (x.id === c.id ? c : x))
+              )
+            }
+            onClientDeleted={(id) =>
+              setClientsExternes((prev) => prev.filter((x) => x.id !== id))
+            }
             payconiqUrl={payconiqUrl}
           />
         );
