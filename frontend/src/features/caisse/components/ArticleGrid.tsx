@@ -33,7 +33,9 @@ export default function ArticleGrid({
   // Utiliser des refs pour bloquer la synchronisation pendant le drag
   const isCategoryDragging = useRef(false);
   const isProductDragging = useRef(false);
-  const pendingCategoryReorder = useRef<(CategorieCaisse & { count: number })[] | null>(null);
+  const pendingCategoryReorder = useRef<
+    (CategorieCaisse & { count: number })[] | null
+  >(null);
   const pendingProductReorder = useRef<Plat[] | null>(null);
 
   const availablePlats = useMemo(() => {
@@ -73,10 +75,13 @@ export default function ArticleGrid({
   }, [availablePlats, activeCategory]);
 
   // Handler pour le changement de liste des catégories (appelé pendant le drag)
-  const handleCategoryListChange = useCallback((newList: (CategorieCaisse & { count: number })[]) => {
-    pendingCategoryReorder.current = newList;
-    setSortableCategories(newList);
-  }, []);
+  const handleCategoryListChange = useCallback(
+    (newList: (CategorieCaisse & { count: number })[]) => {
+      pendingCategoryReorder.current = newList;
+      setSortableCategories(newList);
+    },
+    []
+  );
 
   // Handler appelé à la fin du drag des catégories
   const handleCategoryDragEnd = useCallback(async () => {
@@ -144,7 +149,7 @@ export default function ArticleGrid({
   }, [onReordered]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       {isEditMode ? (
         <ReactSortable
           list={sortableCategories}
@@ -218,7 +223,7 @@ export default function ArticleGrid({
           Aucun article dans cette categorie
         </div>
       ) : isEditMode ? (
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <ReactSortable
             list={sortablePlats}
             setList={handleProductListChange}
@@ -257,7 +262,7 @@ export default function ArticleGrid({
           </ReactSortable>
         </ScrollArea>
       ) : (
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="grid grid-cols-4 gap-3 pr-4 pb-4">
             {sortablePlats.map((plat) => (
               <ArticleCard

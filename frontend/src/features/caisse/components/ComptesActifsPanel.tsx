@@ -7,7 +7,11 @@ import { Clock, User } from 'lucide-react';
 
 interface ComptesActifsPanelProps {
   comptes: CompteCaisse[];
-  onSelectClient?: (client: { type: 'membre' | 'externe'; id: string; nom: string }) => void;
+  onSelectClient?: (client: {
+    type: 'membre' | 'externe';
+    id: string;
+    nom: string;
+  }) => void;
 }
 
 // Fonction pour formater le nom de façon compacte : Prénom + initiale du nom
@@ -39,7 +43,10 @@ function formatRelativeTime(dateString: string): string {
   }
 }
 
-export default function ComptesActifsPanel({ comptes, onSelectClient }: ComptesActifsPanelProps) {
+export default function ComptesActifsPanel({
+  comptes,
+  onSelectClient,
+}: ComptesActifsPanelProps) {
   // Filtrer les comptes actifs dans les 48 dernières heures avec un solde > 0
   const comptesRecents = useMemo(() => {
     const now = new Date();
@@ -50,11 +57,15 @@ export default function ComptesActifsPanel({ comptes, onSelectClient }: ComptesA
         const derniereActivite = new Date(compte.derniereActivite);
         return derniereActivite >= heures48Ago && compte.solde > 0;
       })
-      .sort((a, b) => new Date(b.derniereActivite).getTime() - new Date(a.derniereActivite).getTime());
+      .sort(
+        (a, b) =>
+          new Date(b.derniereActivite).getTime() -
+          new Date(a.derniereActivite).getTime()
+      );
   }, [comptes]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       {/* Header */}
       <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-[#4A4A4A]">
         <Clock className="w-3.5 h-3.5 text-orange-400" />
@@ -78,11 +89,14 @@ export default function ComptesActifsPanel({ comptes, onSelectClient }: ComptesA
           <div className="space-y-1.5 pr-1">
             {comptesRecents.map((compte) => (
               <div
-                key={compte.id} onClick={() => onSelectClient?.({
-                  type: compte.clientType,
-                  id: compte.clientId,
-                  nom: compte.clientNom,
-                })}
+                key={compte.id}
+                onClick={() =>
+                  onSelectClient?.({
+                    type: compte.clientType,
+                    id: compte.clientId,
+                    nom: compte.clientNom,
+                  })
+                }
                 className="bg-[#3A3A3A] rounded-lg p-2 hover:bg-[#404040] hover:ring-1 hover:ring-[#F1C40F]/50 transition-colors cursor-pointer"
               >
                 <div className="flex items-center justify-between gap-1">
@@ -109,4 +123,3 @@ export default function ComptesActifsPanel({ comptes, onSelectClient }: ComptesA
     </div>
   );
 }
-
