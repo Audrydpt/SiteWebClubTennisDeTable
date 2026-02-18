@@ -442,7 +442,7 @@ export default function CaissePage() {
           const now = new Date().toISOString();
           await updateCompteCaisse(compte.id, {
             ...compte,
-            solde: Math.max(0, compte.solde - tx.total),
+            solde: compte.solde - tx.total,
             derniereActivite: now,
             historique: [
               ...compte.historique,
@@ -519,7 +519,7 @@ export default function CaissePage() {
           const diff = newTotal - tx.total;
           await updateCompteCaisse(compte.id, {
             ...compte,
-            solde: Math.max(0, compte.solde + diff),
+            solde: compte.solde + diff,
             derniereActivite: new Date().toISOString(),
           });
         }
@@ -540,7 +540,7 @@ export default function CaissePage() {
       const now = new Date().toISOString();
       const updatedCompte: CompteCaisse = {
         ...compte,
-        solde: Math.max(0, compte.solde - montant),
+        solde: compte.solde - montant,
         derniereActivite: now,
         historique: [
           ...compte.historique,
@@ -651,7 +651,7 @@ export default function CaissePage() {
       const now = new Date().toISOString();
       const updatedCompte: CompteCaisse = {
         ...compte,
-        solde: Math.max(0, compte.solde - montant),
+        solde: compte.solde - montant,
         derniereActivite: now,
         historique: [
           ...compte.historique,
@@ -734,8 +734,6 @@ export default function CaissePage() {
     }
   };
 
-
-
   // Auth gate
   if (!isAuthenticated || !isAdmin()) {
     return <CaisseLoginForm />;
@@ -781,6 +779,7 @@ export default function CaissePage() {
             payconiqUrl={payconiqUrl}
             onCompteImported={loadData}
             onTransfer={handleTransfer}
+            onCascadeComplete={loadData}
           />
         );
       case 'historique':
@@ -789,7 +788,6 @@ export default function CaissePage() {
             transactions={transactions}
             onAnnuler={handleAnnulerTransaction}
             onModifier={handleModifierTransaction}
-
           />
         );
       case 'stock':

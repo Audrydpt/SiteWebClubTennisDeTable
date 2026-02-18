@@ -5,11 +5,20 @@ import type { SoldeCaisse } from '@/services/type';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Banknote,
   Smartphone,
   BookOpen,
   XCircle,
   Calculator,
+  AlertTriangle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -26,6 +35,16 @@ export default function SoldePanel({
   loading,
 }: SoldePanelProps) {
   const [showComptage, setShowComptage] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  const handleCloturer = () => {
+    setShowConfirmDialog(true);
+  };
+
+  const confirmCloturer = () => {
+    setShowConfirmDialog(false);
+    onCloturer();
+  };
 
   const stats = useMemo(() => {
     let totalCash = 0;
@@ -73,6 +92,34 @@ export default function SoldePanel({
 
   return (
     <div className="h-full flex flex-col min-h-0">
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-6 h-6 text-red-500" />
+              <DialogTitle>Clôturer le solde de caisse</DialogTitle>
+            </div>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir clôturer le solde de caisse ? Cette action ne peut pas être annulée.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmDialog(false)}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={confirmCloturer}
+              disabled={loading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {loading ? 'Clôture...' : 'Confirmer la clôture'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {showComptage && (
         <CompteBillets
           montantCash={stats.montantActuel}
@@ -92,7 +139,7 @@ export default function SoldePanel({
               Comptage
             </Button>
             <Button
-              onClick={onCloturer}
+              onClick={handleCloturer}
               disabled={loading}
               className="h-9 px-4 bg-red-600 text-white hover:bg-red-700 rounded-lg disabled:opacity-30"
             >

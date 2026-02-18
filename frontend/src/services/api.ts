@@ -1260,3 +1260,19 @@ export const ajouterTransactionSolde = async (
   solde.transactions.push(newTransaction);
   return updateSoldeCaisse(soldeId, { transactions: solde.transactions });
 };
+
+export const deleteTransactionCaisse = async (id: string): Promise<void> => {
+  await axios.delete(`${API_URL}/transactionsCaisse/${id}`);
+};
+
+export const deleteCompteCaisse = async (id: string): Promise<void> => {
+  try {
+    await axios.delete(`${API_URL}/comptesCaisse/${id}`);
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      console.warn('Compte non trouvé pour suppression');
+    } else {
+      throw error;
+    }
+  }
+};

@@ -134,21 +134,27 @@ export default function ArdoiseDetail({
   // ---- Payment ----
   const handlePay = () => {
     const val = parseFloat(montant);
-    if (val > 0 && val <= compte.solde) onPayment(compte.id, val);
+    if (val > 0) onPayment(compte.id, val);
   };
 
   const handlePayPayconiq = () => {
     const val = parseFloat(montant);
-    if (val > 0 && val <= compte.solde) setShowQR(true);
+    if (val > 0) setShowQR(true);
   };
 
   const confirmPayconiq = () => {
     const val = parseFloat(montant);
-    if (val > 0 && val <= compte.solde) {
+    if (val > 0) {
       onPaymentPayconiq(compte.id, val);
       setShowQR(false);
     }
   };
+
+  const montantVal = parseFloat(montant) || 0;
+  const creditGenere =
+    compte.solde > 0 && montantVal > compte.solde
+      ? Math.round((montantVal - compte.solde) * 100) / 100
+      : 0;
 
   const transactionMap = useMemo(() => {
     const map = new Map<string, TransactionCaisse>();
@@ -283,6 +289,11 @@ export default function ArdoiseDetail({
               <p className="text-gray-400 text-sm mt-1">
                 Scannez avec l'app Payconiq
               </p>
+              {creditGenere > 0 && (
+                <p className="text-blue-400 text-xs mt-2 bg-blue-500/10 rounded-lg px-3 py-1.5">
+                  ⚡ Inclut {creditGenere.toFixed(2)}&euro; de crédit
+                </p>
+              )}
             </div>
             <div className="flex justify-center mb-6">
               <div className="bg-white rounded-xl p-4">
@@ -549,10 +560,31 @@ export default function ArdoiseDetail({
         </div>
 
         <div className="bg-[#3A3A3A] rounded-xl p-4 mb-4">
-          <p className="text-gray-400 text-sm">Solde dû</p>
-          <p className="text-red-400 text-3xl font-bold tabular-nums">
-            {compte.solde.toFixed(2)}&euro;
-          </p>
+          {compte.solde > 0 ? (
+            <>
+              <p className="text-gray-400 text-sm">Solde dû</p>
+              <p className="text-red-400 text-3xl font-bold tabular-nums">
+                {compte.solde.toFixed(2)}&euro;
+              </p>
+            </>
+          ) : compte.solde < 0 ? (
+            <>
+              <p className="text-gray-400 text-sm">Crédit disponible</p>
+              <p className="text-green-400 text-3xl font-bold tabular-nums">
+                +{Math.abs(compte.solde).toFixed(2)}&euro;
+              </p>
+              <p className="text-gray-500 text-xs mt-1">
+                Les prochaines consommations seront déduites de ce crédit
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-gray-400 text-sm">Solde dû</p>
+              <p className="text-green-400 text-3xl font-bold tabular-nums">
+                0.00&euro;
+              </p>
+            </>
+          )}
         </div>
 
         <div className="bg-[#3A3A3A] rounded-xl p-4 mb-4">
@@ -562,19 +594,13 @@ export default function ArdoiseDetail({
               type="number"
               step="0.01"
               min="0.01"
-              max={compte.solde}
               value={montant}
               onChange={(e) => setMontant(e.target.value)}
               className="h-12 text-lg bg-[#4A4A4A] border-none text-white rounded-xl"
             />
             <Button
               onClick={handlePay}
-              disabled={
-                loading ||
-                !montant ||
-                parseFloat(montant) <= 0 ||
-                parseFloat(montant) > compte.solde
-              }
+              disabled={loading || !montant || montantVal <= 0}
               className="h-12 px-6 bg-green-600 text-white hover:bg-green-700 rounded-xl disabled:opacity-30"
             >
               <CreditCard className="w-4 h-4 mr-2" />
@@ -582,18 +608,29 @@ export default function ArdoiseDetail({
             </Button>
             <Button
               onClick={handlePayPayconiq}
-              disabled={
-                loading ||
-                !montant ||
-                parseFloat(montant) <= 0 ||
-                parseFloat(montant) > compte.solde
-              }
+              disabled={loading || !montant || montantVal <= 0}
               className="h-12 px-6 bg-[#FF4785] text-white hover:bg-[#FF4785]/80 rounded-xl disabled:opacity-30"
             >
               <Smartphone className="w-4 h-4 mr-2" />
               Payconiq
             </Button>
           </div>
+          {/* Indicateur de crédit généré */}
+          {creditGenere > 0 && (
+            <div className="mt-3 flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 rounded-xl px-3 py-2">
+              <span className="text-blue-400 text-lg font-bold">⚡</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-blue-300 text-sm font-medium">
+                  Crédite {creditGenere.toFixed(2)}&euro; sur le compte
+                </p>
+                <p className="text-blue-400/70 text-xs">
+                  Règle {compte.solde.toFixed(2)}&euro; de dette · +
+                  {creditGenere.toFixed(2)}&euro; de crédit pour les prochaines
+                  consommations
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <ScrollArea className="flex-1 min-h-0">

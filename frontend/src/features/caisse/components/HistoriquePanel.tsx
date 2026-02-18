@@ -542,6 +542,29 @@ export default function HistoriquePanel({
       }));
   }, [periodTransactions]);
 
+  const topClients = useMemo(() => {
+    const clientMap: Record<
+      string,
+      { nom: string; total: number; count: number }
+    > = {};
+    periodTransactions.forEach((t) => {
+      if (!t.clientNom) return;
+      const key = t.clientId ? `${t.clientType}-${t.clientId}` : t.clientNom;
+      if (!clientMap[key]) {
+        clientMap[key] = { nom: t.clientNom, total: 0, count: 0 };
+      }
+      clientMap[key].total += t.total;
+      clientMap[key].count += 1;
+    });
+    return Object.values(clientMap)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 8)
+      .map((c) => ({
+        ...c,
+        total: Math.round(c.total * 100) / 100,
+      }));
+  }, [periodTransactions]);
+
   const revenueTrend = useMemo(() => {
     const groups: Record<string, number> = {};
     periodTransactions.forEach((t) => {
@@ -866,6 +889,73 @@ export default function HistoriquePanel({
               ) : (
                 <p className="text-gray-500 text-sm text-center py-8">
                   Aucune donnee
+                </p>
+              )}
+            </div>
+
+            {/* Bar chart horizontal: Top consommateurs */}
+            <div className="bg-[#3A3A3A] rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <p className="text-gray-400 text-sm">Top consommateurs</p>
+                {topClients[0] && (
+                  <span className="ml-auto text-xs bg-[#F1C40F]/20 text-[#F1C40F] font-semibold px-2 py-0.5 rounded-full truncate max-w-[120px]">
+                    🏆 {topClients[0].nom}
+                  </span>
+                )}
+              </div>
+              {topClients.length > 0 ? (
+                <ResponsiveContainer
+                  width="100%"
+                  height={Math.max(150, topClients.length * 36)}
+                >
+                  <BarChart data={topClients} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#4A4A4A" />
+                    <XAxis
+                      type="number"
+                      stroke="#9CA3AF"
+                      fontSize={11}
+                      tickFormatter={(v) => `${v}€`}
+                    />
+                    <YAxis
+                      dataKey="nom"
+                      type="category"
+                      stroke="#9CA3AF"
+                      fontSize={11}
+                      width={90}
+                      tick={{ fill: '#D1D5DB' }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#2C2C2C',
+                        border: 'none',
+                        borderRadius: '8px',
+                      }}
+                      formatter={(value: number, _: string, entry: any) => [
+                        `${value.toFixed(2)}€ (${entry.payload.count} vente${entry.payload.count > 1 ? 's' : ''})`,
+                        'Total consommé',
+                      ]}
+                    />
+                    <Bar dataKey="total" radius={[0, 4, 4, 0]}>
+                      {topClients.map((_, i) => (
+                        <Cell
+                          key={i}
+                          fill={
+                            i === 0
+                              ? '#F1C40F'
+                              : i === 1
+                                ? '#9CA3AF'
+                                : i === 2
+                                  ? '#CD7F32'
+                                  : '#4B5563'
+                          }
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-gray-500 text-sm text-center py-8">
+                  Aucune donnee client pour cette periode
                 </p>
               )}
             </div>

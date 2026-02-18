@@ -14,8 +14,20 @@ import {
   AlertTriangle,
   Users,
   UserPlus,
+  Eraser,
 } from 'lucide-react';
-import { updateClientCaisse, deleteClientCaisse } from '@/services/api';
+import {
+  updateClientCaisse,
+  deleteClientCaisse,
+  deleteTransactionCaisse,
+  deleteCompteCaisse,
+  fetchTransactionsByClient,
+  fetchCompteCaisseByClient,
+  updateCompteCaisse,
+  updateTransactionCaisse,
+  fetchSoldeCaisseEnCours,
+  updateSoldeCaisse,
+} from '@/services/api';
 
 interface ClientsManagerPanelProps {
   membres: Member[];
@@ -24,6 +36,7 @@ interface ClientsManagerPanelProps {
   onBack: () => void;
   onClientUpdated: (client: ClientCaisse) => void;
   onClientDeleted: (clientId: string) => void;
+  onCascadeComplete?: () => void;
 }
 
 type FilterType = 'tous' | 'membres' | 'externes';
@@ -35,6 +48,7 @@ export default function ClientsManagerPanel({
   onBack,
   onClientUpdated,
   onClientDeleted,
+  onCascadeComplete,
 }: ClientsManagerPanelProps) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterType>('tous');
@@ -49,6 +63,10 @@ export default function ClientsManagerPanel({
   // Suppression
   const [deleteTarget, setDeleteTarget] = useState<ClientCaisse | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Vider historique membre
+  const [viderTarget, setViderTarget] = useState<Member | null>(null);
+  const [viderLoading, setViderLoading] = useState(false);
 
   // Compte actif du client à supprimer
   const compteActif = useMemo(() => {
@@ -115,12 +133,29 @@ export default function ClientsManagerPanel({
     if (!editingId || !editNom.trim() || !editPrenom.trim()) return;
     setEditLoading(true);
     try {
+      const newNom = `${editPrenom.trim()} ${editNom.trim()}`;
+
+      // 1. Mettre à jour le client
       const updated = await updateClientCaisse(editingId, {
         nom: editNom.trim(),
         prenom: editPrenom.trim(),
         telephone: editTelephone.trim() || undefined,
       });
+
+      // 2. Mettre à jour le clientNom dans le compte
+      const compte = await fetchCompteCaisseByClient(editingId);
+      if (compte) {
+        await updateCompteCaisse(compte.id, { ...compte, clientNom: newNom });
+      }
+
+      // 3. Mettre à jour le clientNom dans toutes les transactions
+      const txs = await fetchTransactionsByClient(editingId);
+      await Promise.all(
+        txs.map((tx) => updateTransactionCaisse(tx.id, { clientNom: newNom }))
+      );
+
       onClientUpdated(updated);
+      onCascadeComplete?.();
       cancelEdit();
     } catch (err) {
       console.error('Erreur mise à jour client:', err);
@@ -133,13 +168,86 @@ export default function ClientsManagerPanel({
     if (!deleteTarget) return;
     setDeleteLoading(true);
     try {
+      // 1. Récupérer et supprimer toutes les transactions du client
+      const txs = await fetchTransactionsByClient(deleteTarget.id);
+      const txIds = new Set(txs.map((t) => t.id));
+      await Promise.all(txs.map((tx) => deleteTransactionCaisse(tx.id)));
+
+      // 2. Supprimer le compte
+      const compte = await fetchCompteCaisseByClient(deleteTarget.id);
+      if (compte) {
+        await deleteCompteCaisse(compte.id);
+      }
+
+      // 3. Nettoyer le solde de caisse en cours (retirer les TransactionSolde liées)
+      if (txIds.size > 0) {
+        const soldeEnCours = await fetchSoldeCaisseEnCours();
+        if (soldeEnCours) {
+          const txSoldeFiltered = soldeEnCours.transactions.filter(
+            (ts) => !ts.transactionId || !txIds.has(ts.transactionId)
+          );
+          if (txSoldeFiltered.length < soldeEnCours.transactions.length) {
+            await updateSoldeCaisse(soldeEnCours.id, {
+              transactions: txSoldeFiltered,
+            });
+          }
+        }
+      }
+
+      // 4. Supprimer le client
       await deleteClientCaisse(deleteTarget.id);
+
       onClientDeleted(deleteTarget.id);
+      onCascadeComplete?.();
       setDeleteTarget(null);
     } catch (err) {
       console.error('Erreur suppression client:', err);
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  const confirmVider = async () => {
+    if (!viderTarget) return;
+    setViderLoading(true);
+    try {
+      // 1. Supprimer toutes les transactions du membre
+      const txs = await fetchTransactionsByClient(String(viderTarget.id));
+      const txIds = new Set(txs.map((t) => t.id));
+      await Promise.all(txs.map((tx) => deleteTransactionCaisse(tx.id)));
+
+      // 2. Réinitialiser le compte (solde 0, historique vide) sans le supprimer
+      const compte = await fetchCompteCaisseByClient(String(viderTarget.id));
+      if (compte) {
+        await updateCompteCaisse(compte.id, {
+          ...compte,
+          solde: 0,
+          historique: [],
+          derniereActivite: new Date().toISOString(),
+        });
+      }
+
+      // 3. Nettoyer le solde de caisse en cours
+      if (txIds.size > 0) {
+        const soldeEnCours = await fetchSoldeCaisseEnCours();
+        if (soldeEnCours) {
+          const filtered = soldeEnCours.transactions.filter(
+            (ts) => !ts.transactionId || !txIds.has(ts.transactionId)
+          );
+          if (filtered.length < soldeEnCours.transactions.length) {
+            await updateSoldeCaisse(soldeEnCours.id, {
+              transactions: filtered,
+            });
+          }
+        }
+      }
+
+      onCascadeComplete?.();
+      setViderTarget(null);
+    } catch (err) {
+      console.error('Erreur vidage historique:', err);
+    } finally {
+      setViderLoading(false);
     }
   };
 
@@ -218,6 +326,50 @@ export default function ClientsManagerPanel({
       )}
 
       {/* Contenu principal */}
+      {/* Modal vider historique membre */}
+      {viderTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-[#3A3A3A] rounded-2xl w-full max-w-sm mx-4 p-6 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center shrink-0">
+                <Eraser className="w-5 h-5 text-orange-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold">Vider l'historique</h3>
+                <p className="text-gray-400 text-sm">
+                  {viderTarget.prenom} {viderTarget.nom}
+                </p>
+              </div>
+            </div>
+            <p className="text-gray-400 text-sm mb-3">
+              Toutes les transactions liées à ce membre seront supprimées
+              définitivement. Le compte sera remis à zéro.
+            </p>
+            <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3 mb-5 text-xs text-orange-300">
+              ⚠️ Cette action retire également les montants du solde de caisse
+              en cours si applicable.
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setViderTarget(null)}
+                disabled={viderLoading}
+                className="flex-1 h-11 bg-[#4A4A4A] text-gray-300 hover:bg-[#555] rounded-xl text-sm font-medium disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmVider}
+                disabled={viderLoading}
+                className="flex-1 h-11 bg-orange-600 text-white hover:bg-orange-700 rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <Eraser className="w-4 h-4" />
+                {viderLoading ? 'Vidage...' : 'Vider'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="h-full flex flex-col min-h-0">
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
@@ -411,11 +563,15 @@ export default function ClientsManagerPanel({
                           </div>
                         )}
 
-                        {/* Membres : lecture seule */}
+                        {/* Membres : vider historique */}
                         {!isExterne && (
-                          <span className="text-xs text-gray-600 shrink-0">
-                            lecture seule
-                          </span>
+                          <button
+                            onClick={() => setViderTarget(item.raw as Member)}
+                            className="h-8 w-8 rounded-lg text-gray-500 hover:text-orange-400 hover:bg-orange-500/10 flex items-center justify-center transition-colors"
+                            title="Vider l'historique de transactions"
+                          >
+                            <Eraser className="w-3.5 h-3.5" />
+                          </button>
                         )}
                       </div>
                     )}

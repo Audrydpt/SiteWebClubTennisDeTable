@@ -37,6 +37,7 @@ interface ArdoisePanelProps {
   onTransfer: (compteId: string, transfers: TransferItem[]) => void;
   loading?: boolean;
   payconiqUrl?: string;
+  onCascadeComplete?: () => void;
 }
 
 type ArdoiseView = 'list' | 'detail' | 'clients' | 'import';
@@ -54,13 +55,14 @@ export default function ArdoisePanel({
   onTransfer,
   loading,
   payconiqUrl,
+  onCascadeComplete,
 }: ArdoisePanelProps) {
   const [view, setView] = useState<ArdoiseView>('list');
   const [selectedCompteId, setSelectedCompteId] = useState<string | null>(null);
   const [showRegles, setShowRegles] = useState(false);
 
   const comptesAvecSolde = comptes
-    .filter((c) => c.solde > 0)
+    .filter((c) => c.solde !== 0)
     .sort((a, b) => a.clientNom.localeCompare(b.clientNom, 'fr'));
 
   const comptesRegles = comptes
@@ -99,6 +101,7 @@ export default function ArdoisePanel({
         onBack={() => setView('list')}
         onClientUpdated={onClientUpdated}
         onClientDeleted={onClientDeleted}
+        onCascadeComplete={onCascadeComplete}
       />
     );
   }
@@ -140,6 +143,10 @@ export default function ArdoisePanel({
       {compte.solde > 0 ? (
         <span className="text-red-400 font-bold text-sm tabular-nums mr-2">
           {compte.solde.toFixed(2)}&euro;
+        </span>
+      ) : compte.solde < 0 ? (
+        <span className="text-blue-400 font-bold text-xs tabular-nums mr-2">
+          +{Math.abs(compte.solde).toFixed(2)}&euro; crédit
         </span>
       ) : (
         <span className="text-green-500 font-bold text-xs tabular-nums mr-2">

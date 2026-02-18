@@ -72,7 +72,7 @@ export default function CaisseTopBar({
 
   const handleQuit = () => {
     logout();
-    navigate('/');
+    navigate('/caisse');
   };
 
   return (
