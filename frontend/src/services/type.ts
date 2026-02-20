@@ -382,34 +382,45 @@ export interface LigneCaisse {
   sousTotal: number;
 }
 
-export type ModePaiement = 'immediat' | 'ardoise' | 'payconiq';
+export type ModePaiement = 'immediat' | 'ardoise' | 'payconiq' | 'offert';
 
 export interface TransactionCaisse {
   id: string;
   lignes: LigneCaisse[];
   total: number;
   modePaiement: ModePaiement;
-  statut: 'payee' | 'ardoise' | 'annulee';
-  clientType: 'membre' | 'externe' | 'anonyme';
+  statut: 'payee' | 'ardoise' | 'annulee' | 'offert';
+  clientType: 'membre' | 'externe' | 'anonyme' | 'club';
   clientId?: string;
   clientNom?: string;
   dateTransaction: string;
   operateur: string;
 }
 
+export interface CompteEquipe {
+  id: string;
+  nom: string; // Ex: "Équipe A", "Équipe B", "Équipe C", "Club - Événements"
+  type: 'equipe' | 'club_general'; // Pour différencier équipes vs compte club général
+  equipeLabel?: string; // Ex: "A", "B", "C" — pour l'affichage
+  description?: string; // Ex: "Tournées après matchs équipe A"
+}
+
 export interface CompteCaisse {
   id: string;
-  clientType: 'membre' | 'externe';
+  clientType: 'membre' | 'externe' | 'club';
   clientId: string;
   clientNom: string;
   solde: number;
   derniereActivite: string;
+  description?: string; // Ex: "Tournées après matchs", "Réception sponsors"
+  equipe?: string; // Ex: "A", "B", "C" — pour filtrer par équipe
   historique: {
     transactionId: string;
     montant: number;
     type: 'consommation' | 'paiement';
     date: string;
     modePaiement?: 'immediat' | 'payconiq'; // Type de paiement pour les paiements
+    description?: string; // Ex: "Tournée semaine 12 vs Logis Auderghem"
   }[];
 }
 

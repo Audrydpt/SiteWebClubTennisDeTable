@@ -15,6 +15,7 @@ import {
   List,
   ArrowUpDown,
   Package,
+  FileDown,
 } from 'lucide-react';
 import type {
   Plat,
@@ -40,6 +41,8 @@ import {
 import { ReactSortable } from 'react-sortablejs';
 import ImagePickerCaisse from './ImagePickerCaisse';
 import AjoutStockMasse from './AjoutStockMasse';
+import { exportStockToPdf } from '@/utils/pdfExportStock';
+import { calculateRealStock } from '@/lib/utils';
 
 type StockView = 'articles' | 'categories' | 'addArticle' | 'editArticle';
 
@@ -902,6 +905,14 @@ export default function StockPanel({
           </div>
           <Button
             variant="ghost"
+            onClick={() => exportStockToPdf(plats, categories)}
+            className="h-9 px-3 bg-[#4A4A4A] text-gray-300 hover:bg-[#555] hover:text-white rounded-lg text-sm"
+          >
+            <FileDown className="w-4 h-4 mr-1" />
+            PDF
+          </Button>
+          <Button
+            variant="ghost"
             onClick={() => setView('categories')}
             className="h-9 px-3 bg-[#4A4A4A] text-gray-300 hover:bg-[#555] hover:text-white rounded-lg text-sm"
           >
@@ -1010,6 +1021,11 @@ export default function StockPanel({
                         >
                           {plat.stock}
                         </span>
+                        {plat.sousProduitsIds && plat.sousProduitsIds.length > 0 && (
+                          <span className="text-xs text-gray-500 ml-1">
+                            (réel: {calculateRealStock(plat, plats)})
+                          </span>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -1157,6 +1173,11 @@ export default function StockPanel({
                       >
                         {plat.stock}
                       </button>
+                    )}
+                    {plat.sousProduitsIds && plat.sousProduitsIds.length > 0 && (
+                      <span className="text-xs text-gray-500 ml-1">
+                        (réel: {calculateRealStock(plat, plats)})
+                      </span>
                     )}
                     <Button
                       variant="ghost"

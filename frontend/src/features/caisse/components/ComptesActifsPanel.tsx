@@ -8,7 +8,7 @@ import { Clock, User } from 'lucide-react';
 interface ComptesActifsPanelProps {
   comptes: CompteCaisse[];
   onSelectClient?: (client: {
-    type: 'membre' | 'externe';
+    type: 'membre' | 'externe' | 'club';
     id: string;
     nom: string;
   }) => void;

@@ -12,6 +12,7 @@ import {
   ClientCaisse,
   TransactionCaisse,
   CompteCaisse,
+  CompteEquipe,
   CategorieCaisse,
   Plat,
   SoldeCaisse,
@@ -1276,3 +1277,66 @@ export const deleteCompteCaisse = async (id: string): Promise<void> => {
     }
   }
 };
+
+/* ---- CAISSE: Comptes Équipe ---- */
+
+export const fetchComptesEquipe = async (): Promise<CompteEquipe[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/comptesEquipe`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      console.warn('Collection comptesEquipe non disponible');
+      return [];
+    }
+    throw error;
+  }
+};
+
+export const createCompteEquipe = async (
+  data: Omit<CompteEquipe, 'id'>
+): Promise<CompteEquipe> => {
+  try {
+    const dataWithId = {
+      ...data,
+      id: `equipe_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    };
+    const response = await axios.post(`${API_URL}/comptesEquipe`, dataWithId);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      console.warn('Collection comptesEquipe non disponible');
+      return { ...data, id: `temp_${Date.now()}` } as CompteEquipe;
+    }
+    throw error;
+  }
+};
+
+export const updateCompteEquipe = async (
+  id: string,
+  data: CompteEquipe
+): Promise<CompteEquipe> => {
+  try {
+    const response = await axios.put(`${API_URL}/comptesEquipe/${id}`, data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      console.warn('Collection comptesEquipe non disponible');
+      return data;
+    }
+    throw error;
+  }
+};
+
+export const deleteCompteEquipe = async (id: string): Promise<void> => {
+  try {
+    await axios.delete(`${API_URL}/comptesEquipe/${id}`);
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      console.warn('Compte équipe non trouvé pour suppression');
+    } else {
+      throw error;
+    }
+  }
+};
+

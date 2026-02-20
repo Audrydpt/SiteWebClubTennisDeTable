@@ -1,6 +1,6 @@
 /* eslint-disable */
-import { useState, useMemo } from 'react';
-import type { Member, ClientCaisse, CompteCaisse } from '@/services/type';
+import { useState, useMemo, useEffect } from 'react';
+import type { Member, ClientCaisse, CompteCaisse, CompteEquipe } from '@/services/type';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -15,6 +15,8 @@ import {
   Users,
   UserPlus,
   Eraser,
+  Gift,
+  Plus,
 } from 'lucide-react';
 import {
   updateClientCaisse,
@@ -27,6 +29,11 @@ import {
   updateTransactionCaisse,
   fetchSoldeCaisseEnCours,
   updateSoldeCaisse,
+  fetchComptesEquipe,
+  createCompteEquipe,
+  updateCompteEquipe,
+  deleteCompteEquipe,
+  createClientCaisse,
 } from '@/services/api';
 
 interface ClientsManagerPanelProps {
@@ -39,7 +46,7 @@ interface ClientsManagerPanelProps {
   onCascadeComplete?: () => void;
 }
 
-type FilterType = 'tous' | 'membres' | 'externes';
+type FilterType = 'tous' | 'membres' | 'externes' | 'equipes';
 
 export default function ClientsManagerPanel({
   membres,
@@ -52,6 +59,7 @@ export default function ClientsManagerPanel({
 }: ClientsManagerPanelProps) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterType>('tous');
+  const [equipes, setEquipes] = useState<CompteEquipe[]>([]);
 
   // Édition d'un client externe
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -60,13 +68,39 @@ export default function ClientsManagerPanel({
   const [editTelephone, setEditTelephone] = useState('');
   const [editLoading, setEditLoading] = useState(false);
 
+  // Édition d'une équipe
+  const [editingEquipeId, setEditingEquipeId] = useState<string | null>(null);
+  const [editEquipeNom, setEditEquipeNom] = useState('');
+  const [editEquipeLabel, setEditEquipeLabel] = useState('');
+  const [editEquipeDescription, setEditEquipeDescription] = useState('');
+  const [editEquipeLoading, setEditEquipeLoading] = useState(false);
+
+  // Création d'une équipe
+  const [showCreateEquipe, setShowCreateEquipe] = useState(false);
+
+  // Création d'un client externe
+  const [showCreateExterne, setShowCreateExterne] = useState(false);
+  const [editExterneNom, setEditExterneNom] = useState('');
+  const [editExternePrenom, setEditExternePrenom] = useState('');
+  const [editExterneTelephone, setEditExterneTelephone] = useState('');
+  const [editExterneLoading, setEditExterneLoading] = useState(false);
+
   // Suppression
   const [deleteTarget, setDeleteTarget] = useState<ClientCaisse | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Suppression équipe
+  const [deleteEquipeTarget, setDeleteEquipeTarget] = useState<CompteEquipe | null>(null);
+  const [deleteEquipeLoading, setDeleteEquipeLoading] = useState(false);
+
   // Vider historique membre
   const [viderTarget, setViderTarget] = useState<Member | null>(null);
   const [viderLoading, setViderLoading] = useState(false);
+
+  // Charger les équipes au montage
+  useEffect(() => {
+    fetchComptesEquipe().then(setEquipes).catch(console.error);
+  }, []);
 
   // Compte actif du client à supprimer
   const compteActif = useMemo(() => {
@@ -108,12 +142,28 @@ export default function ClientsManagerPanel({
         raw: m,
       }));
 
+    const equipesList = equipes
+      .filter((e) => {
+        const equipeNom = e.nom.toLowerCase();
+        const equipeLabel = e.equipeLabel?.toLowerCase() || '';
+        return equipeNom.includes(term) || equipeLabel.includes(term);
+      })
+      .map((e) => ({
+        type: 'equipe' as const,
+        id: e.id,
+        nom: e.nom,
+        prenom: '',
+        detail: e.equipeLabel ? `Équipe ${e.equipeLabel}` : e.description || 'Club',
+        raw: e,
+      }));
+
     if (filter === 'externes') return externsList;
     if (filter === 'membres') return membresList;
+    if (filter === 'equipes') return equipesList;
 
-    // Trier : externes d'abord, puis membres
-    return [...externsList, ...membresList];
-  }, [search, filter, clientsExternes, membres]);
+    // Trier : équipes d'abord, puis externes, puis membres
+    return [...equipesList, ...externsList, ...membresList];
+  }, [search, filter, clientsExternes, membres, equipes]);
 
   const startEdit = (client: ClientCaisse) => {
     setEditingId(client.id);
@@ -255,6 +305,121 @@ export default function ClientsManagerPanel({
     return comptes.find((c) => c.clientId === clientId && c.solde > 0);
   };
 
+  // Gestion des équipes
+  const startEditEquipe = (equipe: CompteEquipe) => {
+    setEditingEquipeId(equipe.id);
+    setEditEquipeNom(equipe.nom);
+    setEditEquipeLabel(equipe.equipeLabel || '');
+    setEditEquipeDescription(equipe.description || '');
+  };
+
+  const cancelEditEquipe = () => {
+    setEditingEquipeId(null);
+    setEditEquipeNom('');
+    setEditEquipeLabel('');
+    setEditEquipeDescription('');
+  };
+
+  const saveEditEquipe = async () => {
+    if (!editingEquipeId || !editEquipeNom.trim()) return;
+    setEditEquipeLoading(true);
+    try {
+      // Trouver l'équipe actuelle
+      const equipeActuelle = equipes.find(e => e.id === editingEquipeId);
+      if (!equipeActuelle) return;
+
+      await updateCompteEquipe(editingEquipeId, {
+        ...equipeActuelle,
+        nom: editEquipeNom.trim(),
+        equipeLabel: editEquipeLabel.trim() || undefined,
+        description: editEquipeDescription.trim() || undefined,
+      });
+
+      // Recharger les équipes
+      const updatedEquipes = await fetchComptesEquipe();
+      setEquipes(updatedEquipes);
+
+      onCascadeComplete?.();
+      cancelEditEquipe();
+    } catch (err) {
+      console.error('Erreur mise à jour équipe:', err);
+    } finally {
+      setEditEquipeLoading(false);
+    }
+  };
+
+  const createNewEquipe = async () => {
+    if (!editEquipeNom.trim()) return;
+    setEditEquipeLoading(true);
+    try {
+      await createCompteEquipe({
+        nom: editEquipeNom.trim(),
+        type: 'equipe',
+        equipeLabel: editEquipeLabel.trim() || undefined,
+        description: editEquipeDescription.trim() || undefined,
+      });
+
+      // Recharger les équipes
+      const updatedEquipes = await fetchComptesEquipe();
+      setEquipes(updatedEquipes);
+
+      setShowCreateEquipe(false);
+      setEditEquipeNom('');
+      setEditEquipeLabel('');
+      setEditEquipeDescription('');
+      onCascadeComplete?.();
+    } catch (err) {
+      console.error('Erreur création équipe:', err);
+    } finally {
+      setEditEquipeLoading(false);
+    }
+  };
+
+  const confirmDeleteEquipe = async () => {
+    if (!deleteEquipeTarget) return;
+    setDeleteEquipeLoading(true);
+    try {
+      await deleteCompteEquipe(deleteEquipeTarget.id);
+
+      // Recharger les équipes
+      const updatedEquipes = await fetchComptesEquipe();
+      setEquipes(updatedEquipes);
+
+      onCascadeComplete?.();
+      setDeleteEquipeTarget(null);
+    } catch (err) {
+      console.error('Erreur suppression équipe:', err);
+    } finally {
+      setDeleteEquipeLoading(false);
+    }
+  };
+
+  // Gestion création client externe
+  const createNewExterne = async () => {
+    if (!editExterneNom.trim() || !editExternePrenom.trim()) return;
+    setEditExterneLoading(true);
+    try {
+      const newClient = await createClientCaisse({
+        nom: editExterneNom.trim(),
+        prenom: editExternePrenom.trim(),
+        telephone: editExterneTelephone.trim() || undefined,
+      });
+
+      // Callback pour notifier le parent
+      onClientUpdated(newClient);
+
+      setShowCreateExterne(false);
+      setEditExterneNom('');
+      setEditExternePrenom('');
+      setEditExterneTelephone('');
+      onCascadeComplete?.();
+    } catch (err) {
+      console.error('Erreur création client externe:', err);
+    } finally {
+      setEditExterneLoading(false);
+    }
+  };
+
   return (
     <>
       {/* Modal de confirmation suppression */}
@@ -325,7 +490,157 @@ export default function ClientsManagerPanel({
         </div>
       )}
 
+      {/* Modal de confirmation suppression équipe */}
+      {deleteEquipeTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-[#3A3A3A] rounded-2xl w-full max-w-sm mx-4 p-6 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold">Supprimer l'équipe</h3>
+                <p className="text-gray-400 text-sm">
+                  {deleteEquipeTarget.nom}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-gray-400 text-sm mb-5">
+              Cette action est irréversible. L'équipe sera définitivement
+              supprimée de la base de données.
+            </p>
+
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => setDeleteEquipeTarget(null)}
+                disabled={deleteEquipeLoading}
+                className="flex-1 h-11 bg-[#4A4A4A] text-gray-300 hover:bg-[#555] rounded-xl"
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={confirmDeleteEquipe}
+                disabled={deleteEquipeLoading}
+                className="flex-1 h-11 bg-red-600 text-white hover:bg-red-700 rounded-xl font-semibold"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {deleteEquipeLoading ? 'Suppression...' : 'Supprimer'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Contenu principal */}
+      {/* Modal création équipe */}
+      {showCreateEquipe && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-[#3A3A3A] rounded-2xl w-full max-w-sm mx-4 p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-bold">Créer une équipe</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setShowCreateEquipe(false);
+                  setEditEquipeNom('');
+                  setEditEquipeLabel('');
+                  setEditEquipeDescription('');
+                }}
+                className="h-8 w-8 text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              <Input
+                placeholder="Nom de l'équipe"
+                value={editEquipeNom}
+                onChange={(e) => setEditEquipeNom(e.target.value)}
+                className="h-10 bg-[#4A4A4A] border-none text-white placeholder:text-gray-500 rounded-lg"
+              />
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Label (ex: A)"
+                  value={editEquipeLabel}
+                  onChange={(e) => setEditEquipeLabel(e.target.value)}
+                  maxLength={3}
+                  className="h-10 bg-[#4A4A4A] border-none text-white placeholder:text-gray-500 rounded-lg w-24"
+                />
+              </div>
+            </div>
+
+            <Button
+              onClick={createNewEquipe}
+              disabled={editEquipeLoading || !editEquipeNom.trim()}
+              className="w-full h-11 bg-amber-600 text-white hover:bg-amber-700 rounded-xl font-semibold mt-4 disabled:opacity-30"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {editEquipeLoading ? 'Création...' : 'Créer l\'équipe'}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal création client externe */}
+      {showCreateExterne && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-[#3A3A3A] rounded-2xl w-full max-w-sm mx-4 p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-bold">Créer un client externe</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setShowCreateExterne(false);
+                  setEditExterneNom('');
+                  setEditExternePrenom('');
+                  setEditExterneTelephone('');
+                }}
+                className="h-8 w-8 text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Prénom"
+                  value={editExternePrenom}
+                  onChange={(e) => setEditExternePrenom(e.target.value)}
+                  className="h-10 bg-[#4A4A4A] border-none text-white placeholder:text-gray-500 rounded-lg flex-1"
+                />
+                <Input
+                  placeholder="Nom"
+                  value={editExterneNom}
+                  onChange={(e) => setEditExterneNom(e.target.value)}
+                  className="h-10 bg-[#4A4A4A] border-none text-white placeholder:text-gray-500 rounded-lg flex-1"
+                />
+              </div>
+              <Input
+                placeholder="Téléphone (optionnel)"
+                value={editExterneTelephone}
+                onChange={(e) => setEditExterneTelephone(e.target.value)}
+                className="h-10 bg-[#4A4A4A] border-none text-white placeholder:text-gray-500 rounded-lg"
+              />
+            </div>
+
+            <Button
+              onClick={createNewExterne}
+              disabled={editExterneLoading || !editExterneNom.trim() || !editExternePrenom.trim()}
+              className="w-full h-11 bg-green-600 text-white hover:bg-green-700 rounded-xl font-semibold mt-4 disabled:opacity-30"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {editExterneLoading ? 'Création...' : 'Créer le client'}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Modal vider historique membre */}
       {viderTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
@@ -388,9 +703,30 @@ export default function ClientsManagerPanel({
             <p className="text-gray-400 text-xs">
               {clientsExternes.length} externe
               {clientsExternes.length !== 1 ? 's' : ''} · {membres.length}{' '}
-              membre{membres.length !== 1 ? 's' : ''}
+              membre{membres.length !== 1 ? 's' : ''} · {equipes.length}{' '}
+              équipe{equipes.length !== 1 ? 's' : ''}
             </p>
           </div>
+          {filter === 'equipes' && (
+            <Button
+              variant="ghost"
+              onClick={() => setShowCreateEquipe(true)}
+              className="h-9 px-3 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 rounded-xl text-sm shrink-0"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Créer une équipe
+            </Button>
+          )}
+          {filter === 'externes' && (
+            <Button
+              variant="ghost"
+              onClick={() => setShowCreateExterne(true)}
+              className="h-9 px-3 bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded-xl text-sm shrink-0"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Créer un client externe
+            </Button>
+          )}
         </div>
 
         {/* Recherche */}
@@ -414,7 +750,7 @@ export default function ClientsManagerPanel({
 
         {/* Filtres */}
         <div className="flex gap-2 mb-4">
-          {(['tous', 'externes', 'membres'] as FilterType[]).map((f) => (
+          {(['tous', 'equipes', 'externes', 'membres'] as FilterType[]).map((f) => (
             <Button
               key={f}
               variant="ghost"
@@ -427,9 +763,11 @@ export default function ClientsManagerPanel({
             >
               {f === 'tous'
                 ? 'Tous'
-                : f === 'externes'
-                  ? 'Externes'
-                  : 'Membres'}
+                : f === 'equipes'
+                  ? 'Équipes'
+                  : f === 'externes'
+                    ? 'Externes'
+                    : 'Membres'}
             </Button>
           ))}
         </div>
@@ -444,17 +782,63 @@ export default function ClientsManagerPanel({
             ) : (
               listeAffichee.map((item) => {
                 const isExterne = item.type === 'externe';
+                const isEquipe = item.type === 'equipe';
                 const compteOuvert = isExterne
                   ? getCompteForClient(item.id)
                   : null;
                 const isEditing = editingId === item.id;
+                const isEditingEquipe = editingEquipeId === item.id;
 
                 return (
                   <div
                     key={`${item.type}-${item.id}`}
                     className="bg-[#3A3A3A] rounded-xl p-3"
                   >
-                    {isEditing ? (
+                    {isEditingEquipe ? (
+                      /* Mode édition équipe */
+                      <div className="space-y-2">
+                        <Input
+                          placeholder="Nom de l'équipe"
+                          value={editEquipeNom}
+                          onChange={(e) => setEditEquipeNom(e.target.value)}
+                          className="h-9 bg-[#4A4A4A] border-none text-white placeholder:text-gray-500 rounded-lg text-sm"
+                        />
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Label (ex: A)"
+                            value={editEquipeLabel}
+                            onChange={(e) => setEditEquipeLabel(e.target.value)}
+                            maxLength={3}
+                            className="h-9 bg-[#4A4A4A] border-none text-white placeholder:text-gray-500 rounded-lg text-sm"
+                          />
+                          <Input
+                            placeholder="Description"
+                            value={editEquipeDescription}
+                            onChange={(e) => setEditEquipeDescription(e.target.value)}
+                            className="h-9 bg-[#4A4A4A] border-none text-white placeholder:text-gray-500 rounded-lg text-sm flex-1"
+                          />
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                          <Button
+                            variant="ghost"
+                            onClick={cancelEditEquipe}
+                            disabled={editEquipeLoading}
+                            className="flex-1 h-9 bg-[#4A4A4A] text-gray-400 hover:text-white rounded-lg text-sm"
+                          >
+                            <X className="w-3.5 h-3.5 mr-1.5" />
+                            Annuler
+                          </Button>
+                          <Button
+                            onClick={saveEditEquipe}
+                            disabled={editEquipeLoading || !editEquipeNom.trim()}
+                            className="flex-1 h-9 bg-green-600 text-white hover:bg-green-700 rounded-lg text-sm disabled:opacity-30"
+                          >
+                            <Check className="w-3.5 h-3.5 mr-1.5" />
+                            {editEquipeLoading ? 'Sauvegarde...' : 'Enregistrer'}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : isEditing ? (
                       /* Mode édition */
                       <div className="space-y-2">
                         <div className="flex gap-2">
@@ -507,10 +891,16 @@ export default function ClientsManagerPanel({
                         {/* Icône type */}
                         <div
                           className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                            isExterne ? 'bg-green-500/20' : 'bg-blue-500/20'
+                            isEquipe 
+                              ? 'bg-amber-500/20' 
+                              : isExterne 
+                                ? 'bg-green-500/20' 
+                                : 'bg-blue-500/20'
                           }`}
                         >
-                          {isExterne ? (
+                          {isEquipe ? (
+                            <Gift className="w-4 h-4 text-amber-400" />
+                          ) : isExterne ? (
                             <UserPlus className="w-4 h-4 text-green-400" />
                           ) : (
                             <Users className="w-4 h-4 text-blue-400" />
@@ -521,7 +911,7 @@ export default function ClientsManagerPanel({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-white text-sm font-medium">
-                              {item.prenom} {item.nom}
+                              {isEquipe ? item.nom : `${item.prenom} ${item.nom}`}
                             </p>
                             {compteOuvert && (
                               <span className="text-xs bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded-full font-semibold">
@@ -530,12 +920,16 @@ export default function ClientsManagerPanel({
                             )}
                           </div>
                           <p className="text-gray-500 text-xs">
-                            {isExterne ? 'Externe' : 'Membre'}
+                            {isEquipe
+                              ? 'Équipe'
+                              : isExterne
+                                ? 'Externe'
+                                : 'Membre'}
                             {item.detail ? ` · ${item.detail}` : ''}
                           </p>
                         </div>
 
-                        {/* Actions — uniquement pour les clients externes */}
+                        {/* Actions — pour les clients externes */}
                         {isExterne && (
                           <div className="flex items-center gap-1 shrink-0">
                             <Button
@@ -563,8 +957,36 @@ export default function ClientsManagerPanel({
                           </div>
                         )}
 
+                        {/* Actions — pour les équipes */}
+                        {isEquipe && (
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() =>
+                                startEditEquipe(item.raw as CompteEquipe)
+                              }
+                              className="h-8 w-8 rounded-lg text-gray-400 hover:text-amber-400 hover:bg-amber-500/10"
+                              title="Modifier"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() =>
+                                setDeleteEquipeTarget(item.raw as CompteEquipe)
+                              }
+                              className="h-8 w-8 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        )}
+
                         {/* Membres : vider historique */}
-                        {!isExterne && (
+                        {!isExterne && !isEquipe && (
                           <button
                             onClick={() => setViderTarget(item.raw as Member)}
                             className="h-8 w-8 rounded-lg text-gray-500 hover:text-orange-400 hover:bg-orange-500/10 flex items-center justify-center transition-colors"

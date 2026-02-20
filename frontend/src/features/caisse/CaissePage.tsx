@@ -66,7 +66,7 @@ import SoldeCreate from './components/SoldeCreate';
 import { TransferItem } from '@/features/caisse/components/ArdoiseDetail.tsx';
 
 interface SelectedClient {
-  type: 'membre' | 'externe' | 'anonyme';
+  type: 'membre' | 'externe' | 'anonyme' | 'club';
   id?: string;
   nom: string;
 }
@@ -104,7 +104,7 @@ export default function CaissePage() {
   const [showPaiementModal, setShowPaiementModal] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [successType, setSuccessType] = useState<'paiement' | 'ardoise'>(
+  const [successType, setSuccessType] = useState<'paiement' | 'ardoise' | 'offert'>(
     'paiement'
   );
 
@@ -346,7 +346,7 @@ export default function CaissePage() {
         await updateCompteCaisse(compte.id, compte);
       } else {
         await createCompteCaisse({
-          clientType: selectedClient.type as 'membre' | 'externe',
+          clientType: selectedClient.type as 'membre' | 'externe' | 'club',
           clientId: selectedClient.id!,
           clientNom: selectedClient.nom,
           solde: total,
@@ -377,6 +377,48 @@ export default function CaissePage() {
       }, 1500);
     } catch (err) {
       console.error('Erreur paiement ardoise:', err);
+      setPaymentLoading(false);
+    }
+  };
+
+  const handlePayOffert = async () => {
+    if (!selectedClient || selectedClient.type !== 'club') return;
+    setPaymentLoading(true);
+    try {
+      // 1. Créer la transaction avec statut 'offert'
+      await createTransactionCaisse({
+        lignes: panier,
+        total,
+        modePaiement: 'offert',
+        statut: 'offert',
+        clientType: 'club',
+        clientId: selectedClient.id,
+        clientNom: selectedClient.nom,
+        dateTransaction: new Date().toISOString(),
+        operateur: operateurName,
+      });
+
+      // 2. Décrémenter le stock (les consommations sont réelles)
+      for (const ligne of panier) {
+        await decrementStockComposite(ligne.platId, ligne.quantite, plats);
+      }
+
+      // 3. NE PAS créer de compte à régler pour les tournées offertes
+      // On ne crée pas de CompteCaisse car c'est offert par le club
+
+      // 4. PAS d'ajout au solde de caisse ! C'est offert.
+      // On ne fait PAS de ajouterTransactionSolde() ici.
+
+      setSuccessType('offert');
+      setPaymentSuccess(true);
+      setTimeout(() => {
+        setPaymentSuccess(false);
+        setShowPaiementModal(false);
+        clearCart();
+        loadData();
+      }, 1500);
+    } catch (err) {
+      console.error('Erreur paiement offert:', err);
       setPaymentLoading(false);
     }
   };
@@ -885,9 +927,11 @@ export default function CaissePage() {
         <PaiementModal
           total={total}
           clientNom={selectedClient?.nom || null}
+          clientType={selectedClient?.type || null}
           onPayImmediat={handlePayImmediat}
           onPayArdoise={handlePayArdoise}
           onPayPayconiq={handlePayPayconiq}
+          onPayOffert={handlePayOffert}
           onClose={() => setShowPaiementModal(false)}
           loading={paymentLoading}
           success={paymentSuccess}

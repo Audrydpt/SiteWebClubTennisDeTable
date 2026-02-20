@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
   ClipboardList,
+  Gift,
 } from 'lucide-react';
 import type {
   Member,
@@ -61,12 +62,13 @@ export default function ArdoisePanel({
   const [selectedCompteId, setSelectedCompteId] = useState<string | null>(null);
   const [showRegles, setShowRegles] = useState(false);
 
+  // Comptes classiques (exclure les comptes club)
   const comptesAvecSolde = comptes
-    .filter((c) => c.solde !== 0)
+    .filter((c) => c.solde !== 0 && c.clientType !== 'club')
     .sort((a, b) => a.clientNom.localeCompare(b.clientNom, 'fr'));
 
   const comptesRegles = comptes
-    .filter((c) => c.solde === 0)
+    .filter((c) => c.solde === 0 && c.clientType !== 'club')
     .sort((a, b) => a.clientNom.localeCompare(b.clientNom, 'fr'));
 
   const selectedCompte = comptes.find((c) => c.id === selectedCompteId);
@@ -120,6 +122,18 @@ export default function ArdoisePanel({
 
   const totalArdoises = comptesAvecSolde.reduce((sum, c) => sum + c.solde, 0);
 
+  // Comptes club avec solde > 0
+  const comptesClubAvecSolde = comptes
+    .filter((c) => c.clientType === 'club' && c.solde > 0)
+    .sort((a, b) => a.clientNom.localeCompare(b.clientNom, 'fr'));
+
+  // Comptes club avec solde = 0
+  const comptesClubRegles = comptes
+    .filter((c) => c.clientType === 'club' && c.solde === 0)
+    .sort((a, b) => a.clientNom.localeCompare(b.clientNom, 'fr'));
+
+  const totalClub = comptesClubAvecSolde.reduce((sum, c) => sum + c.solde, 0);
+
   const renderCompteButton = (compte: CompteCaisse) => (
     <Button
       key={compte.id}
@@ -153,6 +167,34 @@ export default function ArdoisePanel({
           Réglé
         </span>
       )}
+      <ChevronRight className="w-4 h-4 text-gray-500" />
+    </Button>
+  );
+
+  const renderClubCompteButton = (compte: CompteCaisse) => (
+    <Button
+      key={compte.id}
+      variant="ghost"
+      onClick={() => {
+        setSelectedCompteId(compte.id);
+        setView('detail');
+      }}
+      className="w-full h-auto p-3 bg-amber-900/20 hover:bg-amber-900/30 rounded-xl justify-start border border-amber-800/30"
+    >
+      <Gift className="w-4 h-4 text-amber-400 mr-3 shrink-0" />
+      <div className="flex-1 text-left min-w-0">
+        <p className="text-white text-sm font-medium truncate">
+          {compte.clientNom}
+        </p>
+        <p className="text-gray-500 text-xs">
+          {compte.equipe ? `Équipe ${compte.equipe}` : 'Club'}
+          {compte.description ? ` · ${compte.description}` : ''} &middot;{' '}
+          {new Date(compte.derniereActivite).toLocaleDateString('fr-BE')}
+        </p>
+      </div>
+      <span className="text-amber-400 font-bold text-sm tabular-nums mr-2">
+        {compte.solde.toFixed(2)}&euro;
+      </span>
       <ChevronRight className="w-4 h-4 text-gray-500" />
     </Button>
   );
@@ -195,6 +237,25 @@ export default function ArdoisePanel({
 
       <ScrollArea className="flex-1 min-h-0">
         <div className="space-y-2 pr-4">
+          {/* Section Comptes Club avec solde */}
+          {comptesClubAvecSolde.length > 0 && (
+            <div className="mb-4 pb-3 border-b border-[#4A4A4A]">
+              <div className="flex items-center gap-2 mb-2">
+                <Gift className="w-4 h-4 text-amber-400" />
+                <span className="text-amber-400 text-sm font-medium">
+                  Comptes équipe
+                </span>
+                <span className="text-gray-500 text-xs ml-auto">
+                  Total dû : {totalClub.toFixed(2)}&euro;
+                </span>
+              </div>
+              <div className="space-y-2">
+                {comptesClubAvecSolde.map(renderClubCompteButton)}
+              </div>
+            </div>
+          )}
+
+          {/* Comptes ardoise classiques */}
           {comptesAvecSolde.length === 0 ? (
             <p className="text-gray-500 text-sm text-center py-6">
               Aucun compte en cours
@@ -203,7 +264,7 @@ export default function ArdoisePanel({
             comptesAvecSolde.map(renderCompteButton)
           )}
 
-          {comptesRegles.length > 0 && (
+          {(comptesRegles.length > 0 || comptesClubRegles.length > 0) && (
             <div className="pt-2">
               <button
                 onClick={() => setShowRegles((v) => !v)}
@@ -212,7 +273,7 @@ export default function ArdoisePanel({
                 <div className="h-px flex-1 bg-[#4A4A4A]" />
                 <span className="text-xs font-medium shrink-0">
                   {showRegles ? 'Masquer' : 'Voir'} les comptes réglés (
-                  {comptesRegles.length})
+                  {comptesRegles.length + comptesClubRegles.length})
                 </span>
                 {showRegles ? (
                   <ChevronUp className="w-3.5 h-3.5 shrink-0" />
@@ -224,6 +285,14 @@ export default function ArdoisePanel({
 
               {showRegles && (
                 <div className="space-y-2 mt-2">
+                  {/* Comptes équipe réglés */}
+                  {comptesClubRegles.length > 0 && (
+                    <>
+                      {comptesClubRegles.map(renderClubCompteButton)}
+                      {comptesRegles.length > 0 && <div className="h-px bg-[#4A4A4A]" />}
+                    </>
+                  )}
+                  {/* Comptes classiques réglés */}
                   {comptesRegles.map(renderCompteButton)}
                 </div>
               )}

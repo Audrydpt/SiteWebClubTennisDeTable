@@ -2,12 +2,14 @@
 import { memo } from 'react';
 import type { Plat } from '@/services/type';
 import { ShoppingBag } from 'lucide-react';
+import { calculateRealStock } from '@/lib/utils';
 
 interface ArticleCardProps {
   plat: Plat;
   onAdd: (plat: Plat) => void;
   isDragging?: boolean;
   isEditMode?: boolean;
+  allPlats?: Plat[]; // Tous les plats pour calculer le stock réel
 }
 
 const ArticleCard = memo(function ArticleCard({
@@ -15,10 +17,15 @@ const ArticleCard = memo(function ArticleCard({
   onAdd,
   isDragging = false,
   isEditMode = false,
+  allPlats = [],
 }: ArticleCardProps) {
-  const isOutOfStock = plat.stock !== undefined && plat.stock <= 0;
-  const isLowStock =
-    plat.stock !== undefined && plat.stock > 0 && plat.stock <= 3;
+  // Calculer le stock réel en fonction de la recette (si applicable)
+  const realStock = allPlats.length > 0
+    ? calculateRealStock(plat, allPlats)
+    : (plat.stock ?? 0);
+
+  const isOutOfStock = realStock <= 0;
+  const isLowStock = realStock > 0 && realStock <= 3;
 
   const handleClick = (e: React.MouseEvent) => {
     if (isEditMode) {
@@ -42,7 +49,7 @@ const ArticleCard = memo(function ArticleCard({
   const content = (
     <>
       {/* Stock badge */}
-      {plat.stock !== undefined && (
+      {(realStock !== undefined || plat.stock !== undefined) && (
         <span
           className={`absolute top-1.5 right-1.5 z-10 text-xs font-bold px-1.5 py-0.5 rounded-full pointer-events-none ${
             isOutOfStock
@@ -52,7 +59,7 @@ const ArticleCard = memo(function ArticleCard({
                 : 'bg-gray-600 text-gray-200'
           }`}
         >
-          {plat.stock}
+          {realStock}
         </span>
       )}
 

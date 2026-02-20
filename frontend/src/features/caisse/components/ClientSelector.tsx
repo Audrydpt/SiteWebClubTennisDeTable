@@ -11,7 +11,7 @@ import { createClientCaisse } from '@/services/api';
 interface ClientSelectorProps {
   membres: Member[];
   clientsExternes: ClientCaisse[];
-  onSelect: (client: { type: 'membre' | 'externe'; id: string; nom: string }) => void;
+  onSelect: (client: { type: 'membre' | 'externe' | 'club'; id: string; nom: string }) => void;
   onClose: () => void;
   onClientCreated: (client: ClientCaisse) => void;
 }
@@ -96,6 +96,7 @@ export default function ClientSelector({
         />
 
         <div className="my-4 border-t border-[#4A4A4A]" />
+
 
         {showCreateForm ? (
           <div className="space-y-3">

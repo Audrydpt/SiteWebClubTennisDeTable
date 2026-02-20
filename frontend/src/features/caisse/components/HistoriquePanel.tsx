@@ -17,6 +17,7 @@ import {
   User,
   List,
   BarChart3,
+  Gift,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -58,7 +59,13 @@ import { Button } from '@/components/ui/button';
 import type { TransactionCaisse, LigneCaisse } from '@/services/type';
 
 type Periode = 'jour' | 'semaine' | 'mois' | 'annee';
-type Filtre = 'toutes' | 'payee' | 'ardoise' | 'annulee' | 'payconiq';
+type Filtre =
+  | 'toutes'
+  | 'payee'
+  | 'ardoise'
+  | 'annulee'
+  | 'payconiq'
+  | 'offert';
 
 interface HistoriquePanelProps {
   transactions: TransactionCaisse[];
@@ -128,6 +135,8 @@ function modePaiementIcon(mode: string) {
       return <Smartphone className="w-3.5 h-3.5" />;
     case 'ardoise':
       return <BookOpen className="w-3.5 h-3.5" />;
+    case 'offert':
+      return <Gift className="w-3.5 h-3.5" />;
     default:
       return <CreditCard className="w-3.5 h-3.5" />;
   }
@@ -139,6 +148,8 @@ function modePaiementLabel(mode: string) {
       return 'Payconiq';
     case 'ardoise':
       return 'Compte';
+    case 'offert':
+      return 'Offert (club)';
     default:
       return 'Immediat';
   }
@@ -248,19 +259,21 @@ function ModificationModal({
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
         <div className="bg-[#3A3A3A] rounded-2xl w-full max-w-sm mx-4 p-6 shadow-2xl">
-          <h3 className="text-white font-bold mb-3">
+          <h3 className="text-white font-bold mb-4">
             Confirmer la modification
           </h3>
           <div className="bg-[#2C2C2C] rounded-lg p-3 mb-4">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-400">Ancien total</span>
-              <span className="text-gray-400 line-through tabular-nums">
+            <div className="flex justify-between mb-2">
+              <span className="text-gray-400 text-sm">Ancien total</span>
+              <span className="text-gray-400 text-sm tabular-nums line-through">
                 {tx.total.toFixed(2)}&euro;
               </span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-white font-bold">Nouveau total</span>
-              <span className="text-[#F1C40F] font-bold tabular-nums">
+            <div className="flex justify-between">
+              <span className="text-white text-sm font-bold">
+                Nouveau total
+              </span>
+              <span className="text-[#F1C40F] text-sm font-bold tabular-nums">
                 {newTotal.toFixed(2)}&euro;
               </span>
             </div>
@@ -275,8 +288,9 @@ function ModificationModal({
             </Button>
             <Button
               onClick={() => onConfirm(lignes, newTotal)}
-              className="flex-1 h-11 bg-[#F1C40F] text-[#2C2C2C] hover:bg-[#F1C40F]/80 rounded-xl font-bold"
+              className="flex-1 h-11 bg-[#F1C40F] text-[#2C2C2C] hover:bg-[#F1C40F]/90 rounded-xl font-bold"
             >
+              <Check className="w-4 h-4 mr-2" />
               Confirmer
             </Button>
           </div>
@@ -287,7 +301,7 @@ function ModificationModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-[#3A3A3A] rounded-2xl w-full max-w-md mx-4 p-6 shadow-2xl">
+      <div className="bg-[#3A3A3A] rounded-2xl w-full max-w-sm mx-4 p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-white font-bold">Modifier la transaction</h3>
           <Button
@@ -300,65 +314,55 @@ function ModificationModal({
           </Button>
         </div>
 
-        <ScrollArea className="max-h-60 mb-4">
-          <div className="space-y-2 pr-4">
-            {lignes.map((l, i) => (
-              <div
-                key={`${l.platId}-${i}`}
-                className="bg-[#2C2C2C] rounded-lg p-3 flex items-center justify-between"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm truncate">{l.platNom}</p>
-                  <p className="text-gray-500 text-xs tabular-nums">
-                    {l.prixUnitaire.toFixed(2)}&euro; / unite
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 ml-3">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => updateQty(i, -1)}
-                    className="h-7 w-7 bg-[#4A4A4A] text-white hover:bg-[#5A5A5A] rounded-lg"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </Button>
-                  <span className="text-white text-sm w-6 text-center tabular-nums">
-                    {l.quantite}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => updateQty(i, 1)}
-                    className="h-7 w-7 bg-[#4A4A4A] text-white hover:bg-[#5A5A5A] rounded-lg"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeLigne(i)}
-                    className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-                <span className="text-[#F1C40F] text-sm font-bold ml-3 tabular-nums w-16 text-right">
+        <div className="space-y-2 mb-4">
+          {lignes.map((l, i) => (
+            <div
+              key={`${l.platId}-${i}`}
+              className="flex items-center gap-2 bg-[#2C2C2C] rounded-lg p-2"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-sm truncate">{l.platNom}</p>
+                <p className="text-gray-500 text-xs tabular-nums">
+                  {l.prixUnitaire.toFixed(2)}&euro; x {l.quantite} ={' '}
                   {l.sousTotal.toFixed(2)}&euro;
-                </span>
+                </p>
               </div>
-            ))}
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => updateQty(i, -1)}
+                  className="h-7 w-7 text-gray-400 hover:text-white bg-[#3A3A3A]"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </Button>
+                <span className="text-white text-sm font-bold w-6 text-center tabular-nums">
+                  {l.quantite}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => updateQty(i, 1)}
+                  className="h-7 w-7 text-gray-400 hover:text-white bg-[#3A3A3A]"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeLigne(i)}
+                  className="h-7 w-7 text-red-400 hover:text-red-300 bg-[#3A3A3A] ml-1"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
 
-            {lignes.length === 0 && (
-              <p className="text-gray-500 text-sm text-center py-4">
-                Aucun article restant
-              </p>
-            )}
-          </div>
-        </ScrollArea>
-
-        <div className="flex items-center justify-between bg-[#2C2C2C] rounded-lg p-3 mb-4">
-          <span className="text-white font-bold">Total</span>
-          <span className="text-[#F1C40F] text-xl font-bold tabular-nums">
+        <div className="flex items-center justify-between mb-4 px-1">
+          <span className="text-gray-400 text-sm">Nouveau total</span>
+          <span className="text-[#F1C40F] font-bold text-lg tabular-nums">
             {newTotal.toFixed(2)}&euro;
           </span>
         </div>
@@ -374,9 +378,10 @@ function ModificationModal({
           <Button
             onClick={() => setShowConfirm(true)}
             disabled={lignes.length === 0}
-            className="flex-1 h-11 bg-[#F1C40F] text-[#2C2C2C] hover:bg-[#F1C40F]/80 rounded-xl font-bold disabled:opacity-30"
+            className="flex-1 h-11 bg-[#F1C40F] text-[#2C2C2C] hover:bg-[#F1C40F]/90 rounded-xl font-bold disabled:opacity-30"
           >
-            Sauvegarder
+            <Pencil className="w-4 h-4 mr-2" />
+            Valider
           </Button>
         </div>
       </div>
@@ -420,6 +425,7 @@ export default function HistoriquePanel({
         .filter((t) => {
           if (filtre === 'toutes') return true;
           if (filtre === 'payconiq') return t.modePaiement === 'payconiq';
+          if (filtre === 'offert') return t.modePaiement === 'offert';
           return t.statut === filtre;
         })
         .sort(
@@ -437,7 +443,7 @@ export default function HistoriquePanel({
     });
     return {
       total: periodAll
-        .filter((t) => t.statut !== 'annulee')
+        .filter((t) => t.statut !== 'annulee' && t.statut !== 'offert')
         .reduce((s, t) => s + t.total, 0),
       count: periodAll.filter((t) => t.statut !== 'annulee').length,
       payees: periodAll
@@ -449,16 +455,19 @@ export default function HistoriquePanel({
       payconiq: periodAll
         .filter((t) => t.modePaiement === 'payconiq' && t.statut !== 'annulee')
         .reduce((s, t) => s + t.total, 0),
+      offert: periodAll
+        .filter((t) => t.statut === 'offert')
+        .reduce((s, t) => s + t.total, 0),
       annulees: periodAll.filter((t) => t.statut === 'annulee').length,
     };
   }, [transactions, start, end]);
 
-  // Chart data computations
+  // Chart data computations (exclure les transactions offert et annulées)
   const periodTransactions = useMemo(
     () =>
       transactions.filter((t) => {
         const d = new Date(t.dateTransaction);
-        return d >= start && d <= end && t.statut !== 'annulee';
+        return d >= start && d <= end && t.statut !== 'annulee' && t.statut !== 'offert';
       }),
     [transactions, start, end]
   );
@@ -605,6 +614,7 @@ export default function HistoriquePanel({
     { id: 'payee', label: 'Payees' },
     { id: 'payconiq', label: 'Payconiq' },
     { id: 'ardoise', label: 'Comptes' },
+    { id: 'offert', label: 'Offertes' },
     { id: 'annulee', label: 'Annulees' },
   ];
 
@@ -657,7 +667,7 @@ export default function HistoriquePanel({
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 mb-3">
+      <div className="grid grid-cols-4 gap-2 mb-3">
         <div className="bg-[#3A3A3A] rounded-xl p-3">
           <p className="text-gray-400 text-xs">Total</p>
           <p className="text-[#F1C40F] text-lg font-bold tabular-nums">
@@ -680,6 +690,12 @@ export default function HistoriquePanel({
           <p className="text-gray-400 text-xs">Comptes</p>
           <p className="text-blue-400 text-lg font-bold tabular-nums">
             {stats.ardoises.toFixed(2)}&euro;
+          </p>
+        </div>
+        <div className="bg-[#3A3A3A] rounded-xl p-3">
+          <p className="text-gray-400 text-xs">Offert</p>
+          <p className="text-amber-400 text-lg font-bold tabular-nums">
+            {stats.offert.toFixed(2)}&euro;
           </p>
         </div>
       </div>
@@ -972,6 +988,7 @@ export default function HistoriquePanel({
               filteredTransactions.map((tx) => {
                 const isExpanded = expandedTx === tx.id;
                 const isAnnulee = tx.statut === 'annulee';
+                const isOffert = tx.statut === 'offert';
 
                 return (
                   <div
@@ -990,14 +1007,18 @@ export default function HistoriquePanel({
                               ? 'bg-green-500/20 text-green-400'
                               : tx.statut === 'ardoise'
                                 ? 'bg-blue-500/20 text-blue-400'
-                                : 'bg-red-500/20 text-red-400'
+                                : tx.statut === 'offert'
+                                  ? 'bg-amber-500/20 text-amber-400'
+                                  : 'bg-red-500/20 text-red-400'
                           }`}
                         >
                           {tx.statut === 'payee'
                             ? 'Payee'
                             : tx.statut === 'ardoise'
                               ? 'Compte'
-                              : 'Annulee'}
+                              : tx.statut === 'offert'
+                                ? 'Offert'
+                                : 'Annulee'}
                         </span>
                         <span className="flex items-center gap-1 text-gray-500 text-xs">
                           {modePaiementIcon(tx.modePaiement)}
@@ -1008,7 +1029,9 @@ export default function HistoriquePanel({
                         className={`font-bold text-sm tabular-nums ${
                           isAnnulee
                             ? 'text-red-400 line-through'
-                            : 'text-[#F1C40F]'
+                            : isOffert
+                              ? 'text-amber-400'
+                              : 'text-[#F1C40F]'
                         }`}
                       >
                         {tx.total.toFixed(2)}&euro;
@@ -1038,7 +1061,11 @@ export default function HistoriquePanel({
                       <div className="flex items-center gap-2">
                         {tx.clientNom && (
                           <span className="flex items-center gap-1 text-gray-400 text-xs">
-                            <User className="w-3 h-3" />
+                            {isOffert ? (
+                              <Gift className="w-3 h-3 text-amber-400" />
+                            ) : (
+                              <User className="w-3 h-3" />
+                            )}
                             {tx.clientNom}
                           </span>
                         )}

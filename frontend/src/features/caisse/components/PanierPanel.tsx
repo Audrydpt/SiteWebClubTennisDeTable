@@ -7,7 +7,7 @@ import { User, CreditCard, XCircle, AlertTriangle } from 'lucide-react';
 import PanierLigne from './PanierLigne';
 
 interface SelectedClient {
-  type: 'membre' | 'externe' | 'anonyme';
+  type: 'membre' | 'externe' | 'anonyme' | 'club';
   id?: string;
   nom: string;
 }
@@ -58,7 +58,13 @@ export default function PanierPanel({
                 {selectedClient.nom}
               </p>
               <p className="text-gray-400 text-xs">
-                {selectedClient.type === 'membre' ? 'Membre' : 'Externe'}
+                {selectedClient.type === 'membre'
+                  ? 'Membre'
+                  : selectedClient.type === 'externe'
+                  ? 'Externe'
+                  : selectedClient.type === 'club'
+                  ? 'Équipe/Club'
+                  : 'Anonyme'}
               </p>
             </div>
             <Button

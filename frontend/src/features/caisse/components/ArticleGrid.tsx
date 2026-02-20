@@ -278,7 +278,8 @@ export default function ArticleGrid({
                 plat={plat}
                 onAdd={onAddToCart}
                 isDragging={isDragging}
-                isEditMode={true}
+                isEditMode={isEditMode}
+                allPlats={plats}
               />
             ))}
           </ReactSortable>
@@ -292,6 +293,8 @@ export default function ArticleGrid({
                 plat={plat}
                 onAdd={onAddToCart}
                 isDragging={false}
+                isEditMode={isEditMode}
+                allPlats={plats}
               />
             ))}
           </div>
