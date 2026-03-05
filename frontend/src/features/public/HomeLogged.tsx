@@ -711,8 +711,8 @@ export default function HomeLogged() {
               </div>
             )}
 
-            {/* Informations générales du club (API principale uniquement) */}
-            {selectedClubInfo?.clubInfo ? (
+            {/* Informations générales du club (API principale uniquement) - MASQUÉES si infos exceptionnelles */}
+            {selectedClubInfo?.clubInfo && !selectedClubInfo?.infosPersonnalisees ? (
               <div className="space-y-4">
                 <h3 className="font-semibold text-gray-800 border-b pb-2">Informations générales</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
@@ -780,8 +780,8 @@ export default function HomeLogged() {
                   </div>
                 )}
               </div>
-            ) : (
-              // Si pas d'infos générales mais peut-être des venues TABT ou infos exceptionnelles
+            ) : !selectedClubInfo?.infosPersonnalisees ? (
+              // Si pas d'infos générales mais peut-être des venues TABT (et PAS d'infos exceptionnelles)
               <>
                 {Array.isArray(selectedClubInfo?.venuesTabt) && selectedClubInfo!.venuesTabt!.length > 0 && (
                   <div className="space-y-2">
@@ -809,7 +809,7 @@ export default function HomeLogged() {
                   </div>
                 )}
               </>
-            )}
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>
