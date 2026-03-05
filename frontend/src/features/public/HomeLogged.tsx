@@ -802,7 +802,7 @@ export default function HomeLogged() {
                     </div>
                   </div>
                 )}
-                {!selectedClubInfo?.infosPersonnalisees && (!selectedClubInfo?.venuesTabt || selectedClubInfo.venuesTabt.length === 0) && (
+                {(!selectedClubInfo?.venuesTabt || selectedClubInfo.venuesTabt.length === 0) && (
                   <div className="text-center py-8 text-gray-500">
                     <Building className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>Aucune information disponible pour ce club</p>
