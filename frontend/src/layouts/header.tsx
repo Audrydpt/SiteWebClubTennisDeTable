@@ -200,19 +200,20 @@ export default function Header({ title, className, ...props }: HeaderProps) {
           <Link to="/" className="flex items-center space-x-2">
             <div
               style={{
-                backgroundImage: "url('https://res.cloudinary.com/dsrrxx5yx/image/upload/v1751736862/cwtcapgd9s25y02mlhhi.png')",
-                backgroundSize: "contain",
-                backgroundRepeat: "no-repeat",
-                width: "4rem",
-                height: "4rem",
-                userSelect: "none",
-                touchAction: "none"
+                backgroundImage:
+                  "url('https://res.cloudinary.com/dsrrxx5yx/image/upload/v1751736862/cwtcapgd9s25y02mlhhi.png')",
+                backgroundSize: 'contain',
+                backgroundRepeat: 'no-repeat',
+                width: '4rem',
+                height: '4rem',
+                userSelect: 'none',
+                touchAction: 'none',
               }}
               className="select-none"
               onClick={activateAdminMode}
               onTouchStart={handleLogoTouchStart}
               onTouchEnd={handleLogoTouchEnd}
-              onContextMenu={e => e.preventDefault()}
+              onContextMenu={(e) => e.preventDefault()}
             />
             <span className="text-lg font-semibold text-white">{title}</span>
           </Link>
@@ -347,21 +348,6 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 </Link>
               </li>
 
-              {/* Page Contact */}
-              <li>
-                <Link
-                  to="/contact"
-                  className={cn(
-                    'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
-                    location.pathname === '/contact'
-                      ? 'text-[#F1C40F]'
-                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
-                  )}
-                >
-                  Contact
-                </Link>
-              </li>
-
               {/* Lien direct vers la galerie */}
               <li>
                 <Link
@@ -377,13 +363,25 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 </Link>
               </li>
 
+              {/* Page Contact */}
+              <li>
+                <Link
+                  to="/contact"
+                  className={cn(
+                    'text-sm font-medium transition-colors px-3 py-2 rounded-md flex items-center',
+                    location.pathname === '/contact'
+                      ? 'text-[#F1C40F]'
+                      : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
+                  )}
+                >
+                  Contact
+                </Link>
+              </li>
+
               {/* Espace membre (menu déroulant pour membre connecté) */}
               {isAuthenticated && !isAdmin() && (
                 <li>
-                  <HoverCard
-                    openDelay={0}
-                    closeDelay={150}
-                  >
+                  <HoverCard openDelay={0} closeDelay={150}>
                     <HoverCardTrigger asChild>
                       <span
                         className={cn(
@@ -462,10 +460,10 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   <button className="hidden md:flex items-center justify-center text-white p-2 rounded-md text-sm font-medium transition-colors">
                     <UserCircle className="h-5 w-5 mr-1" />
                     <span>
-            {isAdmin()
-              ? 'Admin'
-              : `${isMember(user) ? user.prenom : ''} ${isMember(user) ? user.nom : ''}`}
-          </span>
+                      {isAdmin()
+                        ? 'Admin'
+                        : `${isMember(user) ? user.prenom : ''} ${isMember(user) ? user.nom : ''}`}
+                    </span>
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
@@ -483,7 +481,11 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                           : `${isMember(user) ? user.prenom : ''} ${isMember(user) ? user.nom : ''}`}
                       </div>
                       <p className="text-sm text-gray-300">
-                        {isAdmin() ? 'Accès complet' : (isMember(user) ? user.email : '')}
+                        {isAdmin()
+                          ? 'Accès complet'
+                          : isMember(user)
+                            ? user.email
+                            : ''}
                       </p>
                       {!isAdmin() && isMember(user) && user.classement && (
                         <p className="text-xs text-yellow-400 mt-1">
@@ -612,7 +614,9 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                           className="w-full px-3 py-2 bg-[#4A4A4A] border border-[#555] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#F1C40F] focus:border-transparent"
                           placeholder="••••••••"
                           required
-                          autoComplete={isAdminLogin ? "current-password" : "password"}
+                          autoComplete={
+                            isAdminLogin ? 'current-password' : 'password'
+                          }
                         />
                         <button
                           type="button"
@@ -653,27 +657,27 @@ export default function Header({ title, className, ...props }: HeaderProps) {
             )}
           </div>
 
-            {/* Menu mobile - Bouton hamburger */}
-            <button
-              onClick={handleMobileMenuToggle}
-              className="md:hidden p-2 rounded-md hover:bg-gray-600 text-white"
+          {/* Menu mobile - Bouton hamburger */}
+          <button
+            onClick={handleMobileMenuToggle}
+            className="md:hidden p-2 rounded-md hover:bg-gray-600 text-white"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
-          </div>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
         </div>
+      </div>
 
       {/* Menu mobile */}
       {mobileMenuOpen && (
@@ -727,7 +731,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                 className={cn(
                   'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
                   location.pathname.includes('/historique') ||
-                  activeMobileSection === 'historique'
+                    activeMobileSection === 'historique'
                     ? 'text-[#F1C40F]'
                     : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                 )}
@@ -819,7 +823,7 @@ export default function Header({ title, className, ...props }: HeaderProps) {
                   className={cn(
                     'flex justify-between items-center w-full px-4 py-2 text-base font-medium',
                     location.pathname.includes('/espace-membre') ||
-                    activeMobileSection === 'espace-membre'
+                      activeMobileSection === 'espace-membre'
                       ? 'text-[#F1C40F]'
                       : 'text-white hover:text-[#F1C40F] hover:bg-[#4A4A4A]'
                   )}
