@@ -36,10 +36,25 @@
         <priority>0.5</priority>
     </url>
 
+    <!-- Galerie -->
     <url>
         <loc>https://cttframeries.com/evenements/galerie</loc>
         <lastmod>2025-09-09</lastmod>
         <priority>0.4</priority>
     </url>
+
+    <!-- About -->
+    <url>
+        <loc>https://cttframeries.com/infos/about</loc>
+        <lastmod>2026-03-09</lastmod>
+        <priority>0.3</priority>
+    </url>
+    <!-- Palmares -->
+    <url>
+        <loc>https://cttframeries.com/infos/palmares</loc>
+        <lastmod>2026-03-09</lastmod>
+        <priority>0.2</priority>
+    </url>
+
 
 </urlset>
